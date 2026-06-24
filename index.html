@@ -164,35 +164,49 @@
     }
     .iconbtn:hover { box-shadow: 0 0 14px var(--purple); border-color: var(--purple); }
 
-    /* ---------- Nav ---------- */
-    nav {
-      /* top is kept in sync with the real header height by JS (syncStickyOffsets) */
-      position: sticky; top: calc(64px + env(safe-area-inset-top)); z-index: 39;
-      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
-      padding: 10px; margin: 0 auto; max-width: 1100px;
-      background: linear-gradient(180deg, rgba(8,0,15,0.85), rgba(8,0,15,0));
-      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    /* ---------- Bottom tab bar (native-app style) ---------- */
+    nav.bottomnav {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+      display: flex; align-items: flex-end; gap: 2px;
+      padding: 6px max(6px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-right));
+      background: linear-gradient(180deg, rgba(14,3,28,0.82), rgba(8,0,15,0.97));
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border-top: 1px solid var(--panel-edge);
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.55);
     }
     .tab {
-      font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px;
-      font-size: 13px; cursor: pointer; user-select: none;
-      padding: 10px 18px; border-radius: 12px; color: var(--ink-dim);
-      background: var(--panel); border: 1px solid rgba(255,255,255,0.08);
-      transition: .18s; display: flex; align-items: center; gap: 8px;
+      flex: 1 1 0; min-width: 0; cursor: pointer; user-select: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
+      padding: 7px 2px 4px; border-radius: 14px; color: var(--ink-dim);
+      background: transparent; border: 1px solid transparent; transition: .15s;
     }
-    .tab .ti { font-size: 16px; }
-    .tab:hover { color: #fff; transform: translateY(-2px); }
-    .tab.active {
-      color: #fff; border-color: var(--pink);
-      background: linear-gradient(180deg, rgba(255,27,141,0.25), rgba(176,38,255,0.18));
-      box-shadow: 0 0 18px rgba(255,27,141,0.5), inset 0 0 14px rgba(176,38,255,0.25);
+    .tab .ti { font-size: 22px; line-height: 1; filter: grayscale(.4); opacity: .75; transition: .15s; }
+    .tab .tl { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: .4px; font-size: 9.5px; white-space: nowrap; }
+    .tab.active { color: #fff;
+      background: linear-gradient(180deg, rgba(255,27,141,0.20), rgba(176,38,255,0.14));
+      border-color: rgba(255,27,141,0.5);
+      box-shadow: 0 0 14px rgba(255,27,141,0.35), inset 0 0 12px rgba(176,38,255,0.18);
     }
+    .tab.active .ti { filter: none; opacity: 1; transform: translateY(-1px); }
+    .tab.active .tl { color: #fff; }
+    /* center "Habits" = raised, always-branded bolt button (the home action) */
+    .tab.center { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+    .tab.center .ti {
+      font-size: 24px; width: 52px; height: 52px; display: grid; place-items: center;
+      margin-top: -24px; border-radius: 50%; opacity: 1; filter: none;
+      background: linear-gradient(160deg, #ff1b8d, #b026ff 55%, #00f0ff);
+      border: 3px solid rgba(255,255,255,0.65);
+      box-shadow: 0 0 20px rgba(176,38,255,0.75), 0 8px 16px rgba(0,0,0,0.55);
+    }
+    .tab.center.active .ti { box-shadow: 0 0 30px rgba(255,27,141,0.95), 0 8px 16px rgba(0,0,0,0.55); transform: none; }
+    .tab.center .tl { margin-top: 1px; }
+    .tab.center.active .tl { color: var(--cyan); text-shadow: 0 0 8px rgba(0,240,255,0.6); }
 
     main {
       max-width: 1100px; margin: 0 auto;
       padding-top: 14px;
       padding-right: max(clamp(12px,3vw,24px), env(safe-area-inset-right));
-      padding-bottom: calc(80px + env(safe-area-inset-bottom));
+      padding-bottom: calc(96px + env(safe-area-inset-bottom));
       padding-left: max(clamp(12px,3vw,24px), env(safe-area-inset-left));
     }
     .view { display: none; animation: fadeUp .35s ease; }
@@ -268,6 +282,44 @@
     .habit .donebtn { margin-top: auto; }
     .habit .check { position: absolute; top: 10px; right: 12px; font-size: 22px; color: var(--green); opacity: 0; transition: .3s; }
     .habit.done .check { opacity: 1; filter: drop-shadow(0 0 8px var(--green)); }
+
+    /* ---------- Compact habit checklist (Habits tab) ---------- */
+    .habit-list { display: flex; flex-direction: column; gap: 8px; }
+    .hrow {
+      display: flex; align-items: center; gap: 12px; cursor: pointer;
+      padding: 11px 14px; border-radius: 14px; transition: .15s;
+      background: linear-gradient(160deg, rgba(176,38,255,0.10), rgba(20,6,42,0.55));
+      border: 1px solid var(--panel-edge);
+    }
+    .hrow:active { transform: scale(0.985); }
+    .hrow-emoji { flex: 0 0 auto; font-size: 24px; line-height: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,.25)); }
+    .hrow-main { flex: 1 1 auto; min-width: 0; }
+    .hrow-name { font-weight: 700; font-size: 16px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hrow-sub { font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 1px; }
+    .hrow-sub.hot { color: var(--orange); }
+    .hrow-reward {
+      flex: 0 0 auto; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; white-space: nowrap;
+      color: var(--yellow); background: rgba(255,230,0,0.10); border: 1px solid rgba(255,230,0,0.4);
+      padding: 3px 9px; border-radius: 999px;
+    }
+    .hrow-check {
+      flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
+      display: grid; place-items: center; font-size: 17px; font-weight: 900; color: transparent;
+      background: rgba(255,255,255,0.05); border: 2px solid var(--panel-edge); transition: .15s;
+    }
+    .hrow.done { border-color: rgba(57,255,20,0.45); background: linear-gradient(160deg, rgba(57,255,20,0.10), rgba(20,6,42,0.5)); }
+    .hrow.done .hrow-name { text-decoration: line-through; text-decoration-color: rgba(57,255,20,0.7); color: var(--ink-dim); }
+    .hrow.done .hrow-emoji { filter: grayscale(.3) opacity(.7); }
+    .hrow.done .hrow-check { color: #04210a; background: linear-gradient(180deg, var(--green), #1f9e0a); border-color: var(--green); box-shadow: 0 0 10px rgba(57,255,20,.5); }
+
+    /* slim section banners on the Habits tab */
+    .daily-banner.slim { padding: 12px 14px; gap: 12px; margin-bottom: 12px; }
+    .daily-banner.slim .section-title { font-size: 16px; margin-bottom: 0; }
+    .daily-banner.slim .subtle { font-size: 12px; }
+    .daily-banner.slim .progress-wrap { height: 10px; margin-top: 6px; }
+    .bonus-chip { flex: 0 0 auto; text-align: center; }
+    .bonus-chip .subtle { font-size: 10px; }
+    .bonus-chip .bonus-amt { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 17px; }
 
     /* ---------- Casino ---------- */
     .game-tabs { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
@@ -711,7 +763,6 @@
     @media (max-width: 560px) {
       .weight-row { grid-template-columns: 100px 1fr 52px; }
       .weight-row .wpct { display:none; }
-      nav { top: calc(60px + env(safe-area-inset-top)); }
 
       /* --- compact header so it stays a single tidy row on a phone --- */
       header { gap: 8px; }
@@ -724,9 +775,7 @@
       .level .lvlrow { font-size: 11px; }
       .iconbtn { width: 38px; height: 38px; }
 
-      /* roomy, finger-friendly nav tabs */
-      nav { gap: 6px; padding: 8px 8px 4px; }
-      .tab { padding: 10px 14px; }
+      /* roomy, finger-friendly casino game tabs */
       .game-tab { min-width: 84px; padding: 10px 12px; }
     }
 
@@ -766,45 +815,49 @@
     <button class="iconbtn" id="soundBtn" title="Toggle sound">🔊</button>
   </header>
 
-  <nav id="nav">
-    <div class="tab active" data-view="habits"><span class="ti">✅</span> Habits</div>
-    <div class="tab" data-view="casino"><span class="ti">🎰</span> Casino</div>
-    <div class="tab" data-view="prizes"><span class="ti">🏆</span> Prizes</div>
-    <div class="tab" data-view="settings"><span class="ti">⚙️</span> Settings</div>
+  <nav id="nav" class="bottomnav">
+    <div class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Casino</span></div>
+    <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
+    <div class="tab center active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
+    <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
+    <div class="tab" data-view="settings"><span class="ti">⚙️</span><span class="tl">Settings</span></div>
   </nav>
 
   <main>
     <!-- ===================== HABITS ===================== -->
     <section class="view active" id="view-habits">
-      <div class="daily-banner">
+      <div class="daily-banner slim">
         <div class="dtext">
           <div class="section-title neon-green">🗓️ Daily Quests</div>
           <div class="subtle" id="dailyStatus">Complete habits to earn tokens.</div>
           <div class="progress-wrap"><div class="progress-fill" id="dailyFill"></div></div>
           <div class="streak-line" id="dailyStreakInfo"></div>
         </div>
-        <div style="text-align:center">
-          <div class="subtle">All&nbsp;done bonus</div>
-          <div class="neon-gold" style="font-family:'Orbitron';font-weight:900;font-size:22px" id="dailyBonusLabel">+10 🪙</div>
+        <div class="bonus-chip">
+          <div class="subtle">All&nbsp;done</div>
+          <div class="neon-gold bonus-amt" id="dailyBonusLabel">+10 🪙</div>
         </div>
       </div>
-      <div class="habit-grid" id="dailyGrid"></div>
+      <div class="habit-list" id="dailyGrid"></div>
 
-      <div class="daily-banner extra-banner" style="margin-top:24px">
+      <div class="daily-banner extra-banner slim" style="margin-top:16px">
         <div class="dtext">
           <div class="section-title neon-cyan">✨ Extra Habits</div>
           <div class="subtle" id="extraStatus">Optional side-quests — their own bar, their own bonus.</div>
           <div class="progress-wrap"><div class="progress-fill extra" id="extraFill"></div></div>
         </div>
-        <div style="text-align:center">
-          <div class="subtle">All&nbsp;done bonus</div>
-          <div class="neon-cyan" style="font-family:'Orbitron';font-weight:900;font-size:22px" id="extraBonusLabel">+8 🪙</div>
+        <div class="bonus-chip">
+          <div class="subtle">All&nbsp;done</div>
+          <div class="neon-cyan bonus-amt" id="extraBonusLabel">+8 🪙</div>
         </div>
       </div>
-      <div class="habit-grid" id="extraGrid"></div>
+      <div class="habit-list" id="extraGrid"></div>
+    </section>
 
+    <!-- ===================== TASKS (one-off quests) ===================== -->
+    <section class="view" id="view-tasks">
       <div class="oneoff-section">
-        <div class="section-title neon-purple" style="margin-top:24px">🎯 Wheel of Quests</div>
+        <div class="section-title neon-purple">🎯 Wheel of Quests</div>
         <div class="subtle" style="margin-bottom:12px">One-off tasks — spin for a random one, or just pick a box. Each vanishes once finished.</div>
         <div class="oneoff-layout">
           <div class="oneoff-wheel">
@@ -1454,31 +1507,22 @@ function sectionStats(section) {
   return { list, done, cap, pct: cap ? Math.round(done / cap * 100) : 0, allComplete };
 }
 
+// Compact checklist row: [emoji] name + streak/progress  ·  +reward  ·  ✓ box
+// The whole row is the tap target (data-act="done"); completeHabit() caps repeats.
 function habitCardHTML(h) {
   const cap = capOf(h), dc = doneCount(h), complete = dc >= cap, s = currentStreak(h);
-  const tag = h.repeatable
-    ? `<span class="reward-tag">🪙 +${h.reward} each · <b>${dc}/${cap}</b> today</span>`
-    : `<span class="reward-tag">🪙 +${h.reward} token${h.reward !== 1 ? 's' : ''}</span>`;
-  let btn;
-  if (complete) {
-    btn = `<button class="btn ghost donebtn" data-act="done" disabled>${h.repeatable ? '✓ Maxed today' : '✓ Done today'}</button>`;
-  } else if (h.repeatable) {
-    btn = `<button class="btn green donebtn" data-act="done">COMPLETE +${h.reward} <span style="opacity:.65">(${dc}/${cap})</span></button>`;
-  } else {
-    btn = `<button class="btn green donebtn" data-act="done">COMPLETE</button>`;
-  }
+  const sub = h.repeatable
+    ? `${dc}/${cap} today` + (s > 0 ? ` · 🔥 ${s}` : '')
+    : (complete ? 'Done today' : (s > 0 ? `🔥 ${s} day${s > 1 ? 's' : ''} streak` : 'No streak yet'));
   return `
-    <div class="habit ${complete ? 'done' : ''}" data-id="${h.id}">
-      <span class="check">✔</span>
-      <div class="top">
-        <span class="emoji">${escapeHtml(h.emoji || '⭐')}</span>
-        <div>
-          <div class="hname">${escapeHtml(h.name)}</div>
-          <div class="streak ${s > 0 ? '' : 'cold'}">${s > 0 ? '🔥 ' + s + ' day' + (s > 1 ? 's' : '') : 'No streak yet'}</div>
-        </div>
+    <div class="hrow ${complete ? 'done' : ''}" data-id="${h.id}" data-act="done">
+      <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
+      <div class="hrow-main">
+        <div class="hrow-name">${escapeHtml(h.name)}</div>
+        <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${sub}</div>
       </div>
-      ${tag}
-      ${btn}
+      <span class="hrow-reward">+${h.reward} 🪙</span>
+      <span class="hrow-check">✓</span>
     </div>`;
 }
 
@@ -1501,6 +1545,10 @@ function renderHabits() {
   renderHabitSection('daily', '#dailyGrid', '#dailyFill', '#dailyStatus', '#dailyBonusLabel', state.settings.dailyBonus);
   renderHabitSection('extra', '#extraGrid', '#extraFill', '#extraStatus', '#extraBonusLabel', state.settings.extraBonus);
   updateDailyStreakInfo();
+}
+
+// Tasks tab = the one-off "Wheel of Quests"
+function renderTasks() {
   renderOneoffs();
   buildHabitWheel();
 }
@@ -1647,7 +1695,7 @@ function completeHabit(id) {
   SFX.coin();
   const hh = happyMult();
   const amt = Math.round(h.reward * hh);
-  const card = $(`.habit[data-id="${id}"] .donebtn`);
+  const card = $(`.hrow[data-id="${id}"] .hrow-check`) || $(`.hrow[data-id="${id}"]`);
   addTokens(amt, card);
   toast(`+${amt} token${amt !== 1 ? 's' : ''} earned!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
@@ -2736,6 +2784,7 @@ function switchView(name) {
   $$('#nav .tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   if (name === 'habits') renderHabits();
+  if (name === 'tasks') renderTasks();
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
   if (name === 'prizes') renderPrizes();
   if (name === 'settings') renderSettings();
@@ -2749,14 +2798,19 @@ $('#soundBtn').addEventListener('click', () => {
   toast(state.settings.sound ? '🔊 Sound on' : '🔇 Muted', 'var(--cyan)');
 });
 
-// Habit completion + one-off quests (delegated across the whole Habits view)
+// Habit completion (delegated) — whole compact row is the tap target
 $('#view-habits').addEventListener('click', e => {
+  const row = e.target.closest('[data-act="done"]');
+  if (row) completeHabit(row.dataset.id);
+});
+
+// Tasks view: one-off quests + quest wheel (delegated)
+$('#view-tasks').addEventListener('click', e => {
   if (e.target.closest('#spinHabitWheel')) { spinHabitWheel(); return; }
   const spinDone = e.target.closest('[data-act="spinDone"]');
   if (spinDone) { completeOneoff(spinDone.dataset.id, true); return; } // viaSpin → spin bonus
   const card = e.target.closest('.habit'); if (!card) return;
-  if (e.target.closest('[data-act="done"]')) completeHabit(card.dataset.id);
-  else if (e.target.closest('[data-act="doneOneoff"]')) completeOneoff(card.dataset.id);
+  if (e.target.closest('[data-act="doneOneoff"]')) completeOneoff(card.dataset.id);
 });
 
 // Game tabs
@@ -2924,7 +2978,7 @@ $('#addOneoff').addEventListener('click', () => {
 $('#quickOneoff').addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.value.trim()) return;
   state.oneoffs.push({ id: uid(), emoji: '🎯', name: e.target.value.trim(), reward: 5, iterations: 1, progress: 0 });
-  e.target.value = ''; SFX.coin(); save(); renderOneoffEditor(); renderHabits();
+  e.target.value = ''; SFX.coin(); save(); renderOneoffEditor(); renderTasks();
 });
 
 // ---- Settings: one-click sorting ----
@@ -3054,6 +3108,7 @@ function fullRender() {
   displayTokens = state.tokens;
   renderTopbar();
   renderHabits();
+  renderTasks();
   updateGameButtons();
   buildWheelSegments();
   buildRouletteWheel();
@@ -3064,18 +3119,6 @@ function fullRender() {
   renderSettings();
 }
 fullRender();
-
-// --- iPhone: keep the sticky nav glued to the bottom of the header, whatever its height ---
-// (header wraps / grows with the safe-area inset, so a fixed CSS `top` isn't reliable.)
-function syncStickyOffsets() {
-  const header = document.querySelector('header');
-  const nav = document.querySelector('nav');
-  if (header && nav) nav.style.top = header.offsetHeight + 'px';
-}
-syncStickyOffsets();
-addEventListener('resize', syncStickyOffsets);
-addEventListener('orientationchange', () => setTimeout(syncStickyOffsets, 250));
-if (window.ResizeObserver) new ResizeObserver(syncStickyOffsets).observe(document.querySelector('header'));
 
 // Collapsible settings: tap a section title to expand/collapse. Start collapsed for a clean menu.
 $('#view-settings').addEventListener('click', e => {
