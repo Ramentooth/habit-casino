@@ -793,6 +793,112 @@
     @media (max-width: 768px) {
       input:not(.emoji-in), select, textarea, .sect-in { font-size: 16px !important; }
     }
+
+    /* ============================ HABIT PASS ============================ */
+    /* Floating entry button — only on the Habits tab, above the bottom bar */
+    .pass-fab {
+      display: none; position: fixed; z-index: 44;
+      right: 14px; bottom: calc(80px + env(safe-area-inset-bottom));
+      flex-direction: column; align-items: center; gap: 1px; cursor: pointer;
+      width: 78px; padding: 9px 6px 7px; border-radius: 16px; color: #fff;
+      background: linear-gradient(160deg, #ff1b8d, #b026ff 55%, #00f0ff);
+      border: 2px solid rgba(255,255,255,0.7);
+      box-shadow: 0 0 22px rgba(176,38,255,0.7), 0 8px 18px rgba(0,0,0,0.5);
+      animation: passFabPulse 2.4s ease-in-out infinite;
+    }
+    .pass-fab.show { display: flex; }
+    @keyframes passFabPulse { 50% { box-shadow: 0 0 32px rgba(255,27,141,0.9), 0 8px 18px rgba(0,0,0,0.5); } }
+    .pass-fab:active { transform: scale(0.95); }
+    .pf-bolt { font-size: 26px; line-height: 1; filter: drop-shadow(0 0 6px #fff); }
+    .pf-txt { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 9px; letter-spacing: .5px; line-height: 1.05; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+    .pf-lvl { margin-top: 3px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 9px; background: rgba(0,0,0,0.35); padding: 1px 7px; border-radius: 999px; }
+
+    /* Overlay + scrollable sheet */
+    .pass-overlay { position: fixed; inset: 0; z-index: 72; display: none; background: rgba(2,0,8,0.82); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
+    .pass-overlay.show { display: block; animation: fadeUp .25s ease; }
+    .pass-modal {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      top: env(safe-area-inset-top); width: min(560px, 96vw);
+      max-height: calc(100vh - env(safe-area-inset-top) - 10px);
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      background: linear-gradient(180deg, #1a0533, #0c0118); border: 1px solid var(--panel-edge);
+      border-radius: 20px; padding: 14px 14px calc(20px + env(safe-area-inset-bottom));
+      box-shadow: 0 0 60px rgba(176,38,255,0.5);
+    }
+    .pass-close { position: sticky; top: 0; float: right; width: 36px; height: 36px; border-radius: 10px; z-index: 3;
+      background: rgba(255,255,255,0.08); border: 1px solid var(--panel-edge); color: #fff; font-size: 18px; cursor: pointer; }
+    .pass-close:hover { box-shadow: 0 0 12px var(--pink); }
+
+    .pass-banner { display: flex; align-items: center; gap: 12px; padding: 8px 6px 12px; }
+    .pass-bolt { font-size: 40px; filter: drop-shadow(0 0 12px var(--purple)); }
+    .pass-title { font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 2px; font-size: 24px;
+      background: linear-gradient(90deg, var(--cyan), var(--pink), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .pass-sub { font-size: 13px; color: var(--ink-dim); font-weight: 700; }
+
+    .pass-levelrow { display: flex; align-items: center; gap: 12px; padding: 4px 4px 14px; }
+    .pass-lvl { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--ink-dim); text-align: center; line-height: 1.1; flex: 0 0 auto; }
+    .pass-lvl b { font-size: 26px; color: var(--cyan); text-shadow: 0 0 10px rgba(0,240,255,.7); }
+    .pass-xpwrap { flex: 1 1 auto; }
+    .pass-xpbar { height: 14px; border-radius: 999px; background: rgba(0,0,0,0.5); overflow: hidden; border: 1px solid rgba(176,38,255,0.4); }
+    .pass-xpfill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--purple), var(--cyan)); box-shadow: 0 0 14px var(--cyan); transition: width .5s cubic-bezier(.2,.9,.2,1); }
+    .pass-xptxt { font-size: 12px; color: var(--ink-dim); font-weight: 700; margin-top: 4px; text-align: right; }
+
+    .pass-sec { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px; color: var(--cyan); margin: 6px 2px 8px; }
+    .pass-sec .subtle { font-family: 'Rajdhani', sans-serif; letter-spacing: 0; font-weight: 600; }
+    .pass-goals { display: flex; flex-direction: column; gap: 8px; }
+    .pass-goal { background: rgba(0,0,0,0.3); border: 1px solid var(--panel-edge); border-radius: 12px; padding: 9px 12px; }
+    .pass-goal.done { border-color: rgba(57,255,20,0.5); background: rgba(57,255,20,0.07); }
+    .pg-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .pg-label { font-weight: 700; font-size: 14px; }
+    .pg-xp { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px; color: var(--cyan); flex: 0 0 auto; }
+    .pg-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.45); overflow: hidden; margin: 6px 0 3px; border: 1px solid rgba(255,255,255,0.1); }
+    .pg-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--cyan)); box-shadow: 0 0 10px var(--green); transition: width .4s ease; }
+    .pass-goal.done .pg-fill { background: linear-gradient(90deg, var(--green), var(--green)); }
+    .pg-prog { font-size: 11px; color: var(--ink-dim); font-weight: 700; text-align: right; }
+
+    .pass-proupg { margin: 14px 0 6px; text-align: center; }
+    .pass-proupg .btn { width: 100%; }
+    .pass-pro-on { font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 1px; font-size: 13px; color: #221c00;
+      background: linear-gradient(180deg, #ffe600, #ffab00); padding: 10px; border-radius: 12px; box-shadow: 0 0 18px rgba(255,230,0,0.6); }
+
+    /* Reward track (free | tier | pro) */
+    .pass-laneshead { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 8px; margin: 12px 2px 6px; text-align: center;
+      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px; letter-spacing: 1px; }
+    .pass-laneshead .lh-free { color: var(--cyan); } .pass-laneshead .lh-tier { color: var(--ink-dim); } .pass-laneshead .lh-pro { color: var(--gold); }
+    .pass-track { display: flex; flex-direction: column; gap: 8px; }
+    .pass-tier { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 8px; align-items: stretch; }
+    .pt-num { display: grid; place-items: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; color: var(--ink-dim);
+      background: rgba(255,255,255,0.05); border: 1px solid var(--panel-edge); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    .pass-tier.reached .pt-num { color: #fff; background: linear-gradient(160deg, var(--purple), var(--pink)); border-color: transparent; box-shadow: 0 0 12px rgba(176,38,255,.6); }
+    .pt-num.milestone { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,.4); }
+    .pass-tier.reached .pt-num.milestone { background: linear-gradient(160deg, #ffd700, #ff8a00); }
+    .pass-tier.current .pt-num { outline: 2px solid var(--cyan); outline-offset: 2px; }
+    .pt-cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      min-height: 60px; padding: 8px 4px; border-radius: 12px; border: 1px solid var(--panel-edge); overflow: hidden; }
+    .pt-cell.free { background: linear-gradient(160deg, rgba(0,240,255,0.10), rgba(20,6,42,0.5)); }
+    .pt-cell.pro  { background: linear-gradient(160deg, rgba(255,171,0,0.12), rgba(20,6,42,0.5)); border-color: rgba(255,200,0,0.35); }
+    .pt-cell.locked { filter: grayscale(.7) brightness(.6); opacity: .8; }
+    .pt-cell.got { box-shadow: inset 0 0 0 2px rgba(57,255,20,0.5); }
+    .pt-cell.wild { background: linear-gradient(135deg, #ff1b8d, #b026ff 50%, #00f0ff); border-color: rgba(255,255,255,0.6); }
+    .pt-cell.wild .ptc-label, .pt-cell.wild .ptc-emoji { color: #fff !important; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+    .ptc-emoji { font-size: 26px; line-height: 1; }
+    .ptc-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 10px; text-align: center; }
+    .pt-tick { position: absolute; top: 4px; right: 5px; font-size: 12px; color: var(--green); text-shadow: 0 0 6px var(--green); }
+    .pt-lock { position: absolute; top: 4px; right: 5px; font-size: 13px; opacity: .9; }
+
+    /* Wild card chooser */
+    .wild-overlay { position: fixed; inset: 0; z-index: 73; display: none; place-items: center; background: rgba(2,0,8,0.82); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
+    .wild-overlay.show { display: grid; animation: fadeUp .25s ease; }
+    .wild-modal { width: min(440px, 92vw); max-height: 86vh; overflow-y: auto; text-align: center;
+      background: linear-gradient(180deg, #1a0533, #0c0118); border: 2px solid var(--gold); border-radius: 20px; padding: 20px; box-shadow: 0 0 50px rgba(255,215,0,0.5); }
+    .wild-head { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 17px; margin-bottom: 14px; }
+    .wild-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 10px; }
+    .wild-pick { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; padding: 14px 8px;
+      background: rgba(0,0,0,0.3); border: 2px solid var(--panel-edge); border-radius: 14px; color: #fff; transition: .15s; }
+    .wild-pick:hover { transform: translateY(-3px); box-shadow: 0 0 16px rgba(255,255,255,0.25); }
+    .wp-e { font-size: 34px; } .wp-n { font-weight: 700; font-size: 13px; }
+    /* Wild card in the Winnings list */
+    .inv-card.wildcard { background: linear-gradient(160deg, rgba(176,38,255,0.18), rgba(20,6,42,0.6)); border-color: rgba(255,255,255,0.4); }
   </style>
 </head>
 <body>
@@ -1038,6 +1144,29 @@
       </div>
 
       <div class="panel set-section">
+        <div class="section-title neon-purple">⚡ Habit Pass</div>
+        <div class="subtle">A weekly battle pass. Earn pass XP from habits, tasks &amp; goals; climb tiers for rewards.</div>
+        <div class="row between" style="margin-top:10px"><span>Enable Habit Pass</span><label class="toggle"><input type="checkbox" id="passEnabled"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row between"><span>Reset every week</span><label class="toggle"><input type="checkbox" id="passWeekly"><span class="track"></span><span class="knob"></span></label></div>
+        <hr class="set-sep">
+        <div class="subtle">Earn pass XP from:</div>
+        <div class="row between" style="flex-wrap:nowrap;gap:8px"><span style="flex:1;min-width:0">🗓️ Habit completions</span><span class="pill" style="flex:0 0 auto">+<input class="num-in" id="passDailyXP" type="number" min="0" max="99" style="width:48px"> XP</span><label class="toggle"><input type="checkbox" id="passSrcDailies"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row between" style="flex-wrap:nowrap;gap:8px"><span style="flex:1;min-width:0">🎯 Task completions</span><span class="pill" style="flex:0 0 auto">+<input class="num-in" id="passTaskXP" type="number" min="0" max="99" style="width:48px"> XP</span><label class="toggle"><input type="checkbox" id="passSrcTasks"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row between"><span>🏅 Goal completions</span><label class="toggle"><input type="checkbox" id="passSrcGoals"><span class="track"></span><span class="knob"></span></label></div>
+        <hr class="set-sep">
+        <div class="row"><span>XP per level</span><input class="num-in" id="passXpPerLevel" type="number" min="1" max="999"></div>
+        <div class="row"><span>🪙 PRO unlock cost</span><input class="num-in" id="passProCost" type="number" min="0" max="99999"></div>
+        <hr class="set-sep">
+        <div class="row between"><span>Grant tier rewards</span><label class="toggle"><input type="checkbox" id="passRewardsOn"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row between"><span>🃏 Wild Cards (every 10 levels)</span><label class="toggle"><input type="checkbox" id="passWildOn"><span class="track"></span><span class="knob"></span></label></div>
+        <hr class="set-sep">
+        <div class="subtle">🏷️ Categories <span style="opacity:.7">— drive the weekly Goals; assign them per-habit in ⚙️ Habits above.</span></div>
+        <div class="row" style="margin-top:8px"><input class="name-in" id="newCategory" placeholder="Add a category (e.g. Health)"><button class="btn ghost sm" id="addCategory">+ Add</button></div>
+        <div id="categoryList" class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+        <button class="btn ghost sm" id="passResetNow" style="margin-top:12px">↺ Reset pass season now</button>
+      </div>
+
+      <div class="panel set-section">
         <div class="section-title neon-cyan">🧊 Streak Freeze <span class="subtle" style="font-size:12px;letter-spacing:0">· special reward</span></div>
         <div class="subtle">A special reward that saves your daily-quest streak when you miss a day. It can't be deleted — only toggled on/off and re-themed. Set its rarity to control how often it drops.</div>
         <div id="streakFreezeEditor" style="margin-top:12px"></div>
@@ -1128,6 +1257,30 @@
     </section>
   </main>
 
+  <!-- Habit Pass entry — floats bottom-right, only while the Habits tab is open -->
+  <button class="pass-fab" id="passFab">
+    <span class="pf-bolt">⚡</span>
+    <span class="pf-txt">HABIT<br>PASS</span>
+    <span class="pf-lvl" id="passFabLvl">LVL 0</span>
+  </button>
+
+  <!-- Habit Pass overlay -->
+  <div class="pass-overlay" id="passOverlay">
+    <div class="pass-modal">
+      <button class="pass-close" id="passClose" title="Close">✕</button>
+      <div id="passBody"></div>
+    </div>
+  </div>
+
+  <!-- Wild Card chooser -->
+  <div class="wild-overlay" id="wildOverlay">
+    <div class="wild-modal">
+      <div class="wild-head">🃏 <span id="wildTitle">Pick a reward</span></div>
+      <div class="wild-grid" id="wildGrid"></div>
+      <button class="btn ghost sm" id="wildCancel" style="margin-top:12px">Cancel</button>
+    </div>
+  </div>
+
   <!-- Reveal modal -->
   <div class="reveal-overlay" id="revealOverlay">
     <div class="reveal-card" id="revealCard">
@@ -1181,7 +1334,7 @@ function defaultState() {
       { id: uid(), emoji: '🧹', name: 'Tidy a space',       section: 'extra', reward: 2, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '🤝', name: 'Reach out to a friend', section: 'extra', reward: 3, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '💊', name: 'Take vitamins',      section: 'extra', reward: 1, repeatable: true,  cap: 2, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
-    ].map(h => ({ days: [true, true, true, true, true, true, true], ...h })), // days[0..6] = Sun..Sat, default every day
+    ].map(h => ({ days: [true, true, true, true, true, true, true], category: ({ 'Exercise': 'Exercise', 'Practice Cello': 'Intellect', 'Japanese Practice': 'Intellect', 'Study / Read': 'Intellect' }[h.name] || 'Unsorted'), ...h })), // days[0..6] = Sun..Sat, default every day
     rewards: [
       // `minutes` > 0 marks a "time" reward (screen/game time) — eligible for the unlock-window bonus.
       { id: uid(), emoji: '🍫', name: 'Favorite snack',       tier: 'common', minutes: 0 },
@@ -1224,6 +1377,23 @@ function defaultState() {
                 happyHour: { enabled: false, start: '19:00', end: '21:00', mult: 2 } },
     streakFreezes: 0, // how many Streak Freezes the player currently owns
     stats: { plays: 0, wins: 0, tokensWon: 0, rouletteSpins: 0, ultraPacks: 0 },
+    categories: ['Exercise', 'Intellect', 'Unsorted'],
+    pass: defaultPass(),
+  };
+}
+
+// Habit Pass (battle-pass) default state. Resets weekly when pass.weeklyReset is on.
+function defaultPass() {
+  return {
+    enabled: true,
+    level: 0, xp: 0, xpPerLevel: 10,          // "xp/xpPerLevel to next level"
+    proUnlocked: false, proCost: 150,         // spend tokens to unlock the PRO lane
+    weeklyReset: true, weekStart: todayStr(),
+    rewardsEnabled: true, wildCardsEnabled: true,
+    xpSources: { dailies: true, tasks: true, goals: true },
+    perXP: { daily: 1, task: 2 },             // pass XP per habit / per task completion
+    claimed: { free: [], pro: [] },           // tiers already granted on each lane
+    goals: [],                                // weekly goals (generated)
   };
 }
 
@@ -1256,6 +1426,7 @@ function normalizeHabit(h) {
     dayDate: h.dayDate || '',
     dayCount: h.dayCount || 0,
     days: (Array.isArray(h.days) && h.days.length === 7) ? h.days.map(Boolean) : [true, true, true, true, true, true, true],
+    category: h.category || 'Unsorted',
   };
 }
 function load() {
@@ -1270,6 +1441,15 @@ function load() {
       settings: { ...base.settings, ...(parsed.settings || {}) },
       stats: { ...base.stats, ...(parsed.stats || {}) },
       games: { ...base.games, ...(parsed.games || {}) },
+      categories: (Array.isArray(parsed.categories) && parsed.categories.length) ? parsed.categories : base.categories,
+      pass: (() => {
+        const bp = base.pass, pp = parsed.pass || {};
+        return { ...bp, ...pp,
+          xpSources: { ...bp.xpSources, ...(pp.xpSources || {}) },
+          perXP: { ...bp.perXP, ...(pp.perXP || {}) },
+          claimed: { free: [], pro: [], ...(pp.claimed || {}) },
+          goals: Array.isArray(pp.goals) ? pp.goals : bp.goals };
+      })(),
     };
     merged.habits = (Array.isArray(parsed.habits) ? parsed.habits : base.habits).map(normalizeHabit);
     merged.oneoffs = (Array.isArray(parsed.oneoffs) ? parsed.oneoffs : base.oneoffs).map(t => ({
@@ -1601,6 +1781,8 @@ function completeOneoff(id, viaSpin) {
     toast(`+${amt} 🪙${tags} — ${t.progress}/${t.iterations} done`, 'var(--green)');
   }
   const res = $('#habitWheelResult'); if (res && res.querySelector(`[data-id="${id}"]`)) res.innerHTML = '';
+  passGainXP(state.pass.perXP.task, 'tasks');             // Habit Pass XP per task rep
+  passGoalProgress('task', {});
   save();
   renderOneoffs();
   buildHabitWheel();
@@ -1700,6 +1882,8 @@ function completeHabit(id) {
   toast(`+${amt} token${amt !== 1 ? 's' : ''} earned!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
   checkBonuses();
+  passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
+  passGoalProgress('habit', { category: h.category || 'Unsorted' });
   save();
 }
 
@@ -1712,6 +1896,7 @@ function checkBonuses() {
     addTokens(state.settings.dailyBonus);
     toast(`🎉 ALL DAILY QUESTS DONE! +${state.settings.dailyBonus} bonus`, 'var(--gold)');
     SFX.jackpot(); burst({ count: 120 }); coinRain();
+    passGoalProgress('allDaily', {});                      // Habit Pass: "clear all dailies" goal
     // Consecutive-day streak, with Streak Freezes covering missed days.
     const yest = todayStr(-1);
     const sd = state.settings.dailyStreakDate;
@@ -2479,6 +2664,22 @@ function latestWon(g) { return g.items.reduce((m, x) => Math.max(m, x.wonAt || 0
 function invCardHTML(g, gi) {
   const ti = TIERS[g.tier] || TIERS.common;
   const count = g.items.length;
+  // Wild Card — redeem to choose ANY reward of its rarity.
+  if (g.items[0] && g.items[0].wild) {
+    const stackBadge = count > 1 ? `<span class="stack-badge" title="${count} stacked">×${count}</span>` : '';
+    return `
+    <div class="inv-card wildcard" data-gi="${gi}">
+      <span class="badge" style="color:${ti.hex}">${ti.label} WILD</span>
+      ${stackBadge}
+      <div class="ie">🃏</div>
+      <div class="in">${escapeHtml(g.name)}</div>
+      <div class="when">pick any ${ti.label} reward</div>
+      <div class="row" style="justify-content:center;gap:6px;margin-top:10px">
+        <button class="btn green sm" data-act="wildRedeem">🎁 Choose</button>
+        <button class="del" data-act="trash" title="Remove one">🗑</button>
+      </div>
+    </div>`;
+  }
   const recycleVal = RECYCLE_VALUE[g.tier] || 1;
   const mins = g.items[0].minutes || 0;
   const win = redeemWindow();
@@ -2600,13 +2801,237 @@ function renderPrizes() {
 }
 
 /* =================================================================
+   HABIT PASS  (weekly battle pass — goals, free/pro tiers, wild cards)
+   ================================================================= */
+const PASS_MAX_TIERS = 30;
+let wildPending = null;   // inventory group currently being redeemed as a wild card
+
+// Reward earned at a given tier on a lane. Wild cards land on PRO every 10 levels.
+function passTierReward(level, lane) {
+  const milestone = level % 10 === 0;
+  if (lane === 'pro' && milestone) {
+    const t = level >= 30 ? 'legendary' : level >= 20 ? 'epic' : 'rare';
+    return { type: 'wild', tier: t };
+  }
+  if (lane === 'free') {
+    if (level % 5 === 0) return { type: 'prize', tier: 'common' };
+    return { type: 'tokens', amount: 4 + level };
+  }
+  // pro lane
+  if (level % 5 === 0) return { type: 'prize', tier: level >= 20 ? 'epic' : 'rare' };
+  if (level % 3 === 0) return { type: 'powerup', kind: 'freeze' };
+  return { type: 'tokens', amount: 10 + level * 2 };
+}
+function passRewardFace(d) {
+  if (d.type === 'tokens')  return { emoji: '🪙', label: `${d.amount}`,                    hex: '#ffe600' };
+  if (d.type === 'wild')    return { emoji: '🃏', label: `Wild ${TIERS[d.tier].label}`,     hex: TIERS[d.tier].hex };
+  if (d.type === 'prize')   return { emoji: TIERS[d.tier].emoji, label: TIERS[d.tier].label, hex: TIERS[d.tier].hex };
+  if (d.type === 'powerup') return { emoji: '🧊', label: 'Freeze',                          hex: '#00f0ff' };
+  return { emoji: '❔', label: '', hex: '#fff' };
+}
+
+// Add a wild card to Winnings; redeeming it lets you choose any reward of its tier.
+function addWildCard(tier) {
+  state.inventory.unshift({ id: uid(), wild: true, emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, wonAt: Date.now(), redeemed: false });
+}
+function grantPassReward(d) {
+  if (d.type === 'tokens') { addTokens(d.amount); }
+  else if (d.type === 'wild') { if (state.pass.wildCardsEnabled !== false) addWildCard(d.tier); }
+  else if (d.type === 'powerup') { state.streakFreezes = (state.streakFreezes || 0) + 1; }
+  else if (d.type === 'prize') {
+    const pool = rewardsByTier(d.tier);
+    if (pool.length) { const r = pick(pool); state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name, tier: d.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false }); }
+    else addTokens((RECYCLE_VALUE[d.tier] || 1) * 3);
+  }
+}
+
+// Grant both lanes for a freshly-reached tier (PRO only if unlocked).
+function passGrantTier(level) {
+  const p = state.pass;
+  if (p.rewardsEnabled === false) return;
+  if (!p.claimed.free.includes(level)) { grantPassReward(passTierReward(level, 'free')); p.claimed.free.push(level); }
+  if (p.proUnlocked && !p.claimed.pro.includes(level)) { grantPassReward(passTierReward(level, 'pro')); p.claimed.pro.push(level); }
+}
+
+function passGainXP(amount, source) {
+  const p = state.pass;
+  if (!p.enabled || amount <= 0) return;
+  if (source && p.xpSources && p.xpSources[source] === false) return;
+  passEnsureWeek();
+  p.xp += amount;
+  let leveled = false;
+  while (p.xp >= p.xpPerLevel && p.level < PASS_MAX_TIERS) { p.xp -= p.xpPerLevel; p.level++; leveled = true; passGrantTier(p.level); }
+  if (p.level >= PASS_MAX_TIERS) p.xp = Math.min(p.xp, p.xpPerLevel);
+  if (leveled) {
+    SFX.win(); toast(`⚡ Habit Pass — Level ${p.level}!`, 'var(--purple)');
+    burst({ count: 60, colors: ['#b026ff', '#00f0ff', '#ffd700'] });
+  }
+  refreshPassUI(); save();
+}
+
+// Weekly goals regenerate each season from the user's categories.
+function passGenerateGoals() {
+  const p = state.pass;
+  const cats = (state.categories || []).filter(c => c !== 'Unsorted');
+  const c1 = cats[0] || 'Exercise', c2 = cats[1] || c1;
+  const catLabel = (c2 && c2 !== c1) ? `${c1} & ${c2}` : c1;
+  p.goals = [
+    { id: 'g_cat',   label: `Complete 11 ${catLabel} habits`, type: 'cat', cats: [c1, c2], target: 11, progress: 0, xp: 30, done: false },
+    { id: 'g_task',  label: `Finish 4 Tasks`,                  type: 'task',     target: 4, progress: 0, xp: 25, done: false },
+    { id: 'g_daily', label: `Clear all Daily Quests 3 days`,   type: 'allDaily', target: 3, progress: 0, xp: 35, done: false },
+  ];
+}
+function passGoalProgress(kind, payload) {
+  const p = state.pass;
+  if (!p.enabled || !Array.isArray(p.goals)) return;
+  let changed = false;
+  p.goals.forEach(g => {
+    if (g.done) return;
+    let hit = false;
+    if (kind === 'habit' && g.type === 'cat' && g.cats.includes(payload.category)) hit = true;
+    if (kind === 'task' && g.type === 'task') hit = true;
+    if (kind === 'allDaily' && g.type === 'allDaily') hit = true;
+    if (!hit) return;
+    g.progress = Math.min(g.target, g.progress + 1); changed = true;
+    if (g.progress >= g.target) { g.done = true; toast(`🎯 Goal done: ${g.label} — +${g.xp} pass XP`, 'var(--cyan)'); passGainXP(g.xp, 'goals'); }
+  });
+  if (changed) { refreshPassUI(); save(); }
+}
+
+// Resets the pass each week (when enabled); seeds goals on first run.
+function passEnsureWeek() {
+  const p = state.pass;
+  if (!p.weekStart) p.weekStart = todayStr();
+  if (!Array.isArray(p.goals) || !p.goals.length) passGenerateGoals();
+  if (p.weeklyReset !== false && daysBetween(p.weekStart, todayStr()) >= 7) {
+    p.level = 0; p.xp = 0; p.proUnlocked = false; p.claimed = { free: [], pro: [] };
+    p.weekStart = todayStr(); passGenerateGoals();
+  }
+}
+
+function passUpgradePro() {
+  const p = state.pass;
+  if (p.proUnlocked) return;
+  if (state.tokens < p.proCost) { toast(`Need 🪙 ${p.proCost} to unlock PRO`, 'var(--pink)'); SFX.lose(); return; }
+  state.tokens = Math.max(0, state.tokens - p.proCost);
+  if (typeof displayTokens !== 'undefined') displayTokens = state.tokens;
+  p.proUnlocked = true;
+  for (let lv = 1; lv <= p.level; lv++) if (!p.claimed.pro.includes(lv)) { grantPassReward(passTierReward(lv, 'pro')); p.claimed.pro.push(lv); }
+  SFX.jackpot(); burst({ count: 140, colors: ['#ffd700', '#ff1b8d', '#00f0ff'] });
+  toast('🌟 Habit Pass PRO unlocked!', 'var(--gold)');
+  renderTopbar(); refreshPassUI(); save();
+}
+
+// ---- Pass UI ----
+function passCellHTML(face) {
+  return `<span class="ptc-emoji" style="color:${face.hex}">${face.emoji}</span><span class="ptc-label">${escapeHtml(face.label)}</span>`;
+}
+function renderPass() {
+  passEnsureWeek();
+  const p = state.pass;
+  const daysLeft = p.weeklyReset !== false ? Math.max(0, 7 - daysBetween(p.weekStart, todayStr())) : null;
+  const pct = Math.round(p.xp / p.xpPerLevel * 100);
+  const goalsHTML = (p.goals || []).map(g => {
+    const gp = Math.round(g.progress / g.target * 100);
+    return `<div class="pass-goal ${g.done ? 'done' : ''}">
+      <div class="pg-top"><span class="pg-label">${escapeHtml(g.label)}</span><span class="pg-xp">+${g.xp} XP</span></div>
+      <div class="pg-bar"><div class="pg-fill" style="width:${gp}%"></div></div>
+      <div class="pg-prog">${g.progress}/${g.target}${g.done ? ' ✓' : ''}</div>
+    </div>`;
+  }).join('') || '<div class="subtle">No goals this week.</div>';
+  let rows = '';
+  for (let lv = 1; lv <= PASS_MAX_TIERS; lv++) {
+    const reached = p.level >= lv;
+    const ff = passRewardFace(passTierReward(lv, 'free'));
+    const pr = passTierReward(lv, 'pro'); const pf = passRewardFace(pr);
+    const freeState = reached ? 'got' : 'locked';
+    const proState = reached ? (p.proUnlocked ? 'got' : 'claimable') : 'locked';
+    const milestone = lv % 10 === 0;
+    rows += `<div class="pass-tier ${reached ? 'reached' : ''} ${lv === p.level ? 'current' : ''}">
+      <div class="pt-cell free ${freeState}">${passCellHTML(ff)}${freeState === 'got' ? '<span class="pt-tick">✓</span>' : ''}</div>
+      <div class="pt-num ${milestone ? 'milestone' : ''}">${lv}</div>
+      <div class="pt-cell pro ${proState} ${pr.type === 'wild' ? 'wild' : ''}">${passCellHTML(pf)}${proState === 'got' ? '<span class="pt-tick">✓</span>' : (proState === 'claimable' ? '<span class="pt-lock">🔒</span>' : '')}</div>
+    </div>`;
+  }
+  const proCtl = p.proUnlocked
+    ? `<div class="pass-pro-on">🌟 PRO UNLOCKED — premium rewards auto-claim</div>`
+    : `<button class="btn gold" data-act="passUpgrade">⬆ Unlock PRO — 🪙 ${p.proCost}</button>`;
+  $('#passBody').innerHTML = `
+    <div class="pass-banner">
+      <div class="pass-bolt">⚡</div>
+      <div><div class="pass-title">HABIT PASS</div>
+      <div class="pass-sub">${daysLeft != null ? `Resets in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : 'No weekly reset'}</div></div>
+    </div>
+    <div class="pass-levelrow">
+      <div class="pass-lvl">LVL<br><b>${p.level}</b></div>
+      <div class="pass-xpwrap"><div class="pass-xpbar"><div class="pass-xpfill" style="width:${pct}%"></div></div><div class="pass-xptxt">${p.xp} / ${p.xpPerLevel} XP to next level</div></div>
+    </div>
+    <div class="pass-sec">🎯 Goals <span class="subtle">— complete for big pass XP</span></div>
+    <div class="pass-goals">${goalsHTML}</div>
+    <div class="pass-proupg">${proCtl}</div>
+    <div class="pass-laneshead"><span class="lh-free">FREE</span><span class="lh-tier">TIER</span><span class="lh-pro">PRO 🌟</span></div>
+    <div class="pass-track">${rows}</div>`;
+}
+function refreshPassUI() { updatePassFab(); if ($('#passOverlay') && $('#passOverlay').classList.contains('show')) renderPass(); }
+function updatePassFab() {
+  const el = $('#passFabLvl'); if (el) el.textContent = 'LVL ' + state.pass.level;
+  const fab = $('#passFab'); if (!fab) return;
+  const onHabits = $('#view-habits') && $('#view-habits').classList.contains('active');
+  fab.classList.toggle('show', !!onHabits && state.pass.enabled !== false);
+}
+function openPass() { if (state.pass.enabled === false) return; renderPass(); $('#passOverlay').classList.add('show'); }
+function closePass() { $('#passOverlay').classList.remove('show'); }
+
+// ---- Wild Card redemption: pick any reward of the card's rarity ----
+function openWildChooser(g) {
+  wildPending = g;
+  const ti = TIERS[g.tier];
+  $('#wildTitle').innerHTML = `Pick any <span style="color:${ti.hex}">${ti.label}</span> reward`;
+  const pool = rewardsByTier(g.tier);
+  $('#wildGrid').innerHTML = pool.length
+    ? pool.map(r => `<button class="wild-pick" data-rid="${r.id}" style="border-color:${ti.hex}66"><span class="wp-e">${escapeHtml(r.emoji || ti.emoji)}</span><span class="wp-n">${escapeHtml(r.name)}</span></button>`).join('')
+    : `<div class="subtle">No ${ti.label} rewards defined — add some in Settings first.</div>`;
+  $('#wildOverlay').classList.add('show');
+}
+function pickWildReward(rid) {
+  if (!wildPending) return;
+  const r = (state.rewards || []).find(x => x.id === rid); if (!r) return;
+  const wildId = wildPending.items[0].id;
+  state.inventory = state.inventory.filter(x => x.id !== wildId);  // consume the wild card
+  state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name, tier: wildPending.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false });
+  wildPending = null; $('#wildOverlay').classList.remove('show');
+  SFX.win(); burst({ count: 70, colors: [(TIERS[r.tier] || TIERS.common).hex, '#fff'] });
+  toast(`🃏 Wild Card → ${r.name}!`, 'var(--gold)');
+  save(); renderPrizes();
+}
+
+/* =================================================================
    SETTINGS VIEW
    ================================================================= */
+function renderPassSettings() {
+  const p = state.pass;
+  $('#passEnabled').checked   = p.enabled !== false;
+  $('#passWeekly').checked    = p.weeklyReset !== false;
+  $('#passSrcDailies').checked = p.xpSources.dailies !== false;
+  $('#passSrcTasks').checked  = p.xpSources.tasks !== false;
+  $('#passSrcGoals').checked  = p.xpSources.goals !== false;
+  $('#passDailyXP').value     = p.perXP.daily;
+  $('#passTaskXP').value      = p.perXP.task;
+  $('#passXpPerLevel').value  = p.xpPerLevel;
+  $('#passProCost').value     = p.proCost;
+  $('#passRewardsOn').checked = p.rewardsEnabled !== false;
+  $('#passWildOn').checked    = p.wildCardsEnabled !== false;
+  const list = $('#categoryList');
+  if (list) list.innerHTML = (state.categories || []).map(c =>
+    `<span class="pill" data-cat="${escapeHtml(c)}">🏷️ ${escapeHtml(c)}${c === 'Unsorted' ? '' : ` <button class="del" data-act="delCat" style="padding:0 4px;font-size:14px;color:var(--pink)">✕</button>`}</span>`).join('');
+}
+
 function renderSettings() {
   renderHabitEditor();
   renderOneoffEditor();
   renderRewardEditor();
   renderStreakFreezeEditor();
+  renderPassSettings();
   renderGameConfigs();
   $('#dailyBonusInput').value = state.settings.dailyBonus;
   $('#extraBonusInput').value = state.settings.extraBonus;
@@ -2651,6 +3076,9 @@ function renderHabitEditor() {
       <select class="sect-in" data-f="section" title="Which section it lives in">
         <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
         <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
+      </select>
+      <select class="sect-in" data-f="category" title="Category (drives Habit Pass goals)">
+        ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${h.category === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
       </select>
       <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
       <label class="pill rep-toggle" title="Allow completing this multiple times per day">
@@ -2788,8 +3216,49 @@ function switchView(name) {
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
   if (name === 'prizes') renderPrizes();
   if (name === 'settings') renderSettings();
+  updatePassFab();                 // Habit Pass button shows only on the Habits tab
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// Habit Pass open/close + actions
+$('#passFab').addEventListener('click', () => { SFX.click(); openPass(); });
+$('#passClose').addEventListener('click', () => { SFX.click(); closePass(); });
+$('#passOverlay').addEventListener('click', e => { if (e.target.id === 'passOverlay') closePass(); });
+$('#passBody').addEventListener('click', e => { if (e.target.closest('[data-act="passUpgrade"]')) passUpgradePro(); });
+$('#wildOverlay').addEventListener('click', e => { if (e.target.id === 'wildOverlay') $('#wildOverlay').classList.remove('show'); });
+$('#wildCancel').addEventListener('click', () => $('#wildOverlay').classList.remove('show'));
+$('#wildGrid').addEventListener('click', e => { const b = e.target.closest('[data-rid]'); if (b) pickWildReward(b.dataset.rid); });
+
+// Habit Pass settings (bound once — elements persist)
+$('#passEnabled').addEventListener('change', e => { state.pass.enabled = e.target.checked; save(); updatePassFab(); });
+$('#passWeekly').addEventListener('change', e => { state.pass.weeklyReset = e.target.checked; save(); refreshPassUI(); });
+$('#passSrcDailies').addEventListener('change', e => { state.pass.xpSources.dailies = e.target.checked; save(); });
+$('#passSrcTasks').addEventListener('change', e => { state.pass.xpSources.tasks = e.target.checked; save(); });
+$('#passSrcGoals').addEventListener('change', e => { state.pass.xpSources.goals = e.target.checked; save(); });
+$('#passDailyXP').addEventListener('input', e => { state.pass.perXP.daily = clamp(parseInt(e.target.value) || 0, 0, 99); save(); });
+$('#passTaskXP').addEventListener('input', e => { state.pass.perXP.task = clamp(parseInt(e.target.value) || 0, 0, 99); save(); });
+$('#passXpPerLevel').addEventListener('input', e => { state.pass.xpPerLevel = clamp(parseInt(e.target.value) || 1, 1, 999); save(); refreshPassUI(); });
+$('#passProCost').addEventListener('input', e => { state.pass.proCost = clamp(parseInt(e.target.value) || 0, 0, 99999); save(); refreshPassUI(); });
+$('#passRewardsOn').addEventListener('change', e => { state.pass.rewardsEnabled = e.target.checked; save(); });
+$('#passWildOn').addEventListener('change', e => { state.pass.wildCardsEnabled = e.target.checked; save(); });
+$('#addCategory').addEventListener('click', () => {
+  const inp = $('#newCategory'); const v = (inp.value || '').trim();
+  if (v && !state.categories.includes(v)) { const ui = state.categories.indexOf('Unsorted'); if (ui >= 0) state.categories.splice(ui, 0, v); else state.categories.push(v); save(); }
+  inp.value = ''; renderPassSettings(); renderHabitEditor();
+});
+$('#newCategory').addEventListener('keydown', e => { if (e.key === 'Enter') $('#addCategory').click(); });
+$('#categoryList').addEventListener('click', e => {
+  const b = e.target.closest('[data-act="delCat"]'); if (!b) return;
+  const cat = b.closest('[data-cat]').dataset.cat; if (cat === 'Unsorted') return;
+  state.categories = state.categories.filter(c => c !== cat);
+  state.habits.forEach(h => { if (h.category === cat) h.category = 'Unsorted'; });
+  save(); renderPassSettings(); renderHabitEditor();
+});
+$('#passResetNow').addEventListener('click', () => {
+  if (!confirm('Reset the Habit Pass season now? Level, XP, PRO status and goals all reset.')) return;
+  const p = state.pass; p.level = 0; p.xp = 0; p.proUnlocked = false; p.claimed = { free: [], pro: [] };
+  p.weekStart = todayStr(); passGenerateGoals(); save(); refreshPassUI(); toast('🔄 Pass season reset', 'var(--purple)');
+});
 
 // Sound toggle (header)
 $('#soundBtn').addEventListener('click', () => {
@@ -2867,7 +3336,8 @@ $('#invGrid').addEventListener('click', e => {
   const card = e.target.closest('.inv-card'); if (!card) return;
   const g = currentInvGroups[parseInt(card.dataset.gi)]; if (!g) return;
   const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
-  if (act === 'redeem') redeemOneFrom(g);
+  if (act === 'wildRedeem') openWildChooser(g);
+  else if (act === 'redeem') redeemOneFrom(g);
   else if (act === 'trash') trashOneFrom(g);
   else if (act === 'recycle') {
     if (g.items.length > 1) { recycleOpen = g.key; recycleQty = 1; renderPrizes(); } // stacked → open +/- menu
@@ -3117,6 +3587,8 @@ function fullRender() {
   renderDie($('#die1'), 1); renderDie($('#die2'), 1);
   renderPrizes();
   renderSettings();
+  passEnsureWeek();      // roll the pass week / seed goals if needed
+  updatePassFab();
 }
 fullRender();
 
