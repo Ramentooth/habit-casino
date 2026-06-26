@@ -2,6 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Build channel + "open the version you were last on". window.HC_VERSION is the ONLY line that differs between alpha.html and beta.html. -->
+  <script>
+    window.HC_VERSION = 'alpha';
+    (function () {
+      try {
+        var saved = localStorage.getItem('habitVersion');
+        if (saved && saved !== window.HC_VERSION && (saved === 'alpha' || saved === 'beta')) {
+          location.replace(saved + '.html');         // honor the last-used version (e.g. bare URL → beta)
+        } else {
+          localStorage.setItem('habitVersion', window.HC_VERSION);
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 
   <!-- iPhone: Add to Home Screen → launches fullscreen like a native app -->
@@ -303,14 +317,33 @@
       padding: 3px 9px; border-radius: 999px;
     }
     .hrow-check {
-      flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
-      display: grid; place-items: center; font-size: 17px; font-weight: 900; color: transparent;
+      flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border-radius: 9px; cursor: pointer; font-family: inherit;
+      display: grid; place-items: center; font-size: 18px; font-weight: 900; color: transparent;
       background: rgba(255,255,255,0.05); border: 2px solid var(--panel-edge); transition: .15s;
     }
+    .hrow-check:active { transform: scale(.9); }
     .hrow.done { border-color: rgba(57,255,20,0.45); background: linear-gradient(160deg, rgba(57,255,20,0.10), rgba(20,6,42,0.5)); }
     .hrow.done .hrow-name { text-decoration: line-through; text-decoration-color: rgba(57,255,20,0.7); color: var(--ink-dim); }
     .hrow.done .hrow-emoji { filter: grayscale(.3) opacity(.7); }
     .hrow.done .hrow-check { color: #04210a; background: linear-gradient(180deg, var(--green), #1f9e0a); border-color: var(--green); box-shadow: 0 0 10px rgba(57,255,20,.5); }
+
+    /* Inline "blown-up" habit editor on the Habits screen */
+    .hedit {
+      display: flex; flex-direction: column; gap: 10px; padding: 14px;
+      border-radius: 16px; border: 1.5px solid var(--cyan);
+      background: linear-gradient(160deg, rgba(0,240,255,0.10), rgba(20,6,42,0.7));
+      box-shadow: 0 0 22px rgba(0,240,255,0.25); animation: fadeUp .2s ease;
+    }
+    .hedit-r { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hedit-r .name-in { flex: 1 1 140px; }
+    .hedit-r .sect-in { flex: 1 1 auto; }
+    .hedit-days { justify-content: center; }
+    .hedit-actions { justify-content: space-between; margin-top: 2px; }
+    .addhabit-btn {
+      width: 100%; margin-top: 10px; border-style: dashed !important;
+      font-family: 'Orbitron', sans-serif; letter-spacing: 1px; color: var(--ink-dim);
+    }
+    .addhabit-btn:hover { color: #fff; }
 
     /* slim section banners on the Habits tab */
     .daily-banner.slim { padding: 12px 14px; gap: 12px; margin-bottom: 12px; }
@@ -819,15 +852,22 @@
     .pass-modal {
       position: absolute; left: 50%; transform: translateX(-50%);
       top: env(safe-area-inset-top); width: min(560px, 96vw);
-      max-height: calc(100vh - env(safe-area-inset-top) - 10px);
-      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      height: calc(100vh - env(safe-area-inset-top) - 10px); max-height: 880px;
+      display: flex; flex-direction: column; overflow: hidden;
       background: linear-gradient(180deg, #1a0533, #0c0118); border: 1px solid var(--panel-edge);
-      border-radius: 20px; padding: 14px 14px calc(20px + env(safe-area-inset-bottom));
-      box-shadow: 0 0 60px rgba(176,38,255,0.5);
+      border-radius: 20px; box-shadow: 0 0 60px rgba(176,38,255,0.5);
     }
-    .pass-close { position: sticky; top: 0; float: right; width: 36px; height: 36px; border-radius: 10px; z-index: 3;
-      background: rgba(255,255,255,0.08); border: 1px solid var(--panel-edge); color: #fff; font-size: 18px; cursor: pointer; }
+    #passBody { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+    .pass-head { flex: 0 0 auto; padding: 14px 14px 8px; border-bottom: 1px solid var(--panel-edge); }
+    .pass-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 12px 14px calc(20px + env(safe-area-inset-bottom)); }
+    .pass-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 10px; z-index: 5;
+      background: rgba(255,255,255,0.12); border: 1px solid var(--panel-edge); color: #fff; font-size: 18px; cursor: pointer; }
     .pass-close:hover { box-shadow: 0 0 12px var(--pink); }
+    /* Goals dropdown */
+    .pass-goals-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+    .pg-caret { display: inline-block; transition: transform .2s; font-size: 11px; }
+    .pass-goals-toggle:not(.open) .pg-caret { transform: rotate(-90deg); }
 
     .pass-banner { display: flex; align-items: center; gap: 12px; padding: 8px 6px 12px; }
     .pass-bolt { font-size: 40px; filter: drop-shadow(0 0 12px var(--purple)); }
@@ -867,12 +907,15 @@
     .pass-laneshead .lh-free { color: var(--cyan); } .pass-laneshead .lh-tier { color: var(--ink-dim); } .pass-laneshead .lh-pro { color: var(--gold); }
     .pass-track { display: flex; flex-direction: column; gap: 8px; }
     .pass-tier { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 8px; align-items: stretch; }
-    .pt-num { display: grid; place-items: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; color: var(--ink-dim);
-      background: rgba(255,255,255,0.05); border: 1px solid var(--panel-edge); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    /* regular tiers = circles; ×10 milestones = diamonds */
+    .pt-num { align-self: center; justify-self: center; width: 40px; height: 40px; display: grid; place-items: center;
+      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; color: var(--ink-dim);
+      background: rgba(255,255,255,0.05); border: 1.5px solid var(--panel-edge); border-radius: 50%; }
     .pass-tier.reached .pt-num { color: #fff; background: linear-gradient(160deg, var(--purple), var(--pink)); border-color: transparent; box-shadow: 0 0 12px rgba(176,38,255,.6); }
-    .pt-num.milestone { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,.4); }
-    .pass-tier.reached .pt-num.milestone { background: linear-gradient(160deg, #ffd700, #ff8a00); }
-    .pass-tier.current .pt-num { outline: 2px solid var(--cyan); outline-offset: 2px; }
+    .pt-num.milestone { width: 44px; height: 44px; border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+      font-size: 15px; color: var(--gold); border-color: var(--gold); filter: drop-shadow(0 0 6px rgba(255,215,0,.5)); }
+    .pass-tier.reached .pt-num.milestone { background: linear-gradient(160deg, #ffd700, #ff8a00); color: #2a1500; }
+    .pass-tier.current .pt-num { filter: drop-shadow(0 0 7px var(--cyan)); border-color: var(--cyan); }
     .pt-cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
       min-height: 60px; padding: 8px 4px; border-radius: 12px; border: 1px solid var(--panel-edge); overflow: hidden; }
     .pt-cell.free { background: linear-gradient(160deg, rgba(0,240,255,0.10), rgba(20,6,42,0.5)); }
@@ -911,6 +954,26 @@
     .ver-badge.beta  { color: #2a1500; background: var(--orange); box-shadow: 0 0 10px rgba(255,107,0,.6); }
     .ver-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1px; color: var(--cyan); }
     #verName { font-family: 'Orbitron', sans-serif; }
+
+    /* Habit Pass reward-pool editor (Settings) */
+    .pool-group { border: 1px solid var(--panel-edge); border-radius: 12px; margin-top: 10px; background: rgba(0,0,0,0.2); }
+    .pool-group > summary { cursor: pointer; padding: 10px 12px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: .5px; list-style: none; }
+    .pool-group > summary::-webkit-details-marker { display: none; }
+    .pool-group > summary::before { content: '▸ '; color: var(--cyan); }
+    .pool-group[open] > summary::before { content: '▾ '; }
+    .pool-body { padding: 0 12px 12px; }
+    .pool-rarity { border-top: 1px solid rgba(255,255,255,0.06); }
+    .pool-rarity > summary { cursor: pointer; padding: 8px 2px; font-weight: 700; font-size: 14px; list-style: none; }
+    .pool-rarity > summary::-webkit-details-marker { display: none; }
+    .pool-rarity > summary::after { content: ' ▾'; opacity: .5; }
+    .pool-rarity[open] > summary::after { content: ' ▴'; }
+    .pool-items { display: flex; flex-direction: column; gap: 6px; padding: 4px 0 10px 10px; }
+    .pool-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+    .pool-item input { width: 18px; height: 18px; accent-color: var(--green); flex: 0 0 auto; margin: 0; }
+    .pool-item.strong { font-weight: 700; margin-top: 10px; }
+    .pool-item.inline { display: inline-flex; }
+    .pool-wild { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .pool-wild .subtle { width: 100%; }
   </style>
 </head>
 <body>
@@ -958,6 +1021,7 @@
         </div>
       </div>
       <div class="habit-list" id="dailyGrid"></div>
+      <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="daily">＋ Add habit</button>
 
       <div class="daily-banner extra-banner slim" style="margin-top:16px">
         <div class="dtext">
@@ -971,6 +1035,7 @@
         </div>
       </div>
       <div class="habit-list" id="extraGrid"></div>
+      <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="extra">＋ Add habit</button>
     </section>
 
     <!-- ===================== TASKS (one-off quests) ===================== -->
@@ -1173,6 +1238,9 @@
         <div class="row between"><span>Grant tier rewards</span><label class="toggle"><input type="checkbox" id="passRewardsOn"><span class="track"></span><span class="knob"></span></label></div>
         <div class="row between"><span>🃏 Wild Cards (every 10 levels)</span><label class="toggle"><input type="checkbox" id="passWildOn"><span class="track"></span><span class="knob"></span></label></div>
         <hr class="set-sep">
+        <div class="subtle">🎁 Reward pools <span style="opacity:.7">— choose exactly which rewards fill each tier type.</span></div>
+        <div id="passPools"></div>
+        <hr class="set-sep">
         <div class="subtle">🏷️ Categories <span style="opacity:.7">— drive the weekly Goals; assign them per-habit in ⚙️ Habits above.</span></div>
         <div class="row" style="margin-top:8px"><input class="name-in" id="newCategory" placeholder="Add a category (e.g. Health)"><button class="btn ghost sm" id="addCategory">+ Add</button></div>
         <div id="categoryList" class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"></div>
@@ -1316,9 +1384,8 @@
 
 <script>
 "use strict";
-// ===== BUILD CHANNEL — the ONLY line that differs between alpha.html and beta.html =====
-// 'alpha' = stable daily build · 'beta' = testing build. Both share the same save file.
-const APP_VERSION = 'alpha';
+// Build channel — set in the <head> via window.HC_VERSION (the only line that differs alpha↔beta).
+const APP_VERSION = (typeof window !== 'undefined' && window.HC_VERSION) || 'alpha';
 
 /* =================================================================
    DATA MODEL + CONSTANTS
@@ -1418,6 +1485,12 @@ function defaultPass() {
     perXP: { daily: 1, task: 2 },             // pass XP per habit / per task completion
     claimed: { free: [], pro: [] },           // tiers already granted on each lane
     goals: [],                                // weekly goals (generated)
+    // Editable reward pools. `main` = milestone tiers (every 10), `filler` = in between.
+    // A rarity left undefined = "all rewards of that rarity"; an array = exactly those reward ids.
+    pools: {
+      main:   { tokens: false, wild: { common: false, rare: true, epic: true, legendary: true } },
+      filler: { tokens: true,  wild: { common: false, rare: false, epic: false, legendary: false } },
+    },
   };
 }
 
@@ -1431,6 +1504,8 @@ let habitWheelAngle = 0;
 let habitSpinning = false;
 let currentInvGroups = [];     // stacked inventory groups for the current Prizes render
 let recycleOpen = null;        // group key whose recycle +/- menu is open
+let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
+let passGoalsOpen = true;      // Habit Pass "Goals" dropdown open/closed
 let recycleQty = 1;            // quantity selected in that menu
 
 // Fill in any missing fields so saves from older versions keep working.
@@ -1451,6 +1526,8 @@ function normalizeHabit(h) {
     dayCount: h.dayCount || 0,
     days: (Array.isArray(h.days) && h.days.length === 7) ? h.days.map(Boolean) : [true, true, true, true, true, true, true],
     category: h.category || 'Unsorted',
+    doneAt: h.doneAt || 0,
+    doneMin: Number.isFinite(h.doneMin) ? h.doneMin : null,
   };
 }
 function load() {
@@ -1472,7 +1549,11 @@ function load() {
           xpSources: { ...bp.xpSources, ...(pp.xpSources || {}) },
           perXP: { ...bp.perXP, ...(pp.perXP || {}) },
           claimed: { free: [], pro: [], ...(pp.claimed || {}) },
-          goals: Array.isArray(pp.goals) ? pp.goals : bp.goals };
+          goals: Array.isArray(pp.goals) ? pp.goals : bp.goals,
+          pools: {
+            main:   { ...bp.pools.main,   ...((pp.pools || {}).main   || {}), wild: { ...bp.pools.main.wild,   ...(((pp.pools || {}).main   || {}).wild || {}) } },
+            filler: { ...bp.pools.filler, ...((pp.pools || {}).filler || {}), wild: { ...bp.pools.filler.wild, ...(((pp.pools || {}).filler || {}).wild || {}) } },
+          } };
       })(),
     };
     merged.habits = (Array.isArray(parsed.habits) ? parsed.habits : base.habits).map(normalizeHabit);
@@ -1711,32 +1792,76 @@ function sectionStats(section) {
   return { list, done, cap, pct: cap ? Math.round(done / cap * 100) : 0, allComplete };
 }
 
-// Compact checklist row: [emoji] name + streak/progress  ·  +reward  ·  ✓ box
-// The whole row is the tap target (data-act="done"); completeHabit() caps repeats.
+// Compact checklist row: tap the CHECKBOX (data-act="done") to complete;
+// tap anywhere else (data-act="editHabit") to "blow up" the inline editor.
 function habitCardHTML(h) {
   const cap = capOf(h), dc = doneCount(h), complete = dc >= cap, s = currentStreak(h);
+  if (h.id === editingHabitId) return habitEditHTML(h);
   const sub = h.repeatable
     ? `${dc}/${cap} today` + (s > 0 ? ` · 🔥 ${s}` : '')
     : (complete ? 'Done today' : (s > 0 ? `🔥 ${s} day${s > 1 ? 's' : ''} streak` : 'No streak yet'));
   return `
-    <div class="hrow ${complete ? 'done' : ''}" data-id="${h.id}" data-act="done">
+    <div class="hrow ${complete ? 'done' : ''}" data-id="${h.id}" data-act="editHabit">
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
       <div class="hrow-main">
         <div class="hrow-name">${escapeHtml(h.name)}</div>
         <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${sub}</div>
       </div>
       <span class="hrow-reward">+${h.reward} 🪙</span>
-      <span class="hrow-check">✓</span>
+      <button class="hrow-check" data-act="done" aria-label="Complete">✓</button>
+    </div>`;
+}
+
+// Inline "blown-up" habit editor (full create/edit on the Habits screen)
+function habitEditHTML(h) {
+  const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
+  const dayPicker = `<span class="day-picker">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
+  return `
+    <div class="hedit" data-id="${h.id}">
+      <div class="hedit-r">
+        <input class="emoji-in" data-f="emoji" maxlength="4" value="${escapeHtml(h.emoji)}">
+        <input class="name-in" data-f="name" value="${escapeHtml(h.name)}" placeholder="Habit name">
+      </div>
+      <div class="hedit-r">
+        <select class="sect-in" data-f="section" title="Section">
+          <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
+          <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
+        </select>
+        <select class="sect-in" data-f="category" title="Category (drives Pass goals)">
+          ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${h.category === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
+        </select>
+        <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
+      </div>
+      <div class="hedit-r">
+        <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
+        <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
+      </div>
+      <div class="hedit-r hedit-days">${dayPicker}</div>
+      <div class="hedit-r hedit-actions">
+        <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
+        <button class="btn green sm" data-act="closeEdit">✓ Done</button>
+      </div>
     </div>`;
 }
 
 function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt) {
   const st = sectionStats(section);
   const grid = $(gridId);
-  if (!st.list.length) {
-    grid.innerHTML = `<div class="empty"><div class="big">${section === 'extra' ? '✨' : '🌱'}</div>No ${section} habits yet. Add some in <b>Settings</b>.</div>`;
+  // Auto-sort: incomplete first (in routine order = usual completion time-of-day),
+  // completed sink to the bottom in the order they were checked off today.
+  const sorted = st.list.slice().sort((a, b) => {
+    const ca = doneCount(a) >= capOf(a), cb = doneCount(b) >= capOf(b);
+    if (ca !== cb) return ca ? 1 : -1;
+    if (ca) return (a.doneAt || 0) - (b.doneAt || 0);
+    const ra = Number.isFinite(a.doneMin) ? a.doneMin : 9999;
+    const rb = Number.isFinite(b.doneMin) ? b.doneMin : 9999;
+    return ra - rb;
+  });
+  if (!sorted.length) {
+    grid.innerHTML = `<div class="empty"><div class="big">${section === 'extra' ? '✨' : '🌱'}</div>No ${section} habits yet — tap <b>＋ Add habit</b> below.</div>`;
   } else {
-    grid.innerHTML = st.list.map(habitCardHTML).join('');
+    grid.innerHTML = sorted.map(habitCardHTML).join('');
   }
   $(fillId).style.width = st.pct + '%';
   $(statusId).innerHTML = st.list.length
@@ -1898,6 +2023,7 @@ function completeHabit(id) {
     h.best = Math.max(h.best || 0, h.streak);
   }
   h.dayCount += 1;
+  h.doneAt = Date.now(); h.doneMin = nowMinutes();   // for auto-sort: completed sink to bottom; routine order persists
   SFX.coin();
   const hh = happyMult();
   const amt = Math.round(h.reward * hh);
@@ -2830,27 +2956,38 @@ function renderPrizes() {
 const PASS_MAX_TIERS = 30;
 let wildPending = null;   // inventory group currently being redeemed as a wild card
 
-// Reward earned at a given tier on a lane. Wild cards land on PRO every 10 levels.
+// Eligible reward "slots" for a pool: 'main' = milestone tiers (×10), 'filler' = in between.
+// A rarity left undefined = every reward of that rarity; an array = exactly those reward ids.
+function passPoolEntries(poolType) {
+  const pool = (state.pass.pools && state.pass.pools[poolType]) || {};
+  const out = [];
+  REWARD_TIERS.forEach(tier => {
+    const sel = Array.isArray(pool[tier]) ? pool[tier] : rewardsByTier(tier).map(r => r.id);
+    sel.forEach(rid => { if (state.rewards.some(r => r.id === rid)) out.push({ type: 'prize', tier, rewardId: rid }); });
+  });
+  if (pool.tokens !== false) out.push({ type: 'tokens' });
+  REWARD_TIERS.forEach(tier => { if (pool.wild && pool.wild[tier]) out.push({ type: 'wild', tier }); });
+  return out;
+}
+// Deterministic reward at a tier/lane, drawn from the configured pool (stable per tier+lane).
 function passTierReward(level, lane) {
-  const milestone = level % 10 === 0;
-  if (lane === 'pro' && milestone) {
-    const t = level >= 30 ? 'legendary' : level >= 20 ? 'epic' : 'rare';
-    return { type: 'wild', tier: t };
-  }
-  if (lane === 'free') {
-    if (level % 5 === 0) return { type: 'prize', tier: 'common' };
-    return { type: 'tokens', amount: 4 + level };
-  }
-  // pro lane
-  if (level % 5 === 0) return { type: 'prize', tier: level >= 20 ? 'epic' : 'rare' };
-  if (level % 3 === 0) return { type: 'powerup', kind: 'freeze' };
-  return { type: 'tokens', amount: 10 + level * 2 };
+  const poolType = (level % 10 === 0) ? 'main' : 'filler';
+  const entries = passPoolEntries(poolType);
+  const base = poolType === 'main' ? 20 : 4;
+  if (!entries.length) return { type: 'tokens', amount: base + level };
+  const e = entries[(level * 2 + (lane === 'pro' ? 1 : 0)) % entries.length];
+  if (e.type === 'tokens') return { type: 'tokens', amount: base + level * (lane === 'pro' ? 2 : 1) };
+  if (e.type === 'wild')   return { type: 'wild', tier: e.tier };
+  return { type: 'prize', tier: e.tier, rewardId: e.rewardId };
 }
 function passRewardFace(d) {
-  if (d.type === 'tokens')  return { emoji: '🪙', label: `${d.amount}`,                    hex: '#ffe600' };
-  if (d.type === 'wild')    return { emoji: '🃏', label: `Wild ${TIERS[d.tier].label}`,     hex: TIERS[d.tier].hex };
-  if (d.type === 'prize')   return { emoji: TIERS[d.tier].emoji, label: TIERS[d.tier].label, hex: TIERS[d.tier].hex };
-  if (d.type === 'powerup') return { emoji: '🧊', label: 'Freeze',                          hex: '#00f0ff' };
+  if (d.type === 'tokens') return { emoji: '🪙', label: `${d.amount}`, hex: '#ffe600' };
+  if (d.type === 'wild')   return { emoji: '🃏', label: `Wild ${TIERS[d.tier].label}`, hex: TIERS[d.tier].hex };
+  if (d.type === 'prize') {
+    const r = d.rewardId ? state.rewards.find(x => x.id === d.rewardId) : null;
+    return { emoji: (r && r.emoji) || TIERS[d.tier].emoji, label: TIERS[d.tier].label, hex: TIERS[d.tier].hex };
+  }
+  if (d.type === 'powerup') return { emoji: '🧊', label: 'Freeze', hex: '#00f0ff' };
   return { emoji: '❔', label: '', hex: '#fff' };
 }
 
@@ -2863,8 +3000,9 @@ function grantPassReward(d) {
   else if (d.type === 'wild') { if (state.pass.wildCardsEnabled !== false) addWildCard(d.tier); }
   else if (d.type === 'powerup') { state.streakFreezes = (state.streakFreezes || 0) + 1; }
   else if (d.type === 'prize') {
-    const pool = rewardsByTier(d.tier);
-    if (pool.length) { const r = pick(pool); state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name, tier: d.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false }); }
+    let r = d.rewardId ? state.rewards.find(x => x.id === d.rewardId) : null;
+    if (!r) { const pool = rewardsByTier(d.tier); r = pool.length ? pick(pool) : null; }
+    if (r) state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name, tier: r.tier || d.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false });
     else addTokens((RECYCLE_VALUE[d.tier] || 1) * 3);
   }
 }
@@ -2980,21 +3118,29 @@ function renderPass() {
   const proCtl = p.proUnlocked
     ? `<div class="pass-pro-on">🌟 PRO UNLOCKED — premium rewards auto-claim</div>`
     : `<button class="btn gold" data-act="passUpgrade">⬆ Unlock PRO — 🪙 ${p.proCost}</button>`;
+  const goalsDone = (p.goals || []).filter(g => g.done).length, goalsTot = (p.goals || []).length;
+  // Head (banner + level + Goals dropdown) stays pinned; only .pass-scroll scrolls.
   $('#passBody').innerHTML = `
-    <div class="pass-banner">
-      <div class="pass-bolt">⚡</div>
-      <div><div class="pass-title">HABIT PASS</div>
-      <div class="pass-sub">${daysLeft != null ? `Resets in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : 'No weekly reset'}</div></div>
+    <div class="pass-head">
+      <div class="pass-banner">
+        <div class="pass-bolt">⚡</div>
+        <div><div class="pass-title">HABIT PASS</div>
+        <div class="pass-sub">${daysLeft != null ? `Resets in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : 'No weekly reset'}</div></div>
+      </div>
+      <div class="pass-levelrow">
+        <div class="pass-lvl">LVL<br><b>${p.level}</b></div>
+        <div class="pass-xpwrap"><div class="pass-xpbar"><div class="pass-xpfill" style="width:${pct}%"></div></div><div class="pass-xptxt">${p.xp} / ${p.xpPerLevel} XP to next level</div></div>
+      </div>
+      <div class="pass-sec pass-goals-toggle ${passGoalsOpen ? 'open' : ''}" data-act="toggleGoals">
+        <span class="pg-caret">▾</span> 🎯 Goals <span class="subtle">${goalsDone}/${goalsTot} done</span>
+      </div>
+      <div class="pass-goals" ${passGoalsOpen ? '' : 'style="display:none"'}>${goalsHTML}</div>
     </div>
-    <div class="pass-levelrow">
-      <div class="pass-lvl">LVL<br><b>${p.level}</b></div>
-      <div class="pass-xpwrap"><div class="pass-xpbar"><div class="pass-xpfill" style="width:${pct}%"></div></div><div class="pass-xptxt">${p.xp} / ${p.xpPerLevel} XP to next level</div></div>
-    </div>
-    <div class="pass-sec">🎯 Goals <span class="subtle">— complete for big pass XP</span></div>
-    <div class="pass-goals">${goalsHTML}</div>
-    <div class="pass-proupg">${proCtl}</div>
-    <div class="pass-laneshead"><span class="lh-free">FREE</span><span class="lh-tier">TIER</span><span class="lh-pro">PRO 🌟</span></div>
-    <div class="pass-track">${rows}</div>`;
+    <div class="pass-scroll">
+      <div class="pass-proupg">${proCtl}</div>
+      <div class="pass-laneshead"><span class="lh-free">FREE</span><span class="lh-tier">TIER</span><span class="lh-pro">PRO 🌟</span></div>
+      <div class="pass-track">${rows}</div>
+    </div>`;
 }
 function refreshPassUI() { updatePassFab(); if ($('#passOverlay') && $('#passOverlay').classList.contains('show')) renderPass(); }
 function updatePassFab() {
@@ -3048,6 +3194,30 @@ function renderPassSettings() {
   const list = $('#categoryList');
   if (list) list.innerHTML = (state.categories || []).map(c =>
     `<span class="pill" data-cat="${escapeHtml(c)}">🏷️ ${escapeHtml(c)}${c === 'Unsorted' ? '' : ` <button class="del" data-act="delCat" style="padding:0 4px;font-size:14px;color:var(--pink)">✕</button>`}</span>`).join('');
+  renderPassPools();
+}
+
+// Editable reward pools for the Habit Pass (main = ×10 milestones, filler = between).
+function poolHasReward(poolKey, tier, rid) {
+  const sel = state.pass.pools[poolKey][tier];
+  return Array.isArray(sel) ? sel.includes(rid) : true;   // undefined = all selected
+}
+function renderPassPools() {
+  const box = $('#passPools'); if (!box) return;
+  const mk = (poolKey, title, hint, withWild) => {
+    const rarities = REWARD_TIERS.map(tier => {
+      const items = rewardsByTier(tier); if (!items.length) return '';
+      const checks = items.map(r => `<label class="pool-item"><input type="checkbox" data-pool="${poolKey}" data-tier="${tier}" data-rid="${r.id}" ${poolHasReward(poolKey, tier, r.id) ? 'checked' : ''}> <span>${escapeHtml(r.emoji)} ${escapeHtml(r.name)}</span></label>`).join('');
+      const n = items.filter(r => poolHasReward(poolKey, tier, r.id)).length;
+      return `<details class="pool-rarity"><summary style="color:${TIERS[tier].hex}">${TIERS[tier].emoji} ${TIERS[tier].label} <span class="subtle">(${n}/${items.length})</span></summary><div class="pool-items">${checks}</div></details>`;
+    }).join('');
+    const tokens = `<label class="pool-item strong"><input type="checkbox" data-pool="${poolKey}" data-tokens ${state.pass.pools[poolKey].tokens !== false ? 'checked' : ''}> <span>🪙 Tokens</span></label>`;
+    const wild = withWild ? `<div class="pool-wild"><div class="subtle">🃏 Wild cards</div>${REWARD_TIERS.map(t => `<label class="pool-item inline"><input type="checkbox" data-pool="${poolKey}" data-wild="${t}" ${(state.pass.pools[poolKey].wild && state.pass.pools[poolKey].wild[t]) ? 'checked' : ''}> <span style="color:${TIERS[t].hex}">${TIERS[t].label}</span></label>`).join('')}</div>` : '';
+    return `<details class="pool-group"><summary>${title}</summary><div class="pool-body"><div class="hint">${hint}</div>${rarities}${tokens}${wild}</div></details>`;
+  };
+  box.innerHTML =
+    mk('main', '🏆 Main rewards (every 10 levels)', 'Land on milestone tiers 10, 20, 30…', true) +
+    mk('filler', '🧩 Filler rewards (between milestones)', 'Land on all the tiers in between.', false);
 }
 
 function renderSettings() {
@@ -3248,7 +3418,10 @@ function switchView(name) {
 $('#passFab').addEventListener('click', () => { SFX.click(); openPass(); });
 $('#passClose').addEventListener('click', () => { SFX.click(); closePass(); });
 $('#passOverlay').addEventListener('click', e => { if (e.target.id === 'passOverlay') closePass(); });
-$('#passBody').addEventListener('click', e => { if (e.target.closest('[data-act="passUpgrade"]')) passUpgradePro(); });
+$('#passBody').addEventListener('click', e => {
+  if (e.target.closest('[data-act="passUpgrade"]')) { passUpgradePro(); return; }
+  if (e.target.closest('[data-act="toggleGoals"]')) { passGoalsOpen = !passGoalsOpen; SFX.click(); renderPass(); }
+});
 $('#wildOverlay').addEventListener('click', e => { if (e.target.id === 'wildOverlay') $('#wildOverlay').classList.remove('show'); });
 $('#wildCancel').addEventListener('click', () => $('#wildOverlay').classList.remove('show'));
 $('#wildGrid').addEventListener('click', e => { const b = e.target.closest('[data-rid]'); if (b) pickWildReward(b.dataset.rid); });
@@ -3265,6 +3438,21 @@ $('#passXpPerLevel').addEventListener('input', e => { state.pass.xpPerLevel = cl
 $('#passProCost').addEventListener('input', e => { state.pass.proCost = clamp(parseInt(e.target.value) || 0, 0, 99999); save(); refreshPassUI(); });
 $('#passRewardsOn').addEventListener('change', e => { state.pass.rewardsEnabled = e.target.checked; save(); });
 $('#passWildOn').addEventListener('change', e => { state.pass.wildCardsEnabled = e.target.checked; save(); });
+// Reward-pool checkboxes (which rewards fill main vs filler tiers)
+$('#passPools').addEventListener('change', e => {
+  const t = e.target, poolKey = t.dataset.pool; if (!poolKey) return;
+  const pool = state.pass.pools[poolKey];
+  if (t.dataset.tokens !== undefined) pool.tokens = t.checked;
+  else if (t.dataset.wild) { pool.wild = pool.wild || {}; pool.wild[t.dataset.wild] = t.checked; }
+  else if (t.dataset.tier && t.dataset.rid) {
+    const tier = t.dataset.tier, rid = t.dataset.rid;
+    if (!Array.isArray(pool[tier])) pool[tier] = rewardsByTier(tier).map(r => r.id); // materialize "all" before editing
+    if (t.checked) { if (!pool[tier].includes(rid)) pool[tier].push(rid); }
+    else pool[tier] = pool[tier].filter(x => x !== rid);
+  }
+  save();
+  if (t.dataset.tier) { const det = t.closest('details.pool-rarity'); const items = rewardsByTier(t.dataset.tier); const n = items.filter(r => poolHasReward(poolKey, t.dataset.tier, r.id)).length; const sum = det?.querySelector('summary .subtle'); if (sum) sum.textContent = `(${n}/${items.length})`; }
+});
 $('#addCategory').addEventListener('click', () => {
   const inp = $('#newCategory'); const v = (inp.value || '').trim();
   if (v && !state.categories.includes(v)) { const ui = state.categories.indexOf('Unsorted'); if (ui >= 0) state.categories.splice(ui, 0, v); else state.categories.push(v); save(); }
@@ -3292,9 +3480,10 @@ function renderVersionUI() {
   const sb = $('#switchVersion'); if (sb) sb.textContent = isBeta ? '← Switch to ALPHA' : 'Switch to BETA →';
 }
 function switchVersion() {
-  const target = APP_VERSION === 'alpha' ? 'beta.html' : 'alpha.html';
+  const targetVer = APP_VERSION === 'alpha' ? 'beta' : 'alpha';
+  try { localStorage.setItem('habitVersion', targetVer); } catch (e) {}  // remember it so refresh stays here
   const url = new URL(location.href); url.search = '';
-  url.pathname = url.pathname.replace(/[^/]*$/, target);   // swap the last path segment for the other build
+  url.pathname = url.pathname.replace(/[^/]*$/, targetVer + '.html');     // swap to the other build's file
   location.href = url.toString();
 }
 $('#switchVersion').addEventListener('click', () => { SFX.click(); switchVersion(); });
@@ -3308,9 +3497,50 @@ $('#soundBtn').addEventListener('click', () => {
 
 // Habit completion (delegated) — whole compact row is the tap target
 $('#view-habits').addEventListener('click', e => {
-  const row = e.target.closest('[data-act="done"]');
-  if (row) completeHabit(row.dataset.id);
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'done') { completeHabit(e.target.closest('.hrow').dataset.id); return; }
+  if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; SFX.click(); renderHabits(); return; }
+  if (act === 'closeEdit') { editingHabitId = null; SFX.click(); renderHabits(); return; }
+  if (act === 'addHabit') {
+    const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
+    const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null };
+    state.habits.push(nh); editingHabitId = nh.id; SFX.click(); save(); renderHabits();
+    setTimeout(() => $(`.hedit[data-id="${nh.id}"] .name-in`)?.focus(), 30);
+    return;
+  }
+  if (act === 'delHabit') {
+    const id = e.target.closest('.hedit').dataset.id;
+    state.habits = state.habits.filter(x => x.id !== id);
+    editingHabitId = null; SFX.click(); save(); renderHabits();
+    return;
+  }
+  const dayBtn = e.target.closest('.day-dot');   // weekday toggle inside the inline editor
+  if (dayBtn) {
+    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
+    if (h) {
+      if (!Array.isArray(h.days) || h.days.length !== 7) h.days = [true, true, true, true, true, true, true];
+      const i = parseInt(dayBtn.dataset.day); h.days[i] = !h.days[i];
+      dayBtn.classList.toggle('active', h.days[i]); save();
+    }
+  }
 });
+// Inline editor field edits (text/number on input, select/checkbox on change)
+function onInlineHabitField(e) {
+  const f = e.target.dataset.f; if (!f) return;
+  const isToggleOrSelect = (e.target.type === 'checkbox' || e.target.tagName === 'SELECT');
+  if (e.type === 'input' && isToggleOrSelect) return;
+  if (e.type === 'change' && !isToggleOrSelect) return;
+  const box = e.target.closest('.hedit'); if (!box) return;
+  const h = state.habits.find(x => x.id === box.dataset.id); if (!h) return;
+  if (f === 'reward') h.reward = clamp(parseInt(e.target.value) || 0, 0, 999);
+  else if (f === 'cap') h.cap = clamp(parseInt(e.target.value) || 1, 1, 99);
+  else if (f === 'section') h.section = (e.target.value === 'extra' ? 'extra' : 'daily');
+  else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
+  else h[f] = e.target.value;
+  save();
+}
+$('#view-habits').addEventListener('input', onInlineHabitField);
+$('#view-habits').addEventListener('change', onInlineHabitField);
 
 // Tasks view: one-off quests + quest wheel (delegated)
 $('#view-tasks').addEventListener('click', e => {

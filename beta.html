@@ -2,6 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Build channel + "open the version you were last on". window.HC_VERSION is the ONLY line that differs between alpha.html and beta.html. -->
+  <script>
+    window.HC_VERSION = 'beta';
+    (function () {
+      try {
+        var saved = localStorage.getItem('habitVersion');
+        if (saved && saved !== window.HC_VERSION && (saved === 'alpha' || saved === 'beta')) {
+          location.replace(saved + '.html');         // honor the last-used version (e.g. bare URL → beta)
+        } else {
+          localStorage.setItem('habitVersion', window.HC_VERSION);
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 
   <!-- iPhone: Add to Home Screen → launches fullscreen like a native app -->
@@ -1370,9 +1384,8 @@
 
 <script>
 "use strict";
-// ===== BUILD CHANNEL — the ONLY line that differs between alpha.html and beta.html =====
-// 'alpha' = stable daily build · 'beta' = testing build. Both share the same save file.
-const APP_VERSION = 'beta';
+// Build channel — set in the <head> via window.HC_VERSION (the only line that differs alpha↔beta).
+const APP_VERSION = (typeof window !== 'undefined' && window.HC_VERSION) || 'alpha';
 
 /* =================================================================
    DATA MODEL + CONSTANTS
@@ -3467,9 +3480,10 @@ function renderVersionUI() {
   const sb = $('#switchVersion'); if (sb) sb.textContent = isBeta ? '← Switch to ALPHA' : 'Switch to BETA →';
 }
 function switchVersion() {
-  const target = APP_VERSION === 'alpha' ? 'beta.html' : 'alpha.html';
+  const targetVer = APP_VERSION === 'alpha' ? 'beta' : 'alpha';
+  try { localStorage.setItem('habitVersion', targetVer); } catch (e) {}  // remember it so refresh stays here
   const url = new URL(location.href); url.search = '';
-  url.pathname = url.pathname.replace(/[^/]*$/, target);   // swap the last path segment for the other build
+  url.pathname = url.pathname.replace(/[^/]*$/, targetVer + '.html');     // swap to the other build's file
   location.href = url.toString();
 }
 $('#switchVersion').addEventListener('click', () => { SFX.click(); switchVersion(); });
