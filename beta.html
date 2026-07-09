@@ -480,13 +480,10 @@
 
     /* Quest to-do list + quick-add bar (Tasks tab) */
     .quest-list { display: flex; flex-direction: column; gap: 8px; flex: 1 1 300px; }
-    .qrow { cursor: default; }
     .qrow .hrow-check { border-radius: 50%; }
     .qrow.spin-pick { border-color: var(--yellow); box-shadow: 0 0 26px var(--yellow); animation: pickPulse .55s ease 3; }
     .spin-tag { color: var(--yellow); font-weight: 800; }
     .qcat { font-size: 11px; padding: 3px 8px; color: var(--ink-dim); }
-    .qdel { padding: 4px 6px; font-size: 15px; opacity: .7; }
-    .qdel:hover { opacity: 1; }
     .quest-add { margin: 0 0 14px; padding: 12px; border-radius: 14px; border: 1px solid var(--panel-edge); background: rgba(0,0,0,0.22); }
     .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     .chip {
@@ -1259,11 +1256,20 @@
 
       <div class="panel set-section">
         <div class="section-title neon-purple">🎯 One-Off Quests</div>
-        <div class="subtle">Single tasks for the Quest Wheel. Set how many times each must be done to finish — no weekly schedule. They disappear once completed.</div>
-        <div class="editor-list" id="oneoffEditor"></div>
-        <div class="row" style="gap:8px">
-          <input class="name-in" id="quickOneoff" placeholder="Quick-add a quest — type &amp; press Enter">
-          <button class="btn ghost sm" id="addOneoff">+ Add</button>
+        <div class="subtle">Quests live on the 📋 Tasks tab — add them with the quick-add bar and tap one to edit it. Set how many tokens each difficulty tier pays here.</div>
+        <div id="tierRewards">
+          <div class="row between" style="margin-top:12px">
+            <div><div style="font-weight:700;color:var(--green)">Easy</div><div class="hint">Small wins &amp; quick chores.</div></div>
+            <span class="pill">🪙 <input class="num-in" data-tier-reward="easy" type="number" min="0" max="999"></span>
+          </div>
+          <div class="row between" style="margin-top:10px">
+            <div><div style="font-weight:700;color:var(--gold)">Medium</div><div class="hint">The everyday default.</div></div>
+            <span class="pill">🪙 <input class="num-in" data-tier-reward="medium" type="number" min="0" max="999"></span>
+          </div>
+          <div class="row between" style="margin-top:10px">
+            <div><div style="font-weight:700;color:var(--pink)">Hard</div><div class="hint">Big, effortful quests.</div></div>
+            <span class="pill">🪙 <input class="num-in" data-tier-reward="hard" type="number" min="0" max="999"></span>
+          </div>
         </div>
       </div>
 
@@ -1469,11 +1475,18 @@ const SLOT_SYMBOLS = { tokens: '🪙', common: '🟢', rare: '🟦', epic: '🟣
 const SLOT_POOL = ['🍋', '🍇', '🟢', '🟦', '💎', '🟣', '🪙', '⭐'];
 
 // Difficulty presets for one-off tasks — tier is the source of truth for the reward.
+// `reward` here is only the seed/fallback; the live values sit in state.settings.tierRewards
+// (editable in Settings → One-Off Quests) and are read via tierReward().
 const TASK_TIERS = {
   easy:   { label: 'Easy',   reward: 5,  color: 'var(--green)' },
   medium: { label: 'Medium', reward: 10, color: 'var(--gold)'  },
   hard:   { label: 'Hard',   reward: 20, color: 'var(--pink)'  },
 };
+function tierReward(tier) {
+  const t = TASK_TIERS[tier] ? tier : 'medium';
+  const v = parseInt((state.settings.tierRewards || {})[t]);
+  return Number.isFinite(v) ? v : TASK_TIERS[t].reward;
+}
 
 // Default per-category accent palette (used to seed state.categoryColors; 'Unsorted' stays neutral).
 const CATEGORY_COLORS = ['#00f0ff', '#39ff14', '#ff6b00', '#ff1b8d', '#ffe600', '#c44dff', '#1ca64c', '#ff5fae'];
@@ -1543,7 +1556,9 @@ function defaultState() {
                 // When the window is open, "time" rewards get +timeBonus% extra minutes.
                 redeem: { mode: 'always', time: '18:00', timeBonus: 50 },
                 // Per-category happy hours: one entry per category name → { enabled, start, end, mult }.
-                happyHours: {} },
+                happyHours: {},
+                // Token payout per one-off task tier (editable in Settings → One-Off Quests).
+                tierRewards: { easy: 5, medium: 10, hard: 20 } },
     streakFreezes: 0, // how many Streak Freezes the player currently owns
     stats: { plays: 0, wins: 0, tokensWon: 0, rouletteSpins: 0, ultraPacks: 0 },
     categories: ['Exercise', 'Intellect', 'Unsorted'],
@@ -1622,6 +1637,7 @@ let habitSpinning = false;
 let wheelPickId = null;        // one-off the quest wheel just picked (highlighted in the list)
 let quickTier = 'medium';      // quick-add bar: selected tier chip
 let quickCat = 'Unsorted';     // quick-add bar: selected category chip
+let editingOneoffId = null;    // one-off currently "blown up" into the inline editor on the Tasks screen
 let currentInvGroups = [];     // stacked inventory groups for the current Prizes render
 let recycleOpen = null;        // group key whose recycle +/- menu is open
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
@@ -1679,12 +1695,13 @@ function load() {
       })(),
     };
     merged.habits = (Array.isArray(parsed.habits) ? parsed.habits : base.habits).map(normalizeHabit);
+    const trw = merged.settings.tierRewards = { easy: 5, medium: 10, hard: 20, ...(merged.settings.tierRewards || {}) };
     merged.oneoffs = (Array.isArray(parsed.oneoffs) ? parsed.oneoffs : base.oneoffs).map(t => {
       const reward = Number.isFinite(t.reward) ? t.reward : 5;
       const tier = TASK_TIERS[t.tier] ? t.tier : (reward <= 7 ? 'easy' : reward <= 14 ? 'medium' : 'hard');
       return {
         id: t.id || uid(), emoji: (t.emoji != null ? t.emoji : '🎯'), name: (t.name != null ? t.name : 'Quest'),
-        tier, category: t.category || 'Unsorted', reward: TASK_TIERS[tier].reward,
+        tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
       };
     });
@@ -2086,7 +2103,7 @@ function renderQuestAdd() {
     const style = sel
       ? `background:${ti.color};border-color:${ti.color};color:#0b0518;`
       : `border-color:${ti.color};color:${ti.color};`;
-    return `<button class="chip tier-chip ${sel ? 'sel' : ''}" data-tier="${k}" style="${style}">${ti.label} +${ti.reward}</button>`;
+    return `<button class="chip tier-chip ${sel ? 'sel' : ''}" data-tier="${k}" style="${style}">${ti.label} +${tierReward(k)}</button>`;
   }).join('');
   const cats = (state.categories || []).filter(c => c !== 'Unsorted').concat('Unsorted'); // Unsorted last
   if (!cats.includes(quickCat)) quickCat = 'Unsorted';
@@ -2098,10 +2115,10 @@ function addQuickQuest() {
   const inp = $('#questAddName'); const name = (inp.value || '').trim();
   if (!name) { inp.focus(); return; }
   const tier = TASK_TIERS[quickTier] ? quickTier : 'medium';
-  state.oneoffs.push({ id: uid(), emoji: '🎯', name, tier, category: quickCat || 'Unsorted', reward: TASK_TIERS[tier].reward, iterations: 1, progress: 0 });
+  state.oneoffs.push({ id: uid(), emoji: '🎯', name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0 });
   inp.value = ''; SFX.coin(); save();
-  renderOneoffs(); buildHabitWheel(); renderOneoffEditor();
-  toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${TASK_TIERS[tier].reward} 🪙`, TASK_TIERS[tier].color);
+  renderOneoffs(); buildHabitWheel();
+  toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} 🪙`, TASK_TIERS[tier].color);
 }
 function renderOneoffs() {
   const grid = $('#oneoffGrid'); if (!grid) return;
@@ -2109,6 +2126,7 @@ function renderOneoffs() {
     grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
   } else {
     grid.innerHTML = state.oneoffs.map(t => {
+      if (t.id === editingOneoffId) return oneoffEditHTML(t);
       const ti = TASK_TIERS[t.tier] || TASK_TIERS.medium;
       const iter = Math.max(1, t.iterations || 1), prog = t.progress || 0;
       const picked = t.id === wheelPickId;
@@ -2120,7 +2138,7 @@ function renderOneoffs() {
         ? `<span class="pill qcat"${cc ? ` style="color:${cc};border-color:${cc}"` : ''}>🏷️ ${escapeHtml(t.category)}</span>` : '';
       const hhTag = happyTagHTML(t.category);
       return `
-      <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
+      <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}" data-act="editOneoff"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
         ${hhTag}
         <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Complete">✓</button>
         <span class="hrow-emoji">${escapeHtml(t.emoji || '🎯')}</span>
@@ -2129,12 +2147,35 @@ function renderOneoffs() {
           ${subBits.length ? `<div class="hrow-sub">${subBits.join(' · ')}</div>` : ''}
         </div>
         ${catPill}
-        <span class="hrow-reward" style="color:${ti.color};border-color:${ti.color};background:rgba(0,0,0,0.25)">+${ti.reward} 🪙</span>
-        <button class="del qdel" data-act="delOneoffRow" title="Delete">✕</button>
+        <span class="hrow-reward" style="color:${ti.color};border-color:${ti.color};background:rgba(0,0,0,0.25)">+${tierReward(t.tier)} 🪙</span>
       </div>`;
     }).join('');
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
+}
+
+// Inline "blown-up" one-off editor on the Tasks screen (tap a row to open, like habits)
+function oneoffEditHTML(t) {
+  return `
+    <div class="hedit qedit" data-id="${t.id}">
+      <div class="hedit-r">
+        <input class="emoji-in" data-of="emoji" maxlength="4" value="${escapeHtml(t.emoji)}">
+        <input class="name-in" data-of="name" value="${escapeHtml(t.name)}" placeholder="Quest name">
+      </div>
+      <div class="hedit-r">
+        <select class="sect-in" data-of="tier" title="Difficulty tier (sets the token reward)">
+          ${Object.entries(TASK_TIERS).map(([k, ti]) => `<option value="${k}" ${(t.tier || 'medium') === k ? 'selected' : ''}>${ti.label} +${tierReward(k)} 🪙</option>`).join('')}
+        </select>
+        <select class="sect-in" data-of="category" title="Category (drives Pass goals & happy hours)">
+          ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${(t.category || 'Unsorted') === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
+        </select>
+        <span class="pill">×<input class="num-in" data-of="iterations" type="number" min="1" max="99" value="${t.iterations}"> to finish</span>
+      </div>
+      <div class="hedit-r hedit-actions">
+        <button class="btn ghost sm" data-act="delOneoffEdit">🗑 Delete</button>
+        <button class="btn green sm" data-act="closeOneoffEdit">✓ Done</button>
+      </div>
+    </div>`;
 }
 
 // Complete one iteration of a one-off; when it reaches its target it disappears.
@@ -2145,13 +2186,14 @@ function completeOneoff(id, viaSpin) {
   SFX.coin();
   const hh = happyMult(t.category || 'Unsorted');
   const spinMult = viaSpin ? 1.5 : 1; // +50% for doing the quest the wheel picked
-  const reward = (TASK_TIERS[t.tier] || {}).reward ?? t.reward; // tier is the source of truth
+  const reward = TASK_TIERS[t.tier] ? tierReward(t.tier) : t.reward; // tier is the source of truth
   const amt = Math.round(reward * hh * spinMult);
   const tags = (hh > 1 ? ` · ×${hh} happy hour` : '') + (viaSpin ? ' · +spin bonus' : '');
   const card = $(`#oneoffGrid .qrow[data-id="${id}"] .qcheck`) || $('#habitWheelResult');
   addTokens(amt, card);
   if (t.progress >= Math.max(1, t.iterations || 1)) {
     state.oneoffs = state.oneoffs.filter(x => x.id !== id); // completed → vanish
+    if (editingOneoffId === id) editingOneoffId = null;
     toast(`✅ Quest complete: ${t.name}! +${amt} 🪙${tags}`, 'var(--gold)');
     SFX.win(); burst({ count: 90, colors: ['#ffd700', '#39ff14', '#ff1b8d'] });
   } else {
@@ -3517,7 +3559,7 @@ function renderPassPools() {
 
 function renderSettings() {
   renderHabitEditor();
-  renderOneoffEditor();
+  renderTierRewards();
   renderRewardEditor();
   renderStreakFreezeEditor();
   renderCategories();
@@ -3553,21 +3595,10 @@ function renderHappyHours() {
     </div>`;
   }).join('');
 }
-function renderOneoffEditor() {
-  const box = $('#oneoffEditor');
-  box.innerHTML = state.oneoffs.map(t => `
-    <div class="editrow" data-id="${t.id}">
-      <input class="emoji-in" data-of="emoji" maxlength="4" value="${escapeHtml(t.emoji)}">
-      <input class="name-in" data-of="name" value="${escapeHtml(t.name)}" placeholder="One-off task">
-      <select class="sect-in" data-of="tier" title="Difficulty tier (sets the token reward)">
-        ${Object.entries(TASK_TIERS).map(([k, ti]) => `<option value="${k}" ${(t.tier || 'medium') === k ? 'selected' : ''}>${ti.label} +${ti.reward} 🪙</option>`).join('')}
-      </select>
-      <select class="sect-in" data-of="category" title="Category (drives Habit Pass goals & happy hours)">
-        ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${(t.category || 'Unsorted') === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
-      </select>
-      <span class="pill">×<input class="num-in" data-of="iterations" type="number" min="1" max="99" value="${t.iterations}"> to finish</span>
-      <button class="del" data-act="delOneoff" title="Delete">✕</button>
-    </div>`).join('') || `<div class="hint">No one-off quests yet — add one below.</div>`;
+// Settings → One-Off Quests: only the per-tier token payouts live here now
+// (quests themselves are added/edited on the Tasks tab).
+function renderTierRewards() {
+  $$('#tierRewards [data-tier-reward]').forEach(inp => { inp.value = tierReward(inp.dataset.tierReward); });
 }
 function renderHabitEditor() {
   const box = $('#habitEditor');
@@ -3777,7 +3808,7 @@ function addCategoryName(v) {
 $('#addCategory').addEventListener('click', () => {
   const inp = $('#newCategory');
   addCategoryName(inp.value);
-  inp.value = ''; renderCategories(); renderPassSettings(); renderHabitEditor(); renderOneoffEditor(); renderHappyHours(); renderQuestAdd();
+  inp.value = ''; renderCategories(); renderPassSettings(); renderHabitEditor(); renderHappyHours(); renderQuestAdd();
 });
 $('#newCategory').addEventListener('keydown', e => { if (e.key === 'Enter') $('#addCategory').click(); });
 $('#categoryList').addEventListener('click', e => {
@@ -3790,7 +3821,7 @@ $('#categoryList').addEventListener('click', e => {
   (state.pass.goals || []).forEach(g => { if (g.category === cat) g.category = 'Any'; });
   ensureHappyHours(); ensureCategoryColors();
   save();
-  renderCategories(); renderPassSettings(); renderHabitEditor(); renderOneoffEditor(); renderHappyHours(); renderQuestAdd();
+  renderCategories(); renderPassSettings(); renderHabitEditor(); renderHappyHours(); renderQuestAdd();
   renderHabits(); renderOneoffs(); renderTopbar(); renderHappyBanners(); refreshPassUI();
 });
 // Live color editing: update state + the row label while dragging; repaint the app on commit.
@@ -3934,27 +3965,47 @@ $('#view-tasks').addEventListener('click', e => {
       const v = prompt('New category name:');
       if (v && addCategoryName(v)) {
         quickCat = v.trim();
-        renderCategories(); renderPassSettings(); renderHabitEditor(); renderOneoffEditor(); renderHappyHours();
+        renderCategories(); renderPassSettings(); renderHabitEditor(); renderHappyHours();
       }
     } else quickCat = catChip.dataset.cat;
     SFX.click(); renderQuestAdd(); return;
   }
   const spinDone = e.target.closest('[data-act="spinDone"]');
   if (spinDone) { completeOneoff(spinDone.dataset.id, true); return; } // viaSpin → spin bonus
-  const row = e.target.closest('.qrow'); if (!row) return;
-  if (e.target.closest('[data-act="delOneoffRow"]')) {
-    const t = state.oneoffs.find(x => x.id === row.dataset.id);
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'doneOneoff') { completeOneoff(e.target.closest('.qrow').dataset.id, false); return; }
+  if (act === 'editOneoff') { editingOneoffId = e.target.closest('.qrow').dataset.id; SFX.click(); renderOneoffs(); return; }
+  if (act === 'closeOneoffEdit') { editingOneoffId = null; SFX.click(); renderOneoffs(); buildHabitWheel(); return; }
+  if (act === 'delOneoffEdit') {
+    const id = e.target.closest('.qedit').dataset.id;
+    const t = state.oneoffs.find(x => x.id === id);
     if (t && confirm(`Delete quest "${t.name}"?`)) {
-      state.oneoffs = state.oneoffs.filter(x => x.id !== t.id);
-      if (wheelPickId === t.id) wheelPickId = null;
-      const res = $('#habitWheelResult'); if (res && res.querySelector(`[data-id="${t.id}"]`)) res.innerHTML = '';
-      SFX.click(); save(); renderOneoffs(); buildHabitWheel(); renderOneoffEditor();
+      state.oneoffs = state.oneoffs.filter(x => x.id !== id);
+      editingOneoffId = null;
+      if (wheelPickId === id) wheelPickId = null;
+      const res = $('#habitWheelResult'); if (res && res.querySelector(`[data-id="${id}"]`)) res.innerHTML = '';
+      SFX.click(); save(); renderOneoffs(); buildHabitWheel();
     }
     return;
   }
-  if (e.target.closest('[data-act="doneOneoff"]')) completeOneoff(row.dataset.id, false);
 });
 $('#questAddName').addEventListener('keydown', e => { if (e.key === 'Enter') addQuickQuest(); });
+// Inline one-off editor field edits (text/number on input, selects on change)
+function onInlineOneoffField(e) {
+  const f = e.target.dataset.of; if (!f) return;
+  const isSelect = e.target.tagName === 'SELECT';
+  if (e.type === 'input' && isSelect) return;   // avoid double-handling
+  if (e.type === 'change' && !isSelect) return;
+  const box = e.target.closest('.qedit'); if (!box) return;
+  const t = state.oneoffs.find(x => x.id === box.dataset.id); if (!t) return;
+  if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
+  else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
+  else if (f === 'category') t.category = e.target.value;
+  else t[f] = e.target.value;
+  save();
+}
+$('#view-tasks').addEventListener('input', onInlineOneoffField);
+$('#view-tasks').addEventListener('change', onInlineOneoffField);
 
 // Game tabs
 $$('#gameTabs .game-tab').forEach(t => t.addEventListener('click', () => {
@@ -4096,40 +4147,14 @@ $('#addReward').addEventListener('click', () => {
   $('#rewardEditor').lastElementChild?.querySelector('.name-in')?.select();
 });
 
-// ---- Settings: one-off quests editor (text/number on input, selects on change) ----
-function onOneoffField(e) {
-  const f = e.target.dataset.of; if (!f) return;
-  const isSelect = e.target.tagName === 'SELECT';
-  if (e.type === 'input' && isSelect) return;   // avoid double-handling
-  if (e.type === 'change' && !isSelect) return;
-  const row = e.target.closest('.editrow'); if (!row) return;
-  const t = state.oneoffs.find(x => x.id === row.dataset.id); if (!t) return;
-  if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
-  else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = TASK_TIERS[t.tier].reward; }
-  else if (f === 'category') t.category = e.target.value;
-  else t[f] = e.target.value;
-  save();
-  renderOneoffs(); buildHabitWheel();
-}
-$('#oneoffEditor').addEventListener('input', onOneoffField);
-$('#oneoffEditor').addEventListener('change', onOneoffField);
-$('#oneoffEditor').addEventListener('click', e => {
-  if (e.target.closest('[data-act="delOneoff"]')) {
-    const row = e.target.closest('.editrow');
-    state.oneoffs = state.oneoffs.filter(x => x.id !== row.dataset.id);
-    save(); renderOneoffEditor(); renderOneoffs(); buildHabitWheel();
-  }
-});
-$('#addOneoff').addEventListener('click', () => {
-  SFX.click();
-  state.oneoffs.push({ id: uid(), emoji: '🎯', name: 'New quest', tier: 'medium', category: 'Unsorted', reward: TASK_TIERS.medium.reward, iterations: 1, progress: 0 });
-  save(); renderOneoffEditor();
-  $('#oneoffEditor').lastElementChild?.querySelector('.name-in')?.select();
-});
-$('#quickOneoff').addEventListener('keydown', e => {
-  if (e.key !== 'Enter' || !e.target.value.trim()) return;
-  state.oneoffs.push({ id: uid(), emoji: '🎯', name: e.target.value.trim(), tier: 'medium', category: 'Unsorted', reward: TASK_TIERS.medium.reward, iterations: 1, progress: 0 });
-  e.target.value = ''; SFX.coin(); save(); renderOneoffEditor(); renderTasks();
+// ---- Settings: one-off tier payouts (quests themselves are edited on the Tasks tab) ----
+$('#tierRewards').addEventListener('input', e => {
+  const tier = e.target.dataset.tierReward; if (!tier || !TASK_TIERS[tier]) return;
+  const v = clamp(parseInt(e.target.value) || 0, 0, 999);
+  state.settings.tierRewards = state.settings.tierRewards || {};
+  state.settings.tierRewards[tier] = v;
+  state.oneoffs.forEach(t => { if ((t.tier || 'medium') === tier) t.reward = v; }); // keep back-compat field in sync
+  save(); renderOneoffs(); renderQuestAdd();
 });
 
 // ---- Settings: one-click sorting ----
@@ -4298,7 +4323,7 @@ setInterval(() => {
   renderTopbar();
   renderHappyBanners();
   if ($('#view-habits').classList.contains('active') && editingHabitId === null) renderHabits(); // ×N tags come/go
-  if ($('#view-tasks').classList.contains('active')) renderOneoffs();
+  if ($('#view-tasks').classList.contains('active') && editingOneoffId === null) renderOneoffs();
   if ($('#view-prizes').classList.contains('active')) renderPrizes();
 }, 30000);
 </script>
