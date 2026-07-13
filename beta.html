@@ -306,6 +306,16 @@
       border: 1px solid var(--panel-edge);
     }
     .cat-label { font-weight: 800; }
+    /* Habit difficulty levels: rim color + tier word live inside the reward pill; swipe to change */
+    .hrow, .hedit { touch-action: pan-y; }
+    .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1; padding: 4px 9px 3px; }
+    .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
+    .lvl-chev { flex: 0 0 auto; color: var(--ink-dim); opacity: .55; font-size: 15px; font-weight: 900; user-select: none; }
+    .tier-head { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; }
+    .tier-dots { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; }
+    .tdot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.18); }
+    .tier-hint { font-family: 'Rajdhani', sans-serif; font-size: 10px; color: var(--ink-dim); font-weight: 700; letter-spacing: .5px; margin-left: 6px; }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
     /* "×N" corner tag while this row's category happy hour is live (tinted per category, window below) */
     .hh-tag {
       position: absolute; top: -9px; right: 10px; z-index: 1;
@@ -1641,6 +1651,7 @@ let editingOneoffId = null;    // one-off currently "blown up" into the inline e
 let currentInvGroups = [];     // stacked inventory groups for the current Prizes render
 let recycleOpen = null;        // group key whose recycle +/- menu is open
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
+let editTierPage = null;       // which difficulty page the habit editor shows (null = base/hard page)
 let passGoalsOpen = true;      // Habit Pass "Goals" dropdown open/closed
 let recycleQty = 1;            // quantity selected in that menu
 
@@ -1664,6 +1675,9 @@ function normalizeHabit(h) {
     category: h.category || 'Unsorted',
     doneAt: h.doneAt || 0,
     doneMin: Number.isFinite(h.doneMin) ? h.doneMin : null,
+    // difficulty levels: up to 2 easier variants ([0]=easy, [1]=medium; the habit itself = hard)
+    tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 2).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1 })) : [],
+    curTier: Number.isFinite(h.curTier) ? h.curTier : null,
   };
 }
 function load() {
@@ -1960,6 +1974,22 @@ function renderTopbar() {
 /* =================================================================
    HABITS VIEW
    ================================================================= */
+// Habit difficulty levels: a habit may carry up to 2 extra (easier) tiers in h.tiers —
+// tiers[0] = easy, tiers[1] = medium, and the habit's own name/reward becomes the hard tier.
+// Completing ANY level counts as one normal completion; only the payout differs.
+const LEVEL_COLORS = { easy: 'var(--green)', medium: 'var(--yellow)', hard: '#ff2d2d' };
+function habitLevels(h) {
+  const extras = Array.isArray(h.tiers) ? h.tiers : [];
+  if (!extras.length) return null;                       // no tier system on this habit
+  const lvls = extras.map((t, i) => ({ key: i === 0 ? 'easy' : 'medium', name: t.name, reward: t.reward }));
+  lvls.push({ key: 'hard', name: h.name, reward: h.reward }); // base habit = hardest
+  return lvls;                                           // ordered easiest → hardest
+}
+function curLevelIndex(h) {
+  const lv = habitLevels(h); if (!lv) return -1;
+  const def = lv.length - 1;                             // default to the original (hard)
+  return clamp(Number.isFinite(h.curTier) ? h.curTier : def, 0, lv.length - 1);
+}
 function capOf(h) { return h.repeatable ? Math.max(1, h.cap) : 1; }
 function doneCount(h) { return h.dayDate === todayStr() ? (h.dayCount || 0) : 0; }
 function isComplete(h) { return doneCount(h) >= capOf(h); }
@@ -1990,30 +2020,54 @@ function habitCardHTML(h) {
   const sub = h.repeatable
     ? `${dc}/${cap} today` + (s > 0 ? ` · 🔥 ${s}` : '')
     : (complete ? 'Done today' : (s > 0 ? `🔥 ${s} day${s > 1 ? 's' : ''} streak` : 'No streak yet'));
+  const lvls = habitLevels(h);
+  const li = lvls ? curLevelIndex(h) : -1;
+  const lvl = lvls ? lvls[li] : null;
   const cc = categoryColor(h.category);
+  // Leveled habits keep ONE color story — the difficulty rim + tier word.
+  // Category stripe/label colors only apply to plain habits.
   const catBit = (h.category && h.category !== 'Unsorted')
-    ? ` · <span class="cat-label" style="color:${cc || 'var(--ink-dim)'}">${escapeHtml(h.category)}</span>` : '';
+    ? ` · <span class="cat-label" style="color:${(!lvl && cc) || 'var(--ink-dim)'}">${escapeHtml(h.category)}</span>` : '';
   const hhTag = happyTagHTML(h.category);
+  const rim = lvl ? LEVEL_COLORS[lvl.key] : null;
+  const rowStyle = lvl
+    ? ` style="border-color:${rim}"`
+    : (cc ? ` style="border-left:4px solid ${cc}"` : '');
+  const pill = lvl
+    ? `<span class="hrow-reward lvl" style="color:${rim};border-color:${rim};background:rgba(0,0,0,0.25)">+${lvl.reward} 🪙<i class="lvl-word">${lvl.key}</i></span>`
+    : `<span class="hrow-reward">+${h.reward} 🪙</span>`;
+  const chevL = (lvl && li > 0) ? `<span class="lvl-chev">‹</span>` : '';
+  const chevR = (lvl && li < lvls.length - 1) ? `<span class="lvl-chev">›</span>` : '';
   return `
-    <div class="hrow ${complete ? 'done' : ''}" data-id="${h.id}" data-act="editHabit"${cc ? ` style="border-left:4px solid ${cc}"` : ''}>
+    <div class="hrow ${complete ? 'done' : ''}" data-id="${h.id}" data-act="editHabit"${rowStyle}>
       ${hhTag}
+      ${chevL}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
       <div class="hrow-main">
-        <div class="hrow-name">${escapeHtml(h.name)}</div>
+        <div class="hrow-name">${escapeHtml(lvl ? (lvl.name || h.name) : h.name)}</div>
         <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${sub}${catBit}</div>
       </div>
-      <span class="hrow-reward">+${h.reward} 🪙</span>
+      ${pill}
       <button class="hrow-check" data-act="done" aria-label="Complete">✓</button>
+      ${chevR}
     </div>`;
 }
 
 // Inline "blown-up" habit editor (full create/edit on the Habits screen)
 function habitEditHTML(h) {
+  const lvls = habitLevels(h);
+  const pageCount = lvls ? lvls.length : 1;
+  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : pageCount - 1, 0, pageCount - 1);
+  if (lvls && page < lvls.length - 1) return tierEditHTML(h, page);   // easy/medium pages
+  const extras = Array.isArray(h.tiers) ? h.tiers : [];
+  const addTierBtn = `<button class="btn ghost sm" data-act="addTier" ${extras.length >= 2 ? 'disabled' : ''}>➕ Add tier${extras.length >= 2 ? ' (max)' : ''}</button>`;
+  const tierHead = lvls ? `<div class="tier-head" style="color:${LEVEL_COLORS.hard}">HARD TIER <span class="tier-hint">‹ swipe left for easier</span></div>` : '';
   const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
   const dayPicker = `<span class="day-picker">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
   return `
-    <div class="hedit" data-id="${h.id}">
+    <div class="hedit" data-id="${h.id}"${lvls ? ` style="border-color:${LEVEL_COLORS.hard}"` : ''}>
+      ${tierHead}
       <div class="hedit-r">
         <input class="emoji-in" data-f="emoji" maxlength="4" value="${escapeHtml(h.emoji)}">
         <input class="name-in" data-f="name" value="${escapeHtml(h.name)}" placeholder="Habit name">
@@ -2034,10 +2088,37 @@ function habitEditHTML(h) {
       </div>
       <div class="hedit-r hedit-days">${dayPicker}</div>
       <div class="hedit-r hedit-actions">
+        ${addTierBtn}
         <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
         <button class="btn green sm" data-act="closeEdit">✓ Done</button>
       </div>
+      ${lvls ? tierDotsHTML(lvls, page) : ''}
     </div>`;
+}
+
+// Editor page for one of the easier tiers (easy/medium): just a title + token payout.
+function tierEditHTML(h, page) {
+  const lvls = habitLevels(h);
+  const lvl = lvls[page];                 // page index == h.tiers index (base is always last)
+  const t = h.tiers[page];
+  const col = LEVEL_COLORS[lvl.key];
+  return `
+    <div class="hedit" data-id="${h.id}" style="border-color:${col}">
+      <div class="tier-head" style="color:${col}">${lvl.key.toUpperCase()} TIER <span class="tier-hint">swipe right for harder ›</span></div>
+      <div class="hedit-r">
+        <input class="name-in" data-tf="name" value="${escapeHtml(t.name)}" placeholder="e.g. ${escapeHtml(h.name)} — lighter version">
+        <span class="pill">🪙 <input class="num-in" data-tf="reward" type="number" min="0" max="999" value="${t.reward}"> tokens</span>
+      </div>
+      <div class="hedit-r hedit-actions">
+        <button class="btn ghost sm" data-act="removeTier">🗑 Remove tier</button>
+        <button class="btn green sm" data-act="closeEdit">✓ Done</button>
+      </div>
+      ${tierDotsHTML(lvls, page)}
+    </div>`;
+}
+function tierDotsHTML(lvls, cur) {
+  return `<div class="tier-dots">${lvls.map((l, i) =>
+    `<span class="tdot ${i === cur ? 'on' : ''}"${i === cur ? ` style="background:${LEVEL_COLORS[l.key]}"` : ''}></span>`).join('')}<span class="tier-hint">‹ swipe ›</span></div>`;
 }
 
 function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt) {
@@ -2298,10 +2379,12 @@ function completeHabit(id) {
   h.doneAt = Date.now(); h.doneMin = nowMinutes();   // for auto-sort: completed sink to bottom; routine order persists
   SFX.coin();
   const hh = happyMult(h.category || 'Unsorted');
-  const amt = Math.round(h.reward * hh);
+  const lvls = habitLevels(h);
+  const lvl = lvls ? lvls[curLevelIndex(h)] : null;    // pay the current level; the completion itself counts the same
+  const amt = Math.round((lvl ? lvl.reward : h.reward) * hh);
   const card = $(`.hrow[data-id="${id}"] .hrow-check`) || $(`.hrow[data-id="${id}"]`);
   addTokens(amt, card);
-  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
+  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.key} tier` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
   checkBonuses();
   passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
@@ -3908,10 +3991,35 @@ $('#soundBtn').addEventListener('click', () => {
 
 // Habit completion (delegated) — whole compact row is the tap target
 $('#view-habits').addEventListener('click', e => {
+  if (Date.now() - lastSwipeAt < 400) return;   // a tier swipe just ended — don't treat it as a tap
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'done') { completeHabit(e.target.closest('.hrow').dataset.id); return; }
-  if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; SFX.click(); renderHabits(); return; }
-  if (act === 'closeEdit') { editingHabitId = null; SFX.click(); renderHabits(); return; }
+  if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; editTierPage = null; SFX.click(); renderHabits(); return; }
+  if (act === 'closeEdit') { editingHabitId = null; editTierPage = null; SFX.click(); renderHabits(); return; }
+  if (act === 'addTier') {
+    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
+    if (h) {
+      h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
+      if (h.tiers.length < 2) {
+        // 1st click adds "easy", 2nd adds "medium"; the habit itself is the hard tier
+        const frac = h.tiers.length === 0 ? 0.5 : 0.75;
+        h.tiers.push({ name: '', reward: Math.max(1, Math.round((h.reward || 1) * frac)) });
+        editTierPage = h.tiers.length - 1;      // jump straight to the new tier's page
+        SFX.click(); save(); renderHabits();
+        setTimeout(() => $(`.hedit[data-id="${h.id}"] [data-tf="name"]`)?.focus(), 30);
+      }
+    }
+    return;
+  }
+  if (act === 'removeTier') {
+    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
+    if (h && Array.isArray(h.tiers)) {
+      h.tiers.splice(clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, h.tiers.length - 1), 1);
+      h.curTier = null; editTierPage = null;    // back to the base page / default level
+      SFX.click(); save(); renderHabits();
+    }
+    return;
+  }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
     const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null };
@@ -3937,6 +4045,17 @@ $('#view-habits').addEventListener('click', e => {
 });
 // Inline editor field edits (text/number on input, select/checkbox on change)
 function onInlineHabitField(e) {
+  const tf = e.target.dataset.tf;   // fields on an easy/medium tier page
+  if (tf) {
+    if (e.type !== 'input') return;
+    const box = e.target.closest('.hedit'); if (!box) return;
+    const h = state.habits.find(x => x.id === box.dataset.id); if (!h) return;
+    const t = (h.tiers || [])[clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, (h.tiers || []).length - 1)];
+    if (!t) return;
+    if (tf === 'reward') t.reward = clamp(parseInt(e.target.value) || 0, 0, 999);
+    else t.name = e.target.value;
+    save(); return;
+  }
   const f = e.target.dataset.f; if (!f) return;
   const isToggleOrSelect = (e.target.type === 'checkbox' || e.target.tagName === 'SELECT');
   if (e.type === 'input' && isToggleOrSelect) return;
@@ -3952,6 +4071,35 @@ function onInlineHabitField(e) {
 }
 $('#view-habits').addEventListener('input', onInlineHabitField);
 $('#view-habits').addEventListener('change', onInlineHabitField);
+
+// Swipe left/right on a leveled habit row (or its open editor) to move between difficulty
+// tiers — left = easier, right = harder. Vertical scrolling stays untouched (touch-action: pan-y).
+let swipeStart = null, lastSwipeAt = 0;
+$('#view-habits').addEventListener('pointerdown', e => {
+  swipeStart = null;
+  if (e.target.closest('input, select, button, .day-picker')) return;  // don't hijack controls
+  const row = e.target.closest('.hrow[data-id], .hedit[data-id]');
+  if (!row) return;
+  swipeStart = { x: e.clientX, y: e.clientY, id: row.dataset.id, isEdit: row.classList.contains('hedit') };
+});
+$('#view-habits').addEventListener('pointerup', e => {
+  const s = swipeStart; swipeStart = null;
+  if (!s) return;
+  const dx = e.clientX - s.x, dy = e.clientY - s.y;
+  if (Math.abs(dx) < 44 || Math.abs(dy) > 60) return;   // not a deliberate horizontal swipe
+  const h = state.habits.find(x => x.id === s.id); if (!h) return;
+  const lvls = habitLevels(h); if (!lvls) return;
+  const dir = dx < 0 ? -1 : 1;                          // swipe left → easier, right → harder
+  lastSwipeAt = Date.now();                             // suppress the click this gesture fires
+  if (s.isEdit) {
+    const cur = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.length - 1, 0, lvls.length - 1);
+    editTierPage = clamp(cur + dir, 0, lvls.length - 1);
+  } else {
+    h.curTier = clamp(curLevelIndex(h) + dir, 0, lvls.length - 1);
+    save();
+  }
+  SFX.click(); renderHabits();
+});
 
 // Tasks view: quick-add bar + to-do list + quest wheel (delegated)
 $('#view-tasks').addEventListener('click', e => {
