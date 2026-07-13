@@ -315,6 +315,7 @@
     .tier-dots { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; }
     .tdot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.18); }
     .tier-hint { font-family: 'Rajdhani', sans-serif; font-size: 10px; color: var(--ink-dim); font-weight: 700; letter-spacing: .5px; margin-left: 6px; }
+    .tier-choice { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .btn:disabled { opacity: .35; cursor: not-allowed; }
     /* "×N" corner tag while this row's category happy hour is live (tinted per category, window below) */
     .hh-tag {
@@ -1685,7 +1686,8 @@ let editingOneoffId = null;    // one-off currently "blown up" into the inline e
 let currentInvGroups = [];     // stacked inventory groups for the current Prizes render
 let recycleOpen = null;        // group key whose recycle +/- menu is open
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
-let editTierPage = null;       // which difficulty page the habit editor shows (null = base/hard page)
+let editTierPage = null;       // which difficulty page the habit editor shows (null = the base habit's page)
+let addTierChoiceOpen = false; // "Add tier" harder/easier chooser expanded in the habit editor
 let passGoalsOpen = true;      // Habit Pass "Goals" dropdown open/closed
 let recycleQty = 1;            // quantity selected in that menu
 
@@ -1709,8 +1711,9 @@ function normalizeHabit(h) {
     category: h.category || 'Unsorted',
     doneAt: h.doneAt || 0,
     doneMin: Number.isFinite(h.doneMin) ? h.doneMin : null,
-    // difficulty levels: up to 2 easier variants ([0]=easy, [1]=medium; the habit itself = hard)
+    // difficulty levels: up to 2 extra variants (easiest → hardest); baseIdx = where the habit itself sits
     tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 2).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1 })) : [],
+    baseIdx: Number.isFinite(h.baseIdx) ? h.baseIdx : null,
     curTier: Number.isFinite(h.curTier) ? h.curTier : null,
   };
 }
@@ -2016,20 +2019,28 @@ function renderTopbar() {
 /* =================================================================
    HABITS VIEW
    ================================================================= */
-// Habit difficulty levels: a habit may carry up to 2 extra (easier) tiers in h.tiers —
-// tiers[0] = easy, tiers[1] = medium, and the habit's own name/reward becomes the hard tier.
+// Habit difficulty levels: a habit may carry up to 2 extra tiers in h.tiers (ordered
+// easiest → hardest); h.baseIdx says where the ORIGINAL habit sits in that ladder, so
+// added tiers can be easier OR harder than it. Labels come from the ladder size:
+// 2 levels → easy/hard, 3 levels → easy/medium/hard.
 // Completing ANY level counts as one normal completion; only the payout differs.
 const LEVEL_COLORS = { easy: 'var(--green)', medium: 'var(--yellow)', hard: '#ff2d2d' };
 function habitLevels(h) {
   const extras = Array.isArray(h.tiers) ? h.tiers : [];
   if (!extras.length) return null;                       // no tier system on this habit
-  const lvls = extras.map((t, i) => ({ key: i === 0 ? 'easy' : 'medium', name: t.name, reward: t.reward }));
-  lvls.push({ key: 'hard', name: h.name, reward: h.reward }); // base habit = hardest
+  const n = extras.length + 1;
+  const baseIdx = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1); // legacy saves: base was hardest
+  const keys = n === 2 ? ['easy', 'hard'] : ['easy', 'medium', 'hard'];
+  const lvls = []; let e = 0;
+  for (let i = 0; i < n; i++) {
+    if (i === baseIdx) lvls.push({ key: keys[i], name: h.name, reward: h.reward, base: true });
+    else { const t = extras[e]; lvls.push({ key: keys[i], name: t.name, reward: t.reward, base: false, tIdx: e }); e++; }
+  }
   return lvls;                                           // ordered easiest → hardest
 }
 function curLevelIndex(h) {
   const lv = habitLevels(h); if (!lv) return -1;
-  const def = lv.length - 1;                             // default to the original (hard)
+  const def = lv.findIndex(l => l.base);                 // default to the original habit's level
   return clamp(Number.isFinite(h.curTier) ? h.curTier : def, 0, lv.length - 1);
 }
 function capOf(h) { return h.repeatable ? Math.max(1, h.cap) : 1; }
@@ -2099,16 +2110,27 @@ function habitCardHTML(h) {
 function habitEditHTML(h) {
   const lvls = habitLevels(h);
   const pageCount = lvls ? lvls.length : 1;
-  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : pageCount - 1, 0, pageCount - 1);
-  if (lvls && page < lvls.length - 1) return tierEditHTML(h, page);   // easy/medium pages
+  const basePage = lvls ? lvls.findIndex(l => l.base) : 0;
+  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : basePage, 0, pageCount - 1);
+  if (lvls && !lvls[page].base) return tierEditHTML(h, page);   // extra-tier pages
   const extras = Array.isArray(h.tiers) ? h.tiers : [];
-  const addTierBtn = `<button class="btn ghost sm" data-act="addTier" ${extras.length >= 2 ? 'disabled' : ''}>➕ Add tier${extras.length >= 2 ? ' (max)' : ''}</button>`;
-  const tierHead = lvls ? `<div class="tier-head" style="color:${LEVEL_COLORS.hard}">HARD TIER <span class="tier-hint">‹ swipe left for easier</span></div>` : '';
+  // "Add tier" first asks which side the new tier goes on (harder demotes this habit, easier keeps it on top)
+  const addTierBtn = addTierChoiceOpen
+    ? `<div class="tier-choice">
+         <div class="subtle" style="flex-basis:100%">Where does the new tier sit?</div>
+         <button class="btn ghost sm" data-act="addTierHarder">⬆ Harder — this habit becomes the easier one</button>
+         <button class="btn ghost sm" data-act="addTierEasier">⬇ Easier — this habit stays the harder one</button>
+         <button class="btn ghost sm" data-act="addTierCancel">✕ Cancel</button>
+       </div>`
+    : `<button class="btn ghost sm" data-act="addTier" ${extras.length >= 2 ? 'disabled' : ''}>➕ Add tier${extras.length >= 2 ? ' (max)' : ''}</button>`;
+  const baseLvl = lvls ? lvls[basePage] : null;
+  const baseHint = !lvls ? '' : (basePage > 0 && basePage < lvls.length - 1 ? '‹ swipe ›' : (basePage > 0 ? '‹ swipe left for easier' : 'swipe right for harder ›'));
+  const tierHead = lvls ? `<div class="tier-head" style="color:${LEVEL_COLORS[baseLvl.key]}">${baseLvl.key.toUpperCase()} TIER <span class="tier-hint">· the original · ${baseHint}</span></div>` : '';
   const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
   const dayPicker = `<span class="day-picker">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
   return `
-    <div class="hedit" data-id="${h.id}"${lvls ? ` style="border-color:${LEVEL_COLORS.hard}"` : ''}>
+    <div class="hedit" data-id="${h.id}"${lvls ? ` style="border-color:${LEVEL_COLORS[baseLvl.key]}"` : ''}>
       ${tierHead}
       <div class="hedit-r">
         <input class="emoji-in" data-f="emoji" maxlength="4" value="${escapeHtml(h.emoji)}">
@@ -2138,17 +2160,20 @@ function habitEditHTML(h) {
     </div>`;
 }
 
-// Editor page for one of the easier tiers (easy/medium): just a title + token payout.
+// Editor page for one of the extra tiers: just a title + token payout.
 function tierEditHTML(h, page) {
   const lvls = habitLevels(h);
-  const lvl = lvls[page];                 // page index == h.tiers index (base is always last)
-  const t = h.tiers[page];
+  const lvl = lvls[page];
+  const t = h.tiers[lvl.tIdx];
   const col = LEVEL_COLORS[lvl.key];
+  const baseIdx = lvls.findIndex(l => l.base);
+  const hint = page < baseIdx ? 'swipe right for harder ›' : '‹ swipe left for easier';
+  const flavor = page < baseIdx ? 'lighter version' : 'harder version';
   return `
     <div class="hedit" data-id="${h.id}" style="border-color:${col}">
-      <div class="tier-head" style="color:${col}">${lvl.key.toUpperCase()} TIER <span class="tier-hint">swipe right for harder ›</span></div>
+      <div class="tier-head" style="color:${col}">${lvl.key.toUpperCase()} TIER <span class="tier-hint">${hint}</span></div>
       <div class="hedit-r">
-        <input class="name-in" data-tf="name" value="${escapeHtml(t.name)}" placeholder="e.g. ${escapeHtml(h.name)} — lighter version">
+        <input class="name-in" data-tf="name" value="${escapeHtml(t.name)}" placeholder="e.g. ${escapeHtml(h.name)} — ${flavor}">
         <span class="pill">🪙 <input class="num-in" data-tf="reward" type="number" min="0" max="999" value="${t.reward}"> tokens</span>
       </div>
       <div class="hedit-r hedit-actions">
@@ -4135,17 +4160,25 @@ $('#view-habits').addEventListener('click', e => {
   if (Date.now() - lastSwipeAt < 400) return;   // a tier swipe just ended — don't treat it as a tap
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'done') { completeHabit(e.target.closest('.hrow').dataset.id); return; }
-  if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; editTierPage = null; SFX.click(); renderHabits(); return; }
-  if (act === 'closeEdit') { editingHabitId = null; editTierPage = null; SFX.click(); renderHabits(); return; }
-  if (act === 'addTier') {
+  if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
+  if (act === 'closeEdit') { editingHabitId = null; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
+  if (act === 'addTier') { addTierChoiceOpen = true; SFX.click(); renderHabits(); return; }
+  if (act === 'addTierCancel') { addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
+  if (act === 'addTierHarder' || act === 'addTierEasier') {
     const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
+    addTierChoiceOpen = false;
     if (h) {
       h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
       if (h.tiers.length < 2) {
-        // 1st click adds "easy", 2nd adds "medium"; the habit itself is the hard tier
-        const frac = h.tiers.length === 0 ? 0.5 : 0.75;
-        h.tiers.push({ name: '', reward: Math.max(1, Math.round((h.reward || 1) * frac)) });
-        editTierPage = h.tiers.length - 1;      // jump straight to the new tier's page
+        const n = h.tiers.length + 1;   // level count BEFORE adding
+        const curBase = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1);
+        const harder = act === 'addTierHarder';
+        const nt = { name: '', reward: harder
+          ? Math.max((h.reward || 1) + 1, Math.round((h.reward || 1) * 1.5))
+          : Math.max(1, Math.round((h.reward || 1) * 0.5)) };
+        if (harder) { h.tiers.push(nt); h.baseIdx = curBase; editTierPage = n; }        // new hardest → base shifts down a label
+        else { h.tiers.unshift(nt); h.baseIdx = curBase + 1; editTierPage = 0; }        // new easiest → base stays on top
+        h.curTier = null;
         SFX.click(); save(); renderHabits();
         setTimeout(() => $(`.hedit[data-id="${h.id}"] [data-tf="name"]`)?.focus(), 30);
       }
@@ -4154,10 +4187,17 @@ $('#view-habits').addEventListener('click', e => {
   }
   if (act === 'removeTier') {
     const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
-    if (h && Array.isArray(h.tiers)) {
-      h.tiers.splice(clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, h.tiers.length - 1), 1);
-      h.curTier = null; editTierPage = null;    // back to the base page / default level
-      SFX.click(); save(); renderHabits();
+    const lvls = h && habitLevels(h);
+    if (lvls) {
+      const pg = clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1);
+      const lvl = lvls[pg];
+      if (!lvl.base) {
+        const curBase = lvls.findIndex(l => l.base);
+        h.tiers.splice(lvl.tIdx, 1);
+        h.baseIdx = h.tiers.length ? (pg < curBase ? curBase - 1 : curBase) : null;
+        h.curTier = null; editTierPage = null;   // back to the base page / default level
+        SFX.click(); save(); renderHabits();
+      }
     }
     return;
   }
@@ -4186,12 +4226,14 @@ $('#view-habits').addEventListener('click', e => {
 });
 // Inline editor field edits (text/number on input, select/checkbox on change)
 function onInlineHabitField(e) {
-  const tf = e.target.dataset.tf;   // fields on an easy/medium tier page
+  const tf = e.target.dataset.tf;   // fields on an extra-tier page
   if (tf) {
     if (e.type !== 'input') return;
     const box = e.target.closest('.hedit'); if (!box) return;
     const h = state.habits.find(x => x.id === box.dataset.id); if (!h) return;
-    const t = (h.tiers || [])[clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, (h.tiers || []).length - 1)];
+    const lvls = habitLevels(h); if (!lvls) return;
+    const lvl = lvls[clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1)];
+    const t = lvl.base ? null : (h.tiers || [])[lvl.tIdx];
     if (!t) return;
     if (tf === 'reward') t.reward = clamp(parseInt(e.target.value) || 0, 0, 999);
     else t.name = e.target.value;
@@ -4233,7 +4275,7 @@ $('#view-habits').addEventListener('pointerup', e => {
   const dir = dx < 0 ? -1 : 1;                          // swipe left → easier, right → harder
   lastSwipeAt = Date.now();                             // suppress the click this gesture fires
   if (s.isEdit) {
-    const cur = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.length - 1, 0, lvls.length - 1);
+    const cur = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.findIndex(l => l.base), 0, lvls.length - 1);
     editTierPage = clamp(cur + dir, 0, lvls.length - 1);
   } else {
     h.curTier = clamp(curLevelIndex(h) + dir, 0, lvls.length - 1);
