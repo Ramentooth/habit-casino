@@ -505,6 +505,31 @@
     .cat-chip.sel { background: var(--purple); border-color: var(--purple); color: #fff; box-shadow: 0 0 10px rgba(176,38,255,.6); }
     .cat-chip.new { border-style: dashed; color: var(--ink-dim); }
 
+    /* Stats / analytics view */
+    .stats-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+    .stat-chip {
+      display: inline-flex; flex-direction: column; align-items: center; gap: 1px; min-width: 86px;
+      padding: 8px 14px; border-radius: 12px; background: rgba(0,0,0,0.28); border: 1px solid var(--panel-edge);
+      font-size: 11px; color: var(--ink-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .stat-chip b { font-family: 'Orbitron', sans-serif; font-size: 17px; color: var(--cyan); letter-spacing: 0; text-transform: none; }
+    .hm-grid { display: grid; grid-template-columns: 36px repeat(8, 1fr); gap: 3px; margin-top: 12px; }
+    .hm-cell { height: 22px; border-radius: 5px; }
+    .hm-lab { font-size: 10px; color: var(--ink-dim); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .int-bars { display: flex; gap: 8px; align-items: flex-end; height: 126px; margin-top: 14px; }
+    .int-col { flex: 1 1 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; }
+    .int-seg { border-radius: 3px; min-height: 3px; }
+    .int-labels { display: flex; gap: 8px; margin-top: 6px; }
+    .int-labels div { flex: 1 1 0; text-align: center; font-size: 10px; color: var(--ink-dim); font-weight: 700; }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+    .legend .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+    .time-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 8px 12px; border: 1px solid var(--panel-edge); border-radius: 10px; margin-top: 6px; background: rgba(0,0,0,0.22);
+    }
+    .time-name { font-weight: 700; }
+    .time-when { font-weight: 700; color: var(--cyan); font-size: 13px; }
+
     /* Live per-category happy-hour banner (Habits + Tasks tabs) */
     .hh-banner {
       display: none; margin: 10px 0; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 14px;
@@ -1053,6 +1078,7 @@
     <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
     <div class="tab center active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
     <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
+    <div class="tab" data-view="stats"><span class="ti">📊</span><span class="tl">Stats</span></div>
     <div class="tab" data-view="settings"><span class="ti">⚙️</span><span class="tl">Settings</span></div>
   </nav>
 
@@ -1249,6 +1275,13 @@
         <div class="subtle">Everything you can win, by rarity. Edit these in Settings.</div>
         <div id="prizePool" style="margin-top:14px"></div>
       </div>
+    </section>
+
+    <!-- ===================== STATS (analytics) ===================== -->
+    <section class="view" id="view-stats">
+      <div class="section-title neon-cyan">📊 Analytics</div>
+      <div class="subtle" style="margin-bottom:12px">When your habits &amp; quests actually get done — and how hard you're going.</div>
+      <div id="statsBody"></div>
     </section>
 
     <!-- ===================== SETTINGS ===================== -->
@@ -1573,6 +1606,7 @@ function defaultState() {
     stats: { plays: 0, wins: 0, tokensWon: 0, rouletteSpins: 0, ultraPacks: 0 },
     categories: ['Exercise', 'Intellect', 'Unsorted'],
     categoryColors: {},   // per-category accent colors (seeded by ensureCategoryColors, editable in Settings)
+    history: [],          // completion log for the Stats tab: { ts, kind, name, emoji, category, level, reward }
     pass: defaultPass(),
   };
 }
@@ -1727,6 +1761,7 @@ function load() {
     }
     ensureHappyHours(merged);
     ensureCategoryColors(merged);
+    merged.history = Array.isArray(parsed.history) ? parsed.history : [];
     // Pass goals: upgrade old-format live goals, then seed goalDefs from them (so mid-week
     // progress stays linked to its definition) or from the defaults.
     merged.pass.goals = (Array.isArray(merged.pass.goals) ? merged.pass.goals : []).map(migrateOldGoal);
@@ -1742,6 +1777,13 @@ function load() {
   }
 }
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// Append one completion event to the analytics log (capped so localStorage stays small).
+function logCompletion(entry) {
+  state.history = Array.isArray(state.history) ? state.history : [];
+  state.history.push(entry);
+  if (state.history.length > 2000) state.history = state.history.slice(-1500);
+}
 
 /* =================================================================
    HELPERS
@@ -2272,6 +2314,7 @@ function completeOneoff(id, viaSpin) {
   const tags = (hh > 1 ? ` · ×${hh} happy hour` : '') + (viaSpin ? ' · +spin bonus' : '');
   const card = $(`#oneoffGrid .qrow[data-id="${id}"] .qcheck`) || $('#habitWheelResult');
   addTokens(amt, card);
+  logCompletion({ ts: Date.now(), kind: 'task', name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt });
   if (t.progress >= Math.max(1, t.iterations || 1)) {
     state.oneoffs = state.oneoffs.filter(x => x.id !== id); // completed → vanish
     if (editingOneoffId === id) editingOneoffId = null;
@@ -2384,6 +2427,7 @@ function completeHabit(id) {
   const amt = Math.round((lvl ? lvl.reward : h.reward) * hh);
   const card = $(`.hrow[data-id="${id}"] .hrow-check`) || $(`.hrow[data-id="${id}"]`);
   addTokens(amt, card);
+  logCompletion({ ts: Date.now(), kind: 'habit', name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', level: lvl ? lvl.key : null, reward: amt });
   toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.key} tier` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
   checkBonuses();
@@ -3552,6 +3596,102 @@ function pickWildReward(rid) {
 }
 
 /* =================================================================
+   STATS VIEW  (analytics built from state.history completion log)
+   ================================================================= */
+const STAT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const STAT_BUCKETS = ['12a', '3a', '6a', '9a', '12p', '3p', '6p', '9p'];   // 8 × 3-hour blocks
+const INTENSITY_COLORS = { easy: '#39ff14', medium: '#ffe600', hard: '#ff2d2d', plain: 'rgba(176,38,255,.65)' };
+function fmtMinOfDay(m) { let h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${String(mm).padStart(2, '0')} ${ap}`; }
+
+function renderStats() {
+  const box = $('#statsBody'); if (!box) return;
+  const hist = (Array.isArray(state.history) ? state.history : []).filter(e => e && Number.isFinite(e.ts));
+  if (!hist.length) {
+    box.innerHTML = `<div class="empty"><div class="big">📊</div>No data yet — complete habits and quests and your patterns will show up here.</div>`;
+    return;
+  }
+  const now = Date.now(), weekAgo = now - 7 * 86400000;
+  const thisWeek = hist.filter(e => e.ts >= weekAgo).length;
+
+  // --- Weekly rhythm heatmap: day of week × 3-hour block ---
+  const heat = Array.from({ length: 7 }, () => new Array(8).fill(0));
+  const dayTotals = new Array(7).fill(0);
+  hist.forEach(e => {
+    const d = new Date(e.ts);
+    heat[d.getDay()][Math.floor(d.getHours() / 3)]++;
+    dayTotals[d.getDay()]++;
+  });
+  const heatMax = Math.max(1, ...heat.flat());
+  const heatHTML = `
+    <div class="hm-grid">
+      <div></div>${STAT_BUCKETS.map(b => `<div class="hm-lab">${b}</div>`).join('')}
+      ${STAT_DAYS.map((d, di) => `<div class="hm-lab">${d}</div>` + heat[di].map((c, bi) => {
+        const bg = c ? `rgba(176,38,255,${(0.14 + 0.72 * c / heatMax).toFixed(2)})` : 'rgba(255,255,255,0.04)';
+        return `<div class="hm-cell" title="${d} ${STAT_BUCKETS[bi]}–${STAT_BUCKETS[(bi + 1) % 8]} · ${c} done" style="background:${bg}${c === heatMax ? ';box-shadow:0 0 8px rgba(176,38,255,.8)' : ''}"></div>`;
+      }).join('')).join('')}
+    </div>`;
+  const busiest = dayTotals.indexOf(Math.max(...dayTotals));
+
+  // --- Intensity mix: stacked bar per weekday by difficulty level ---
+  const KEYS = ['easy', 'medium', 'hard', 'plain'];
+  const mix = Array.from({ length: 7 }, () => ({ easy: 0, medium: 0, hard: 0, plain: 0 }));
+  const totals = { easy: 0, medium: 0, hard: 0, plain: 0 };
+  hist.forEach(e => {
+    const k = INTENSITY_COLORS[e.level] && e.level !== 'plain' ? e.level : 'plain';
+    mix[new Date(e.ts).getDay()][k]++; totals[k]++;
+  });
+  const mixMax = Math.max(1, ...mix.map(m => m.easy + m.medium + m.hard + m.plain));
+  const BAR_H = 120;
+  const barsHTML = `
+    <div class="int-bars">${mix.map(m => `<div class="int-col">${KEYS.map(k =>
+      m[k] ? `<div class="int-seg" title="${k === 'plain' ? 'no tier' : k}: ${m[k]}" style="height:${Math.max(3, Math.round(m[k] / mixMax * BAR_H))}px;background:${INTENSITY_COLORS[k]}"></div>` : '').join('')}</div>`).join('')}
+    </div>
+    <div class="int-labels">${STAT_DAYS.map(d => `<div>${d[0]}</div>`).join('')}</div>
+    <div class="legend">${KEYS.map(k => `<span><span class="dot" style="background:${INTENSITY_COLORS[k]}"></span>${k === 'plain' ? 'no tier' : k} · ${totals[k]}</span>`).join('')}</div>`;
+
+  // --- Usual completion time per item (median minute-of-day) ---
+  const byItem = {};
+  hist.forEach(e => {
+    const key = `${e.emoji || ''} ${e.name || '?'}`;
+    (byItem[key] = byItem[key] || { kind: e.kind, mins: [], days: new Array(7).fill(0) });
+    const d = new Date(e.ts);
+    byItem[key].mins.push(d.getHours() * 60 + d.getMinutes());
+    byItem[key].days[d.getDay()]++;
+  });
+  const items = Object.entries(byItem).map(([label, v]) => {
+    const sorted = v.mins.slice().sort((a, b) => a - b);
+    return { label, kind: v.kind, n: v.mins.length, median: sorted[Math.floor(sorted.length / 2)], topDay: v.days.indexOf(Math.max(...v.days)) };
+  }).sort((a, b) => b.n - a.n).slice(0, 10);
+  const timesHTML = items.map(it => `
+    <div class="time-row">
+      <span class="time-name">${escapeHtml(it.label)}${it.kind === 'task' ? ' <span class="subtle" style="font-size:11px">quest</span>' : ''}</span>
+      <span class="time-when">~${fmtMinOfDay(it.median)} <span class="subtle">· most on ${STAT_DAYS[it.topDay]} · ${it.n}×</span></span>
+    </div>`).join('');
+
+  box.innerHTML = `
+    <div class="stats-chips">
+      <span class="stat-chip"><b>${hist.length}</b>logged</span>
+      <span class="stat-chip"><b>${thisWeek}</b>this week</span>
+      <span class="stat-chip"><b>${STAT_DAYS[busiest]}</b>busiest day</span>
+    </div>
+    <div class="panel">
+      <div class="section-title neon-purple">🕒 Weekly rhythm</div>
+      <div class="subtle">When things get done — darker = more completions in that time block.</div>
+      ${heatHTML}
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="section-title neon-pink">🔥 Intensity</div>
+      <div class="subtle">Difficulty mix of what you complete each weekday.</div>
+      ${barsHTML}
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="section-title neon-green">⏰ Usual times</div>
+      <div class="subtle">Each item's typical completion time.</div>
+      ${timesHTML}
+    </div>`;
+}
+
+/* =================================================================
    SETTINGS VIEW
    ================================================================= */
 function renderPassSettings() {
@@ -3835,6 +3975,7 @@ function switchView(name) {
   if (name === 'tasks') renderTasks();
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
   if (name === 'prizes') renderPrizes();
+  if (name === 'stats') renderStats();
   if (name === 'settings') renderSettings();
   updatePassFab();                 // Habit Pass button shows only on the Habits tab
   window.scrollTo({ top: 0, behavior: 'smooth' });
