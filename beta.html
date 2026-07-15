@@ -2,19 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Build channel + "open the version you were last on". window.HC_VERSION is the ONLY line that differs between alpha.html and beta.html. -->
+  <!-- This file IS the beta build — it always runs as beta, no self-redirect.
+       index.html is a tiny router that sends the bare URL here or to alpha.html
+       based on localStorage, so it never goes stale. -->
   <script>
     window.HC_VERSION = 'beta';
-    (function () {
-      try {
-        var saved = localStorage.getItem('habitVersion');
-        if (saved && saved !== window.HC_VERSION && (saved === 'alpha' || saved === 'beta')) {
-          location.replace(saved + '.html');         // honor the last-used version (e.g. bare URL → beta)
-        } else {
-          localStorage.setItem('habitVersion', window.HC_VERSION);
-        }
-      } catch (e) {}
-    })();
+    try { localStorage.setItem('habitVersion', 'beta'); } catch (e) {}
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 
