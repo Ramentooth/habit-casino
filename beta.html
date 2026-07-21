@@ -1051,51 +1051,26 @@
     .pool-wild { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
     .pool-wild .subtle { width: 100%; }
     /* ============================================================
-       HABITCASINOAI ADDITIONS — aspirations board + AI coach chat
+       HABITCASINOAI ADDITIONS — inline AI chat tab
        ============================================================ */
-    .asp-card {
-      background: var(--panel); border: 1px solid var(--panel-edge);
-      border-radius: 14px; padding: 14px; margin-top: 12px; position: relative;
+    /* The Chat tab is a full-height flex column: intro + scrolling log + pinned input. */
+    #view-chat.view.active { display: flex; }
+    .chat-page {
+      display: flex; flex-direction: column; gap: 10px;
+      /* fill the space between the header and the bottom nav */
+      height: calc(100vh - 190px); min-height: 360px;
     }
-    .asp-card .asp-name { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 1px; }
-    .asp-card .asp-notes { color: var(--ink-dim); font-size: 13px; margin-top: 4px; white-space: pre-wrap; }
-    .asp-card .asp-meta { color: var(--ink-dim); font-size: 11px; margin-top: 6px; opacity: .8; }
-    .asp-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .asp-chip {
-      font-size: 12px; padding: 3px 9px; border-radius: 999px;
-      border: 1px solid rgba(0,240,255,.35); color: var(--cyan); background: rgba(0,0,0,.25);
+    .chat-intro { flex: 0 0 auto; }
+    .ai-log {
+      flex: 1 1 auto; overflow-y: auto; padding: 4px 2px;
+      display: flex; flex-direction: column; gap: 10px;
     }
-    .asp-chip.gone { opacity: .45; text-decoration: line-through; }
-    .asp-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-    .asp-add { display: flex; gap: 8px; margin-top: 12px; }
-    .asp-add .name-in { flex: 1; }
-
-    /* Chat overlay (reuses the pass-overlay backdrop pattern) */
-    .ai-overlay {
-      position: fixed; inset: 0; z-index: 70; display: none;
-      background: rgba(4, 0, 12, 0.82); backdrop-filter: blur(6px);
-      align-items: center; justify-content: center; padding: 12px;
-    }
-    .ai-overlay.show { display: flex; }
-    .ai-modal {
-      width: 100%; max-width: 560px; height: min(82vh, 700px);
-      background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 18px;
-      display: flex; flex-direction: column; overflow: hidden;
-      box-shadow: 0 0 40px rgba(176, 38, 255, .35);
-    }
-    .ai-head {
-      display: flex; align-items: center; gap: 10px; padding: 12px 14px;
-      border-bottom: 1px solid var(--panel-edge); flex: 0 0 auto;
-    }
-    .ai-head .t { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 1px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ai-close { background: none; border: none; color: var(--ink-dim); font-size: 18px; cursor: pointer; }
-    .ai-log { flex: 1 1 auto; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
     .ai-msg { max-width: 88%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
     .ai-msg.user { align-self: flex-end; background: rgba(0, 240, 255, .12); border: 1px solid rgba(0, 240, 255, .35); }
     .ai-msg.assistant { align-self: flex-start; background: rgba(176, 38, 255, .12); border: 1px solid rgba(176, 38, 255, .35); }
     .ai-msg.thinking { align-self: flex-start; color: var(--ink-dim); border: 1px dashed var(--panel-edge); background: none; }
     .ai-msg.err { align-self: flex-start; border: 1px solid var(--pink); color: var(--pink); background: rgba(255, 27, 141, .08); }
-    .ai-inputrow { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--panel-edge); flex: 0 0 auto; }
+    .ai-inputrow { display: flex; gap: 8px; padding: 10px 0 2px; border-top: 1px solid var(--panel-edge); flex: 0 0 auto; }
     .ai-inputrow .name-in { flex: 1; }
 
     /* Proposal cards (confirm/reject) */
@@ -1137,7 +1112,7 @@
     <div class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Casino</span></div>
     <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
     <div class="tab center active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
-    <div class="tab" data-view="aspire"><span class="ti">🌠</span><span class="tl">Aspire</span></div>
+    <div class="tab" data-view="chat"><span class="ti">💬</span><span class="tl">Chat</span></div>
     <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
     <div class="tab" data-view="stats"><span class="ti">📊</span><span class="tl">Stats</span></div>
     <div class="tab" data-view="settings"><span class="ti">⚙️</span><span class="tl">Settings</span></div>
@@ -1325,17 +1300,19 @@
 
     <!-- ===================== PRIZES ===================== -->
     <!-- ASPIRATIONS (HabitCasinoAI) -->
-    <section class="view" id="view-aspire">
-      <div class="panel">
-        <div class="section-title neon-cyan">🌠 Aspirations</div>
-        <div class="subtle">Everything you've committed to, always in sight. Aspirations aren't categories — they're the background context your AI coach builds habits from.</div>
-        <div class="asp-add">
-          <input class="name-in" id="aspAddName" placeholder="Add an aspiration — e.g. Run a half marathon">
-          <button class="btn purple sm" id="aspAddBtn">✨ Plan with AI</button>
+    <section class="view" id="view-chat">
+      <div class="chat-page">
+        <div class="chat-intro">
+          <div class="section-title neon-cyan">💬 AI Chat</div>
+          <div class="subtle">Your coach already sees every habit, quest, reward and setting plus how you've actually been doing. Ask it to tune payouts or odds, rename or re-tier a reward, change a schedule, or just explain what your data shows.</div>
+          <div class="hint" id="aiKeyHint" style="display:none">⚠️ No API key set — add one in <b>Settings → 🤖 AI Coach</b> to start chatting.</div>
         </div>
-        <div class="hint" id="aspKeyHint" style="display:none">⚠️ No API key set — add one in <b>Settings → 🤖 AI Coach</b> to generate plans. You can still add aspirations to the board.</div>
+        <div class="ai-log" id="aiLog"></div>
+        <div class="ai-inputrow">
+          <input class="name-in" id="aiChatInput" placeholder="Talk to your coach…">
+          <button class="btn purple sm" id="aiChatSend">Send</button>
+        </div>
       </div>
-      <div id="aspBoard"></div>
     </section>
 
     <section class="view" id="view-prizes">
@@ -1539,7 +1516,7 @@
         </div>
         <hr class="set-sep">
         <div class="row between">
-          <div><div style="font-weight:700">🧹 Clear AI Data</div><div class="hint">Deletes only AI-created habits, quests, categories &amp; rewards. Your own items, stats/history, the aspirations board and its conversations are untouched.</div></div>
+          <div><div style="font-weight:700">🧹 Clear AI Data</div><div class="hint">Removes only AI-created habits, quests, categories &amp; rewards. Your own items, stats/history, and the chat log are untouched.</div></div>
           <button class="btn ghost sm" id="aiClearBtn" style="border-color:var(--pink);color:var(--pink)">Clear</button>
         </div>
       </div>
@@ -1596,21 +1573,6 @@
       <div class="rname" id="revealName">Prize</div>
       <div class="subtle" id="revealSub"></div>
       <button class="btn gold" id="revealClose" style="margin-top:16px">COLLECT</button>
-    </div>
-  </div>
-
-  <!-- AI coach chat overlay (HabitCasinoAI) -->
-  <div class="ai-overlay" id="aiOverlay">
-    <div class="ai-modal">
-      <div class="ai-head">
-        <span>🤖</span><span class="t" id="aiChatTitle">AI Coach</span>
-        <button class="ai-close" id="aiChatClose" title="Close">✕</button>
-      </div>
-      <div class="ai-log" id="aiLog"></div>
-      <div class="ai-inputrow">
-        <input class="name-in" id="aiChatInput" placeholder="Talk to your coach…">
-        <button class="btn purple sm" id="aiChatSend">Send</button>
-      </div>
     </div>
   </div>
 
@@ -1731,10 +1693,10 @@ function defaultState() {
     categories: ['Exercise', 'Intellect', 'Unsorted'],
     categoryColors: {},   // per-category accent colors (seeded by ensureCategoryColors, editable in Settings)
     history: [],          // completion log for the Stats tab: { ts, kind, name, emoji, category, level, reward }
-    // HabitCasinoAI: aspirations board + AI provenance registry. Both live in the
-    // shared 'habitCasino.v1' save on purpose — the original app's load() spreads
+    // HabitCasinoAI: one global AI chat log + AI provenance registry. Both live in
+    // the shared 'habitCasino.v1' save on purpose — the original app's load() spreads
     // unknown top-level keys through untouched, so they survive round-trips there.
-    aspirations: [],      // { id, name, notes, createdAt, linked:{habits,oneoffs,categories,rewards}, chat:[] }
+    aiChatLog: [],        // single persistent thread: { role, content, raw, ts, proposals, status }
     aiMeta: { habits: [], oneoffs: [], categories: [], rewards: [] }, // ids/names of AI-created items (backs "Clear AI Data")
     pass: defaultPass(),
   };
@@ -1845,10 +1807,9 @@ function normalizeHabit(h) {
     baseIdx: Number.isFinite(h.baseIdx) ? h.baseIdx : null,
     curTier: Number.isFinite(h.curTier) ? h.curTier : null,
     archived: !!h.archived,   // graduated habits rest here — out of rotation, history intact
-    // HabitCasinoAI provenance — the original app's normalizeHabit drops these,
+    // HabitCasinoAI provenance — the original app's normalizeHabit drops this,
     // which is why aiMeta above keeps a second registry of AI-created ids.
     createdBy: h.createdBy === 'ai' ? 'ai' : undefined,
-    aspirationId: h.aspirationId || undefined,
   };
 }
 function load() {
@@ -1889,7 +1850,6 @@ function load() {
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
         createdBy: t.createdBy === 'ai' ? 'ai' : undefined,
-        aspirationId: t.aspirationId || undefined,
       };
     });
     // Old single global happy hour → one entry per category (same window/mult for all).
@@ -1901,12 +1861,7 @@ function load() {
     ensureHappyHours(merged);
     ensureCategoryColors(merged);
     merged.history = Array.isArray(parsed.history) ? parsed.history : [];
-    merged.aspirations = (Array.isArray(parsed.aspirations) ? parsed.aspirations : []).map(a => ({
-      id: a.id || uid(), name: a.name || 'Aspiration', notes: a.notes || '',
-      createdAt: a.createdAt || Date.now(),
-      linked: { habits: [], oneoffs: [], categories: [], rewards: [], ...(a.linked || {}) },
-      chat: Array.isArray(a.chat) ? a.chat : [],
-    }));
+    merged.aiChatLog = Array.isArray(parsed.aiChatLog) ? parsed.aiChatLog : [];
     merged.aiMeta = { habits: [], oneoffs: [], categories: [], rewards: [], ...(parsed.aiMeta || {}) };
     // Pass goals: upgrade old-format live goals, then seed goalDefs from them (so mid-week
     // progress stays linked to its definition) or from the defaults.
@@ -4252,124 +4207,184 @@ function parseAIReply(raw) {
   return { message: text || '(empty reply)', proposals: [] };
 }
 
-/* ---- context the AI sees ---- */
-function aiSystemPrompt(a, mode) {
-  const trw = { easy: tierReward('easy'), medium: tierReward('medium'), hard: tierReward('hard') };
-  const cats = (state.categories || []).join(', ');
-  const existing = state.habits.filter(h => !h.archived).map(h => `${h.name} [${h.section}]`).join('; ') || 'none';
-  return `You are the AI coach inside HabitCasinoAI, a gamified habit tracker (habits pay tokens, tokens play casino games for real-life rewards).
-Philosophy: CONSISTENCY OVER INTENSITY — always prefer small, sustainable habits over ambitious ones.
-
-App model:
-- Habits: section "daily" or "extra"; pay N tokens per completion; optional weekday schedule (days = 7 booleans, Sun..Sat); streaks tracked per habit.
-- One-off quests: difficulty tier easy/medium/hard paying ${trw.easy}/${trw.medium}/${trw.hard} tokens; need "iterations" completions then vanish.
-- Categories (plain labels, current: ${cats}). Rewards: rarity common/rare/epic/legendary, won in the casino; minutes > 0 marks a screen-time reward.
-- Existing active habits (avoid duplicates): ${existing}.
-
-Respond ONLY with a single JSON object, no markdown fences:
-{"message":"what you say to the user","proposals":[...]}
-Proposal shapes (all optional fields may be omitted):
-- {"type":"habit","emoji":"💧","name":"...","section":"daily|extra","reward":1-5,"repeatable":false,"cap":1,"category":"...","days":[true,true,true,true,true,true,true]}
-- {"type":"quest","emoji":"🎯","name":"...","tier":"easy|medium|hard","iterations":1,"category":"..."}
-- {"type":"category","name":"..."}
-- {"type":"reward","emoji":"🎁","name":"...","tier":"common|rare|epic|legendary","minutes":0}
-- {"type":"tierChange","targetKind":"habit|quest","id":"<id from context>","to":"easy|medium|hard OR a token number for plain habits","reason":"..."}
-- {"type":"dropHabit","id":"<habit id>","reason":"..."}  (archives the habit, history intact)
-- {"type":"scheduleChange","id":"<habit id>","days":[7 booleans],"reason":"..."}
-
-Rules:
-- Nothing is created or changed until the user approves each proposal in the UI — propose freely, never claim something was already applied.
-- When the user adds a NEW aspiration: do NOT question feasibility, add caveats, or ask if they can handle it. Build a starter plan immediately: 2-4 small habits, 1-3 one-off quests, optionally 1 category and 1-2 rewards tied to the aspiration.
-- Critical analysis, restructuring, tier changes, drops or schedule changes belong ONLY in check-in conversations, grounded in the completion data provided there.
-- Keep "message" short, warm and concrete. Plain text only.
-
-${aspContext(a, mode === 'checkin')}`;
-}
-
-function aspContext(a, withHistory) {
+/* ---- Whole-app context: the AI's working model of how the user's day actually
+   runs, built once from all habits/quests/history/economy. Compact summary, not
+   a raw dump — so the AI understands the user without them re-explaining. ---- */
+function appContext() {
   const L = [];
-  L.push(`Current aspiration: "${a.name}" (created ${new Date(a.createdAt).toISOString().slice(0, 10)})`);
-  if (a.notes) L.push(`Notes: ${a.notes}`);
-  const habits = a.linked.habits.map(id => state.habits.find(h => h.id === id)).filter(Boolean);
-  const quests = a.linked.oneoffs.map(id => state.oneoffs.find(t => t.id === id)).filter(Boolean);
-  if (habits.length) {
-    L.push('Linked habits:');
-    habits.forEach(h => {
-      const lvls = habitLevels(h);
-      const lvl = lvls ? lvls[curLevelIndex(h)] : null;
-      L.push(`- id=${h.id} "${h.name}" [${h.section}] +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` (level: ${lvl.key})` : ''}, streak ${currentStreak(h)} (best ${h.best || 0}), days=[${(h.days || []).map(d => d ? 1 : 0).join(',')}]${h.archived ? ' ARCHIVED' : ''}`);
-    });
+  const now = Date.now();
+  const hist = (state.history || []).filter(e => e && Number.isFinite(e.ts));
+  const daysAgo = ts => ts ? Math.floor((now - ts) / 86400000) : null;
+  // earliest / latest logged completion per item name → age + days-since-last
+  const firstSeen = {}, lastSeen = {};
+  hist.forEach(e => {
+    if (!e.name) return;
+    if (!firstSeen[e.name] || e.ts < firstSeen[e.name]) firstSeen[e.name] = e.ts;
+    if (!lastSeen[e.name]  || e.ts > lastSeen[e.name])  lastSeen[e.name]  = e.ts;
+  });
+
+  // --- Habits (active + recently graduated) ---
+  const active = state.habits.filter(h => !h.archived);
+  const archived = state.habits.filter(h => h.archived);
+  L.push('ACTIVE HABITS:');
+  if (!active.length) L.push('  (none)');
+  active.forEach(h => {
+    const lvls = habitLevels(h), lvl = lvls ? lvls[curLevelIndex(h)] : null;
+    const sched = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
+    const age = daysAgo(firstSeen[h.name]), last = daysAgo(lastSeen[h.name]);
+    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` tier=${lvl.key}` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk, streak ${currentStreak(h)} (best ${h.best || 0})${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
+  });
+  if (archived.length) {
+    L.push('RECENTLY GRADUATED (archived — history intact, can be restored):');
+    archived.slice(-6).forEach(h => L.push(`  - id=${h.id} "${h.name}" (best streak ${h.best || 0})`));
   }
-  if (quests.length) {
-    L.push('Linked quests:');
-    quests.forEach(t => L.push(`- id=${t.id} "${t.name}" tier=${t.tier} progress ${t.progress || 0}/${t.iterations || 1}`));
-  }
-  if (a.linked.categories.length) L.push(`Linked categories: ${a.linked.categories.join(', ')}`);
-  if (withHistory) {
-    L.push('', 'CHECK-IN MODE — completion history for the linked items (last 8 weeks):');
-    const names = new Set([...habits.map(h => h.name), ...quests.map(t => t.name)]);
-    const cutoff = Date.now() - 56 * 86400000;
-    const hist = (state.history || []).filter(e => e && e.ts >= cutoff && names.has(e.name));
-    if (!hist.length) L.push('(no completions logged yet for these items)');
-    habits.forEach(h => {
+
+  // --- One-off quests ---
+  L.push('OPEN QUESTS:');
+  if (!state.oneoffs.length) L.push('  (none)');
+  state.oneoffs.forEach(t => L.push(`  - id=${t.id} "${t.name}" tier=${t.tier} cat=${t.category || 'Unsorted'} progress ${t.progress || 0}/${t.iterations || 1}`));
+
+  // --- Completion patterns (same aggregation the Stats tab uses) ---
+  if (hist.length) {
+    const weekAgo = now - 7 * 86400000, monthAgo = now - 30 * 86400000;
+    const dayTotals = new Array(7).fill(0), blockTotals = new Array(8).fill(0);
+    hist.forEach(e => { const d = new Date(e.ts); dayTotals[d.getDay()]++; blockTotals[Math.floor(d.getHours() / 3)]++; });
+    const busiestDay = STAT_DAYS[dayTotals.indexOf(Math.max(...dayTotals))];
+    const busiestBlock = STAT_BUCKETS[blockTotals.indexOf(Math.max(...blockTotals))];
+    L.push('', 'COMPLETION PATTERNS (observed — ground your points in these, not generic advice):');
+    L.push(`  - ${hist.length} completions logged total, ${hist.filter(e => e.ts >= weekAgo).length} in the last 7 days.`);
+    L.push(`  - Busiest weekday: ${busiestDay}. Most activity around the ${busiestBlock} time block.`);
+    const consistent = [], drifting = [], quiet = [];
+    active.forEach(h => {
       const es = hist.filter(e => e.name === h.name && e.kind === 'habit');
-      const last7 = es.filter(e => e.ts >= Date.now() - 7 * 86400000).length;
-      const last30 = es.filter(e => e.ts >= Date.now() - 30 * 86400000).length;
-      const scheduledPerWeek = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
-      const lastTs = es.length ? Math.max(...es.map(e => e.ts)) : 0;
-      const hours = es.map(e => new Date(e.ts).getHours()).sort((x, y) => x - y);
-      L.push(`- "${h.name}": ${es.length} completions logged; ${last7} in last 7 days vs ~${scheduledPerWeek} scheduled; ${last30} in last 30 days; last done ${lastTs ? new Date(lastTs).toISOString().slice(0, 10) : 'never'}${hours.length ? `; typical hour ~${hours[Math.floor(hours.length / 2)]}:00` : ''}`);
+      const last7 = es.filter(e => e.ts >= weekAgo).length;
+      const last30 = es.filter(e => e.ts >= monthAgo).length;
+      const sched = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
+      const last = daysAgo(lastSeen[h.name]);
+      if (last != null && last >= 7) quiet.push(`"${h.name}" (${last}d silent, ${last30}/mo)`);
+      else if (last7 >= Math.max(1, Math.round(sched * 0.7))) consistent.push(`"${h.name}" (${last7}/${sched} this wk)`);
+      else drifting.push(`"${h.name}" (${last7}/${sched} this wk)`);
     });
-    quests.forEach(t => {
-      const es = hist.filter(e => e.name === t.name && e.kind === 'task');
-      L.push(`- quest "${t.name}": ${es.length} reps logged, currently ${t.progress || 0}/${t.iterations || 1}`);
-    });
+    if (consistent.length) L.push(`  - Consistent: ${consistent.join(', ')}.`);
+    if (drifting.length)   L.push(`  - Drifting (under schedule this week): ${drifting.join(', ')}.`);
+    if (quiet.length)      L.push(`  - Gone quiet (7+ days untouched): ${quiet.join(', ')}.`);
+    const catCounts = {};
+    hist.filter(e => e.ts >= monthAgo).forEach(e => { const c = e.category || 'Unsorted'; catCounts[c] = (catCounts[c] || 0) + 1; });
+    const catLine = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c}:${n}`).join(', ');
+    if (catLine) L.push(`  - Completions by category (30d): ${catLine}.`);
+  } else {
+    L.push('', 'COMPLETION PATTERNS: nothing logged yet — do NOT infer patterns or invent history; ask the user what they want.');
   }
+
+  // --- Editable economy / live values (targets for settingsChange & rewardEdit) ---
+  const g = state.games.wheel;
+  const hh = Object.entries(state.settings.happyHours || {}).filter(([, e]) => e.enabled)
+    .map(([c, e]) => `${c} ${e.start}-${e.end} ×${e.mult}`).join('; ') || 'none enabled';
+  const rewards = (state.rewards || []).map(r => `id=${r.id} ${r.emoji} "${r.name}" [${r.tier}${r.minutes ? `, ${r.minutes}m` : ''}]`).join('; ') || 'none';
+  L.push('', 'EDITABLE ECONOMY (current values — change these with settingsChange / rewardEdit):');
+  L.push(`  - settings.tierRewards: easy=${tierReward('easy')}, medium=${tierReward('medium')}, hard=${tierReward('hard')} (one-off quest payouts)`);
+  L.push(`  - Bonuses: settings.dailyBonus=${state.settings.dailyBonus}, settings.extraBonus=${state.settings.extraBonus}, settings.weeklyBonus=${state.settings.weeklyBonus}`);
+  L.push(`  - Happy hours (settings.happyHours.<Category>.{start,end,mult,enabled}): ${hh}`);
+  L.push(`  - Habit Pass (state.pass): xpPerLevel=${state.pass.xpPerLevel}, proCost=${state.pass.proCost}, perXP.daily=${state.pass.perXP.daily}, perXP.task=${state.pass.perXP.task}, xpSources={dailies:${state.pass.xpSources.dailies !== false}, tasks:${state.pass.xpSources.tasks !== false}, goals:${state.pass.xpSources.goals !== false}}`);
+  L.push(`  - Wheel game (state.games.wheel): cost=${g.cost}, tokenWin=[${g.tokenWin[0]},${g.tokenWin[1]}], weights=${JSON.stringify(g.weights)}`);
+  L.push(`  - Rewards (edit in place with rewardEdit, never recreate): ${rewards}`);
+  L.push(`  - Categories: ${(state.categories || []).join(', ')} · Tokens on hand: ${state.tokens}`);
   return L.join('\n');
 }
 
-/* ---- aspirations board ---- */
-function newAspiration(name) {
-  return { id: uid(), name: name.trim(), notes: '', createdAt: Date.now(),
-           linked: { habits: [], oneoffs: [], categories: [], rewards: [] }, chat: [] };
-}
-function aspLinkChips(a) {
-  const chip = (label, gone) => `<span class="asp-chip${gone ? ' gone' : ''}">${label}</span>`;
-  const bits = [];
-  a.linked.habits.forEach(id => { const h = state.habits.find(x => x.id === id);
-    bits.push(h ? chip(`${escapeHtml(h.emoji)} ${escapeHtml(h.name)}${h.archived ? ' 🎓' : ''}`) : chip('habit removed', true)); });
-  a.linked.oneoffs.forEach(id => { const t = state.oneoffs.find(x => x.id === id);
-    bits.push(t ? chip(`${escapeHtml(t.emoji)} ${escapeHtml(t.name)}`) : chip('quest done/removed', true)); });
-  a.linked.categories.forEach(c => bits.push(chip(`🏷️ ${escapeHtml(c)}`, !(state.categories || []).includes(c))));
-  a.linked.rewards.forEach(id => { const r = state.rewards.find(x => x.id === id);
-    bits.push(r ? chip(`${escapeHtml(r.emoji)} ${escapeHtml(r.name)}`) : chip('reward removed', true)); });
-  return bits.join('');
-}
-function renderAspire() {
-  const board = $('#aspBoard'); if (!board) return;
-  const hint = $('#aspKeyHint'); if (hint) hint.style.display = activeKey() ? 'none' : '';
-  if (!state.aspirations.length) {
-    board.innerHTML = `<div class="empty" style="margin-top:14px"><div class="big">🌠</div>No aspirations yet — add one above and let the AI build habits from it.</div>`;
-    return;
-  }
-  board.innerHTML = state.aspirations.slice().reverse().map(a => `
-    <div class="asp-card" data-id="${a.id}">
-      <div class="asp-name">${escapeHtml(a.name)}</div>
-      ${a.notes ? `<div class="asp-notes">${escapeHtml(a.notes)}</div>` : ''}
-      <div class="asp-meta">committed ${new Date(a.createdAt).toLocaleDateString()}${a.chat.length ? ` · ${a.chat.length} chat messages` : ''}</div>
-      <div class="asp-links">${aspLinkChips(a) || '<span class="subtle">nothing generated yet</span>'}</div>
-      <div class="asp-actions">
-        <button class="btn cyan sm" data-act="aspCheckin">💬 Check-in</button>
-        <button class="btn ghost sm" data-act="aspPlan">✨ Plan more</button>
-        <button class="btn ghost sm" data-act="aspNotes">📝 Notes</button>
-        <button class="btn ghost sm" data-act="aspDel">🗑</button>
-      </div>
-    </div>`).join('');
+/* ---- Single global system prompt: observer + editing assistant, NOT a habit
+   generator. Built from the whole app; no aspiration, no plan/checkin mode. ---- */
+function aiSystemPrompt() {
+  return `You are the AI assistant built into HabitCasinoAI, a gamified habit tracker where completing habits pays tokens, and tokens are spent on casino games to win real-life rewards. Philosophy: CONSISTENCY OVER INTENSITY — small sustainable habits beat ambitious ones.
+
+WHO YOU ARE
+You are primarily an EDITING ASSISTANT and conversational partner — NOT a habit generator. The user talks to you instead of hunting through the Settings / Prizes / Tasks screens by hand. Your main job is to act on what ALREADY EXISTS: adjust token payouts and game odds, rename or re-tier rewards, change a habit's schedule or difficulty, drop a habit that isn't working, or just explain what the data shows. Plenty of good replies contain ZERO proposals — sometimes the user only wants to understand why something drifted.
+
+HOW YOU DECIDE WHAT TO DO
+- If the request can be solved by EDITING something that already exists — a tier, a token cost, a reward's name, a schedule, a game weight, a bonus amount — do that. That is the default and covers almost everything ("I'm winning too much, tone down payouts", "rename this reward", "why has my cello practice dropped off").
+- Proposing a BRAND-NEW habit or quest is allowed but is NOT the default and must NEVER be your opening move. Only after real back-and-forth — the user has described a problem, you've asked a clarifying question or two and talked it through — may you propose new items, and even then AT MOST 1-2 total across the entire conversation. Never more. When unsure, adjust something existing instead of inventing something new.
+- Ground every observation in the pattern data below, never generic advice: "you've cleared Exercise 5 of the last 7 days but Cello hasn't been touched in 12 days," not "try to stay consistent!". If the data doesn't support a claim, don't make it. When you propose an edit, tie the number to the observation.
+
+OUTPUT FORMAT
+Respond with ONE JSON object, no markdown fences:
+{"message":"what you say to the user — plain text, short, warm, concrete","proposals":[ ...zero or more... ]}
+Nothing is applied until the user taps Apply on each proposal card — propose, never claim you already changed something. Prefer few, well-aimed proposals over many.
+
+PROPOSAL SHAPES (omit any field you're not setting):
+Editing existing things — PREFER THESE:
+- {"type":"settingsChange","path":"settings.tierRewards.easy","to":<value>,"reason":"..."}  dot-path into state. Allowed paths: settings.tierRewards.{easy,medium,hard}, settings.dailyBonus, settings.extraBonus, settings.weeklyBonus, settings.happyHours.<Category>.{start,end,mult,enabled}, pass.xpPerLevel, pass.proCost, pass.perXP.{daily,task}, games.wheel.cost, games.wheel.tokenWin.0, games.wheel.tokenWin.1, games.wheel.weights.{blank,tokens,common,rare,epic,legendary}
+- {"type":"rewardEdit","id":"<existing reward id>","name":"...","emoji":"...","tier":"common|rare|epic|legendary","minutes":0}  edits a reward in place; include only fields you're changing; NEVER creates one
+- {"type":"tierChange","targetKind":"habit|quest","id":"<id>","to":"easy|medium|hard OR a token number for plain habits","reason":"..."}
+- {"type":"scheduleChange","id":"<habit id>","days":[7 booleans Sun..Sat],"reason":"..."}
+- {"type":"dropHabit","id":"<habit id>","reason":"..."}  archives it, history intact
+Creating new things — RARE, only after dialogue, max 1-2 per conversation, never the opening reply:
+- {"type":"habit","emoji":"💧","name":"...","section":"daily|extra","reward":1-5,"repeatable":false,"cap":1,"category":"...","days":[7 booleans]}
+- {"type":"quest","emoji":"🎯","name":"...","tier":"easy|medium|hard","iterations":1,"category":"..."}
+- {"type":"category","name":"..."}
+- {"type":"reward","emoji":"🎁","name":"...","tier":"common|rare|epic|legendary","minutes":0}
+
+APP STATE & OBSERVED PATTERNS:
+${appContext()}`;
 }
 
-/* ---- chat ---- */
-let aiChat = { aspId: null, mode: 'plan', busy: false };
-function chatAsp() { return state.aspirations.find(a => a.id === aiChat.aspId); }
+/* ---- chat state (one global thread) ---- */
+let aiBusy = false;
+
+// Allowlist of settingsChange dot-paths → a hallucinated path can never write
+// somewhere unintended (there is no dynamic state[...] access from model output).
+// Each numeric entry: clamp range [lo,hi] + explicit read()/write(v).
+function tierRewardWrite(tier) {
+  return v => { state.settings.tierRewards = state.settings.tierRewards || {};
+    state.settings.tierRewards[tier] = v;
+    state.oneoffs.forEach(t => { if ((t.tier || 'medium') === tier) t.reward = v; }); };
+}
+const SETTINGS_PATHS = {
+  'settings.tierRewards.easy':   { num: [0, 999], read: () => tierReward('easy'),   write: tierRewardWrite('easy') },
+  'settings.tierRewards.medium': { num: [0, 999], read: () => tierReward('medium'), write: tierRewardWrite('medium') },
+  'settings.tierRewards.hard':   { num: [0, 999], read: () => tierReward('hard'),   write: tierRewardWrite('hard') },
+  'settings.dailyBonus':  { num: [0, 9999],   read: () => state.settings.dailyBonus,  write: v => state.settings.dailyBonus = v },
+  'settings.extraBonus':  { num: [0, 9999],   read: () => state.settings.extraBonus,  write: v => state.settings.extraBonus = v },
+  'settings.weeklyBonus': { num: [0, 999999], read: () => state.settings.weeklyBonus, write: v => state.settings.weeklyBonus = v },
+  'pass.xpPerLevel': { num: [1, 999],   read: () => state.pass.xpPerLevel, write: v => state.pass.xpPerLevel = v },
+  'pass.proCost':    { num: [0, 99999], read: () => state.pass.proCost,    write: v => state.pass.proCost = v },
+  'pass.perXP.daily': { num: [0, 99], read: () => state.pass.perXP.daily, write: v => state.pass.perXP.daily = v },
+  'pass.perXP.task':  { num: [0, 99], read: () => state.pass.perXP.task,  write: v => state.pass.perXP.task = v },
+  'games.wheel.cost': { num: [0, 999], read: () => state.games.wheel.cost, write: v => state.games.wheel.cost = v },
+  'games.wheel.tokenWin.0': { num: [0, 999], read: () => state.games.wheel.tokenWin[0],
+    write: v => { const g = state.games.wheel; g.tokenWin[0] = v; if (g.tokenWin[1] < v) g.tokenWin[1] = v; } },
+  'games.wheel.tokenWin.1': { num: [0, 999], read: () => state.games.wheel.tokenWin[1],
+    write: v => { const g = state.games.wheel; g.tokenWin[1] = Math.max(v, g.tokenWin[0]); } },
+};
+['blank', 'tokens', 'common', 'rare', 'epic', 'legendary'].forEach(k =>
+  SETTINGS_PATHS[`games.wheel.weights.${k}`] = { num: [0, 999],
+    read: () => state.games.wheel.weights[k] || 0, write: v => state.games.wheel.weights[k] = v });
+// Happy-hour paths are validated dynamically (path depends on the category name).
+function happyHourField(path) {
+  const m = /^settings\.happyHours\.(.+)\.(start|end|mult|enabled)$/.exec(path);
+  if (!m) return null;
+  const cat = m[1], field = m[2];
+  if (!(state.settings.happyHours || {})[cat]) return null; // category must already have an entry
+  return { cat, field };
+}
+// Apply a settingsChange proposal through the allowlist only. Returns true if written.
+function applySettingsChange(p) {
+  const path = String(p.path || ''), spec = SETTINGS_PATHS[path];
+  if (spec) {
+    const v = clamp(parseInt(p.to), spec.num[0], spec.num[1]);
+    if (!Number.isFinite(v)) return false;
+    spec.write(v); return true;
+  }
+  const hh = happyHourField(path);
+  if (hh) {
+    const e = state.settings.happyHours[hh.cat];
+    if (hh.field === 'enabled') e.enabled = !!p.to;
+    else if (hh.field === 'mult') e.mult = clamp(parseFloat(p.to) || 1, 1, 10);
+    else if (hh.field === 'start') { if (/^\d{1,2}:\d{2}$/.test(p.to)) e.start = p.to; }
+    else if (hh.field === 'end') { if (/^\d{1,2}:\d{2}$/.test(p.to)) e.end = p.to; }
+    return true;
+  }
+  return false;
+}
 
 function describeProposal(p) {
   const t = p.type;
@@ -4391,21 +4406,48 @@ function describeProposal(p) {
     const days = Array.isArray(p.days) ? DOW.filter((_, i) => p.days[i]).join(' ') : '?';
     return { kind: 'Schedule change', title: h ? `🗓️ ${h.name} → ${days}` : '(habit gone)', detail: p.reason || '' };
   }
+  if (t === 'settingsChange') {
+    const from = settingsPathValue(p.path);
+    const label = String(p.path || '').replace(/^settings\.|^games\.|^pass\./, '');
+    return { kind: 'Setting change', title: `⚙️ ${label} → ${p.to}`, detail: (from !== undefined ? `now ${from}` : 'unknown path') + (p.reason ? ` · ${p.reason}` : '') };
+  }
+  if (t === 'rewardEdit') {
+    const r = state.rewards.find(x => x.id === p.id);
+    if (!r) return { kind: 'Reward edit', title: '(reward gone)', detail: p.reason || '' };
+    const bits = [];
+    if (p.emoji != null && p.emoji !== r.emoji) bits.push(`${r.emoji}→${p.emoji}`);
+    if (p.name != null && p.name !== r.name) bits.push(`"${r.name}"→"${p.name}"`);
+    if (p.tier != null && p.tier !== r.tier) bits.push(`${r.tier}→${p.tier}`);
+    if (p.minutes != null && +p.minutes !== (r.minutes || 0)) bits.push(`${r.minutes}m`);
+    return { kind: 'Reward edit', title: `${p.emoji || r.emoji} ${p.name || r.name}`, detail: bits.join(' · ') || (p.reason || 'no change') };
+  }
   return { kind: 'Proposal', title: JSON.stringify(p).slice(0, 80), detail: '' };
 }
 
-function ensureAICategory(name, a) {
+// Read the current live value at an allowed settingsChange dot-path (for display).
+function settingsPathValue(path) {
+  const spec = SETTINGS_PATHS[path];
+  if (spec) return spec.read();
+  const hh = happyHourField(path);
+  if (hh) return state.settings.happyHours[hh.cat][hh.field];
+  return undefined;
+}
+
+// Ensure a category exists and register it in aiMeta (so Clear AI Data can remove
+// it). No aspiration linking — categories are just labels now.
+function ensureAICategory(name) {
   if (!name || name === 'Unsorted') return 'Unsorted';
   if (!(state.categories || []).includes(name)) {
     if (!addCategoryName(name)) return 'Unsorted';
     if (!state.aiMeta.categories.includes(name)) state.aiMeta.categories.push(name);
-    if (a && !a.linked.categories.includes(name)) a.linked.categories.push(name);
   }
   return name;
 }
-// Returns true when applied. Every created item is tagged createdBy:'ai' AND
-// registered in state.aiMeta + the aspiration's linked list.
-function applyProposal(a, p) {
+// Returns true when applied. Every AI-CREATED item is tagged createdBy:'ai' and
+// registered in state.aiMeta (backs Clear AI Data). Edits to existing items
+// (tierChange/scheduleChange/dropHabit/settingsChange/rewardEdit) are NOT tagged —
+// they touch the user's own data and must stay after Clear AI Data.
+function applyProposal(p) {
   const t = p.type;
   if (t === 'habit') {
     const h = { id: uid(), emoji: p.emoji || '⭐', name: String(p.name || 'Habit'),
@@ -4414,26 +4456,35 @@ function applyProposal(a, p) {
       repeatable: !!p.repeatable, cap: clamp(parseInt(p.cap) || 1, 1, 99),
       lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0,
       days: (Array.isArray(p.days) && p.days.length === 7) ? p.days.map(Boolean) : [true, true, true, true, true, true, true],
-      category: ensureAICategory(p.category, a), doneAt: 0, doneMin: null,
-      createdBy: 'ai', aspirationId: a.id };
-    state.habits.push(h); state.aiMeta.habits.push(h.id); a.linked.habits.push(h.id);
+      category: ensureAICategory(p.category), doneAt: 0, doneMin: null,
+      createdBy: 'ai' };
+    state.habits.push(h); state.aiMeta.habits.push(h.id);
     return true;
   }
   if (t === 'quest') {
     const tier = TASK_TIERS[p.tier] ? p.tier : 'medium';
     const q = { id: uid(), emoji: p.emoji || '🎯', name: String(p.name || 'Quest'), tier,
-      category: ensureAICategory(p.category, a), reward: tierReward(tier),
+      category: ensureAICategory(p.category), reward: tierReward(tier),
       iterations: clamp(parseInt(p.iterations) || 1, 1, 99), progress: 0,
-      createdBy: 'ai', aspirationId: a.id };
-    state.oneoffs.push(q); state.aiMeta.oneoffs.push(q.id); a.linked.oneoffs.push(q.id);
+      createdBy: 'ai' };
+    state.oneoffs.push(q); state.aiMeta.oneoffs.push(q.id);
     return true;
   }
-  if (t === 'category') { ensureAICategory(String(p.name || '').trim(), a); return true; }
+  if (t === 'category') { ensureAICategory(String(p.name || '').trim()); return true; }
   if (t === 'reward') {
     const r = { id: uid(), emoji: p.emoji || '🎁', name: String(p.name || 'Reward'),
       tier: REWARD_TIERS.includes(p.tier) ? p.tier : 'common',
-      minutes: clamp(parseInt(p.minutes) || 0, 0, 999), createdBy: 'ai', aspirationId: a.id };
-    state.rewards.push(r); state.aiMeta.rewards.push(r.id); a.linked.rewards.push(r.id);
+      minutes: clamp(parseInt(p.minutes) || 0, 0, 999), createdBy: 'ai' };
+    state.rewards.push(r); state.aiMeta.rewards.push(r.id);
+    return true;
+  }
+  if (t === 'settingsChange') return applySettingsChange(p);
+  if (t === 'rewardEdit') {
+    const r = state.rewards.find(x => x.id === p.id); if (!r) return false;
+    if (p.emoji != null) r.emoji = String(p.emoji).slice(0, 4);
+    if (p.name != null) r.name = String(p.name);
+    if (p.tier != null && REWARD_TIERS.includes(p.tier)) r.tier = p.tier;
+    if (p.minutes != null) r.minutes = clamp(parseInt(p.minutes) || 0, 0, 999);
     return true;
   }
   if (t === 'tierChange') {
@@ -4458,19 +4509,30 @@ function applyProposal(a, p) {
 }
 function refreshAfterAI() {
   save();
+  // gameplay surfaces
   renderHabits(); renderOneoffs(); buildHabitWheel(); renderQuestAdd();
-  renderCategories(); renderHabitEditor(); renderRewardEditor(); renderHappyHours();
-  renderPrizes(); renderAspire(); renderTopbar();
+  renderPrizes(); renderChat(); renderTopbar(); renderHappyBanners();
+  buildWheelSegments(); updateGameButtons();
+  // settings surfaces — renderSettings repopulates every editor + input from live
+  // state (categories, habit/reward editors, tier payouts, happy hours, game odds,
+  // pass config, bonuses), so a settingsChange/rewardEdit is reflected everywhere.
+  renderSettings(); refreshPassUI();
 }
 
-function renderAiLog() {
-  const log = $('#aiLog'); const a = chatAsp(); if (!log || !a) return;
-  const msgHTML = a.chat.map((m, mi) => {
-    let out = `<div class="ai-msg ${m.role}">${escapeHtml(m.content)}</div>`;
+/* ---- one global chat thread, rendered inline in the Chat tab ---- */
+function renderChat() {
+  const log = $('#aiLog'); if (!log) return;
+  const hint = $('#aiKeyHint'); if (hint) hint.style.display = activeKey() ? 'none' : '';
+  const chat = state.aiChatLog || [];
+  const intro = chat.length ? '' :
+    `<div class="ai-msg assistant">👋 I'm your coach. I can already see your habits, quests, rewards, settings and how you've been doing — ask me to adjust payouts or game odds, rename or re-tier a reward, change a schedule, or just explain what your data shows.</div>`;
+  const msgHTML = chat.map((m, mi) => {
+    let out = `<div class="ai-msg ${m.err ? 'err' : m.role}">${escapeHtml(m.content)}</div>`;
     (m.proposals || []).forEach((p, pi) => {
       const d = describeProposal(p);
+      const editType = ['tierChange', 'dropHabit', 'scheduleChange', 'settingsChange', 'rewardEdit'].includes(p.type);
       const st = (m.status || {})[pi];
-      const cls = 'prop-card' + (p.type === 'tierChange' || p.type === 'dropHabit' || p.type === 'scheduleChange' ? ' tierchange' : '') + (st ? ' done' : '');
+      const cls = 'prop-card' + (editType ? ' tierchange' : '') + (st ? ' done' : '');
       out += `<div class="${cls}" data-mi="${mi}" data-pi="${pi}">
         <div class="p-kind">${escapeHtml(d.kind)}</div>
         <div class="p-title">${escapeHtml(d.title)}</div>
@@ -4482,38 +4544,30 @@ function renderAiLog() {
     });
     return out;
   }).join('');
-  log.innerHTML = msgHTML + (aiChat.busy ? '<div class="ai-msg thinking">🤖 thinking…</div>' : '');
+  log.innerHTML = intro + msgHTML + (aiBusy ? '<div class="ai-msg thinking">🤖 thinking…</div>' : '');
   log.scrollTop = log.scrollHeight;
 }
-function openAiChat(aspId, mode) {
-  const a = state.aspirations.find(x => x.id === aspId); if (!a) return;
-  aiChat = { aspId, mode: mode || 'checkin', busy: false };
-  $('#aiChatTitle').textContent = `${mode === 'plan' ? '✨ Planning' : '💬 Check-in'} — ${a.name}`;
-  $('#aiOverlay').classList.add('show');
-  renderAiLog();
-  setTimeout(() => $('#aiChatInput')?.focus(), 50);
-}
-function closeAiChat() { $('#aiOverlay').classList.remove('show'); aiChat.aspId = null; }
 
 async function sendAiChat(text) {
-  const a = chatAsp(); if (!a || aiChat.busy) return;
-  a.chat.push({ role: 'user', content: text, ts: Date.now() });
-  aiChat.busy = true; save(); renderAiLog();
+  if (aiBusy) return;
+  state.aiChatLog = state.aiChatLog || [];
+  state.aiChatLog.push({ role: 'user', content: text, ts: Date.now() });
+  aiBusy = true; save(); renderChat();
   try {
     // send raw assistant JSON back so the model keeps its own output contract
-    const messages = a.chat.map(m => ({ role: m.role, content: m.role === 'assistant' ? (m.raw || m.content) : m.content }));
-    const reply = await callAI(aiSystemPrompt(a, aiChat.mode), messages);
+    const messages = state.aiChatLog.map(m => ({ role: m.role, content: m.role === 'assistant' ? (m.raw || m.content) : m.content }));
+    const reply = await callAI(aiSystemPrompt(), messages);
     const parsed = parseAIReply(reply);
-    a.chat.push({ role: 'assistant', content: parsed.message, raw: reply, ts: Date.now(),
-                  proposals: parsed.proposals, status: {} });
+    state.aiChatLog.push({ role: 'assistant', content: parsed.message, raw: reply, ts: Date.now(),
+                           proposals: parsed.proposals, status: {} });
   } catch (e) {
-    a.chat.push({ role: 'assistant', content: '⚠️ ' + (e && e.message ? e.message : 'Request failed'), ts: Date.now(), err: true });
+    state.aiChatLog.push({ role: 'assistant', content: '⚠️ ' + (e && e.message ? e.message : 'Request failed'), ts: Date.now(), err: true });
   }
-  aiChat.busy = false; save(); renderAiLog();
+  aiBusy = false; save(); renderChat();
 }
 
 /* ---- Clear AI Data: removes ONLY AI-created items. Never touches stats,
-   history, user-created items, the aspirations board or chat memory. ---- */
+   history, user-created items, or the AI chat log. ---- */
 function clearAIData() {
   const meta = state.aiMeta;
   const isAiHabit = h => h.createdBy === 'ai' || meta.habits.includes(h.id);
@@ -4524,7 +4578,7 @@ function clearAIData() {
   const nR = state.rewards.filter(isAiReward).length;
   const nC = (meta.categories || []).filter(c => (state.categories || []).includes(c)).length;
   if (!nH && !nQ && !nR && !nC) { toast('No AI-created items to clear 🤖', 'var(--cyan)'); return; }
-  if (!confirm(`Delete ${nH} AI habit(s), ${nQ} quest(s), ${nR} reward(s), ${nC} categorie(s)?\nYour own items, stats/history and the aspirations board are untouched.`)) return;
+  if (!confirm(`Delete ${nH} AI habit(s), ${nQ} quest(s), ${nR} reward(s), ${nC} categorie(s)?\nYour own items, stats/history and the chat log are untouched.`)) return;
   state.habits = state.habits.filter(h => !isAiHabit(h));
   state.oneoffs = state.oneoffs.filter(t => !isAiQuest(t));
   state.rewards = state.rewards.filter(r => !isAiReward(r));
@@ -4537,65 +4591,35 @@ function clearAIData() {
   });
   ensureHappyHours(); ensureCategoryColors();
   state.aiMeta = { habits: [], oneoffs: [], categories: [], rewards: [] };
-  refreshAfterAI(); refreshPassUI();
+  refreshAfterAI();
   SFX.click(); toast('🧹 AI-created data cleared', 'var(--cyan)');
 }
 
-/* ---- wiring ---- */
-function addAspirationFromInput() {
-  const inp = $('#aspAddName'); const name = (inp.value || '').trim();
-  if (!name) { inp.focus(); return; }
-  const a = newAspiration(name);
-  state.aspirations.push(a);
-  inp.value = ''; SFX.coin(); save(); renderAspire();
-  toast(`🌠 Committed: ${a.name}`, 'var(--cyan)');
-  openAiChat(a.id, 'plan');
-  if (activeKey()) sendAiChat(`New aspiration: "${a.name}". Build me a starter plan.`);
-}
-$('#aspAddBtn').addEventListener('click', addAspirationFromInput);
-$('#aspAddName').addEventListener('keydown', e => { if (e.key === 'Enter') addAspirationFromInput(); });
-$('#aspBoard').addEventListener('click', e => {
-  const card = e.target.closest('.asp-card'); if (!card) return;
-  const a = state.aspirations.find(x => x.id === card.dataset.id); if (!a) return;
-  const act = e.target.closest('[data-act]')?.dataset.act;
-  if (act === 'aspCheckin') { SFX.click(); openAiChat(a.id, 'checkin'); }
-  else if (act === 'aspPlan') { SFX.click(); openAiChat(a.id, 'plan'); }
-  else if (act === 'aspNotes') {
-    const v = prompt('Notes for this aspiration:', a.notes || '');
-    if (v !== null) { a.notes = v.trim(); save(); renderAspire(); }
-  } else if (act === 'aspDel') {
-    if (confirm(`Remove aspiration "${a.name}" from the board?\n(Habits/quests it generated stay in the app.)`)) {
-      state.aspirations = state.aspirations.filter(x => x.id !== a.id);
-      SFX.click(); save(); renderAspire();
-    }
-  }
-});
-$('#aiChatClose').addEventListener('click', () => { SFX.click(); closeAiChat(); });
-$('#aiOverlay').addEventListener('click', e => { if (e.target.id === 'aiOverlay') closeAiChat(); });
+/* ---- wiring: single inline chat ---- */
 function sendFromInput() {
   const inp = $('#aiChatInput'); const v = (inp.value || '').trim();
-  if (!v || aiChat.busy) return;
-  inp.value = ''; sendAiChat(v);
+  if (!v || aiBusy) return;
+  if (!activeKey()) { toast('Add an API key in Settings → 🤖 AI Coach', 'var(--pink)'); return; }
+  inp.value = ''; SFX.click(); sendAiChat(v);
 }
 $('#aiChatSend').addEventListener('click', sendFromInput);
 $('#aiChatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendFromInput(); });
 $('#aiLog').addEventListener('click', e => {
   const cardEl = e.target.closest('.prop-card'); if (!cardEl) return;
   const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
-  const a = chatAsp(); if (!a) return;
-  const m = a.chat[parseInt(cardEl.dataset.mi)]; if (!m || !m.proposals) return;
+  const m = (state.aiChatLog || [])[parseInt(cardEl.dataset.mi)]; if (!m || !m.proposals) return;
   const pi = parseInt(cardEl.dataset.pi); const p = m.proposals[pi]; if (!p || (m.status || {})[pi]) return;
   m.status = m.status || {};
   if (act === 'propApply') {
-    if (applyProposal(a, p)) {
+    if (applyProposal(p)) {
       m.status[pi] = 'applied'; SFX.win(); toast('✓ Applied', 'var(--green)'); refreshAfterAI();
     } else { toast('Could not apply — the target may be gone', 'var(--pink)'); SFX.lose(); save(); }
   } else if (act === 'propDismiss') { m.status[pi] = 'dismissed'; SFX.click(); save(); }
-  renderAiLog();
+  renderChat();
 });
-$('#aiProvider').addEventListener('change', e => { aiSettings.provider = e.target.value === 'openai' ? 'openai' : 'anthropic'; saveAISettings(); renderAspire(); });
-$('#aiAnthropicKey').addEventListener('input', e => { aiSettings.anthropicKey = e.target.value.trim(); saveAISettings(); renderAspire(); });
-$('#aiOpenaiKey').addEventListener('input', e => { aiSettings.openaiKey = e.target.value.trim(); saveAISettings(); renderAspire(); });
+$('#aiProvider').addEventListener('change', e => { aiSettings.provider = e.target.value === 'openai' ? 'openai' : 'anthropic'; saveAISettings(); renderChat(); });
+$('#aiAnthropicKey').addEventListener('input', e => { aiSettings.anthropicKey = e.target.value.trim(); saveAISettings(); renderChat(); });
+$('#aiOpenaiKey').addEventListener('input', e => { aiSettings.openaiKey = e.target.value.trim(); saveAISettings(); renderChat(); });
 $('#aiAnthropicModel').addEventListener('input', e => { aiSettings.anthropicModel = e.target.value.trim() || 'claude-opus-4-8'; saveAISettings(); });
 $('#aiOpenaiModel').addEventListener('input', e => { aiSettings.openaiModel = e.target.value.trim() || 'gpt-4o'; saveAISettings(); });
 $('#aiClearBtn').addEventListener('click', clearAIData);
@@ -4612,7 +4636,7 @@ function switchView(name) {
   if (name === 'habits') renderHabits();
   if (name === 'tasks') renderTasks();
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
-  if (name === 'aspire') renderAspire();
+  if (name === 'chat') renderChat();
   if (name === 'prizes') renderPrizes();
   if (name === 'stats') renderStats();
   if (name === 'settings') renderSettings();
@@ -5310,7 +5334,7 @@ function fullRender() {
   ultraView = -2; renderUltra();
   renderDie($('#die1'), 1); renderDie($('#die2'), 1);
   renderPrizes();
-  renderAspire();
+  renderChat();
   renderSettings();
   passEnsureWeek();      // roll the pass week / seed goals if needed
   updatePassFab();
