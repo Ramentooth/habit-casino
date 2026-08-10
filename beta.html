@@ -182,6 +182,7 @@
       box-shadow: 0 -8px 30px rgba(0,0,0,0.55);
     }
     .tab {
+      position: relative;
       flex: 1 1 0; min-width: 0; cursor: pointer; user-select: none;
       display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
       padding: 7px 2px 4px; border-radius: 14px; color: var(--ink-dim);
@@ -230,6 +231,23 @@
     .more-row:last-child { border-bottom: 0; }
     .more-row:active { background: rgba(176,38,255,0.16); }
     .more-row.active .mr-label { color: var(--cyan); }
+    /* Red "needs attention" dot — on the More tab and on the row it belongs to. */
+    .nav-dot {
+      position: absolute; top: 5px; left: 50%; margin-left: 8px;
+      width: 9px; height: 9px; border-radius: 50%; background: #ff3b30;
+      box-shadow: 0 0 8px rgba(255,59,48,.95); pointer-events: none;
+    }
+    .more-row .mr-dot {
+      margin-left: auto; flex: 0 0 auto;
+      width: 10px; height: 10px; border-radius: 50%; background: #ff3b30;
+      box-shadow: 0 0 8px rgba(255,59,48,.95);
+    }
+    .cloud-pending {
+      margin-top: 10px; padding: 12px; border-radius: 12px;
+      border: 1px solid rgba(255,59,48,.55); background: rgba(255,59,48,.10);
+    }
+    .cp-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .5px; color: #ff6b60; }
+    .cp-body { font-size: 13px; color: var(--ink-dim); margin-top: 4px; }
     .mr-ico { font-size: 24px; line-height: 1; width: 30px; text-align: center; flex: 0 0 auto; }
     .mr-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .5px; color: var(--ink); }
 
@@ -7563,6 +7581,7 @@ let cloudUser = null;             // cloudOn lives up beside save() — see the 
 let cloudStatus = 'off';          // off | loading | ready | error
 let cloudMsg = '';
 let cloudSyncedAt = 0;
+let cloudPending = null;          // a newer cloud save waiting on a decision (see below)
 let authMode = 'in';              // 'in' = sign in · 'up' = create account
 let authBusy = false;
 
@@ -7572,7 +7591,8 @@ window.HCCloudState = async function (user) {
   cloudUser = user;
   cloudOn = false;
   cloudMsg = '';
-  if (!user) { cloudStatus = 'off'; renderCloudUI(); return; }
+  cloudPending = null;
+  if (!user) { cloudStatus = 'off'; renderCloudUI(); renderCloudBadge(); return; }
   $('#authOverlay').classList.remove('show');
   cloudStatus = 'loading'; renderCloudUI();
 
@@ -7580,22 +7600,56 @@ window.HCCloudState = async function (user) {
   try { remote = await window.HCCloud.pull(); }
   catch (e) { cloudStatus = 'error'; cloudMsg = e.message || 'Could not reach the cloud.'; renderCloudUI(); return; }
 
-  // Newer-cloud-wins, but never silently: an unattended overwrite is how a week of
-  // streaks disappears. Declining keeps this device and pushes it up instead.
+  // A newer cloud save is never applied on its own and never interrupts. It parks here
+  // and raises a red dot on the nav; you resolve it in Settings whenever you feel like it.
+  //
+  // cloudOn deliberately stays FALSE while a decision is outstanding. Turning mirroring
+  // on would let the next save() push this device straight over the newer cloud copy —
+  // destroying the very thing the notification is asking about.
   const localTs = state.updatedAt || 0;
   if (remote && remote.state && (remote.updatedAt || 0) > localTs) {
-    const when = new Date(remote.updatedAt).toLocaleString();
-    if (confirm(`Your cloud save (${when}) is newer than this device.\n\nLoad it? This replaces what's on this device.\n\nCancel keeps this device's save and overwrites the cloud copy.`)) {
-      state = load(remote.state);
-      fullRender();
-      toast('Loaded from the cloud ☁️', 'var(--cyan)');
-    }
+    cloudPending = remote;
+    cloudStatus = 'pending';
+    renderCloudUI(); renderCloudBadge();
+    return;
   }
   cloudOn = true;
   cloudStatus = 'ready';
-  save();                      // push whichever save we settled on
-  renderCloudUI();
+  save();                      // nothing newer up there — push this device
+  renderCloudUI(); renderCloudBadge();
 };
+
+// Resolve the parked cloud save: adopt it, or keep this device and overwrite it.
+function resolveCloudPending(useCloud) {
+  if (!cloudPending) return;
+  const remote = cloudPending;
+  cloudPending = null;
+  cloudStatus = 'ready';
+  cloudOn = true;                            // safe now — the decision is made
+  if (useCloud) {
+    state = load(remote.state);
+    fullRender();                            // repaints Settings + badge via renderCloudUI
+    toast('Loaded from the cloud ☁️', 'var(--cyan)');
+  } else {
+    toast('Kept this device\'s save', 'var(--cyan)');
+  }
+  save();                                    // push whichever side won
+  renderCloudUI(); renderCloudBadge();
+}
+
+// Red dot on the nav for anything in Settings needing attention. Settings lives behind
+// "More" now, so the dot has to ride on the More tab as well as the row inside the sheet.
+function renderCloudBadge() {
+  const show = !!cloudPending;
+  const put = (host, cls) => {
+    if (!host) return;
+    let dot = host.querySelector('.' + cls);
+    if (show && !dot) { dot = document.createElement('span'); dot.className = cls; host.appendChild(dot); }
+    else if (!show && dot) dot.remove();
+  };
+  put($('#moreTab'), 'nav-dot');
+  put($('#moreSheet .more-row[data-view="settings"]'), 'mr-dot');
+}
 
 // Called by the cloud layer after each successful write.
 window.HCCloudSynced = function () { cloudSyncedAt = Date.now(); renderCloudUI(); };
@@ -7616,16 +7670,28 @@ function renderCloudUI() {
   }
   const who = cloudUser.email || cloudUser.name || 'signed in';
   const synced = cloudSyncedAt ? `Last synced ${new Date(cloudSyncedAt).toLocaleTimeString()}.` : 'Syncing…';
+  // A parked cloud save takes over this panel until it's resolved — and says plainly
+  // that syncing is paused, because it is.
+  const pending = cloudPending ? `
+    <div class="cloud-pending">
+      <div class="cp-title">🔴 Newer save in the cloud</div>
+      <div class="cp-body">Saved ${escapeHtml(new Date(cloudPending.updatedAt || 0).toLocaleString())} from another device. Syncing is paused until you choose.</div>
+      <div class="row" style="margin-top:10px;gap:8px">
+        <button class="btn green sm" id="cloudUseCloud">⬇ Load it</button>
+        <button class="btn ghost sm" id="cloudKeepLocal">Keep this device</button>
+      </div>
+    </div>` : '';
   box.innerHTML = `
     <div class="row between" style="margin-top:4px">
-      <span>☁️ Synced as <b>${escapeHtml(who)}</b></span>
+      <span>☁️ ${cloudPending ? 'Signed in as' : 'Synced as'} <b>${escapeHtml(who)}</b></span>
       <button class="btn ghost sm" id="cloudSignOut">Sign out</button>
     </div>
     ${cloudStatus === 'error' ? `<div class="auth-err">${escapeHtml(cloudMsg)}</div>` : ''}
-    <div class="row" style="margin-top:8px">
+    ${pending}
+    ${cloudPending ? '' : `<div class="row" style="margin-top:8px">
       <button class="btn ghost sm" id="cloudRestore">⬇ Load cloud save</button>
     </div>
-    <div class="hint" id="cloudSaveState">${escapeHtml(synced)} Your save also stays on this device.</div>`;
+    <div class="hint" id="cloudSaveState">${escapeHtml(synced)} Your save also stays on this device.</div>`}`;
 }
 
 // ---- sign-in modal (opened from Settings, not a boot gate) ----
@@ -7676,6 +7742,8 @@ $('#view-settings').addEventListener('click', async e => {
     if (!window.HCCloud) { cloudMsg = 'Cloud layer failed to load — check your connection.'; renderCloudUI(); return; }
     openAuth(); return;
   }
+  if (e.target.closest('#cloudUseCloud'))  { SFX.click(); resolveCloudPending(true);  return; }
+  if (e.target.closest('#cloudKeepLocal')) { SFX.click(); resolveCloudPending(false); return; }
   if (e.target.closest('#cloudSignOut') && window.HCCloud) {
     if (confirm('Sign out? Your save stays on this device and in the cloud.')) {
       window.HCCloud.signOut();
@@ -7719,6 +7787,7 @@ function fullRender() {
   updatePassFab();
   renderVersionUI();     // alpha/beta badge + switcher
   renderCloudUI();       // Settings → ☁️ Cloud Save (shows "sign in to sync" when off)
+  renderCloudBadge();    // red dot on More/Settings when a cloud save needs a decision
 }
 
 // Boot is synchronous again: the save comes from localStorage, so nothing waits on the
