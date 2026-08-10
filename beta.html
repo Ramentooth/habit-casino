@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Build channel. window.HC_VERSION is the ONLY line that differs between alpha.html and beta.html.
+  <!-- Build channel. The FILENAME is authoritative: alpha.html is always ALPHA, beta.html
+       is always BETA, so copying one build over the other can't make it claim the wrong
+       channel. The fallback below is the ONLY line that differs between the two files, and
+       it only applies to any other filename (index.html, HabitCasinoAI.html).
        This file NEVER redirects — only index.html routes between versions. -->
   <script>
-    window.HC_VERSION = 'beta';
-    try { localStorage.setItem('habitVersion', 'beta'); } catch (e) {}
+    window.HC_VERSION = (function () {
+      var f = (location.pathname.match(/[^/]*$/) || [''])[0].toLowerCase();
+      if (f.indexOf('alpha') === 0) return 'alpha';
+      if (f.indexOf('beta') === 0) return 'beta';
+      return 'beta';
+    })();
+    try { localStorage.setItem('habitVersion', window.HC_VERSION); } catch (e) {}
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 
@@ -297,7 +305,6 @@
       background: linear-gradient(160deg, rgba(176,38,255,0.10), rgba(20,6,42,0.55));
       border: 1px solid var(--panel-edge);
     }
-    .cat-label { font-weight: 800; }
     /* Habit difficulty levels: rim color + tier word live inside the reward pill; swipe to change */
     .hrow, .hedit { touch-action: pan-y; }
     .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1; padding: 4px 9px 3px; }
@@ -1154,10 +1161,9 @@
     <div class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Casino</span></div>
     <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
     <div class="tab center active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
-    <div class="tab" data-view="chat" style="position:relative"><span class="ti">💬</span><span class="tl">Chat</span><span id="qNavBadge" style="display:none;position:absolute;top:2px;right:10px;background:var(--purple,#b026ff);color:#fff;font-size:10px;font-weight:800;line-height:1;border-radius:8px;padding:2px 5px;min-width:14px;text-align:center"></span></div>
+    <div class="tab" data-view="chat"><span class="ti">💬</span><span class="tl">Chat</span></div>
     <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
     <div class="tab" data-view="stats"><span class="ti">📊</span><span class="tl">Stats</span></div>
-    <div class="tab" data-view="schedule"><span class="ti">📅</span><span class="tl">Schedule</span></div>
     <div class="tab" data-view="settings"><span class="ti">⚙️</span><span class="tl">Settings</span></div>
   </nav>
 
@@ -1167,7 +1173,6 @@
       <div class="plan-cta">
         <button class="btn ghost sm" data-act="openPlanner">📅 Plan My Week</button>
         <span id="todayCtxBadge"></span>
-        <select class="sect-in" id="loadoutSwitch" title="Which loadout is today? Auto-detected from the Week Planner — override it here any time."></select>
       </div>
       <div id="dueSoonSection"></div>
       <div class="habit-group collapsed" id="dailyGroup">
@@ -1185,7 +1190,7 @@
           <span class="group-caret" aria-hidden="true">▾</span>
         </div>
         <div class="habit-group-body">
-          <div id="dailyIdentities"></div>
+          <div class="habit-list" id="dailyGrid"></div>
           <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="daily">＋ Add habit</button>
         </div>
       </div>
@@ -1361,13 +1366,11 @@
     <!-- ASPIRATIONS (HabitCasinoAI) -->
     <section class="view" id="view-chat">
       <div class="chat-page">
-        <div class="chat-intro" style="position:relative">
-          <button class="btn ghost sm" id="pastQuestionnairesBtn" style="position:absolute;top:0;right:0" title="Past check-ins">🧭 Past</button>
+        <div class="chat-intro">
           <div class="section-title neon-cyan">💬 AI Chat</div>
           <div class="subtle">Your coach already sees every habit, quest, reward and setting plus how you've actually been doing. Ask it to tune payouts or odds, rename or re-tier a reward, change a schedule, or just explain what your data shows.</div>
           <div class="hint" id="aiKeyHint" style="display:none">⚠️ No API key set — add one in <b>Settings → 🤖 AI Coach</b> to start chatting.</div>
         </div>
-        <div id="questionnaireBanner"></div>
         <div class="chip-row" id="aiThreadChips" style="margin:0 0 8px;flex-shrink:0"></div>
         <div class="ai-log" id="aiLog"></div>
         <div class="ai-inputrow">
@@ -1397,15 +1400,6 @@
       <div class="section-title neon-cyan">📊 Analytics</div>
       <div class="subtle" style="margin-bottom:12px">When your habits &amp; quests actually get done — and how hard you're going.</div>
       <div id="statsBody"></div>
-    </section>
-
-    <!-- ===================== BLOCK SCHEDULE ===================== -->
-    <section class="view" id="view-schedule">
-      <div class="section-title neon-purple">📅 Block Schedule</div>
-      <div class="subtle" style="margin-bottom:12px">How your day usually flows — auto-filled from actual play→finish times. Visualization only for now; ask the AI Coach or a check-in conversation to move something and it'll show up here with a 🤖 tag.</div>
-      <div style="overflow-x:auto">
-        <div id="scheduleBody" style="min-width:260px"></div>
-      </div>
     </section>
 
     <!-- ===================== SETTINGS ===================== -->
@@ -1449,11 +1443,11 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-cyan">🏷️ Identities</div>
-        <div class="subtle">Group habits &amp; tasks around what you're building toward. Identities drive row colors, weekly pass goals, happy hours, and the Habits tab's accordions — assign them in ⚙️ Habits and 🎯 One-Off Quests. Set an identity's purpose ("why") by talking to it in 💬 AI Chat.</div>
+        <div class="section-title neon-cyan">🏷️ Categories</div>
+        <div class="subtle">Group habits &amp; tasks. Categories drive row colors, weekly pass goals and happy hours — assign them in ⚙️ Habits and 🎯 One-Off Quests.</div>
         <div class="editor-list" id="categoryList"></div>
         <div class="row" style="gap:8px">
-          <input class="name-in" id="newCategory" placeholder="Add an identity (e.g. Volleyball)">
+          <input class="name-in" id="newCategory" placeholder="Add a category (e.g. Health)">
           <button class="btn ghost sm" id="addCategory">+ Add</button>
         </div>
       </div>
@@ -1635,22 +1629,6 @@
     </div>
   </div>
 
-  <!-- Reflection check-in overlay (same shell) — the deeper "want to talk through it?" conversation -->
-  <div class="pass-overlay" id="checkinOverlay">
-    <div class="pass-modal">
-      <button class="pass-close" id="checkinClose" title="Close">✕</button>
-      <div id="checkinBody"></div>
-    </div>
-  </div>
-
-  <!-- Past questionnaires overlay (same shell) — review/edit/re-save answered check-ins -->
-  <div class="pass-overlay" id="pastQOverlay">
-    <div class="pass-modal">
-      <button class="pass-close" id="pastQClose" title="Close">✕</button>
-      <div id="pastQBody"></div>
-    </div>
-  </div>
-
   <!-- Wild Card chooser -->
   <div class="wild-overlay" id="wildOverlay">
     <div class="wild-modal">
@@ -1740,7 +1718,7 @@ function defaultState() {
       { id: uid(), emoji: '🧹', name: 'Tidy a space',       section: 'extra', reward: 2, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '🤝', name: 'Reach out to a friend', section: 'extra', reward: 3, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '💊', name: 'Take vitamins',      section: 'extra', reward: 1, repeatable: true,  cap: 2, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
-    ].map(h => ({ days: [true, true, true, true, true, true, true], modes: {}, loadout: null, why: '', scheduledMin: null, context: [], contextAsked: true, category: ({ 'Exercise': 'Exercise', 'Practice Cello': 'Intellect', 'Japanese Practice': 'Intellect', 'Study / Read': 'Intellect' }[h.name] || 'Unsorted'), ...h })), // days[0..6] = Sun..Sat, default every day; loadout: null = universal (shows under every loadout), else one of `contexts`; contextAsked:true = pre-seeded defaults skip the onboarding questionnaire
+    ].map(h => ({ days: [true, true, true, true, true, true, true], modes: {}, category: ({ 'Exercise': 'Exercise', 'Practice Cello': 'Intellect', 'Japanese Practice': 'Intellect', 'Study / Read': 'Intellect' }[h.name] || 'Unsorted'), ...h })), // days[0..6] = Sun..Sat, default every day
     rewards: [
       // `minutes` > 0 marks a "time" reward (screen/game time) — eligible for the unlock-window bonus.
       { id: uid(), emoji: '🍫', name: 'Favorite snack',       tier: 'common', minutes: 0 },
@@ -1782,40 +1760,18 @@ function defaultState() {
                 // Per-category happy hours: one entry per category name → { enabled, start, end, mult }.
                 happyHours: {},
                 // Token payout per one-off task tier (editable in Settings → One-Off Quests).
-                tierRewards: { easy: 5, medium: 10, hard: 20 },
-                // Reflection check-in: which input mode was last used — 'text' | 'browser' | 'realtime'.
-                voiceMode: 'text' },
+                tierRewards: { easy: 5, medium: 10, hard: 20 } },
     streakFreezes: 0, // how many Streak Freezes the player currently owns
     stats: { plays: 0, wins: 0, tokensWon: 0, rouletteSpins: 0, ultraPacks: 0 },
     categories: ['Exercise', 'Intellect', 'Unsorted'],
     categoryColors: {},   // per-category accent colors (seeded by ensureCategoryColors, editable in Settings)
-    identityPurposes: {}, // per-identity "why" text (seeded/cleaned by ensureIdentityPurposes, same pattern as categoryColors) — the identity's own purpose; a habit's h.why is a more specific override/addition
     history: [],          // completion log for the Stats tab: { ts, kind, name, emoji, category, level, reward }
-    // Reflection system: quick tap-chip reasons for misses, plus deeper end-of-day
-    // conversation transcripts. Both land in `reflections`; `reasonChips` grows over
-    // time the same way `contexts` does (starter set + AI can propose new ones).
-    reasonChips: [
-      { key: 'too_hard', label: 'Too hard to start' },
-      { key: 'no_time', label: 'Ran out of time' },
-      { key: 'forgot', label: 'Forgot' },
-      { key: 'low_energy', label: 'Low energy / tired' },
-      { key: 'conflict', label: 'Conflicting event' },
-      { key: 'unmotivated', label: 'Not feeling motivated' },
-      { key: 'other', label: 'Other' },
-    ],
-    reflections: [], // { id, date, habitId, kind:'chip'|'conversation', chip, note, transcript, ts }
-    // Questionnaires: the frictionless replacement for the old main-screen reflection
-    // UI. One gets queued (up to 3/day) whenever computeAnomalies() finds something
-    // worth asking about; a badge on the Chat tab is the only surface for it — no
-    // main-screen clutter. Answered ones stay here so they can be reviewed/edited from
-    // the Chat tab's "past" mini-tab.
-    questionnaires: [], // { id, date, createdAt, habitIds, status:'pending'|'answered', format, answers, transcript, summary, ts }
     // HabitCasinoAI: one global AI chat log + AI provenance registry. Both live in
     // the shared 'habitCasino.v1' save on purpose — the original app's load() spreads
     // unknown top-level keys through untouched, so they survive round-trips there.
     aiChatThreads: [],    // chat threads: { id, title, createdAt, messages: [{ role, content, raw, ts, proposals, status }] }
     activeChatThreadId: null,
-    aiMeta: { habits: [], oneoffs: [], categories: [], rewards: [], modes: [], reasonChips: [] }, // ids/names of AI-created items (backs "Clear AI Data")
+    aiMeta: { habits: [], oneoffs: [], categories: [], rewards: [], modes: [] }, // ids/names of AI-created items (backs "Clear AI Data")
     // Week Planner: the day-context taxonomy (grows like `categories`) + what the user
     // said about each upcoming day. A date present in dayPlans is "flagged": habits can
     // wear a Mode that day, and a miss there never breaks a streak.
@@ -1882,14 +1838,6 @@ function ensureCategoryColors(st = state) {
   const named = (st.categories || []).filter(c => c !== 'Unsorted');
   named.forEach((c, i) => { if (!cc[c]) cc[c] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
   Object.keys(cc).forEach(c => { if (!named.includes(c)) delete cc[c]; });
-  ensureIdentityPurposes(st);   // same cleanup pass, piggybacked so every call site gets both for free
-}
-// Drop purpose text for identities that no longer exist; never invents one for a
-// new identity — that only happens through the AI conversation (identityPurpose proposal).
-function ensureIdentityPurposes(st = state) {
-  const ip = st.identityPurposes = st.identityPurposes || {};
-  const named = (st.categories || []);
-  Object.keys(ip).forEach(c => { if (!named.includes(c)) delete ip[c]; });
 }
 
 let state = load();
@@ -1945,20 +1893,6 @@ function normalizeHabit(h) {
     dayCount: h.dayCount || 0,
     days: (Array.isArray(h.days) && h.days.length === 7) ? h.days.map(Boolean) : [true, true, true, true, true, true, true],
     category: h.category || 'Unsorted',
-    // Loadout tag: null = universal (shows under every loadout); otherwise must name
-    // one of `state.contexts` at render time (validated there, not here, since contexts
-    // can change independently) — here we just preserve whatever string was saved.
-    loadout: (h.loadout != null && String(h.loadout).trim()) ? String(h.loadout).trim() : null,
-    why: h.why != null ? String(h.why) : '',
-    // Block Schedule: explicit AI/user-set target start time (minute of day), overriding
-    // the inferred habitUsualMinute() median. null = not pinned, use the inferred time.
-    scheduledMin: Number.isFinite(h.scheduledMin) ? clamp(h.scheduledMin, 0, 1439) : null,
-    // Habit-making context: what this habit actually means to the user (how they do
-    // it, what "good" looks like, why) — gathered once via an AI questionnaire right
-    // after creation so mode/tier suggestions are grounded instead of guessed.
-    context: Array.isArray(h.context) ? h.context.filter(c => c && c.question && c.answer)
-      .map(c => ({ question: String(c.question), answer: String(c.answer), ts: c.ts || Date.now() })) : [],
-    contextAsked: !!h.contextAsked,
     doneAt: h.doneAt || 0,
     doneMin: Number.isFinite(h.doneMin) ? h.doneMin : null,
     // difficulty levels: up to 2 extra variants (easiest → hardest); baseIdx = where the habit itself sits
@@ -1969,10 +1903,8 @@ function normalizeHabit(h) {
     modes: (h.modes && typeof h.modes === 'object' && !Array.isArray(h.modes)) ? normalizeModes(h.modes) : {},
     // timed habits: optional per-level duration (base level) + a persisted running timer
     timedMinutes: Number.isFinite(h.timedMinutes) ? h.timedMinutes : 0,
-    // Open stopwatch — no durationSec anymore (see startHabitTimer); still restores an
-    // in-progress session across a reload as long as it has a start time.
-    timer: (h.timer && Number.isFinite(h.timer.startedAt))
-      ? { startedAt: h.timer.startedAt,
+    timer: (h.timer && Number.isFinite(h.timer.startedAt) && Number.isFinite(h.timer.durationSec))
+      ? { startedAt: h.timer.startedAt, durationSec: h.timer.durationSec,
           pausedAt: Number.isFinite(h.timer.pausedAt) ? h.timer.pausedAt : null,
           pausedTotalSec: h.timer.pausedTotalSec || 0, pauseCount: h.timer.pauseCount || 0 }
       : null,
@@ -2046,34 +1978,12 @@ function load() {
     merged.activeChatThreadId = merged.aiChatThreads.some(t => t.id === parsed.activeChatThreadId)
       ? parsed.activeChatThreadId : (merged.aiChatThreads[0] ? merged.aiChatThreads[0].id : null);
     delete merged.aiChatLog;   // old format fully absorbed — don't resurrect it on later loads
-    merged.aiMeta = { habits: [], oneoffs: [], categories: [], rewards: [], modes: [], reasonChips: [], ...(parsed.aiMeta || {}) };
+    merged.aiMeta = { habits: [], oneoffs: [], categories: [], rewards: [], modes: [], ...(parsed.aiMeta || {}) };
     // Saves written before Modes existed carry an aiMeta without `modes` — the spread
     // above would leave it undefined, so re-seed it explicitly.
     if (!Array.isArray(merged.aiMeta.modes)) merged.aiMeta.modes = [];
     merged.aiMeta.modes = merged.aiMeta.modes.filter(m => m && m.habitId && m.context)
       .map(m => ({ habitId: String(m.habitId), context: String(m.context) }));
-    if (!Array.isArray(merged.aiMeta.reasonChips)) merged.aiMeta.reasonChips = [];
-    // Reflection system — reason chips (starter + AI-added) and the reflection log.
-    merged.reasonChips = (Array.isArray(parsed.reasonChips) && parsed.reasonChips.length)
-      ? parsed.reasonChips.filter(c => c && c.key && c.label).map(c => ({ key: String(c.key), label: String(c.label) }))
-      : base.reasonChips;
-    merged.reflections = (Array.isArray(parsed.reflections) ? parsed.reflections : [])
-      .filter(r => r && r.id && r.date && (r.habitId || (Array.isArray(r.habitIds) && r.habitIds.length)))
-      .map(r => ({ id: r.id, date: String(r.date), habitId: r.habitId ? String(r.habitId) : null,
-                   habitIds: Array.isArray(r.habitIds) ? r.habitIds.map(String) : null,
-                   kind: r.kind === 'conversation' ? 'conversation' : 'chip',
-                   chip: r.chip ? String(r.chip) : null, note: r.note ? String(r.note) : '',
-                   summary: r.summary ? String(r.summary) : '',
-                   transcript: Array.isArray(r.transcript) ? r.transcript : null, ts: r.ts || Date.now() }));
-    merged.questionnaires = (Array.isArray(parsed.questionnaires) ? parsed.questionnaires : [])
-      .filter(q => q && q.id && q.date)
-      .map(q => ({ id: q.id, date: String(q.date), createdAt: q.createdAt || Date.now(),
-                   habitIds: Array.isArray(q.habitIds) ? q.habitIds.map(String) : [],
-                   status: q.status === 'answered' ? 'answered' : 'pending',
-                   format: ['mc', 'text', 'voice'].includes(q.format) ? q.format : null,
-                   answers: Array.isArray(q.answers) ? q.answers : null,
-                   transcript: Array.isArray(q.transcript) ? q.transcript : null,
-                   summary: q.summary ? String(q.summary) : '', ts: q.ts || Date.now() }));
     // Week Planner state — only reached the save via the blanket spread above, so
     // validate the shapes here rather than trusting them at every lookup site.
     merged.contexts = Array.isArray(parsed.contexts)
@@ -2124,61 +2034,6 @@ function todayStr(offset = 0) {
 function daysBetween(a, b) { // whole days from date-string a to date-string b
   const da = new Date(a + 'T00:00:00'), db = new Date(b + 'T00:00:00');
   return Math.round((db - da) / 86400000);
-}
-function dateStrFromTs(ts) {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-// Was this habit on the schedule / actually completed on an arbitrary (usually past) date?
-// Same weekday rule as isScheduledToday, just parameterized to a date string.
-function isScheduledOn(h, dateStr) {
-  const dow = new Date(dateStr + 'T00:00:00').getDay();
-  return !Array.isArray(h.days) || h.days[dow] !== false;
-}
-function habitCompletedOn(h, dateStr) {
-  return (state.history || []).some(e => e && e.kind === 'habit' && e.id === h.id && dateStrFromTs(e.ts) === dateStr);
-}
-// Expectation model: habits that broke from an established pattern on `dateStr`
-// (normally yesterday — the most recently "closed" day). Reused by appContext()
-// (so the main chat coach sees it) and by the check-in card trigger/prompt.
-// A habit only shows up here if it was CONSISTENT (same threshold as appContext's
-// consistent/drifting/quiet buckets) and broke that today — habits already known to
-// be drifting/quiet don't re-trigger a conversation about a problem already known.
-function computeAnomalies(dateStr) {
-  const now = Date.now();
-  const weekAgo = now - 7 * 86400000;
-  const hist = (state.history || []).filter(e => e && e.kind === 'habit' && Number.isFinite(e.ts));
-  const out = [];
-  state.habits.filter(h => !h.archived).forEach(h => {
-    if (!isScheduledOn(h, dateStr)) return;
-    const byName = hist.filter(e => e.name === h.name);
-    const last7 = byName.filter(e => e.ts >= weekAgo).length;
-    const sched = (h.days || [1, 1, 1, 1, 1, 1, 1]).filter(Boolean).length;
-    const wasConsistent = last7 >= Math.max(1, Math.round(sched * 0.7));
-    if (!habitCompletedOn(h, dateStr)) {
-      if (wasConsistent) out.push({ habitId: h.id, name: h.name, type: 'brokenStreak', detail: `usually consistent (${last7}/${sched} this week) but missed on ${fmtPlanDate ? fmtPlanDate(dateStr) : dateStr}` });
-      return;
-    }
-    const entry = byName.slice().reverse().find(e => e.id === h.id && dateStrFromTs(e.ts) === dateStr);
-    if (!entry) return;
-    const usual = habitUsualMinute(h);
-    if (Number.isFinite(usual)) {
-      const doneMin = new Date(entry.ts).getHours() * 60 + new Date(entry.ts).getMinutes();
-      const diff = Math.min(Math.abs(doneMin - usual), 1440 - Math.abs(doneMin - usual));
-      if (diff >= 150) out.push({ habitId: h.id, name: h.name, type: 'offTime', detail: `usually ~${fmtMinOfDay(usual)}, done at ~${fmtMinOfDay(doneMin)}` });
-    }
-    if (Number.isFinite(entry.actualElapsedSec)) {
-      const priorRuns = byName.filter(e => Number.isFinite(e.actualElapsedSec) && e.ts < entry.ts);
-      if (priorRuns.length >= 2) {
-        const medianMin = medianMinute(priorRuns.map(e => Math.round(e.actualElapsedSec / 60)));
-        const actualMin = entry.actualElapsedSec / 60;
-        if (medianMin > 0 && (actualMin > medianMin * 1.8 || actualMin < medianMin * 0.5)) {
-          out.push({ habitId: h.id, name: h.name, type: 'offDuration', detail: `usually ~${Math.round(medianMin)}m, took ~${Math.round(actualMin)}m` });
-        }
-      }
-    }
-  });
-  return out;
 }
 // date-string + n days → date-string (DST-safe: setDate does calendar math, not ms math)
 function addDays(dateStr, n) {
@@ -2498,18 +2353,12 @@ function isScheduledToday(h) {
   return !Array.isArray(h.days) || h.days[dow] !== false;
 }
 function sectionStats(section) {
-  let list = state.habits.filter(h => h.section === section && !h.archived && isScheduledToday(h));
-  // Daily habits are further filtered to today's active loadout (a habit tagged to a
-  // different loadout isn't "on the schedule" today, so it shouldn't count against
-  // the all-clear bonus or the roll-up bar). Universal habits (loadout=null) always count.
-  if (section === 'daily') { const lo = todayContext(); list = list.filter(h => h.loadout == null || h.loadout === lo); }
+  const list = state.habits.filter(h => h.section === section && !h.archived && isScheduledToday(h));
   const done = list.reduce((s, h) => s + doneCount(h), 0);
   const cap = list.reduce((s, h) => s + capOf(h), 0);
   const allComplete = list.length > 0 && list.every(isComplete);
   return { list, done, cap, pct: cap ? Math.round(done / cap * 100) : 0, allComplete };
 }
-// Habits belonging to today's active loadout (or universal), for the identity accordions.
-function dailyLoadoutHabits() { return sectionStats('daily').list; }
 
 // Compact checklist row: tap the CHECKBOX (data-act="done") to complete;
 // tap anywhere else (data-act="editHabit") to "blow up" the inline editor.
@@ -2523,16 +2372,11 @@ function habitCardHTML(h, usualMin) {
   const lvls = habitLevels(h);
   const li = lvls ? curLevelIndex(h) : -1;
   const lvl = lvls ? lvls[li] : null;
-  const cc = categoryColor(h.category);
-  // Leveled habits keep ONE color story — the difficulty rim + tier word.
-  // Category stripe/label colors only apply to plain habits.
-  const catBit = (h.category && h.category !== 'Unsorted')
-    ? ` · <span class="cat-label" style="color:${(!lvl && cc) || 'var(--ink-dim)'}">${escapeHtml(h.category)}</span>` : '';
   const hhTag = happyTagHTML(h.category);
   const rim = lvl ? LEVEL_COLORS[lvl.key] : null;
-  const rowStyle = lvl
-    ? ` style="border-color:${rim}"`
-    : (cc ? ` style="border-left:4px solid ${cc}"` : '');
+  // No category stripe or label here on purpose: the checklist is ONE flat list per
+  // section. Categories still drive Pass goals & happy hours, just invisibly.
+  const rowStyle = lvl ? ` style="border-color:${rim}"` : '';
   // Today's context Mode (if any) overrides the displayed name/reward/minutes —
   // same single checkbox, no "pick a version" decision in the moment.
   const td = habitToday(h);
@@ -2541,22 +2385,18 @@ function habitCardHTML(h, usualMin) {
     : `<span class="hrow-reward">+${td.reward} 🪙</span>`;
   const chevL = (lvl && li > 0) ? `<span class="lvl-chev">‹</span>` : '';
   const chevR = (lvl && li < lvls.length - 1) ? `<span class="lvl-chev">›</span>` : '';
-  // In-progress tracking: ▶ starts an open stopwatch (no pre-set duration needed) so the
-  // AI learns actual time-on-task for every habit, not just ones explicitly marked "timed".
-  // ✓ Quick Complete stays available alongside it for anything not worth timing.
-  const mins = td.minutes;   // still shown as an informational "usually ~Xm" estimate
-  let rightBits, subLine = `${sub}${catBit}`;
+  // Timed habits: ▶ replaces the empty checkbox; while running show countdown + Pause/Skip.
+  const mins = td.minutes;
+  let rightBits, subLine = sub;
   if (h.timer) {
     const paused = !!h.timer.pausedAt;
-    subLine = `⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}${catBit}`;
+    subLine = `⏱ <b data-timer-remaining="${h.id}">${fmtTimerSec(timerRemainingSec(h.timer))}</b> left${paused ? ' · ⏸ paused' : ''}`;
     rightBits = `
       <button class="hrow-check timer-btn" data-act="pauseTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
-      <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
-  } else if (!complete) {
-    if (mins > 0) subLine += ` · ~${fmtMins(mins)} usual`;
-    rightBits = `
-      <button class="hrow-check timer-btn" data-act="startTimer" aria-label="Start" style="color:var(--purple)">▶</button>
-      <button class="hrow-check" data-act="done" aria-label="Quick complete">✓</button>`;
+      <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish now" style="color:var(--green)">⏭</button>`;
+  } else if (mins > 0 && !complete) {
+    subLine += ` · ⏱ ${fmtMins(mins)}`;
+    rightBits = `<button class="hrow-check timer-btn" data-act="startTimer" aria-label="Start ${mins}-minute timer" style="color:var(--green)">▶</button>`;
   } else {
     rightBits = `<button class="hrow-check" data-act="done" aria-label="Complete">✓</button>`;
   }
@@ -2613,26 +2453,17 @@ function habitEditHTML(h) {
           <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
           <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
         </select>
-        <select class="sect-in" data-f="category" title="Identity (drives Pass goals)">
+        <select class="sect-in" data-f="category" title="Category (drives Pass goals)">
           ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${h.category === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
         </select>
         <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
-      </div>
-      <div class="hedit-r">
-        <select class="sect-in" data-f="loadout" title="Which loadout does this habit belong to? Universal = shows every day regardless of loadout.">
-          <option value="" ${!h.loadout ? 'selected' : ''}>🧭 — universal (every loadout) —</option>
-          ${(state.contexts || []).map(c => `<option value="${escapeHtml(c)}" ${h.loadout === c ? 'selected' : ''}>🧭 ${escapeHtml(c)} only</option>`).join('')}
-        </select>
-      </div>
-      <div class="hedit-r">
-        <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
       </div>
       <div class="hedit-r">
         <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
         <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
       </div>
       <div class="hedit-r">
-        <span class="pill" title="Optional estimate only — every habit can be played/finished with ▶ regardless of this number. Used for the &quot;usually ~Xm&quot; hint and the AI's planned-vs-actual comparisons.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
+        <span class="pill" title="0 = not timed. When set, the row shows a ▶ timer instead of a checkbox.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min timer</span>
         <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0)}</span>
       </div>
       <div class="hedit-r hedit-days">${dayPicker}</div>
@@ -2704,64 +2535,6 @@ function tierDotsHTML(lvls, cur) {
     `<span class="tdot ${i === cur ? 'on' : ''}"${i === cur ? ` style="background:${LEVEL_COLORS[l.key]}"` : ''}></span>`).join('')}<span class="tier-hint">‹ swipe ›</span></div>`;
 }
 
-// Shared incomplete-first / usual-time sort used by both the daily identity
-// accordions and the plain 'extra' grid.
-function sortHabitsForDisplay(list) {
-  return list.slice().sort((a, b) => {
-    const ca = doneCount(a) >= capOf(a), cb = doneCount(b) >= capOf(b);
-    if (ca !== cb) return ca ? 1 : -1;
-    if (ca) return (a.doneAt || 0) - (b.doneAt || 0);
-    const ra = Number.isFinite(a.doneMin) ? a.doneMin : 9999;
-    const rb = Number.isFinite(b.doneMin) ? b.doneMin : 9999;
-    return ra - rb;
-  });
-}
-let openIdentities = {}; // in-memory only: which identity accordions are expanded (per app session, default open)
-
-// Daily section restructured as Loadout → Identity accordions → habit cards.
-// The "extra" section is untouched — see renderHabitSection('extra', ...) below.
-function renderDailyIdentities() {
-  const grid = $('#dailyIdentities'); if (!grid) return;
-  const st = sectionStats('daily');   // already filtered to today's active loadout + universal habits
-  const byCat = {};
-  st.list.forEach(h => { const c = h.category || 'Unsorted'; (byCat[c] = byCat[c] || []).push(h); });
-  const order = (state.categories || []).filter(c => byCat[c] && byCat[c].length);
-  Object.keys(byCat).forEach(c => { if (!order.includes(c)) order.push(c); }); // safety net for orphaned categories
-  const loadout = todayContext();
-  if (!order.length) {
-    grid.innerHTML = `<div class="empty"><div class="big">🌱</div>No daily habits for ${loadout ? `the <b>${escapeHtml(loadout)}</b> loadout` : 'today'} yet — tap <b>＋ Add habit</b> below.</div>`;
-  } else {
-    grid.innerHTML = order.map(cat => {
-      const habits = sortHabitsForDisplay(byCat[cat]);
-      const done = habits.reduce((s, h) => s + doneCount(h), 0);
-      const cap = habits.reduce((s, h) => s + capOf(h), 0);
-      const allDone = habits.length > 0 && habits.every(isComplete);
-      const col = categoryColor(cat);
-      const open = openIdentities[cat] !== false; // default expanded
-      const purpose = (state.identityPurposes || {})[cat];
-      return `
-      <div class="habit-group identity-group${open ? '' : ' collapsed'}" data-identity="${escapeHtml(cat)}">
-        <div class="daily-banner slim" data-act="toggleIdentity" aria-expanded="${open ? 'true' : 'false'}">
-          <div class="dtext">
-            <div class="section-title" style="color:${col || 'var(--ink-dim)'}">🏷️ ${escapeHtml(cat)}</div>
-            ${purpose ? `<div class="subtle" style="font-style:italic">"${escapeHtml(purpose)}"</div>` : ''}
-            <div class="subtle">${done}/${cap} done today${allDone ? ' — 🎉 all clear!' : ''}</div>
-          </div>
-          <span class="group-caret" aria-hidden="true">▾</span>
-        </div>
-        <div class="habit-group-body">
-          <div class="habit-list">${habits.map(h => habitCardHTML(h)).join('')}</div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-  $('#dailyFill').style.width = st.pct + '%';
-  $('#dailyStatus').innerHTML = st.list.length
-    ? `<b class="neon-green">${st.done}/${st.cap}</b> done today` + (st.allComplete ? ' — 🎉 all clear!' : '')
-    : 'Add habits in Settings to begin.';
-  const b = $('#dailyBonusLabel'); if (b) b.textContent = `+${state.settings.dailyBonus} 🪙`;
-}
-
 function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt) {
   const st = sectionStats(section);
   const grid = $(gridId);
@@ -2790,7 +2563,7 @@ function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt
 function renderHabits() {
   renderTodayContext();
   renderDueSoon();
-  renderDailyIdentities();
+  renderHabitSection('daily', '#dailyGrid', '#dailyFill', '#dailyStatus', '#dailyBonusLabel', state.settings.dailyBonus);
   renderHabitSection('extra', '#extraGrid', '#extraFill', '#extraStatus', '#extraBonusLabel', state.settings.extraBonus);
   updateDailyStreakInfo();
   renderArchived();
@@ -3055,9 +2828,10 @@ function completeHabit(id, timing) {
   addTokens(amt, card);
   // name stays the BASE habit name — history is keyed by it (streak/pattern analysis,
   // Due Soon, the AI's appContext), so a Mode must not fork a habit's history.
-  const entry = { ts: Date.now(), kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', level: lvl ? lvl.key : null, reward: amt };
+  const entry = { ts: Date.now(), kind: 'habit', name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', level: lvl ? lvl.key : null, reward: amt };
   if (td.mode) entry.mode = td.context;
-  if (timing) {  // completion came from a play→finish session — keep actual time-on-task for the Stats/AI pattern data
+  if (timing) {  // completion came from a timed run — keep planned vs actual for the Stats/AI pattern data
+    entry.durationSec = timing.durationSec;
     entry.actualElapsedSec = timing.actualElapsedSec;
     entry.pauseCount = timing.pauseCount;
     entry.totalPausedSec = timing.totalPausedSec;
@@ -3089,17 +2863,16 @@ let timerSuggestDismissed = '';   // "<habitId>:<page>:<minutes>" the user said 
 function timerSuggestHTML(habitId, page, name, currentMins) {
   const det = detectMinutes(name);
   if (!det || det === currentMins || timerSuggestDismissed === `${habitId}:${page}:${det}`) return '';
-  return `<button class="btn ghost sm" data-act="applyTimerSuggest" data-page="${page}" data-min="${det}" style="color:var(--cyan)">⏱ "${fmtMins(det)}" detected — set as expected duration?</button>
+  return `<button class="btn ghost sm" data-act="applyTimerSuggest" data-page="${page}" data-min="${det}" style="color:var(--cyan)">⏱ "${fmtMins(det)}" detected — make this timed?</button>
           <button class="btn ghost sm" data-act="dismissTimerSuggest" data-page="${page}" data-min="${det}">✕</button>`;
 }
 function timerElapsedSec(t) { return Math.max(0, ((t.pausedAt || Date.now()) - t.startedAt) / 1000 - (t.pausedTotalSec || 0)); }
+function timerRemainingSec(t) { return t.durationSec - timerElapsedSec(t); }
 function fmtTimerSec(sec) { sec = Math.max(0, Math.round(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
-// Open stopwatch — no pre-set duration needed, works for every habit. This replaces
-// the old "timedMinutes" countdown-timer feature: the AI now learns actual
-// time-on-task from EVERY play→finish session, not just ones explicitly marked timed.
 function startHabitTimer(id) {
-  const h = state.habits.find(x => x.id === id); if (!h || h.timer || isComplete(h)) return;
-  h.timer = { startedAt: Date.now(), pausedAt: null, pausedTotalSec: 0, pauseCount: 0 };
+  const h = state.habits.find(x => x.id === id); if (!h || h.timer) return;
+  const mins = habitToday(h).minutes; if (!mins || isComplete(h)) return;   // a Mode can shorten (or drop) today's timer
+  h.timer = { startedAt: Date.now(), durationSec: mins * 60, pausedAt: null, pausedTotalSec: 0, pauseCount: 0 };
   SFX.click(); save(); renderHabits();
 }
 function toggleHabitTimerPause(id) {
@@ -3109,24 +2882,26 @@ function toggleHabitTimerPause(id) {
   else { t.pausedAt = Date.now(); t.pauseCount = (t.pauseCount || 0) + 1; }
   SFX.click(); save(); renderHabits();
 }
-// Ends the session and completes the habit, logging actual elapsed time. There's no
-// "finished early" concept anymore — no target duration means Finish always just
-// means "I'm done, here's how long it actually took."
+// Ends the timer and completes the habit — used by natural completion AND Skip (finished early).
 function finishTimedHabit(id) {
   const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
   const t = h.timer;
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; }
-  completeHabit(id, { actualElapsedSec: Math.round(timerElapsedSec(t)),
+  completeHabit(id, { durationSec: t.durationSec, actualElapsedSec: Math.round(timerElapsedSec(t)),
                       pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0) });
 }
-// 1s tick: just refreshes visible elapsed-time readouts in place — no auto-finish,
-// since an open stopwatch has no target to hit. The user always taps Finish themselves.
+// 1s tick: fire finished timers (even off-view / after reload) + refresh visible countdowns in place.
 setInterval(() => {
-  const running = state.habits.some(h => h.timer);
+  let running = false;
+  state.habits.forEach(h => {
+    if (!h.timer) return;
+    if (!h.timer.pausedAt && timerRemainingSec(h.timer) <= 0) finishTimedHabit(h.id);
+    else running = true;
+  });
   if (running && $('#view-habits').classList.contains('active')) {
-    $$('[data-timer-elapsed]').forEach(el => {
-      const h = state.habits.find(x => x.id === el.dataset.timerElapsed);
-      if (h && h.timer) el.textContent = fmtTimerSec(timerElapsedSec(h.timer));
+    $$('[data-timer-remaining]').forEach(el => {
+      const h = state.habits.find(x => x.id === el.dataset.timerRemaining);
+      if (h && h.timer) el.textContent = fmtTimerSec(timerRemainingSec(h.timer));
     });
   }
 }, 1000);
@@ -3146,58 +2921,6 @@ function habitUsualMinute(h) {
   if (es.length < 3) return null;
   return medianMinute(es.map(e => { const d = new Date(e.ts); return d.getHours() * 60 + d.getMinutes(); }));
 }
-/* =================================================================
-   BLOCK SCHEDULE — hour-by-hour visualization of how the day usually flows,
-   auto-filled from actual play→finish times (see finishTimedHabit). Read-only
-   for now: driven entirely by inferred/pinned times, no drag-drop yet. These
-   same blocks are what Due Soon reads from (habitBlockMinute), so a habit
-   surfacing there and where it sits on the schedule always agree.
-   ================================================================= */
-// A habit's target time: pinned (h.scheduledMin, settable by an AI scheduleBlock
-// proposal) takes priority over the inferred historical median.
-function habitBlockMinute(h) { return Number.isFinite(h.scheduledMin) ? h.scheduledMin : habitUsualMinute(h); }
-// Median ACTUAL duration from real play→finish sessions — falls back to the
-// habit's planned/estimated minutes (habitCurrentMinutes) if it's never been timed.
-function habitMedianActualMinutes(h) {
-  const runs = (state.history || []).filter(e => e && e.kind === 'habit' && e.name === h.name && Number.isFinite(e.actualElapsedSec));
-  if (runs.length < 2) return null;
-  return medianMinute(runs.map(e => Math.round(e.actualElapsedSec / 60)));
-}
-function computeTodayBlocks() {
-  const loadout = todayContext();
-  return state.habits.filter(h => !h.archived && h.section === 'daily' && isScheduledToday(h)
-      && (h.loadout == null || h.loadout === loadout))
-    .map(h => ({
-      habitId: h.id, name: h.name, emoji: h.emoji, category: h.category,
-      startMin: habitBlockMinute(h),
-      durMin: habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
-      pinned: Number.isFinite(h.scheduledMin), complete: isComplete(h),
-    }))
-    .filter(b => Number.isFinite(b.startMin))
-    .sort((a, b) => a.startMin - b.startMin);
-}
-const SCHED_START_HOUR = 5, SCHED_END_HOUR = 23, SCHED_PX_PER_HOUR = 56;
-function renderBlockSchedule() {
-  const box = $('#scheduleBody'); if (!box) return;
-  const blocks = computeTodayBlocks();
-  const totalH = (SCHED_END_HOUR - SCHED_START_HOUR) * SCHED_PX_PER_HOUR;
-  const hourLines = [];
-  for (let h = SCHED_START_HOUR; h <= SCHED_END_HOUR; h++) {
-    hourLines.push(`<div style="position:absolute;top:${(h - SCHED_START_HOUR) * SCHED_PX_PER_HOUR}px;left:0;right:0;border-top:1px solid var(--panel-edge);font-size:11px;color:var(--ink-dim);padding-left:4px">${escapeHtml(fmtMinOfDay(h * 60))}</div>`);
-  }
-  const anyPinned = blocks.some(b => b.pinned);
-  const blockEls = blocks.map(b => {
-    const top = clamp((b.startMin - SCHED_START_HOUR * 60) / 60 * SCHED_PX_PER_HOUR, 0, totalH);
-    const height = Math.max(20, b.durMin / 60 * SCHED_PX_PER_HOUR);
-    const col = categoryColor(b.category) || 'var(--cyan)';
-    return `<div class="sched-block" style="position:absolute;left:56px;right:8px;top:${top}px;height:${height}px;background:${col}22;border-left:3px solid ${col};border-radius:6px;padding:3px 8px;overflow:hidden;font-size:12px;${b.complete ? 'opacity:.55' : ''}">
-      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}</b>${b.pinned ? ' 🤖' : ''}<br><span style="opacity:.7">${escapeHtml(fmtMinOfDay(b.startMin))} · ~${escapeHtml(fmtMins(Math.round(b.durMin)))}</span>
-    </div>`;
-  }).join('');
-  box.innerHTML = `<div style="position:relative;height:${totalH}px;margin-left:0">${hourLines.join('')}${blockEls}</div>` +
-    (anyPinned ? `<div class="hint" style="margin-top:6px">🤖 = the AI adjusted this habit's usual time</div>` : '') +
-    (!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>No daily habits scheduled for today's loadout yet.</div>` : '');
-}
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
 // Once the usual time passes it drops back into the regular list — no "overdue" flag.
 function renderDueSoon() {
@@ -3206,7 +2929,7 @@ function renderDueSoon() {
   const until = m => (m - nowMin + 1440) % 1440;          // minutes until, midnight-safe
   const due = state.habits
     .filter(h => !h.archived && isScheduledToday(h) && !isComplete(h))
-    .map(h => ({ h, m: habitBlockMinute(h) }))   // same blocks the Schedule tab draws — Due Now always agrees with it
+    .map(h => ({ h, m: habitUsualMinute(h) }))
     .filter(x => x.m != null && until(x.m) <= 60)
     .sort((a, b) => until(a.m) - until(b.m))
     .slice(0, 3);                                         // fewer visible choices, not more
@@ -4972,40 +4695,6 @@ function appContext() {
   });
   if (timedLines.length) L.push('', `TIMED HABITS (planned vs actual — surface mismatches, e.g. estimated 15m but usually takes 25m):`, ...timedLines.map(s => '  - ' + s));
 
-  // --- Block Schedule: today's blocks (pin one with scheduleBlock if the real pattern disagrees) ---
-  const blocks = computeTodayBlocks();
-  if (blocks.length) {
-    L.push('', "TODAY'S BLOCK SCHEDULE (habitId, time, duration — 🤖 = already pinned via scheduleBlock):");
-    blocks.forEach(b => L.push(`  - id=${b.habitId} "${b.name}" ${fmtMinOfDay(b.startMin)}, ~${fmtMins(Math.round(b.durMin))}${b.pinned ? ' 🤖 pinned' : ' (inferred)'}${b.complete ? ' · done today' : ''}`));
-  }
-
-  // --- Reflection log + today's anomalies (expectation model) ---
-  const anomalies = computeAnomalies(todayStr(-1));
-  if (anomalies.length) {
-    L.push('', `TODAY'S ANOMALIES (broke an established pattern yesterday — worth asking about, don't lecture):`);
-    anomalies.forEach(a => L.push(`  - "${a.name}" (${a.type}): ${a.detail}`));
-  }
-  const recentReflections = (state.reflections || []).filter(r => r.ts >= now - 14 * 86400000);
-  if (recentReflections.length) {
-    L.push('', 'RECENT REFLECTION NOTES (why misses actually happened, in the user\'s own words — ground advice in these, not guesses):');
-    recentReflections.slice(-15).forEach(r => {
-      const h = state.habits.find(x => x.id === r.habitId);
-      const chipLabel = r.chip ? ((state.reasonChips || []).find(c => c.key === r.chip) || {}).label : null;
-      if (r.kind === 'chip') L.push(`  - ${r.date} "${h ? h.name : r.habitId}": ${chipLabel || r.note || 'reason logged'}`);
-      else if (r.kind === 'conversation') L.push(`  - ${r.date}: conversation${r.summary ? ` — ${r.summary}` : ' logged (see transcript)'}`);
-    });
-  }
-  const identityLines = (state.categories || []).filter(c => c !== 'Unsorted' && (state.identityPurposes || {})[c])
-    .map(c => `  - ${c}: "${state.identityPurposes[c]}"`);
-  const habitWhyLines = active.filter(h => habitContextLines(h).length).map(h => `  - "${h.name}": ${habitContextLines(h).join(' · ')}`);
-  const unaskedLines = active.filter(h => !h.contextAsked).map(h => `"${h.name}"`);
-  if (identityLines.length || habitWhyLines.length) {
-    L.push('', 'PURPOSE / WHY (set via conversation — identityPurpose/habitWhy proposals — or the onboarding questionnaire a habit gets when first created):');
-    if (identityLines.length) L.push('  Identities:', ...identityLines);
-    if (habitWhyLines.length) L.push('  Habits:', ...habitWhyLines);
-  }
-  if (unaskedLines.length) L.push('', `HABITS WITH NO CONTEXT YET (never completed their onboarding questionnaire — be extra conservative proposing modes/tiers for these, you're guessing): ${unaskedLines.join(', ')}`);
-
   // --- Editable economy / live values (targets for settingsChange & rewardEdit) ---
   const g = state.games.wheel;
   const hh = Object.entries(state.settings.happyHours || {}).filter(([, e]) => e.enabled)
@@ -5061,17 +4750,11 @@ Editing existing things — PREFER THESE:
 - {"type":"categoryDelete","name":"<existing category>","reason":"..."}  its habits & quests move to Unsorted; "Unsorted" can't be deleted
 - {"type":"goalDef","action":"add|edit|remove","id":"<existing goal id — edit/remove only>","kind":"cat|allDaily (add only)","target":1-99,"xp":1-999,"category":"Any|<category>","types":"habits|tasks|both","tier":"any|easy|medium|hard","reason":"..."}  weekly Habit Pass goals; category/types/tier only apply to kind "cat"; edits keep current week's progress
 - {"type":"rewardPoolEdit","pool":"main|filler","tier":"common|rare|epic|legendary","rewardId":"<existing reward id>","include":true|false,"reason":"..."}  includes/excludes one reward from a Habit Pass pool ("main" = milestone tiers every 10 levels, "filler" = in between)
-- {"type":"scheduleBlock","habitId":"<habit id>","startMin":0-1439,"reason":"..."}  pins a habit's target time on the Block Schedule tab (minutes since midnight, e.g. 450 = 7:30am), overriding its inferred usual time — use when the pattern data shows a habit consistently happening at a different time than its block, or when the user says something should move
 Creating new things — RARE, only after dialogue, max 1-2 per conversation, never the opening reply:
 - {"type":"habit","emoji":"💧","name":"...","section":"daily|extra","reward":1-5,"repeatable":false,"cap":1,"category":"...","days":[7 booleans]}
 - {"type":"quest","emoji":"🎯","name":"...","tier":"easy|medium|hard","iterations":1,"category":"..."}
 - {"type":"category","name":"..."}
 - {"type":"reward","emoji":"🎁","name":"...","tier":"common|rare|epic|legendary","minutes":0}
-Purpose / "why" — use ONLY when the user is actually talking about why an identity or habit matters to them, never as a reaction to a plain settings request:
-- {"type":"identityPurpose","name":"<existing identity, or a new one only if the conversation clearly called for it>","purpose":"...","reason":"..."}  sets/replaces that identity's stated purpose
-- {"type":"habitWhy","habitId":"<existing habit id>","why":"...","reason":"..."}  a more specific why for one habit, on top of its identity's purpose
-Reflection — propose a new reason chip ONLY if the user's freeform "other" reflection notes (see RECENT REFLECTION NOTES below) show a real recurring theme not covered by the existing chips:
-- {"type":"reasonChipAdd","key":"snake_case_key","label":"Short label","reason":"..."}
 
 APP STATE & OBSERVED PATTERNS:
 ${appContext()}`;
@@ -5233,28 +4916,6 @@ function describeProposal(p) {
     if (p.reason) bits.push(p.reason);
     return { kind: `New ${easier ? 'easier' : 'harder'} tier`, title: h ? `${easier ? '⬇' : '⬆'} ${h.name} → "${p.name}"` : '(habit gone)', detail: bits.join(' · ') };
   }
-  // --- Reflection system: a new reason chip (proposed after the AI notices a
-  // recurring freeform "other" answer), and identity/habit purpose text. ---
-  if (t === 'reasonChipAdd') {
-    const exists = (state.reasonChips || []).some(c => c.key === p.key);
-    return { kind: 'New reason chip', title: `💬 ${p.label}`, detail: (exists ? '(already exists) · ' : '') + (p.reason || '') };
-  }
-  if (t === 'identityPurpose') {
-    const isNew = !(state.categories || []).includes(p.name);
-    return { kind: 'Identity purpose', title: `🎯 ${p.name}`, detail: (isNew ? 'new identity · ' : '') + `"${p.purpose}"` + (p.reason ? ` · ${p.reason}` : '') };
-  }
-  if (t === 'habitWhy') {
-    const h = state.habits.find(x => x.id === p.habitId);
-    return { kind: 'Habit why', title: h ? `🎯 ${h.name}` : '(habit gone)', detail: `"${p.why}"` + (p.reason ? ` · ${p.reason}` : '') };
-  }
-  // --- Block Schedule: pin/move a habit's target time (h.scheduledMin). ---
-  if (t === 'scheduleBlock') {
-    const h = state.habits.find(x => x.id === p.habitId);
-    const from = h ? habitBlockMinute(h) : null;
-    const to = clamp(parseInt(p.startMin) || 0, 0, 1439);
-    return { kind: 'Block moved', title: h ? `📅 ${h.name} → ${fmtMinOfDay(to)}` : '(habit gone)',
-             detail: (from != null ? `was ~${fmtMinOfDay(from)} · ` : '') + (p.reason || '') };
-  }
   return { kind: 'Proposal', title: JSON.stringify(p).slice(0, 80), detail: '' };
 }
 
@@ -5291,7 +4952,6 @@ function applyProposal(p) {
       lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0,
       days: (Array.isArray(p.days) && p.days.length === 7) ? p.days.map(Boolean) : [true, true, true, true, true, true, true],
       category: ensureAICategory(p.category), doneAt: 0, doneMin: null,
-      context: [], contextAsked: false,
       createdBy: 'ai' };
     state.habits.push(h); state.aiMeta.habits.push(h.id);
     return true;
@@ -5420,40 +5080,6 @@ function applyProposal(p) {
     h.curTier = null;                                            // back to the habit's own level
     return true;
   }
-  // --- Reflection system: AI-proposed reason chip, and identity/habit purpose text. ---
-  if (t === 'reasonChipAdd') {
-    const key = String(p.key || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
-    const label = String(p.label || '').trim();
-    if (!key || !label) return false;
-    state.reasonChips = Array.isArray(state.reasonChips) ? state.reasonChips : [];
-    if (state.reasonChips.some(c => c.key === key)) return false;   // already exists — nothing to add
-    state.reasonChips.push({ key, label });
-    state.aiMeta.reasonChips = Array.isArray(state.aiMeta.reasonChips) ? state.aiMeta.reasonChips : [];
-    state.aiMeta.reasonChips.push(key);
-    return true;
-  }
-  if (t === 'identityPurpose') {
-    const name = String(p.name || '').trim();
-    const purpose = String(p.purpose || '').trim();
-    if (!name || !purpose) return false;
-    if (!(state.categories || []).includes(name)) { if (!ensureAICategory(name) || name === 'Unsorted') return false; }
-    state.identityPurposes = state.identityPurposes || {};
-    state.identityPurposes[name] = purpose;
-    return true;
-  }
-  if (t === 'habitWhy') {
-    const h = state.habits.find(x => x.id === p.habitId); if (!h) return false;
-    const why = String(p.why || '').trim(); if (!why) return false;
-    h.why = why;
-    return true;
-  }
-  // --- Block Schedule: pin a habit's target time, overriding the inferred median. ---
-  if (t === 'scheduleBlock') {
-    const h = state.habits.find(x => x.id === p.habitId); if (!h) return false;
-    if (!Number.isFinite(parseInt(p.startMin))) return false;
-    h.scheduledMin = clamp(parseInt(p.startMin), 0, 1439);
-    return true;
-  }
   return false;
 }
 function refreshAfterAI() {
@@ -5466,7 +5092,6 @@ function refreshAfterAI() {
   // state (categories, habit/reward editors, tier payouts, happy hours, game odds,
   // pass config, bonuses), so a settingsChange/rewardEdit is reflected everywhere.
   renderSettings(); refreshPassUI();
-  if ($('#view-schedule') && $('#view-schedule').classList.contains('active')) renderBlockSchedule();
 }
 
 /* ---- chat threads, rendered inline in the Chat tab ---- */
@@ -5497,7 +5122,6 @@ function deleteChatThread(id) {
 }
 function renderChat() {
   const log = $('#aiLog'); if (!log) return;
-  ensureQuestionnaireQueue(); renderQuestionnaireNav(); renderQuestionnaireBanner();
   const hint = $('#aiKeyHint'); if (hint) hint.style.display = activeKey() ? 'none' : '';
   const chips = $('#aiThreadChips');
   if (chips) {
@@ -5515,8 +5139,7 @@ function renderChat() {
     (m.proposals || []).forEach((p, pi) => {
       const d = describeProposal(p);
       const editType = ['tierChange', 'dropHabit', 'scheduleChange', 'settingsChange', 'rewardEdit',
-                        'categoryRename', 'categoryDelete', 'goalDef', 'rewardPoolEdit',
-                        'identityPurpose', 'habitWhy'].includes(p.type);
+                        'categoryRename', 'categoryDelete', 'goalDef', 'rewardPoolEdit'].includes(p.type);
       const st = (m.status || {})[pi];
       const cls = 'prop-card' + (editType ? ' tierchange' : '') + (st ? ' done' : '');
       out += `<div class="${cls}" data-mi="${mi}" data-pi="${pi}">
@@ -5584,8 +5207,7 @@ function clearAIData() {
     (state.pass.goals || []).forEach(g => { if (g.category === cat) g.category = 'Any'; });
   });
   ensureHappyHours(); ensureCategoryColors();
-  state.reasonChips = (state.reasonChips || []).filter(c => !(meta.reasonChips || []).includes(c.key));
-  state.aiMeta = { habits: [], oneoffs: [], categories: [], rewards: [], modes: [], reasonChips: [] };
+  state.aiMeta = { habits: [], oneoffs: [], categories: [], rewards: [], modes: [] };
   refreshAfterAI();
   SFX.click(); toast('🧹 AI-created data cleared', 'var(--cyan)');
 }
@@ -5772,32 +5394,11 @@ function renderTodayContext() {
   el.innerHTML = ctx
     ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day${moded ? ` · ${moded} adapted` : ''}</span>`
     : (dayPlan(todayStr()) ? `<span class="ctx-badge">📅 planned day · streak-safe</span>` : '');
-  // Loadout switcher: manual override for today, sitting on top of whatever the
-  // Week Planner AI (or a previous manual pick) already set via setDayPlanContext.
-  const sw = $('#loadoutSwitch');
-  if (sw) {
-    sw.innerHTML = `<option value="">— no loadout (show everything) —</option>` +
-      (state.contexts || []).map(c => `<option value="${escapeHtml(c)}" ${ctx === c ? 'selected' : ''}>🧭 ${escapeHtml(c)}</option>`).join('') +
-      `<option value="__new">＋ New loadout…</option>`;
-    sw.value = ctx || '';
-  }
 }
 
 /* ---- the AI contract (its own prompt — the chat coach's proposal types don't apply) ---- */
 // Per-habit view of what already exists on BOTH axes: saved modes (never regenerate
 // one) and the easiest difficulty tier (the fallback to pair a stretchy mode with).
-// What the user actually said this habit means to them (h.why + the onboarding
-// questionnaire's Q&A) — without this, mode/tier generation is just guessing
-// ("practice cello" → "hum it 5 times"), which is exactly the failure mode this
-// was built to fix. Shared by habitModeSummary, tierFillSystemPrompt, and appContext.
-function habitContextLines(h) {
-  const bits = [];
-  if (h.why) bits.push(`why: "${h.why}"`);
-  if (Array.isArray(h.context) && h.context.length) {
-    bits.push(...h.context.map(c => `${c.question === '(conversation)' ? 'said' : c.question} → "${c.answer}"`));
-  }
-  return bits;
-}
 function habitModeSummary() {
   const rows = state.habits.filter(h => !h.archived).map(h => {
     const modes = Object.keys(h.modes || {});
@@ -5807,13 +5408,11 @@ function habitModeSummary() {
       ? `saved modes: ${modes.map(c => `${c}="${h.modes[c].name}" (+${h.modes[c].reward}🪙${h.modes[c].minutes ? `, ${h.modes[c].minutes}m` : ''})`).join(', ')}`
       : 'saved modes: none'];
     if (easiest) bits.push(`easiest difficulty tier: "${easiest.name || h.name}" (+${easiest.reward}🪙${easiest.minutes ? `, ${easiest.minutes}m` : ''})`);
-    bits.push(...habitContextLines(h));
     return `  - id=${h.id} "${h.name}" (+${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m` : ''}) — ${bits.join(' · ')}`;
   });
   return rows.join('\n') || '  (no active habits)';
 }
 const PLAN_RULES = `HOW TO ADAPT A HABIT TO A CONTEXT
-- Ground the Mode in the habit's "why"/context lines below if it has any — those are the user's own words on how they actually do this and what they want from it. Don't invent a generic downgrade ("practice cello" → "hum it 5 times") when the user has told you what practicing it actually means to them; use that. If a habit has no why/context yet, adapt conservatively and don't overclaim what a good version looks like.
 - A Mode is the SAME habit in a form that actually fits that kind of day — not a different habit, not a lesser goal. "Practice cello 30m" on a travel day becomes "Hum through the piece from memory, 5m". It must be doable in the real constraints of that day (no instrument, no kitchen, no gym, less time, less privacy).
 - Modes are per habit per context and are REUSED automatically next time that context comes up. Never propose a mode for a habit/context pair that already has one (listed above).
 - Payout: a Mode usually pays the same or slightly less than the habit's normal reward. Never more.
@@ -5876,11 +5475,10 @@ function tierFillSystemPrompt(h, side) {
 The user wants ONE new DIFFICULTY tier on a habit. Difficulty tiers are the energy axis: the same habit at a size that matches how much they've got today. Completing any tier counts as one completion; only the payout differs.
 
 HABIT: id=${h.id} "${h.name}" (category ${h.category || 'Unsorted'})
-${habitContextLines(h).length ? `WHAT THE USER SAYS THIS HABIT ACTUALLY MEANS TO THEM: ${habitContextLines(h).join(' · ')}\n` : ''}CURRENT LADDER (easiest → hardest): ${ladder}
+CURRENT LADDER (easiest → hardest): ${ladder}
 NEW TIER GOES ON THE **${side === 'harder' ? 'HARDER' : 'EASIER'}** SIDE.
 
 RULES
-- Ground the tier in the "what this means to them" line above if present — a good easier/harder version reflects how THEY actually do this, not a generic scale-down/up.
 - An easier tier must be something they'd still do on their worst day — small enough that skipping it feels sillier than doing it. Pay less than the original (usually about half, minimum 1).
 - A harder tier is a real step up in effort, and pays more than the original.
 - minutes: 0 unless it's genuinely worth timing; if the original is timed, scale the duration to match.
@@ -6021,516 +5619,6 @@ $('#planBody').addEventListener('change', e => {
   SFX.click(); renderPlanner(); renderHabits();
 });
 
-/* =================================================================
-   QUESTIONNAIRES — the frictionless replacement for the old main-screen
-   reflection UI. Up to 3 queue per day (state.questionnaires), surfaced ONLY
-   as a badge on the 💬 Chat tab + a banner inside it — never on the main
-   Habits screen. Three answer formats, each capped small: multiple choice
-   (<=4 tap questions), text chat (<=4 open-ended exchanges), or voice
-   (<2 minutes, browser speech — best-effort, falls back to text if
-   unsupported). Answers land in state.reflections (same shape/feed
-   appContext() already reads); state.questionnaires just tracks queue/status
-   /history so past ones can be reviewed from the Chat tab's "🧭 Past" button.
-   ================================================================= */
-let activeQuestionnaire = null;
-let checkinMessages = [];
-let checkinAnomalies = [];
-let checkinBusy = false;
-let checkinFormat = 'text';   // 'mc' | 'text' | 'voice' — locked once a questionnaire is opened; null = picker screen (habitctx only)
-let checkinKind = 'reflect';  // 'reflect' (anomaly check-in) | 'habitctx' (new-habit onboarding) — shares the same overlay
-let habitCtxId = null;        // habit being onboarded, when checkinKind === 'habitctx'
-let checkinTurns = 0;         // user turns so far this session (text format caps at 4)
-let voiceSecLeft = 0;
-let voiceTimerHandle = null;
-let mcQuestions = null;
-let mcAnswers = [];
-let mcIndex = 0;
-let mcBusy = false;
-
-function anomalyDetailsFor(habitIds) {
-  return computeAnomalies(todayStr(-1)).filter(a => (habitIds || []).includes(a.habitId));
-}
-// Queues at most one new questionnaire per fresh batch of anomalies, capped at 3
-// CREATED per calendar day. "Stacked" = the badge shows a count, never more than
-// one visible notification surface regardless of how many are pending.
-function ensureQuestionnaireQueue() {
-  state.questionnaires = state.questionnaires || [];
-  const today = todayStr();
-  const createdToday = state.questionnaires.filter(q => dateStrFromTs(q.createdAt) === today).length;
-  if (createdToday >= 3) return;
-  const yesterday = todayStr(-1);
-  if (state.questionnaires.some(q => q.date === yesterday)) return;   // already queued this batch
-  const anomalies = computeAnomalies(yesterday);
-  if (!anomalies.length) return;
-  state.questionnaires.push({
-    id: uid(), date: yesterday, createdAt: Date.now(),
-    habitIds: anomalies.slice(0, 4).map(a => a.habitId),
-    status: 'pending', format: null, answers: null, transcript: null, summary: '', ts: Date.now(),
-  });
-  save();
-}
-function pendingQuestionnaires() { return (state.questionnaires || []).filter(q => q.status === 'pending'); }
-function renderQuestionnaireNav() {
-  const badge = $('#qNavBadge'); if (!badge) return;
-  const n = pendingQuestionnaires().length;
-  badge.style.display = n ? '' : 'none';
-  badge.textContent = n ? String(n) : '';
-}
-function renderQuestionnaireBanner() {
-  const box = $('#questionnaireBanner'); if (!box) return;
-  const pending = pendingQuestionnaires();
-  if (!pending.length) { box.innerHTML = ''; return; }
-  const names = anomalyDetailsFor(pending[0].habitIds).map(a => a.name).join(', ');
-  box.innerHTML = `
-    <div class="daily-banner slim" style="border-color:rgba(176,38,255,.4);margin-bottom:10px">
-      <div class="dtext">
-        <div class="section-title neon-purple">🧭 ${pending.length} quick check-in${pending.length > 1 ? 's' : ''} ready</div>
-        <div class="subtle">${escapeHtml(names || 'A couple things looked off recently')} — answer however's easiest:</div>
-        <div class="chip-row" style="margin-top:8px">
-          <button class="chip" data-startq="mc">📝 Multiple choice</button>
-          <button class="chip" data-startq="text">💬 Text chat</button>
-          <button class="chip" data-startq="voice">🎤 Voice (2 min)</button>
-        </div>
-      </div>
-    </div>`;
-}
-function clearVoiceTimer() { if (voiceTimerHandle) clearInterval(voiceTimerHandle); voiceTimerHandle = null; }
-function renderVoiceTimer() {
-  const el = $('#voiceTimer'); if (!el) return;
-  const s = Math.max(0, voiceSecLeft);
-  el.textContent = `⏱ ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-function startQuestionnaire(format) {
-  const q = pendingQuestionnaires()[0]; if (!q) return;
-  if (format === 'voice' && !(window.SpeechRecognition || window.webkitSpeechRecognition)) {
-    toast('Voice isn\'t supported in this browser — switched to text', 'var(--gold)'); format = 'text';
-  }
-  checkinKind = 'reflect'; habitCtxId = null;
-  activeQuestionnaire = q;
-  checkinAnomalies = anomalyDetailsFor(q.habitIds);
-  checkinMessages = []; checkinTurns = 0; checkinFormat = format;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
-  clearVoiceTimer();
-  $('#checkinOverlay').classList.add('show');
-  if (format === 'mc') { runMCGenerate(); return; }
-  renderCheckinBody();
-  if (format === 'voice') {
-    voiceSecLeft = 120;
-    voiceTimerHandle = setInterval(() => {
-      voiceSecLeft--; renderVoiceTimer();
-      if (voiceSecLeft <= 0) { clearVoiceTimer(); closeCheckin(); }
-    }, 1000);
-  }
-  runCheckinAI('Take a look at what happened and open with ONE short, curious question about it.', { hidden: true });
-}
-
-/* ---- Habit-making context: same overlay, different kind. Fires once, right
-   after a brand-new habit is first named and closed out of the editor — this
-   is what feeds habitModeSummary()/tierFillSystemPrompt() with what the habit
-   actually MEANS (how it's done, what "good" looks like, why), so a Travel
-   mode or a new tier is grounded instead of a guess like "cello x5". ---- */
-function openHabitContextPicker(habitId) {
-  const h = state.habits.find(x => x.id === habitId); if (!h) return;
-  checkinKind = 'habitctx'; habitCtxId = habitId; activeQuestionnaire = null;
-  checkinFormat = null; checkinMessages = []; checkinTurns = 0;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
-  clearVoiceTimer();
-  $('#checkinOverlay').classList.add('show');
-  renderCheckinBody();
-}
-function startHabitContextQuestionnaire(format) {
-  const h = state.habits.find(x => x.id === habitCtxId); if (!h) return;
-  if (format === 'voice' && !(window.SpeechRecognition || window.webkitSpeechRecognition)) {
-    toast('Voice isn\'t supported in this browser — switched to text', 'var(--gold)'); format = 'text';
-  }
-  checkinMessages = []; checkinTurns = 0; checkinFormat = format;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
-  clearVoiceTimer();
-  if (format === 'mc') { runHabitContextMCGenerate(h); return; }
-  renderCheckinBody();
-  if (format === 'voice') {
-    voiceSecLeft = 120;
-    voiceTimerHandle = setInterval(() => {
-      voiceSecLeft--; renderVoiceTimer();
-      if (voiceSecLeft <= 0) { clearVoiceTimer(); closeCheckin(); }
-    }, 1000);
-  }
-  runCheckinAI(`Ask your first question about the new habit "${h.name}".`, { hidden: true });
-}
-function habitContextSystemPrompt() {
-  const h = state.habits.find(x => x.id === habitCtxId);
-  const name = h ? h.name : 'this habit';
-  return `You are the coach inside HabitCasinoAI helping set up a brand-new habit: "${name}"${h && h.category ? ` (identity: ${h.category})` : ''}. You have almost no context on what this habit actually means to the user yet — your only job is to ask, briefly and kindly, so future adaptations of it (Travel/School modes, difficulty tiers, timing) are grounded in reality instead of guessed. A generic guess for "Practice Cello" might be "hum the piece 5 times" — useless without knowing how they actually practice or what a good session looks like to them.
-
-WHAT TO ASK ABOUT (pick whichever of these fit THIS specific habit — don't force all of them if one is irrelevant)
-- How they actually do this in practice — their real method, not a generic description
-- What a genuinely GOOD instance of this looks like to them (their own bar, not yours)
-- What they actually want to get out of it / why it matters to them
-- Anything that would help adapt this habit for a constrained day (travel, low time, low energy) without it becoming pointless
-
-This is a ${checkinFormat === 'voice' ? 'SPOKEN conversation capped at 2 minutes total — keep every message to one short sentence' : 'short text exchange capped at 4 of your questions total'}. Ask ONE question at a time, in plain conversational language — this is a get-to-know-you chat, not a form. No proposals here — this is pure information-gathering.
-
-OUTPUT FORMAT
-Respond with ONE JSON object, no markdown fences:
-{"message":"your question or closing remark — short, warm, plain text"}`;
-}
-function habitContextMCPrompt(h) {
-  return `You are the coach inside HabitCasinoAI setting up a brand-new habit: "${h.name}"${h.category ? ` (identity: ${h.category})` : ''}. Write up to 4 multiple-choice questions to understand what this habit actually means to the user — how they do it, what "good" looks like to them, what they want out of it, why it matters. Ground the options in plausible SPECIFICS for this exact habit (e.g. for "Practice Cello": options naming scales/repertoire/technique/sight-reading, not generic placeholders). Each question needs 3-5 short tap-able options plus a final "Other".
-
-OUTPUT FORMAT
-Respond with ONE JSON object, no markdown fences, no other text:
-{"questions":[{"text":"...","options":["...","...","...","Other"]}]}`;
-}
-async function runHabitContextMCGenerate(h) {
-  if (!activeKey()) { toast('Add an API key in Settings → 🤖 AI Coach', 'var(--pink)'); closeCheckin(); return; }
-  mcBusy = true; renderCheckinBody();
-  try {
-    const reply = await callAI(habitContextMCPrompt(h), [{ role: 'user', content: 'Generate the questions.' }]);
-    const text = String(reply || '').trim();
-    const a = text.indexOf('{'), b = text.lastIndexOf('}');
-    const o = (a >= 0 && b > a) ? JSON.parse(text.slice(a, b + 1)) : null;
-    mcQuestions = (o && Array.isArray(o.questions))
-      ? o.questions.filter(q => q && q.text && Array.isArray(q.options) && q.options.length).slice(0, 4)
-      : [];
-    mcAnswers = new Array(mcQuestions.length).fill(null);
-    mcIndex = 0;
-    mcBusy = false;
-    if (!mcQuestions.length) { toast('Nothing generated — try text chat instead', 'var(--cyan)'); closeCheckin(); return; }
-    renderCheckinBody();
-  } catch (e) {
-    mcBusy = false;
-    toast('Could not generate questions — try text chat instead', 'var(--pink)');
-    closeCheckin();
-  }
-}
-function reflectionSystemPrompt() {
-  const lines = checkinAnomalies.map(a => `  - "${a.name}" (${a.type}): ${a.detail}`).join('\n');
-  return `You are the reflection coach inside HabitCasinoAI, a gamified habit tracker. Philosophy: CONSISTENCY OVER INTENSITY.
-
-WHAT YOU'RE DOING
-A handful of habits broke from their established pattern. Your job is almost entirely to ASK, briefly and kindly, what happened — not to lecture, and not to propose changes as your opening move. This is a ${checkinFormat === 'voice' ? 'SPOKEN conversation capped at 2 minutes total — keep every message to one short sentence' : 'short text exchange capped at 4 of your questions total'}. Ask ONE question at a time. Only after the user has actually explained something may you optionally end with ONE proposal (never more than one or two total) if it's clear a habit is genuinely miscalibrated — using the same proposal shapes the main chat coach uses (tierChange, scheduleChange, habitMode, dropHabit, settingsChange, scheduleBlock — the last one pins the habit's Block Schedule time to a new startMin in minutes-since-midnight when the real pattern says it happens at a different time). If nothing needs changing, don't propose anything — understanding what happened is a complete, valid outcome on its own.
-
-TODAY'S ANOMALIES:
-${lines}
-
-OUTPUT FORMAT
-Respond with ONE JSON object, no markdown fences:
-{"message":"what you say — short, warm, curious, plain text","proposals":[ ...zero or more... ]}
-
-APP STATE & OBSERVED PATTERNS:
-${appContext()}`;
-}
-function closeCheckin() {
-  clearVoiceTimer();
-  $('#checkinOverlay').classList.remove('show');
-  try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
-  try { if (checkinRecognizer) checkinRecognizer.stop(); } catch (e) {}
-  if (checkinKind === 'habitctx') {
-    const h = state.habits.find(x => x.id === habitCtxId);
-    const visible = checkinMessages.filter(m => !m.hidden);
-    if (h) {
-      if (visible.length) {
-        h.context = Array.isArray(h.context) ? h.context : [];
-        h.context.push({ question: '(conversation)',
-          answer: visible.filter(m => m.role === 'user').map(m => m.content).join(' / '), ts: Date.now() });
-      }
-      h.contextAsked = true;
-      save(); renderHabits();
-    }
-    habitCtxId = null; checkinKind = 'reflect';
-    return;
-  }
-  const q = activeQuestionnaire; activeQuestionnaire = null;
-  if (!q) return;
-  const visible = checkinMessages.filter(m => !m.hidden);
-  if (visible.length) {
-    const summary = visible.filter(m => m.role === 'user').map(m => m.content).join(' / ').slice(0, 140);
-    state.reflections = state.reflections || [];
-    state.reflections.push({
-      id: uid(), date: q.date, kind: 'conversation', habitId: q.habitIds[0] || null,
-      habitIds: q.habitIds, note: '', summary, transcript: visible.map(m => ({ role: m.role, content: m.content })), ts: Date.now(),
-    });
-    q.status = 'answered'; q.format = checkinFormat;
-    q.transcript = visible.map(m => ({ role: m.role, content: m.content }));
-    q.summary = summary;
-    q.ts = Date.now();
-  }
-  save(); renderQuestionnaireNav(); renderQuestionnaireBanner();
-}
-function renderCheckinBody() {
-  const body = $('#checkinBody'); if (!body) return;
-  if (checkinKind === 'habitctx' && !checkinFormat) {
-    const h = state.habits.find(x => x.id === habitCtxId);
-    const voiceOk = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    body.innerHTML = `
-      <div class="pass-head">
-        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">✨</span><span class="pass-title" style="font-size:19px">TELL ME ABOUT THIS HABIT</span></div>
-        <div class="pass-sub">A few quick questions about "${escapeHtml(h ? h.name : '')}" so future adaptations actually fit how you really do it.</div>
-      </div>
-      <div class="pass-scroll">
-        <div class="chip-row" style="flex-direction:column;align-items:stretch">
-          <button class="chip" style="width:100%;text-align:left;margin-bottom:6px" data-hctxformat="mc">📝 Multiple choice</button>
-          <button class="chip" style="width:100%;text-align:left;margin-bottom:6px" data-hctxformat="text">💬 Text chat</button>
-          <button class="chip" style="width:100%;text-align:left;margin-bottom:6px" data-hctxformat="voice" ${voiceOk ? '' : 'disabled title="Not supported in this browser"'}>🎤 Voice (2 min)</button>
-        </div>
-        <button class="btn ghost sm" data-hctxformat="skip" style="width:100%;margin-top:6px">Skip for now</button>
-      </div>`;
-    return;
-  }
-  if (checkinFormat === 'mc') {
-    const total = mcQuestions ? mcQuestions.length : 0;
-    const q = mcQuestions && mcQuestions[mcIndex];
-    body.innerHTML = `
-      <div class="pass-head">
-        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">📝</span><span class="pass-title" style="font-size:19px">CHECK-IN</span></div>
-          ${total ? `<span class="subtle">Question ${mcIndex + 1} of ${total}</span>` : ''}
-        </div>
-        <div class="pass-sub">Tap the closest answer — saves automatically, no typing needed.</div>
-      </div>
-      <div class="pass-scroll">
-        ${mcBusy || !mcQuestions ? `<div class="ai-msg thinking">🤖 thinking…</div>` : q ? `
-          <div class="ai-msg assistant" style="max-width:100%">${escapeHtml(q.text)}</div>
-          <div class="chip-row" style="margin-top:10px;flex-direction:column;align-items:stretch">
-            ${q.options.map((opt, oi) => `<button class="chip" style="width:100%;text-align:left;margin-bottom:6px" data-mcopt="${oi}">${escapeHtml(opt)}</button>`).join('')}
-          </div>` : `<div class="subtle" style="text-align:center;padding:10px">✓ Saved — thanks!</div>`}
-      </div>`;
-    return;
-  }
-  const capLabel = checkinFormat === 'voice' ? `<span id="voiceTimer" style="font-weight:800;color:var(--purple)"></span>` : `<span class="subtle">Question ${Math.min(checkinTurns + 1, 4)} of 4</span>`;
-  const doneForNow = checkinFormat === 'text' && checkinTurns >= 4;
-  body.innerHTML = `
-    <div class="pass-head">
-      <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">${checkinFormat === 'voice' ? '🎤' : '💬'}</span><span class="pass-title" style="font-size:19px">CHECK-IN</span></div>
-        ${capLabel}
-      </div>
-      <div class="pass-sub">A quick, optional conversation — nothing is applied until you tap Apply.</div>
-    </div>
-    <div class="pass-scroll">
-      <div class="ai-log" id="checkinLog" style="max-height:44vh"></div>
-      ${doneForNow ? `<div class="subtle" style="text-align:center;padding:10px">That's the full check-in for now — thanks!</div>` : `
-      <div class="ai-inputrow">
-        <input class="name-in" id="checkinInput" placeholder="${checkinFormat === 'voice' ? 'Tap 🎤 to speak…' : 'Type your answer…'}">
-        ${checkinFormat === 'voice' ? `<button class="btn ghost sm" id="checkinMic" title="Speak">🎤</button>` : ''}
-        <button class="btn purple sm" id="checkinSend">➤</button>
-      </div>`}
-    </div>`;
-  if (checkinFormat === 'voice') renderVoiceTimer();
-  const log = $('#checkinLog');
-  const msgHTML = checkinMessages.filter(m => !m.hidden).map((m, mi) => {
-    let out = `<div class="ai-msg ${m.err ? 'err' : m.role}">${escapeHtml(m.content)}</div>`;
-    (m.proposals || []).forEach((p, pi) => {
-      const d = describeProposal(p);
-      const st = (m.status || {})[pi];
-      out += `<div class="prop-card${st ? ' done' : ''}" data-cmi="${mi}" data-cpi="${pi}">
-        <div class="p-kind">${escapeHtml(d.kind)}</div>
-        <div class="p-title">${escapeHtml(d.title)}</div>
-        ${d.detail ? `<div class="p-detail">${escapeHtml(d.detail)}</div>` : ''}
-        ${st
-          ? `<div class="p-status" style="color:${st === 'applied' ? 'var(--green)' : 'var(--ink-dim)'}">${st === 'applied' ? '✓ Applied' : '✕ Dismissed'}</div>`
-          : `<div class="p-actions"><button class="btn green sm" data-act="checkinPropApply">✓ Apply</button><button class="btn ghost sm" data-act="checkinPropDismiss">✕ Dismiss</button></div>`}
-      </div>`;
-    });
-    return out;
-  }).join('');
-  log.innerHTML = msgHTML + (checkinBusy ? '<div class="ai-msg thinking">🤖 thinking…</div>' : '');
-  log.scrollTop = log.scrollHeight;
-}
-async function runCheckinAI(userText, opts = {}) {
-  if (checkinBusy) return;
-  if (!activeKey()) { toast('Add an API key in Settings → 🤖 AI Coach', 'var(--pink)'); return; }
-  checkinMessages.push({ role: 'user', content: userText, hidden: !!opts.hidden });
-  if (!opts.hidden) checkinTurns++;
-  checkinBusy = true; renderCheckinBody();
-  try {
-    const messages = checkinMessages.map(m => ({ role: m.role, content: m.content }));
-    const system = checkinKind === 'habitctx' ? habitContextSystemPrompt() : reflectionSystemPrompt();
-    const reply = await callAI(system, messages);
-    const parsed = parseAIReply(reply);
-    checkinMessages.push({ role: 'assistant', content: parsed.message, proposals: parsed.proposals, status: {} });
-    if (checkinFormat === 'voice') speakText(parsed.message);
-  } catch (e) {
-    checkinMessages.push({ role: 'assistant', content: '⚠️ ' + (e && e.message ? e.message : 'Request failed'), err: true });
-  }
-  checkinBusy = false; renderCheckinBody();
-}
-// Multiple-choice format: one AI call generates <=4 questions (one per anomaly),
-// each with tap-able options — no typing, no back-and-forth, auto-saves on the
-// last tap. Falls back to suggesting text chat if generation fails.
-function mcSystemPrompt() {
-  const lines = checkinAnomalies.map(a => `  - habitId=${a.habitId} "${a.name}" (${a.type}): ${a.detail}`).join('\n');
-  return `You are the reflection coach inside HabitCasinoAI. Write up to 4 multiple-choice questions — one per habit below, never more than 4 total — asking what happened, phrased the way the user would actually think about it. Each question needs 3-5 short tap-able options plus a final "Other" option. Ground the options in the SPECIFIC anomaly detail given, not generic reasons.
-
-HABITS TO ASK ABOUT:
-${lines}
-
-OUTPUT FORMAT
-Respond with ONE JSON object, no markdown fences, no other text:
-{"questions":[{"habitId":"<id from above>","text":"...","options":["...","...","...","Other"]}]}`;
-}
-async function runMCGenerate() {
-  if (!activeKey()) { toast('Add an API key in Settings → 🤖 AI Coach', 'var(--pink)'); closeCheckin(); return; }
-  mcBusy = true; renderCheckinBody();
-  try {
-    const reply = await callAI(mcSystemPrompt(), [{ role: 'user', content: 'Generate the multiple choice check-in.' }]);
-    const text = String(reply || '').trim();
-    const a = text.indexOf('{'), b = text.lastIndexOf('}');
-    const o = (a >= 0 && b > a) ? JSON.parse(text.slice(a, b + 1)) : null;
-    mcQuestions = (o && Array.isArray(o.questions))
-      ? o.questions.filter(q => q && q.habitId && q.text && Array.isArray(q.options) && q.options.length).slice(0, 4)
-      : [];
-    mcAnswers = new Array(mcQuestions.length).fill(null);
-    mcIndex = 0;
-    mcBusy = false;
-    if (!mcQuestions.length) { toast('Nothing to ask right now', 'var(--cyan)'); closeCheckin(); return; }
-    renderCheckinBody();
-  } catch (e) {
-    mcBusy = false;
-    toast('Could not generate questions — try text chat instead', 'var(--pink)');
-    closeCheckin();
-  }
-}
-function mcAnswer(idx, optionIdx) {
-  mcAnswers[idx] = optionIdx;
-  if (mcAnswers.every(x => x != null)) { finishMC(); return; }
-  if (idx === mcIndex) mcIndex = mcAnswers.findIndex(x => x == null);
-  renderCheckinBody();
-}
-function finishMC() {
-  if (checkinKind === 'habitctx') {
-    const h = state.habits.find(x => x.id === habitCtxId);
-    if (h) {
-      h.context = Array.isArray(h.context) ? h.context : [];
-      mcQuestions.forEach((qq, i) => h.context.push({ question: qq.text, answer: qq.options[mcAnswers[i]], ts: Date.now() }));
-      h.contextAsked = true;
-      save(); renderHabits();
-    }
-    habitCtxId = null; checkinKind = 'reflect';
-    renderCheckinBody();
-    toast('✓ Saved — thanks!', 'var(--green)');
-    setTimeout(() => { $('#checkinOverlay').classList.remove('show'); }, 700);
-    return;
-  }
-  const q = activeQuestionnaire; if (!q) return;
-  const answered = mcQuestions.map((qq, i) => ({ habitId: qq.habitId, question: qq.text, answer: qq.options[mcAnswers[i]] }));
-  state.reflections = state.reflections || [];
-  answered.forEach(a => {
-    state.reflections.push({ id: uid(), date: q.date, habitId: a.habitId, kind: 'chip', chip: null,
-      note: `${a.question} → ${a.answer}`, ts: Date.now() });
-  });
-  q.status = 'answered'; q.format = 'mc'; q.answers = answered;
-  q.summary = answered.map(a => a.answer).join(', ').slice(0, 140);
-  q.ts = Date.now();
-  activeQuestionnaire = null;
-  save(); renderQuestionnaireNav(); renderQuestionnaireBanner();
-  renderCheckinBody();
-  toast('✓ Saved — thanks!', 'var(--green)');
-  setTimeout(() => { $('#checkinOverlay').classList.remove('show'); }, 700);
-}
-// Browser TTS — free, best-effort; silently does nothing if unsupported.
-function speakText(text) {
-  try {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.speak(u);
-  } catch (e) { /* voice is a nicety, never block on it */ }
-}
-// Browser STT — free, quality/support varies (weak on iOS Safari). One-shot
-// listen: tap, speak, it fills the input and you still hit send yourself.
-let checkinRecognizer = null;
-function startBrowserListen() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast('Voice isn\'t supported here', 'var(--pink)'); return; }
-  try {
-    checkinRecognizer = new SR();
-    checkinRecognizer.lang = 'en-US'; checkinRecognizer.interimResults = false; checkinRecognizer.maxAlternatives = 1;
-    checkinRecognizer.onresult = e => {
-      const text = e.results[0][0].transcript;
-      const inp = $('#checkinInput'); if (inp) inp.value = text;
-    };
-    checkinRecognizer.onerror = () => toast('Didn\'t catch that — try again or type it', 'var(--pink)');
-    checkinRecognizer.start();
-  } catch (e) { toast('Voice failed to start', 'var(--pink)'); }
-}
-
-$('#questionnaireBanner').addEventListener('click', e => {
-  const btn = e.target.closest('[data-startq]'); if (!btn) return;
-  SFX.click(); startQuestionnaire(btn.dataset.startq);
-});
-$('#checkinClose').addEventListener('click', () => { SFX.click(); closeCheckin(); });
-$('#checkinOverlay').addEventListener('click', e => { if (e.target.id === 'checkinOverlay') { closeCheckin(); } });
-$('#checkinBody').addEventListener('click', e => {
-  const hctx = e.target.closest('[data-hctxformat]');
-  if (hctx) {
-    const f = hctx.dataset.hctxformat;
-    if (f === 'skip') {
-      const h = state.habits.find(x => x.id === habitCtxId);
-      if (h) { h.contextAsked = true; save(); }
-      habitCtxId = null; checkinKind = 'reflect';
-      $('#checkinOverlay').classList.remove('show');
-      return;
-    }
-    SFX.click(); startHabitContextQuestionnaire(f); return;
-  }
-  const opt = e.target.closest('[data-mcopt]');
-  if (opt) { SFX.click(); mcAnswer(mcIndex, parseInt(opt.dataset.mcopt)); return; }
-  if (e.target.id === 'checkinMic') { startBrowserListen(); return; }
-  if (e.target.id === 'checkinSend') {
-    const inp = $('#checkinInput'); const v = (inp.value || '').trim();
-    if (!v) return; inp.value = ''; SFX.click(); runCheckinAI(v); return;
-  }
-  const card = e.target.closest('.prop-card');
-  if (card && (e.target.dataset.act === 'checkinPropApply' || e.target.dataset.act === 'checkinPropDismiss')) {
-    const mi = parseInt(card.dataset.cmi);
-    const visible = checkinMessages.filter(m => !m.hidden);
-    const m = visible[mi]; if (!m || !m.proposals) return;
-    const pi = parseInt(card.dataset.cpi); const p = m.proposals[pi]; if (!p || (m.status || {})[pi]) return;
-    m.status = m.status || {};
-    if (e.target.dataset.act === 'checkinPropApply') {
-      if (applyProposal(p)) { m.status[pi] = 'applied'; SFX.win(); toast('✓ Applied', 'var(--green)'); refreshAfterAI(); }
-      else { toast('Could not apply — the target may be gone', 'var(--pink)'); SFX.lose(); save(); }
-    } else { m.status[pi] = 'dismissed'; SFX.click(); save(); }
-    renderCheckinBody();
-  }
-});
-$('#checkinBody').addEventListener('keydown', e => { if (e.target.id === 'checkinInput' && e.key === 'Enter') $('#checkinSend').click(); });
-
-/* ---- Past questionnaires: review/edit/re-save answered check-ins ---- */
-function renderPastQ() {
-  const body = $('#pastQBody'); if (!body) return;
-  const answered = (state.questionnaires || []).filter(q => q.status === 'answered').sort((a, b) => b.ts - a.ts);
-  body.innerHTML = `
-    <div class="pass-head">
-      <div class="pass-title" style="font-size:19px">🧭 PAST CHECK-INS</div>
-      <div class="pass-sub">Review or edit what got logged — re-saving updates what the AI sees.</div>
-    </div>
-    <div class="pass-scroll">
-      ${answered.length ? answered.map(q => `
-        <div class="editrow" data-qid="${q.id}" style="flex-direction:column;align-items:stretch;gap:6px">
-          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
-            <b>${escapeHtml(fmtPlanDate(q.date))} · ${q.format === 'mc' ? '📝 Multiple choice' : q.format === 'voice' ? '🎤 Voice' : '💬 Text'}</b>
-            <button class="btn ghost sm" data-act="editPastQ">✎ Edit</button>
-          </div>
-          <textarea class="name-in pastq-note" data-qid="${q.id}" rows="2" disabled>${escapeHtml(q.summary || '')}</textarea>
-        </div>`).join('') : `<div class="empty"><div class="big">🧭</div>No check-ins answered yet.</div>`}
-    </div>`;
-}
-$('#pastQuestionnairesBtn').addEventListener('click', () => { SFX.click(); renderPastQ(); $('#pastQOverlay').classList.add('show'); });
-$('#pastQClose').addEventListener('click', () => { SFX.click(); $('#pastQOverlay').classList.remove('show'); });
-$('#pastQOverlay').addEventListener('click', e => { if (e.target.id === 'pastQOverlay') $('#pastQOverlay').classList.remove('show'); });
-$('#pastQBody').addEventListener('click', e => {
-  const btn = e.target.closest('[data-act="editPastQ"]'); if (!btn) return;
-  const row = btn.closest('[data-qid]'); const ta = row.querySelector('textarea.pastq-note');
-  if (ta.disabled) { ta.disabled = false; ta.focus(); btn.textContent = '💾 Save'; }
-  else {
-    const q = (state.questionnaires || []).find(x => x.id === row.dataset.qid);
-    if (q) { q.summary = ta.value; save(); toast('✓ Updated', 'var(--green)'); }
-    ta.disabled = true; btn.textContent = '✎ Edit';
-  }
-});
-
 /* ---- wiring: single inline chat ---- */
 function sendFromInput() {
   const inp = $('#aiChatInput'); const v = (inp.value || '').trim();
@@ -6588,7 +5676,6 @@ function switchView(name) {
   if (name === 'chat') renderChat();
   if (name === 'prizes') renderPrizes();
   if (name === 'stats') renderStats();
-  if (name === 'schedule') renderBlockSchedule();
   if (name === 'settings') renderSettings();
   updatePassFab();                 // Habit Pass button shows only on the Habits tab
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -6788,14 +5875,6 @@ $('#view-habits').addEventListener('click', e => {
     const banner = g.querySelector('[data-act="toggleGroup"]'); if (banner) banner.setAttribute('aria-expanded', open ? 'true' : 'false');
     SFX.click(); return;
   }
-  if (act === 'toggleIdentity') {
-    const g = e.target.closest('.identity-group'); if (!g) return;
-    const cat = g.dataset.identity;
-    const open = g.classList.toggle('collapsed') === false;
-    openIdentities[cat] = open;
-    const banner = g.querySelector('[data-act="toggleIdentity"]'); if (banner) banner.setAttribute('aria-expanded', open ? 'true' : 'false');
-    SFX.click(); return;
-  }
   if (act === 'done') { completeHabit(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'startTimer') { startHabitTimer(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'pauseTimer') { toggleHabitTimerPause(e.target.closest('.hrow').dataset.id); return; }
@@ -6814,15 +5893,7 @@ $('#view-habits').addEventListener('click', e => {
     SFX.coin(); save(); renderHabits(); return;
   }
   if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
-  if (act === 'closeEdit') {
-    const h = state.habits.find(x => x.id === editingHabitId);
-    editingHabitId = null; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits();
-    // First time this habit's ever been closed out of the editor: offer the AI a
-    // chance to ask what this habit actually means (how you do it, what "good"
-    // looks like, why) — so later mode/tier suggestions are grounded, not guessed.
-    if (h && h.name && h.name.trim() && !h.contextAsked) openHabitContextPicker(h.id);
-    return;
-  }
+  if (act === 'closeEdit') { editingHabitId = null; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
   if (act === 'graduate') {
     const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
     if (h) {
@@ -6902,7 +5973,7 @@ $('#view-habits').addEventListener('click', e => {
   }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
-    const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
+    const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null };
     state.habits.push(nh); editingHabitId = nh.id; SFX.click(); save(); renderHabits();
     setTimeout(() => $(`.hedit[data-id="${nh.id}"] .name-in`)?.focus(), 30);
     return;
@@ -6953,7 +6024,6 @@ function onInlineHabitField(e) {
   else if (f === 'cap') h.cap = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'timedMinutes') h.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999);
   else if (f === 'section') h.section = (e.target.value === 'extra' ? 'extra' : 'daily');
-  else if (f === 'loadout') { h.loadout = e.target.value.trim() ? e.target.value.trim() : null; renderHabits(); } // '' = universal
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
   else {
     h[f] = e.target.value;
@@ -6966,17 +6036,6 @@ function onInlineHabitField(e) {
 }
 $('#view-habits').addEventListener('input', onInlineHabitField);
 $('#view-habits').addEventListener('change', onInlineHabitField);
-// Manual loadout override — same setDayPlanContext() path the Week Planner already uses,
-// just exposed directly on the Habits tab instead of only inside the Planner overlay.
-$('#loadoutSwitch').addEventListener('change', e => {
-  let v = e.target.value;
-  if (v === '__new') {
-    v = String(prompt('Name this loadout (1-2 words, e.g. School, Travel):') || '').trim();
-    if (!v) { renderTodayContext(); return; }
-  }
-  setDayPlanContext(todayStr(), v || null);
-  SFX.click(); renderHabits();
-});
 
 // Swipe left/right on a leveled habit row (or its open editor) to move between difficulty
 // tiers — left = easier, right = harder. Vertical scrolling stays untouched (touch-action: pan-y).
