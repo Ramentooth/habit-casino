@@ -196,18 +196,42 @@
     }
     .tab.active .ti { filter: none; opacity: 1; transform: translateY(-1px); }
     .tab.active .tl { color: #fff; }
-    /* center "Habits" = raised, always-branded bolt button (the home action) */
-    .tab.center { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
-    .tab.center .ti {
-      font-size: 24px; width: 52px; height: 52px; display: grid; place-items: center;
-      margin-top: -24px; border-radius: 50%; opacity: 1; filter: none;
-      background: linear-gradient(160deg, #ff1b8d, #b026ff 55%, #00f0ff);
-      border: 3px solid rgba(255,255,255,0.65);
-      box-shadow: 0 0 20px rgba(176,38,255,0.75), 0 8px 16px rgba(0,0,0,0.55);
+    /* Habits is a plain tab now — no raised centre bolt — so all six read as equals. */
+
+    /* ---- "More" overflow sheet (Duolingo-style): slides up from behind the nav ---- */
+    .more-tab .ti { letter-spacing: 1px; }
+    .more-tab.open { color: #fff;
+      background: linear-gradient(180deg, rgba(0,240,255,0.18), rgba(176,38,255,0.14));
+      border-color: rgba(0,240,255,0.55);
+      box-shadow: 0 0 14px rgba(0,240,255,0.3);
     }
-    .tab.center.active .ti { box-shadow: 0 0 30px rgba(255,27,141,0.95), 0 8px 16px rgba(0,0,0,0.55); transform: none; }
-    .tab.center .tl { margin-top: 1px; }
-    .tab.center.active .tl { color: var(--cyan); text-shadow: 0 0 8px rgba(0,240,255,0.6); }
+    .more-tab.open .ti { filter: none; opacity: 1; }
+    .more-scrim {
+      position: fixed; inset: 0; z-index: 44; opacity: 0; pointer-events: none;
+      background: rgba(2,0,8,0.66); transition: opacity .22s ease;
+    }
+    .more-scrim.show { opacity: 1; pointer-events: auto; }
+    /* The Habit Pass button floats above the scrim and ghosts through the sheet — park it. */
+    body.more-open .pass-fab { opacity: 0; pointer-events: none; transition: opacity .15s ease; }
+    .more-sheet {
+      position: absolute; left: 0; right: 0; bottom: 100%;
+      background: linear-gradient(180deg, rgba(18,5,34,0.98), rgba(8,0,15,0.99));
+      border-top: 1px solid var(--panel-edge);
+      box-shadow: 0 -10px 34px rgba(0,0,0,0.6);
+      transform: translateY(102%); opacity: 0; pointer-events: none;
+      transition: transform .24s cubic-bezier(.22,.9,.3,1), opacity .18s ease;
+    }
+    .more-sheet.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .more-row {
+      display: flex; align-items: center; gap: 16px; cursor: pointer;
+      padding: 16px max(18px, env(safe-area-inset-left)) 16px max(18px, env(safe-area-inset-right));
+      border-bottom: 1px solid var(--panel-edge); transition: background .15s;
+    }
+    .more-row:last-child { border-bottom: 0; }
+    .more-row:active { background: rgba(176,38,255,0.16); }
+    .more-row.active .mr-label { color: var(--cyan); }
+    .mr-ico { font-size: 24px; line-height: 1; width: 30px; text-align: center; flex: 0 0 auto; }
+    .mr-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .5px; color: var(--ink); }
 
     main {
       max-width: 1100px; margin: 0 auto;
@@ -1174,15 +1198,23 @@
     <button class="iconbtn" id="soundBtn" title="Toggle sound">🔊</button>
   </header>
 
+  <div class="more-scrim" id="moreScrim"></div>
+
   <nav id="nav" class="bottomnav">
+    <!-- Overflow sheet for the tabs that don't fit in the bar. It lives INSIDE the nav
+         and is anchored with bottom:100%, so it always sits exactly on top of the bar
+         no matter how tall the bar ends up (safe-area inset, font scaling, …). -->
+    <div class="more-sheet" id="moreSheet" role="menu" aria-hidden="true">
+      <div class="more-row" data-view="stats" role="menuitem"><span class="mr-ico">📊</span><span class="mr-label">Stats</span></div>
+      <div class="more-row" data-view="schedule" role="menuitem"><span class="mr-ico">📅</span><span class="mr-label">Schedule</span></div>
+      <div class="more-row" data-view="settings" role="menuitem"><span class="mr-ico">⚙️</span><span class="mr-label">Settings</span></div>
+    </div>
     <div class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Casino</span></div>
     <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
-    <div class="tab center active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
-    <div class="tab" data-view="chat" style="position:relative"><span class="ti">💬</span><span class="tl">Chat</span><span id="qNavBadge" style="display:none;position:absolute;top:2px;right:10px;background:var(--purple,#b026ff);color:#fff;font-size:10px;font-weight:800;line-height:1;border-radius:8px;padding:2px 5px;min-width:14px;text-align:center"></span></div>
+    <div class="tab active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
     <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
-    <div class="tab" data-view="stats"><span class="ti">📊</span><span class="tl">Stats</span></div>
-    <div class="tab" data-view="schedule"><span class="ti">📅</span><span class="tl">Schedule</span></div>
-    <div class="tab" data-view="settings"><span class="ti">⚙️</span><span class="tl">Settings</span></div>
+    <div class="tab" data-view="chat" style="position:relative"><span class="ti">💬</span><span class="tl">Chat</span><span id="qNavBadge" style="display:none;position:absolute;top:2px;right:10px;background:var(--purple,#b026ff);color:#fff;font-size:10px;font-weight:800;line-height:1;border-radius:8px;padding:2px 5px;min-width:14px;text-align:center"></span></div>
+    <div class="tab more-tab" id="moreTab" role="button" aria-expanded="false"><span class="ti">⋯</span><span class="tl">More</span></div>
   </nav>
 
   <main>
@@ -2914,24 +2946,19 @@ function addQuickQuest() {
   renderOneoffs(); buildHabitWheel();
   toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} 🪙`, TASK_TIERS[tier].color);
 }
-function renderOneoffs() {
-  const grid = $('#oneoffGrid'); if (!grid) return;
-  if (!state.oneoffs.length) {
-    grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
-  } else {
-    grid.innerHTML = state.oneoffs.map(t => {
-      if (t.id === editingOneoffId) return oneoffEditHTML(t);
-      const ti = TASK_TIERS[t.tier] || TASK_TIERS.medium;
-      const iter = Math.max(1, t.iterations || 1), prog = t.progress || 0;
-      const picked = t.id === wheelPickId;
-      const subBits = [];
-      if (iter > 1) subBits.push(`${prog}/${iter} done`);
-      if (picked) subBits.push(`<span class="spin-tag">🎡 wheel pick +50%</span>`);
-      const cc = categoryColor(t.category);
-      const catPill = (t.category && t.category !== 'Unsorted')
-        ? `<span class="pill qcat"${cc ? ` style="color:${cc};border-color:${cc}"` : ''}>🏷️ ${escapeHtml(t.category)}</span>` : '';
-      const hhTag = happyTagHTML(t.category);
-      return `
+// One quest row. Shared by the Tasks list and the Due Now board so the two can't drift.
+function oneoffCardHTML(t) {
+  const ti = TASK_TIERS[t.tier] || TASK_TIERS.medium;
+  const iter = Math.max(1, t.iterations || 1), prog = t.progress || 0;
+  const picked = t.id === wheelPickId;
+  const subBits = [];
+  if (iter > 1) subBits.push(`${prog}/${iter} done`);
+  if (picked) subBits.push(`<span class="spin-tag">🎡 wheel pick +50%</span>`);
+  const cc = categoryColor(t.category);
+  const catPill = (t.category && t.category !== 'Unsorted')
+    ? `<span class="pill qcat"${cc ? ` style="color:${cc};border-color:${cc}"` : ''}>🏷️ ${escapeHtml(t.category)}</span>` : '';
+  const hhTag = happyTagHTML(t.category);
+  return `
       <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}" data-act="editOneoff"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
         ${hhTag}
         <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Complete">✓</button>
@@ -2943,7 +2970,14 @@ function renderOneoffs() {
         ${catPill}
         <span class="hrow-reward" style="color:${ti.color};border-color:${ti.color};background:rgba(0,0,0,0.25)">+${tierReward(t.tier)} 🪙</span>
       </div>`;
-    }).join('');
+}
+function renderOneoffs() {
+  const grid = $('#oneoffGrid'); if (!grid) return;
+  if (!state.oneoffs.length) {
+    grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
+  } else {
+    grid.innerHTML = state.oneoffs.map(t =>
+      t.id === editingOneoffId ? oneoffEditHTML(t) : oneoffCardHTML(t)).join('');
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
 }
@@ -2983,7 +3017,13 @@ function completeOneoff(id, viaSpin) {
   const reward = TASK_TIERS[t.tier] ? tierReward(t.tier) : t.reward; // tier is the source of truth
   const amt = Math.round(reward * hh * spinMult);
   const tags = (hh > 1 ? ` · ×${hh} happy hour` : '') + (viaSpin ? ' · +spin bonus' : '');
-  const card = $(`#oneoffGrid .qrow[data-id="${id}"] .qcheck`) || $('#habitWheelResult');
+  // The same quest can be rendered twice (Tasks list + Due Now board); only one of the
+  // two is on a visible view, and animating tokens out of a display:none node lands them
+  // at 0,0. offsetParent is null inside a hidden subtree, so it picks the real one.
+  const visible = sel => { const el = $(sel); return (el && el.offsetParent) ? el : null; };
+  const card = visible(`#dueSoonSection .qrow[data-id="${id}"] .qcheck`)
+            || visible(`#oneoffGrid .qrow[data-id="${id}"] .qcheck`)
+            || $('#habitWheelResult');
   addTokens(amt, card);
   logCompletion({ ts: Date.now(), kind: 'task', name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt });
   if (t.progress >= Math.max(1, t.iterations || 1)) {
@@ -3249,31 +3289,64 @@ function renderBlockSchedule() {
 }
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
 // Once the usual time passes it drops back into the regular list — no "overdue" flag.
+// Stable shuffle key: a quest's position is random, but fixed for the whole day. Due Now
+// repaints every 30s, so a live Math.random() would reshuffle the pick under your finger.
+// FNV-1a + a murmur3 finalizer. The finalizer is the point: with a plain `n*31 + c`
+// rolling hash, changing only the trailing date character shifts every key by the same
+// constant, so the sort order comes out identical every single day. Mixing the high bits
+// back down makes a one-character change reshuffle the whole ordering.
+function dailyShuffleKey(id) {
+  const s = todayStr() + '|' + String(id);
+  let n = 2166136261;
+  for (let i = 0; i < s.length; i++) { n ^= s.charCodeAt(i); n = Math.imul(n, 16777619); }
+  n ^= n >>> 15; n = Math.imul(n, 2246822507);
+  n ^= n >>> 13; n = Math.imul(n, 3266489909);
+  n ^= n >>> 16;
+  return n >>> 0;
+}
 function renderDueSoon() {
   const box = $('#dueSoonSection'); if (!box) return;
   const nowMin = nowMinutes();
   const until = m => (m - nowMin + 1440) % 1440;          // minutes until, midnight-safe
+  // Extra habits are side-quests: they stay out of Due Now until every daily quest is
+  // done, so the board never points at optional work while the core routine is unfinished.
+  const dailyClear = sectionStats('daily').allComplete;
+  const eligible = h => !h.archived && isScheduledToday(h) && !isComplete(h)
+    && (dailyClear || h.section !== 'extra');
   const due = state.habits
-    .filter(h => !h.archived && isScheduledToday(h) && !isComplete(h))
+    .filter(eligible)
     .map(h => ({ h, m: habitBlockMinute(h) }))   // same blocks the Schedule tab draws — Due Now always agrees with it
     .filter(x => x.m != null && until(x.m) <= 60)
     .sort((a, b) => until(a.m) - until(b.m))
     .slice(0, 3);                                         // fewer visible choices, not more
   // Fallback when nothing is due in the next hour: surface up to 2 habits whose
   // category happy hour is live right now — do those to grab the token bonus.
-  let rows = '', sub = '', fallback = false;
+  let rows = '', sub = '';
   if (due.length) {
     sub = 'Coming up in your usual routine — knock these out first.';
     rows = due.map(x => x.h.id === editingHabitId ? '' : habitCardHTML(x.h, x.m)).join('');
   } else {
     const active = new Set(activeHappyHours().map(a => a.cat));
     const hh = active.size
-      ? state.habits.filter(h => !h.archived && isScheduledToday(h) && !isComplete(h) && active.has(h.category || 'Unsorted')).slice(0, 2)
+      ? state.habits.filter(h => eligible(h) && active.has(h.category || 'Unsorted')).slice(0, 2)
       : [];
     if (hh.length) {
-      fallback = true;
       sub = 'Happy hour is live — do these now to grab the token bonus.';
       rows = hh.map(h => h.id === editingHabitId ? '' : habitCardHTML(h)).join('');
+    } else {
+      // Last fallback: nothing is due and nothing is boosted (or the habits are simply
+      // finished), so the board would sit empty — fill it with a couple of one-off
+      // quests instead, picked at random but held steady for the day.
+      const quests = state.oneoffs
+        .filter(t => t.id !== editingOneoffId && (t.progress || 0) < Math.max(1, t.iterations || 1))
+        .sort((a, b) => dailyShuffleKey(a.id) - dailyShuffleKey(b.id))
+        .slice(0, 2);
+      if (quests.length) {
+        sub = dailyClear
+          ? 'Habits are clear — here are a couple of quests to pick from.'
+          : 'Nothing scheduled right now — grab a quest instead.';
+        rows = quests.map(t => oneoffCardHTML(t)).join('');
+      }
     }
   }
   const hasRows = rows.trim().length > 0;
@@ -6627,11 +6700,42 @@ $('#aiClearBtn').addEventListener('click', clearAIData);
 /* =================================================================
    EVENTS / WIRING
    ================================================================= */
-// Nav
-$$('#nav .tab').forEach(t => t.addEventListener('click', () => { SFX.click(); switchView(t.dataset.view); }));
+// Nav. Five tabs live in the bar; the rest live behind "More" (see MORE_VIEWS).
+const MORE_VIEWS = ['stats', 'schedule', 'settings'];
+$$('#nav .tab[data-view]').forEach(t => t.addEventListener('click', () => { SFX.click(); closeMore(); switchView(t.dataset.view); }));
+
+function openMore() {
+  $('#moreSheet').classList.add('show');
+  $('#moreScrim').classList.add('show');
+  $('#moreTab').classList.add('open');
+  $('#moreSheet').setAttribute('aria-hidden', 'false');
+  $('#moreTab').setAttribute('aria-expanded', 'true');
+  document.body.classList.add('more-open');
+}
+function closeMore() {
+  $('#moreSheet').classList.remove('show');
+  $('#moreScrim').classList.remove('show');
+  $('#moreTab').classList.remove('open');
+  $('#moreSheet').setAttribute('aria-hidden', 'true');
+  $('#moreTab').setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('more-open');
+}
+function moreIsOpen() { return $('#moreSheet').classList.contains('show'); }
+
+$('#moreTab').addEventListener('click', () => { SFX.click(); moreIsOpen() ? closeMore() : openMore(); });
+$('#moreScrim').addEventListener('click', () => closeMore());
+$('#moreSheet').addEventListener('click', e => {
+  const row = e.target.closest('.more-row'); if (!row) return;
+  SFX.click(); closeMore(); switchView(row.dataset.view);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && moreIsOpen()) closeMore(); });
+
 function switchView(name) {
   flushUltra(); // bank any unrevealed pack cards before navigating away
-  $$('#nav .tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+  $$('#nav .tab[data-view]').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+  // An overflow view has no tab of its own, so "More" carries the active state for it.
+  $('#moreTab').classList.toggle('active', MORE_VIEWS.includes(name));
+  $$('#moreSheet .more-row').forEach(r => r.classList.toggle('active', r.dataset.view === name));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   if (name === 'habits') renderHabits();
   if (name === 'tasks') renderTasks();
@@ -6833,6 +6937,13 @@ $('#soundBtn').addEventListener('click', () => {
 $('#view-habits').addEventListener('click', e => {
   if (Date.now() - lastSwipeAt < 400) return;   // a tier swipe just ended — don't treat it as a tap
   const act = e.target.closest('[data-act]')?.dataset.act;
+  // Quest rows can now appear in Due Now, but their handlers live on #view-tasks and
+  // would never fire here. ✓ completes in place; tapping the row opens it on Tasks.
+  const qrow = e.target.closest('.qrow');
+  if (qrow) {
+    if (act === 'doneOneoff') { completeOneoff(qrow.dataset.id, false); renderHabits(); return; }
+    editingOneoffId = qrow.dataset.id; SFX.click(); switchView('tasks'); renderOneoffs(); return;
+  }
   if (act === 'toggleGroup') {
     const g = e.target.closest('.habit-group'); if (!g) return;
     const open = g.classList.toggle('collapsed') === false;
