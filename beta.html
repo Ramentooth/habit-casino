@@ -1094,7 +1094,14 @@
     .prop-card .p-status { margin-top: 8px; font-weight: 700; }
 
     /* Week Planner + context Modes */
-    .plan-cta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+    .plan-cta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; max-width: 100%; }
+    /* Flex items default to min-width:auto, so a <select> refuses to shrink below its
+       widest <option>. On iOS that option is measured in the system font at the forced
+       16px, which overflows a phone and gives the whole page a sideways scroll.
+       min-width:0 lets it shrink; flex-basis lets it sit inline on wide screens and
+       take its own full-width row once the button no longer fits beside it. */
+    .plan-cta > * { min-width: 0; max-width: 100%; }
+    .plan-cta #loadoutSwitch { flex: 1 1 200px; overflow: hidden; text-overflow: ellipsis; }
     .ctx-badge {
       display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; letter-spacing: .5px;
       padding: 3px 10px; border-radius: 999px; color: var(--cyan);
@@ -1127,12 +1134,11 @@
     }
     .plan-day textarea:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,240,255,0.4); }
     .plan-props { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-    /* ---- Sign-in gate. body.booting hides the app entirely so no view ever paints
-           against the placeholder state that exists before the cloud save arrives. ---- */
-    body.booting > header, body.booting > nav, body.booting > main, body.booting .pass-fab { visibility: hidden; }
+    /* ---- Optional sign-in modal (Settings → ☁️ Cloud Save). Never a boot gate. ---- */
     .auth-overlay { position: fixed; inset: 0; z-index: 90; display: none; background: radial-gradient(circle at 50% 0%, rgba(176,38,255,0.18), rgba(2,0,8,0.97) 60%); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
     .auth-overlay.show { display: flex; align-items: center; justify-content: center; padding: 24px; }
-    .auth-card { width: min(380px, 92vw); text-align: center; }
+    .auth-card { position: relative; width: min(380px, 92vw); text-align: center; }
+    .auth-card .pass-close { top: -6px; right: -6px; }
     .auth-logo { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 14px var(--purple)); }
     .auth-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 2px; margin: 10px 0 4px; color: var(--cyan); text-shadow: 0 0 14px rgba(0,240,255,.55); }
     .auth-sub { color: var(--ink-dim); font-size: 13px; margin-bottom: 20px; }
@@ -1147,7 +1153,7 @@
     @keyframes authspin { to { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="booting">
+<body>
   <div id="bg"></div>
   <div id="grid"></div>
   <canvas id="fxCanvas"></canvas>
@@ -1633,15 +1639,16 @@
     </section>
   </main>
 
-  <!-- Sign-in gate. Shown until Firebase authenticates AND the save has been fetched;
-       the app behind it stays hidden (body.booting) so nothing renders against the
-       placeholder state. Starts visible so there's no flash of an empty app. -->
-  <div class="auth-overlay show" id="authOverlay">
+  <!-- Optional sign-in. Opened from Settings → ☁️ Cloud Save, dismissible, and never
+       blocks the app — hidden by default because localStorage already has the save. -->
+  <div class="auth-overlay" id="authOverlay">
     <div class="auth-card">
+      <button class="pass-close" id="authClose" title="Close">✕</button>
       <div class="auth-logo">⚡</div>
       <div class="auth-title">HABIT CASINO</div>
-      <div class="auth-sub" id="authSub">Connecting…</div>
+      <div class="auth-sub" id="authSub">Sign in to sync your save</div>
       <div id="authBody"></div>
+      <div class="hint" style="margin-top:14px">Optional — your save already lives on this device.</div>
     </div>
   </div>
 
@@ -1926,9 +1933,10 @@ function ensureIdentityPurposes(st = state) {
   Object.keys(ip).forEach(c => { if (!named.includes(c)) delete ip[c]; });
 }
 
-// Placeholder only. The real save arrives from Firestore via HCBoot() once the user is
-// authenticated; until then `state` is defaults and save() refuses to write (see save()).
-let state = load(null);
+function readLocal() { try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; } }
+// localStorage is the source of truth and boots synchronously — the app is fully usable
+// with no account and no network. Signing in adds Firestore as a mirror (see CLOUD SAVE).
+let state = load(readLocal());
 let activeGame = 'wheel';
 let wheelSegments = [];
 let wheelAngle = 0;
@@ -2138,22 +2146,27 @@ function load(raw) {
     const s = defaultState(); ensureHappyHours(s); ensureCategoryColors(s); return s;
   }
 }
-// Firestore is the origin now. save() stays synchronous and fire-and-forget so all 110
-// call sites are unchanged; the cloud layer debounces the actual network write.
-// The cloudReady guard is load-bearing: before HCBoot() runs, `state` is defaults, and
-// writing it would overwrite the user's real save with a blank one.
+// localStorage always. The cloud is a mirror written only while signed in, so the app
+// behaves identically with no account: same synchronous write, same call sites (all 110
+// of them unchanged), and the network write is debounced by the cloud layer.
 const CLOUD_LIMIT = 700000;   // chars of JSON — comfortably under Firestore's 1 MiB doc cap
-let cloudReady = false;
+// Declared here rather than down in the CLOUD SAVE section: save() reads it, and a `let`
+// is in its temporal dead zone until its own line runs, so a save() during startup would
+// throw if this lived beside the rest of the cloud state.
+let cloudOn = false;          // signed in AND reconciled — only then do we mirror upward
 function save() {
-  if (!cloudReady) return;
   state.updatedAt = Date.now();
   let json = JSON.stringify(state);
-  if (json.length > CLOUD_LIMIT) json = trimForCloud(json);
-  if (window.HCCloud) window.HCCloud.save(json);
+  // Only trim while syncing: localStorage alone has room to spare, and silently
+  // dropping a signed-out user's chat history would be gratuitous.
+  if (cloudOn && json.length > CLOUD_LIMIT) json = trimForCloud(json);
+  try { localStorage.setItem(STORAGE_KEY, json); }
+  catch (e) { toast('Browser storage is full — export your save', 'var(--pink)'); }
+  if (cloudOn && window.HCCloud) window.HCCloud.save(json);
 }
 // `history` is already capped at 2000 entries, but chat threads grow without bound and
 // are the one thing that could push the document past Firestore's hard 1 MiB limit —
-// at which point writes start failing and the save silently stops. Drop oldest threads
+// at which point writes start failing and the sync silently stops. Drop oldest threads
 // first (they're unshifted newest-first) rather than let that happen.
 function trimForCloud(json) {
   const threads = state.aiChatThreads;
@@ -5812,7 +5825,9 @@ function renderTodayContext() {
   // Week Planner AI (or a previous manual pick) already set via setDayPlanContext.
   const sw = $('#loadoutSwitch');
   if (sw) {
-    sw.innerHTML = `<option value="">— no loadout (show everything) —</option>` +
+    // Kept short on purpose: a <select>'s intrinsic width is its widest option, and this
+    // one is the widest. Long labels here are what push the row off a phone screen.
+    sw.innerHTML = `<option value="">All habits</option>` +
       (state.contexts || []).map(c => `<option value="${escapeHtml(c)}" ${ctx === c ? 'selected' : ''}>🧭 ${escapeHtml(c)}</option>`).join('') +
       `<option value="__new">＋ New loadout…</option>`;
     sw.value = ctx || '';
@@ -7419,78 +7434,114 @@ $('#revealOverlay').addEventListener('click', e => { if (e.target.id === 'reveal
 /* =================================================================
    CLOUD SAVE  (Firebase Auth + Firestore)
 
-   The game save lives in Firestore. localStorage now holds exactly two things:
-     · habitCasinoAI.settings — the AI provider key. Deliberately NEVER synced;
-       it stays device-local so it can't sit in a database in plaintext.
-     · habitVersion — the alpha/beta channel flag, which index.html reads before
-       Firebase has loaded, so it can't come from the cloud.
-   The classic script talks to the ESM Firebase bundle through window.HCCloud;
-   the bundle calls back into HCBoot / HCSignedOut / HCAuthUI.
+   OPTIONAL. localStorage is the source of truth and the app is fully usable with no
+   account and no network — signing in (Settings → ☁️ Cloud Save) adds Firestore as a
+   MIRROR on top. It is never a prerequisite: no boot gate, nothing blocks on the
+   network, and signing out just leaves you local again with your save intact.
+
+   localStorage holds the game save plus two things that stay device-local by design:
+     · habitCasinoAI.settings — the AI provider key. Deliberately NEVER synced; a real
+       credential should not sit in a database in plaintext.
+     · habitVersion — the alpha/beta channel flag, read by index.html before Firebase
+       has loaded, so it can't come from the cloud.
+
+   The classic script talks to the ESM Firebase bundle through window.HCCloud; the
+   bundle calls back into window.HCCloudState when the sign-in state changes.
    ================================================================= */
-let cloudUser = null;
-let cloudStatus = 'connecting';   // connecting | signedout | loading | ready | error
+let cloudUser = null;             // cloudOn lives up beside save() — see the note there
+let cloudStatus = 'off';          // off | loading | ready | error
 let cloudMsg = '';
+let cloudSyncedAt = 0;
 let authMode = 'in';              // 'in' = sign in · 'up' = create account
 let authBusy = false;
 
-// Called by the cloud layer on every status change so the gate can repaint.
-window.HCAuthUI = function (status, msg) {
-  cloudStatus = status;
-  cloudMsg = msg || '';
-  authBusy = false;
-  if (status !== 'ready') { document.body.classList.add('booting'); $('#authOverlay').classList.add('show'); }
-  renderAuth();
+// Called by the cloud layer whenever the signed-in user changes (including on load).
+// Reconciles once, then flips cloudOn so save() starts mirroring.
+window.HCCloudState = async function (user) {
+  cloudUser = user;
+  cloudOn = false;
+  cloudMsg = '';
+  if (!user) { cloudStatus = 'off'; renderCloudUI(); return; }
+  $('#authOverlay').classList.remove('show');
+  cloudStatus = 'loading'; renderCloudUI();
+
+  let remote = null;
+  try { remote = await window.HCCloud.pull(); }
+  catch (e) { cloudStatus = 'error'; cloudMsg = e.message || 'Could not reach the cloud.'; renderCloudUI(); return; }
+
+  // Newer-cloud-wins, but never silently: an unattended overwrite is how a week of
+  // streaks disappears. Declining keeps this device and pushes it up instead.
+  const localTs = state.updatedAt || 0;
+  if (remote && remote.state && (remote.updatedAt || 0) > localTs) {
+    const when = new Date(remote.updatedAt).toLocaleString();
+    if (confirm(`Your cloud save (${when}) is newer than this device.\n\nLoad it? This replaces what's on this device.\n\nCancel keeps this device's save and overwrites the cloud copy.`)) {
+      state = load(remote.state);
+      fullRender();
+      toast('Loaded from the cloud ☁️', 'var(--cyan)');
+    }
+  }
+  cloudOn = true;
+  cloudStatus = 'ready';
+  save();                      // push whichever save we settled on
+  renderCloudUI();
 };
+
+// Called by the cloud layer after each successful write.
+window.HCCloudSynced = function () { cloudSyncedAt = Date.now(); renderCloudUI(); };
+
+// ---- Settings → ☁️ CLOUD SAVE ----
+function renderCloudUI() {
+  const box = $('#cloudRow'); if (!box) return;
+  if (cloudStatus === 'loading') { box.innerHTML = `<div class="hint">Connecting…</div>`; return; }
+  if (!cloudUser) {
+    box.innerHTML = `
+      <div class="row between" style="margin-top:4px">
+        <span class="subtle">Saved on this device only</span>
+        <button class="btn ghost sm" id="cloudSignIn" style="color:var(--cyan);border-color:var(--cyan)">☁️ Sign in to sync</button>
+      </div>
+      ${cloudMsg ? `<div class="auth-err">${escapeHtml(cloudMsg)}</div>` : ''}
+      <div class="hint">Optional. Sign in to back your save up and carry it between devices — everything works without it.</div>`;
+    return;
+  }
+  const who = cloudUser.email || cloudUser.name || 'signed in';
+  const synced = cloudSyncedAt ? `Last synced ${new Date(cloudSyncedAt).toLocaleTimeString()}.` : 'Syncing…';
+  box.innerHTML = `
+    <div class="row between" style="margin-top:4px">
+      <span>☁️ Synced as <b>${escapeHtml(who)}</b></span>
+      <button class="btn ghost sm" id="cloudSignOut">Sign out</button>
+    </div>
+    ${cloudStatus === 'error' ? `<div class="auth-err">${escapeHtml(cloudMsg)}</div>` : ''}
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost sm" id="cloudRestore">⬇ Load cloud save</button>
+    </div>
+    <div class="hint" id="cloudSaveState">${escapeHtml(synced)} Your save also stays on this device.</div>`;
+}
+
+// ---- sign-in modal (opened from Settings, not a boot gate) ----
+function openAuth() { authMode = 'in'; cloudMsg = ''; authBusy = false; renderAuth(); $('#authOverlay').classList.add('show'); }
+function closeAuth() { $('#authOverlay').classList.remove('show'); cloudMsg = ''; renderCloudUI(); }
 
 function renderAuth() {
   const box = $('#authBody'); if (!box) return;
   const sub = $('#authSub');
-  if (cloudStatus === 'connecting' || cloudStatus === 'loading') {
-    if (sub) sub.textContent = cloudStatus === 'loading' ? 'Loading your save…' : 'Connecting…';
-    box.innerHTML = `<div class="auth-spin">◠</div>`;
-    return;
-  }
-  if (cloudStatus === 'error') {
-    if (sub) sub.textContent = 'Something went wrong';
-    box.innerHTML = `
-      <div class="auth-err">${escapeHtml(cloudMsg || 'Could not reach the cloud.')}</div>
-      <button class="btn ghost" id="authRetry" style="width:100%">↻ Try again</button>`;
-    return;
-  }
-  if (sub) sub.textContent = authMode === 'up' ? 'Create an account to save your progress' : 'Sign in to load your save';
+  if (sub) sub.textContent = authMode === 'up' ? 'Create an account to sync your save' : 'Sign in to sync your save';
   box.innerHTML = `
     <button class="btn auth-google" id="authGoogle"${authBusy ? ' disabled' : ''}>Continue with Google</button>
     <div class="auth-or"><span>or</span></div>
     <input class="name-in auth-in" id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
     <input class="name-in auth-in" id="authPass" type="password" autocomplete="${authMode === 'up' ? 'new-password' : 'current-password'}" placeholder="Password">
-    ${authErrHTML()}
+    ${cloudMsg ? `<div class="auth-err">${escapeHtml(cloudMsg)}</div>` : ''}
     <button class="btn green" id="authSubmit" style="width:100%;margin-top:4px"${authBusy ? ' disabled' : ''}>${authMode === 'up' ? 'Create account' : 'Sign in'}</button>
     <div class="auth-swap">${authMode === 'up'
       ? `Already have an account? <a href="#" data-authmode="in">Sign in</a>`
       : `New here? <a href="#" data-authmode="up">Create an account</a>`}</div>`;
 }
-function authErrHTML() { return cloudMsg ? `<div class="auth-err">${escapeHtml(cloudMsg)}</div>` : ''; }
-
 function authFail(msg) { cloudMsg = msg; authBusy = false; renderAuth(); }
 
-// Settings → 💾 Data: who's signed in + where the save lives.
-function renderCloudUI() {
-  const box = $('#cloudRow'); if (!box) return;
-  if (!cloudUser) { box.innerHTML = `<div class="hint">Not signed in.</div>`; return; }
-  const who = cloudUser.email || cloudUser.name || 'signed in';
-  box.innerHTML = `
-    <div class="row between" style="margin-top:4px">
-      <span>☁️ Saving as <b>${escapeHtml(who)}</b></span>
-      <button class="btn ghost sm" id="cloudSignOut">Sign out</button>
-    </div>
-    <div class="hint" id="cloudSaveState">Your save syncs to the cloud automatically.</div>`;
-}
-
-// ---- auth overlay wiring (delegated: renderAuth() replaces the whole body) ----
 $('#authOverlay').addEventListener('click', async e => {
+  if (e.target.id === 'authOverlay' || e.target.closest('#authClose')) { closeAuth(); return; }
   const swap = e.target.closest('[data-authmode]');
   if (swap) { e.preventDefault(); authMode = swap.dataset.authmode; cloudMsg = ''; renderAuth(); return; }
-  if (e.target.closest('#authRetry')) { location.reload(); return; }
   if (authBusy || !window.HCCloud) return;
 
   if (e.target.closest('#authGoogle')) {
@@ -7508,9 +7559,30 @@ $('#authOverlay').addEventListener('click', async e => {
     catch (err) { authFail(err.message || 'Sign-in failed'); }
   }
 });
-$('#view-settings').addEventListener('click', e => {
+
+$('#view-settings').addEventListener('click', async e => {
+  if (e.target.closest('#cloudSignIn')) {
+    if (!window.HCCloud) { cloudMsg = 'Cloud layer failed to load — check your connection.'; renderCloudUI(); return; }
+    openAuth(); return;
+  }
   if (e.target.closest('#cloudSignOut') && window.HCCloud) {
-    if (confirm('Sign out? Your save stays in the cloud.')) window.HCCloud.signOut();
+    if (confirm('Sign out? Your save stays on this device and in the cloud.')) {
+      window.HCCloud.signOut();
+      toast('Signed out — saving locally', 'var(--cyan)');
+    }
+    return;
+  }
+  if (e.target.closest('#cloudRestore') && window.HCCloud) {
+    let remote = null;
+    try { remote = await window.HCCloud.pull(); }
+    catch (err) { toast('Could not reach the cloud', 'var(--pink)'); return; }
+    if (!remote || !remote.state) { toast('No cloud save yet', 'var(--pink)'); return; }
+    const when = new Date(remote.updatedAt || 0).toLocaleString();
+    if (confirm(`Replace this device's save with the cloud copy from ${when}?`)) {
+      state = load(remote.state);
+      save(); fullRender();
+      toast('Loaded from the cloud ☁️', 'var(--cyan)');
+    }
   }
 });
 
@@ -7535,35 +7607,12 @@ function fullRender() {
   passEnsureWeek();      // roll the pass week / seed goals if needed
   updatePassFab();
   renderVersionUI();     // alpha/beta badge + switcher
+  renderCloudUI();       // Settings → ☁️ Cloud Save (shows "sign in to sync" when off)
 }
 
-// ---- Async boot. The app no longer renders at parse time: the cloud layer calls
-// HCBoot() once Firebase has authenticated and fetched the save. Everything below
-// this point is still wired synchronously — only the first paint waits. ----
-window.HCBoot = function (raw, info) {
-  state = load(raw);
-  cloudUser = info || null;
-  cloudReady = true;                       // must precede any save()
-  cloudStatus = 'ready';
-  fullRender();
-  document.body.classList.remove('booting');
-  $('#authOverlay').classList.remove('show');
-  renderCloudUI();
-  if (info && info.migrated) {
-    save();                                // push the migrated local save up immediately
-    toast('Save moved to the cloud ☁️', 'var(--green)');
-  }
-};
-// Signed out (or never signed in): tear the app back down to the gate. cloudReady goes
-// false first so nothing in the render path can write another user's data to this one.
-window.HCSignedOut = function () {
-  cloudReady = false;
-  cloudUser = null;
-  state = load(null);
-  document.body.classList.add('booting');
-  $('#authOverlay').classList.add('show');
-  renderAuth();
-};
+// Boot is synchronous again: the save comes from localStorage, so nothing waits on the
+// network or on an account. The cloud layer attaches later, if and when it loads.
+fullRender();
 
 // Collapsible settings: tap a section title to expand/collapse. Start collapsed for a clean menu.
 $('#view-settings').addEventListener('click', e => {
@@ -7583,10 +7632,12 @@ setInterval(() => {
 </script>
 
 <!-- =====================================================================
-     CLOUD LAYER — Firebase Auth + Firestore.
+     CLOUD LAYER — Firebase Auth + Firestore. Entirely OPTIONAL: the app has
+     already booted from localStorage by the time this runs, and if this file
+     fails to load (offline, CDN blocked, file:// origin) nothing breaks —
+     the Settings panel just reports that sync is unavailable.
      This is a module, so it is deferred and always runs AFTER the classic
-     app script above; window.HCBoot and friends are therefore guaranteed to
-     exist by the time anything here calls them.
+     app script above; window.HCCloudState is therefore guaranteed to exist.
      The apiKey below is NOT a secret — it identifies the project. Access is
      controlled entirely by the Firestore security rules (users can only read
      and write documents under their own uid).
@@ -7620,7 +7671,6 @@ setInterval(() => {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
   });
 
-  const ui = (status, msg) => window.HCAuthUI && window.HCAuthUI(status, msg);
   const userDoc = uid => doc(db, 'users', uid);
 
   // Firebase error codes → something a human can act on.
@@ -7654,6 +7704,8 @@ setInterval(() => {
     // returns, but the write is already durable in the IndexedDB queue.
     setDoc(userDoc(auth.currentUser.uid), {
       state: json, updatedAt: Date.now(), schema: 1, channel: window.HC_VERSION || ''
+    }).then(() => {
+      window.HCCloudSynced && window.HCCloudSynced();
     }).catch(e => {
       const el = document.getElementById('cloudSaveState');
       if (el) { el.textContent = '⚠️ ' + friendly(e); el.style.color = 'var(--pink)'; }
@@ -7687,34 +7739,25 @@ setInterval(() => {
         else        await signInWithEmailAndPassword(auth, email, pass);
       } catch (e) { throw new Error(friendly(e)); }
     },
-    async signOut() { flush(); await signOut(auth); }
+    async signOut() { flush(); await signOut(auth); },
+    // Read the cloud copy. Returns null when this account has never synced.
+    async pull() {
+      if (!auth.currentUser) return null;
+      try {
+        const snap = await getDoc(userDoc(auth.currentUser.uid));
+        return snap.exists() ? snap.data() : null;
+      } catch (e) { throw new Error(friendly(e)); }
+    }
   };
 
   // Completes a redirect-based Google sign-in when the page comes back.
-  getRedirectResult(auth).catch(e => ui('signedout', friendly(e)));
+  getRedirectResult(auth).catch(e => console.warn('[cloud] redirect sign-in', friendly(e)));
 
-  onAuthStateChanged(auth, async u => {
-    if (!u) { window.HCSignedOut && window.HCSignedOut(); ui('signedout', ''); return; }
-    ui('loading', '');
-    let snap;
-    try {
-      snap = await getDoc(userDoc(u.uid));
-    } catch (e) {
-      ui('error', friendly(e));
-      return;
-    }
-    let raw = snap.exists() ? snap.data().state : null;
-    let migrated = false;
-    // One-time migration: a save made before the cloud existed still sits in
-    // localStorage. Adopt it for this account, then push it up. The local copy is
-    // left in place as a fallback rather than deleted.
-    if (!raw) {
-      try {
-        const legacy = localStorage.getItem('habitCasino.v1');
-        if (legacy) { raw = legacy; migrated = true; }
-      } catch (e) {}
-    }
-    window.HCBoot(raw, { uid: u.uid, email: u.email, name: u.displayName, migrated });
+  // Purely additive: hand the signed-in user (or null) to the app and let it decide.
+  // Nothing here can block or break the app — it boots from localStorage regardless.
+  onAuthStateChanged(auth, u => {
+    if (!window.HCCloudState) return;
+    window.HCCloudState(u ? { uid: u.uid, email: u.email, name: u.displayName } : null);
   });
 </script>
 </body>
