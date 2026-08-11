@@ -243,6 +243,13 @@
       box-shadow: 0 0 16px color-mix(in srgb, var(--pz) 45%, transparent), inset 0 0 14px color-mix(in srgb, var(--pz) 12%, transparent);
     }
     .prize.owned .pn { color: #fff; }
+    .prize-lock {
+      position: absolute; left: 6px; top: 50%; transform: translateY(-50%); z-index: 3;
+      width: 28px; height: 32px; display: grid; place-items: center; border-radius: 9px;
+      background: rgba(5,0,14,.88); border: 1px solid color-mix(in srgb, var(--pz) 65%, #fff 10%);
+      box-shadow: 0 0 12px rgba(0,0,0,.75), 0 0 9px color-mix(in srgb, var(--pz) 35%, transparent);
+      font-size: 16px;
+    }
     /* Count rides on the emoji's top-right corner, not the tile's. */
     .pe-wrap { position: relative; display: inline-block; }
     .prize-count {
@@ -328,7 +335,7 @@
     .zbtn:disabled { opacity: .35; cursor: default; }
     /* Zoom = one CSS variable. Everything positioned off --ph eases to the new scale
        together, so the day glides between zoom levels rather than snapping. */
-    .sched-grid { position: relative; transition: height .28s cubic-bezier(.4,0,.2,1); }
+    .sched-grid { position: relative; transition: height .28s cubic-bezier(.4,0,.2,1); touch-action: pan-y; }
     .sched-hour, .sched-sub, .sched-now, .sched-block {
       transition: top .28s cubic-bezier(.4,0,.2,1), height .28s cubic-bezier(.4,0,.2,1);
     }
@@ -577,15 +584,24 @@
     .bonus-chip .bonus-amt { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 17px; }
 
     /* ---------- Casino ---------- */
-    .game-tabs { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
-    .game-tab {
-      cursor: pointer; padding: 12px 16px; border-radius: 14px; text-align: center; min-width: 96px;
-      background: var(--panel); border: 1px solid rgba(255,255,255,0.08); transition: .18s;
+    #view-casino { padding-bottom: 88px; }
+    .game-tabs {
+      position: fixed; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right));
+      bottom: calc(67px + env(safe-area-inset-bottom)); z-index: 38;
+      display: flex; gap: 3px; justify-content: stretch; flex-wrap: nowrap; margin: 0 auto;
+      max-width: 720px; padding: 6px;
+      border: 1px solid var(--panel-edge); border-radius: 17px;
+      background: rgba(11,2,23,.94); box-shadow: 0 -7px 26px rgba(0,0,0,.58);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     }
-    .game-tab .gi { font-size: 26px; display: block; }
-    .game-tab .gn { font-family: 'Orbitron'; font-size: 11px; letter-spacing: 1px; margin-top: 4px; color: var(--ink-dim); }
+    .game-tab {
+      flex: 1 1 0; min-width: 0; cursor: pointer; padding: 6px 1px 5px; border-radius: 12px; text-align: center;
+      background: transparent; border: 1px solid transparent; transition: .18s;
+    }
+    .game-tab .gi { font-size: 21px; line-height: 1; display: block; }
+    .game-tab .gn { font-family: 'Orbitron'; font-size: 8px; letter-spacing: .2px; margin-top: 3px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .game-tab:hover { transform: translateY(-3px); }
-    .game-tab.active { border-color: var(--yellow); box-shadow: 0 0 18px rgba(255,230,0,.45); }
+    .game-tab.active { background: linear-gradient(180deg, rgba(255,230,0,.18), rgba(255,27,141,.13)); border-color: rgba(255,230,0,.55); box-shadow: 0 0 14px rgba(255,230,0,.3); }
     .game-tab.active .gn { color: var(--yellow); }
 
     .game-stage { display: none; }
@@ -1085,7 +1101,7 @@
       .iconbtn { width: 38px; height: 38px; }
 
       /* roomy, finger-friendly casino game tabs */
-      .game-tab { min-width: 84px; padding: 10px 12px; }
+      .game-tab { min-width: 0; padding: 6px 1px 5px; }
     }
 
     /* --- touch devices: comfy hit targets + no "stuck hover" after a tap --- */
@@ -1344,6 +1360,46 @@
     .auth-swap a { color: var(--cyan); }
     .auth-spin { font-size: 30px; color: var(--cyan); animation: authspin 1s linear infinite; }
     @keyframes authspin { to { transform: rotate(360deg); } }
+
+    .loadout-button {
+      flex: 1 1 200px; min-width: 0; max-width: 100%; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 9px 12px; border-radius: 11px; color: var(--ink); font: 700 14px 'Rajdhani', sans-serif;
+      background: var(--panel); border: 1px solid var(--panel-edge); text-align: left;
+    }
+    .loadout-button::after { content: '▾'; color: var(--cyan); }
+    .loadout-modal { width: min(560px, 94vw); }
+    .loadout-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+    .loadout-choice {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 14px; border-radius: 12px; cursor: pointer; color: var(--ink); font: 800 16px 'Rajdhani', sans-serif;
+      background: linear-gradient(160deg, rgba(176,38,255,.12), rgba(20,6,42,.72)); border: 1px solid var(--panel-edge);
+    }
+    .loadout-choice.active { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 14px rgba(0,240,255,.24); }
+    .loadout-copy-groups { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; max-height: 44vh; overflow-y: auto; overflow-x: hidden; }
+    .loadout-copy-group { border: 1px solid var(--panel-edge); border-radius: 12px; background: rgba(20,6,42,.72); overflow: hidden; }
+    .loadout-copy-group summary { cursor: pointer; padding: 11px 13px; font-weight: 800; color: var(--cyan); }
+    .loadout-copy-items { display: flex; flex-direction: column; padding: 0 10px 10px; gap: 6px; }
+    .loadout-copy-item { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 9px; background: rgba(176,38,255,.09); }
+    .loadout-copy-item input { flex: 0 0 auto; accent-color: var(--purple); }
+
+    /* One-off tasks are a single vertical phone-width list—never a nested horizontal scroller. */
+    #view-tasks, #view-tasks .oneoff-section, #view-tasks .oneoff-layout,
+    #view-tasks .quest-list, #view-tasks .qrow, #view-tasks .qedit { min-width: 0; max-width: 100%; width: 100%; }
+    #view-tasks .oneoff-layout { display: block; overflow-x: hidden; }
+    #view-tasks .quest-list { overflow: visible; }
+    #view-tasks .qrow { grid-template-columns: auto minmax(0,1fr) auto; }
+    #view-tasks .qrow .hrow-main, #view-tasks .qrow .hrow-name { min-width: 0; overflow-wrap: anywhere; }
+    @media (max-width: 560px) {
+      #view-tasks .oneoff-section { padding: 0; }
+      #view-tasks .quest-add { padding: 10px; }
+      #view-tasks .qrow { padding: 10px 8px; gap: 8px; }
+      #view-tasks .qcat { display: none; }
+      #view-tasks .qedit .hedit-r { flex-wrap: wrap; min-width: 0; }
+      #view-tasks .qedit .name-in, #view-tasks .qedit .sect-in { flex: 1 1 140px; min-width: 0; max-width: 100%; }
+      .loadout-modal { padding-left: 14px; padding-right: 14px; }
+    }
+
   </style>
 </head>
 <body>
@@ -1392,7 +1448,7 @@
       <div class="plan-cta">
         <button class="btn ghost sm" data-act="openPlanner">📅 Plan My Week</button>
         <span id="todayCtxBadge"></span>
-        <select class="sect-in" id="loadoutSwitch" title="Which loadout is today? Auto-detected from the Week Planner — override it here any time."></select>
+        <button class="loadout-button" id="loadoutSwitch" type="button" title="Choose or create a habit loadout"></button>
       </div>
       <div id="dueSoonSection"></div>
       <div class="habit-group collapsed" id="dailyGroup">
@@ -1439,8 +1495,8 @@
     <!-- ===================== TASKS (one-off quests) ===================== -->
     <section class="view" id="view-tasks">
       <div class="oneoff-section">
-        <div class="section-title neon-purple">🎯 Wheel of Quests</div>
-        <div class="subtle" style="margin-bottom:12px">One-off tasks — add them below, check them off, or spin for a random one. Each vanishes once finished.</div>
+        <div class="section-title neon-purple">🎯 One-Off Quests</div>
+        <div class="subtle" style="margin-bottom:12px">Add one-off tasks below and check them off when finished. They are shared across every loadout.</div>
         <div class="hh-banner" id="hhBannerTasks"></div>
         <div class="quest-add" id="questAdd">
           <div class="row" style="gap:8px;flex-wrap:nowrap">
@@ -1450,18 +1506,7 @@
           <div class="chip-row" id="questTierChips"></div>
           <div class="chip-row" id="questCatChips"></div>
         </div>
-        <div class="oneoff-layout">
-          <div class="oneoff-wheel">
-            <div class="wheel-wrap habit-wheel-wrap">
-              <div class="wheel-pointer"></div>
-              <div class="wheel" id="habitWheel"></div>
-              <div class="wheel-hub">🎯</div>
-            </div>
-            <button class="btn purple" id="spinHabitWheel">🎡 SPIN A QUEST</button>
-            <div class="result-banner" id="habitWheelResult"></div>
-          </div>
-          <div class="quest-list" id="oneoffGrid"></div>
-        </div>
+        <div class="oneoff-layout"><div class="quest-list" id="oneoffGrid"></div></div>
       </div>
     </section>
 
@@ -1471,9 +1516,9 @@
         <div class="game-tab active" data-game="wheel"><span class="gi">🎡</span><span class="gn">WHEEL</span></div>
         <div class="game-tab" data-game="slots"><span class="gi">🎰</span><span class="gn">SLOTS</span></div>
         <div class="game-tab" data-game="dice"><span class="gi">🎲</span><span class="gn">DICE</span></div>
-        <div class="game-tab" data-game="box"><span class="gi">🎁</span><span class="gn">MYSTERY</span></div>
+        <div class="game-tab" data-game="box"><span class="gi">🎁</span><span class="gn">BOX</span></div>
         <div class="game-tab" data-game="roulette"><span class="gi">🟢</span><span class="gn">ROULETTE</span></div>
-        <div class="game-tab" data-game="ultra"><span class="gi">🃏</span><span class="gn">ULTRA PACK</span></div>
+        <div class="game-tab" data-game="ultra"><span class="gi">🃏</span><span class="gn">PACK</span></div>
       </div>
 
       <!-- WHEEL -->
@@ -1899,6 +1944,14 @@
     </div>
   </div>
 
+  <!-- Native-menu-free loadout chooser and creator -->
+  <div class="pass-overlay" id="loadoutOverlay">
+    <div class="pass-modal loadout-modal">
+      <button class="pass-close" id="loadoutClose" title="Close">✕</button>
+      <div id="loadoutBody"></div>
+    </div>
+  </div>
+
   <!-- Wild Card chooser -->
   <div class="wild-overlay" id="wildOverlay">
     <div class="wild-modal">
@@ -1931,6 +1984,21 @@ const APP_VERSION = (typeof window !== 'undefined' && window.HC_VERSION) || 'alp
    DATA MODEL + CONSTANTS
    ================================================================= */
 const STORAGE_KEY = 'habitCasino.v1';
+const DEVICE_KEY = 'habitCasino.deviceId';
+// Device-local anonymous id used only to recognize which browser last wrote the cloud
+// document. It never changes with the game save and contains no user information.
+function getDeviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : `hc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch (e) { return 'device-storage-unavailable'; }
+}
+const DEVICE_ID = getDeviceId();
+window.HC_DEVICE_ID = DEVICE_ID; // read by the deferred Firebase module
 
 const TIERS = {
   blank:     { label: 'No Luck',   color: 'var(--t-blank)',     hex: '#5a6473', emoji: '💨' },
@@ -1989,7 +2057,7 @@ function defaultState() {
       { id: uid(), emoji: '🧹', name: 'Tidy a space',       section: 'extra', reward: 2, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '🤝', name: 'Reach out to a friend', section: 'extra', reward: 3, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '💊', name: 'Take vitamins',      section: 'extra', reward: 1, repeatable: true,  cap: 2, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
-    ].map(h => ({ days: [true, true, true, true, true, true, true], modes: {}, loadout: null, why: '', scheduledMin: null, context: [], contextAsked: true, category: ({ 'Exercise': 'Exercise', 'Practice Cello': 'Intellect', 'Japanese Practice': 'Intellect', 'Study / Read': 'Intellect' }[h.name] || 'Unsorted'), ...h })), // days[0..6] = Sun..Sat, default every day; loadout: null = universal (shows under every loadout), else one of `contexts`; contextAsked:true = pre-seeded defaults skip the onboarding questionnaire
+    ].map(h => ({ days: [true, true, true, true, true, true, true], modes: {}, loadout: 'Default', why: '', scheduledMin: null, context: [], contextAsked: true, category: ({ 'Exercise': 'Exercise', 'Practice Cello': 'Intellect', 'Japanese Practice': 'Intellect', 'Study / Read': 'Intellect' }[h.name] || 'Unsorted'), ...h })),
     rewards: [
       // `minutes` > 0 marks a "time" reward (screen/game time) — eligible for the unlock-window bonus.
       { id: uid(), emoji: '🍫', name: 'Favorite snack',       tier: 'common', minutes: 0 },
@@ -2010,7 +2078,8 @@ function defaultState() {
       { id: uid(), emoji: '✈️', name: 'Plan a big trip',            tier: 'hard',   category: 'Unsorted', reward: 20, iterations: 3, progress: 0 },
       { id: uid(), emoji: '💌', name: 'Send a message to someone',  tier: 'easy',   category: 'Unsorted', reward: 5,  iterations: 1, progress: 0 },
       { id: uid(), emoji: '🧽', name: 'Deep-clean one room',        tier: 'medium', category: 'Unsorted', reward: 10, iterations: 1, progress: 0 },
-    ],
+    ].map(t => ({ createdAt: Date.now(), ...t })),
+    archivedOneoffs: [], // completed/deleted quest definitions retained for lifecycle analytics
     games: {
       wheel: { cost: 3, tokenWin: [2, 6],  weights: { blank: 30, tokens: 28, common: 24, rare: 12, epic: 5, legendary: 1 } },
       slots: { cost: 5, tokenWin: [4, 12], weights: { blank: 40, tokens: 22, common: 20, rare: 12, epic: 5, legendary: 1 } },
@@ -2040,6 +2109,9 @@ function defaultState() {
     categoryColors: {},   // per-category accent colors (seeded by ensureCategoryColors, editable in Settings)
     identityPurposes: {}, // per-identity "why" text (seeded/cleaned by ensureIdentityPurposes, same pattern as categoryColors) — the identity's own purpose; a habit's h.why is a more specific override/addition
     history: [],          // completion log for the Stats tab: { ts, kind, name, emoji, category, level, reward }
+    eventLog: [],         // append-only analytics events; newest 5,000 retained
+    outcomeDatesProcessed: [], // dates for which automatic missed/skipped outcomes were emitted
+    analyticsStartedAt: Date.now(), // prevents invented retrospective misses when upgrading an old save
     // Reward claims live in their OWN log, not in `history`. renderStats() treats every
     // history entry as a completion without filtering by kind, so mixing claims in would
     // silently inflate the weekly count, the rhythm heatmap and the intensity mix.
@@ -2072,7 +2144,9 @@ function defaultState() {
     // Week Planner: the day-context taxonomy (grows like `categories`) + what the user
     // said about each upcoming day. A date present in dayPlans is "flagged": habits can
     // wear a Mode that day, and a miss there never breaks a streak.
-    contexts: [],         // ['Travel', 'School', …] — stable, reused week after week
+    loadouts: ['Default'], // independent habit sets; every habit belongs to exactly one
+    activeLoadout: 'Default',
+    contexts: [],         // Planner day contexts such as Travel/School; separate from loadouts
     dayPlans: {},         // 'YYYY-MM-DD' → { raw, context, ts }
     pass: defaultPass(),
   };
@@ -2132,6 +2206,8 @@ function ensureHappyHours(st = state) {
 // Make sure every named category has an accent color (seeded from the default palette).
 function ensureCategoryColors(st = state) {
   const cc = st.categoryColors = st.categoryColors || {};
+  const restoreBright = { '#75a4ab':'#00f0ff', '#7e9f72':'#39ff14', '#ad8263':'#ff6b00', '#bd7896':'#ff1b8d', '#c0b16d':'#ffe600', '#9580aa':'#c44dff', '#6f9278':'#1ca64c', '#b98296':'#ff5fae' };
+  Object.keys(cc).forEach(c => { const k = String(cc[c] || '').toLowerCase(); if (restoreBright[k]) cc[c] = restoreBright[k]; });
   const named = (st.categories || []).filter(c => c !== 'Unsorted');
   named.forEach((c, i) => { if (!cc[c]) cc[c] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
   Object.keys(cc).forEach(c => { if (!named.includes(c)) delete cc[c]; });
@@ -2206,7 +2282,7 @@ function normalizeHabit(h) {
     // Loadout tag: null = universal (shows under every loadout); otherwise must name
     // one of `state.contexts` at render time (validated there, not here, since contexts
     // can change independently) — here we just preserve whatever string was saved.
-    loadout: (h.loadout != null && String(h.loadout).trim()) ? String(h.loadout).trim() : null,
+    loadout: (h.loadout != null && String(h.loadout).trim()) ? String(h.loadout).trim() : 'Default',
     why: h.why != null ? String(h.why) : '',
     // Block Schedule: explicit AI/user-set target start time (minute of day), overriding
     // the inferred habitUsualMinute() median. null = not pinned, use the inferred time.
@@ -2276,6 +2352,14 @@ function load(raw) {
       })(),
     };
     merged.habits = (Array.isArray(parsed.habits) ? parsed.habits : base.habits).map(normalizeHabit);
+    // Loadouts used to be planner contexts with optional universal habits. Migrate every
+    // habit into a concrete set and keep planner contexts independent from now on.
+    const taggedLoadouts = merged.habits.map(h => h.loadout).filter(Boolean);
+    merged.loadouts = [...new Set(['Default', ...(Array.isArray(parsed.loadouts) ? parsed.loadouts : []), ...taggedLoadouts]
+      .map(x => String(x || '').trim()).filter(Boolean))];
+    merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
+      : (merged.loadouts.includes(((parsed.dayPlans || {})[todayStr()] || {}).context) ? parsed.dayPlans[todayStr()].context : 'Default');
+    merged.habits.forEach(h => { if (!h.loadout || !merged.loadouts.includes(h.loadout)) h.loadout = 'Default'; });
     const trw = merged.settings.tierRewards = { easy: 5, medium: 10, hard: 20, ...(merged.settings.tierRewards || {}) };
     merged.oneoffs = (Array.isArray(parsed.oneoffs) ? parsed.oneoffs : base.oneoffs).map(t => {
       const reward = Number.isFinite(t.reward) ? t.reward : 5;
@@ -2284,9 +2368,13 @@ function load(raw) {
         id: t.id || uid(), emoji: (t.emoji != null ? t.emoji : '🎯'), name: (t.name != null ? t.name : 'Quest'),
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
+        createdAt: Number.isFinite(t.createdAt) ? t.createdAt : null,
         createdBy: t.createdBy === 'ai' ? 'ai' : undefined,
       };
     });
+    merged.archivedOneoffs = Array.isArray(parsed.archivedOneoffs) ? parsed.archivedOneoffs : [];
+    merged.eventLog = (Array.isArray(parsed.eventLog) ? parsed.eventLog : []).filter(e => e && e.eventType && Number.isFinite(e.ts));
+    merged.outcomeDatesProcessed = Array.isArray(parsed.outcomeDatesProcessed) ? parsed.outcomeDatesProcessed.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)) : [];
     // Old single global happy hour → one entry per category (same window/mult for all).
     if (!(parsed.settings || {}).happyHours) {
       const old = (parsed.settings || {}).happyHour || {};
@@ -2409,6 +2497,38 @@ function logCompletion(entry) {
   if (state.history.length > 2000) state.history = state.history.slice(-1500);
 }
 
+// One normalized stream for behavioral analytics. `data` is deliberately flat enough
+// to export to a spreadsheet later while preserving event-specific details.
+function logEvent(eventType, data = {}) {
+  state.eventLog = Array.isArray(state.eventLog) ? state.eventLog : [];
+  state.eventLog.push({ eventId: uid(), eventType, ts: Date.now(), date: todayStr(), ...data });
+  if (state.eventLog.length > 5000) state.eventLog = state.eventLog.slice(-4000);
+}
+
+// Close yesterday once per app start/day. This records the denominator (scheduled but
+// not completed) without asking the user to fill out a form. Planner-flagged days are
+// explicitly `skipped_planned`, matching the app's streak-safe behavior.
+function processClosedDayOutcomes() {
+  const date = todayStr(-1);
+  state.outcomeDatesProcessed = Array.isArray(state.outcomeDatesProcessed) ? state.outcomeDatesProcessed : [];
+  if (state.outcomeDatesProcessed.includes(date)) return;
+  const closeTs = new Date(date + 'T23:59:59').getTime();
+  if ((state.analyticsStartedAt || Date.now()) > closeTs) { save(); return; }
+  const planned = !!dayPlan(date);
+  state.habits.filter(h => !h.archived && h.loadout === currentLoadout() && isScheduledOn(h, date)).forEach(h => {
+    if (habitCompletedOn(h, date)) return;
+    logEvent(planned ? 'habit_skipped_planned' : 'habit_missed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', scheduledForDate: date, scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null, dayContext: planned ? (dayPlan(date).context || null) : null });
+  });
+  state.habits.forEach(h => {
+    if (!h.timer || !Number.isFinite(h.timer.startedAt) || dateStrFromTs(h.timer.startedAt) === todayStr()) return;
+    logEvent('habit_abandoned', { entityType: 'habit', entityId: h.id, name: h.name, startedAt: h.timer.startedAt, elapsedSecAtClose: Math.round(timerElapsedSec(h.timer)), reason: 'stale_timer' });
+    h.timer = null;
+  });
+  state.outcomeDatesProcessed.push(date);
+  if (state.outcomeDatesProcessed.length > 120) state.outcomeDatesProcessed = state.outcomeDatesProcessed.slice(-90);
+  save();
+}
+
 /* =================================================================
    HELPERS
    ================================================================= */
@@ -2439,6 +2559,9 @@ function isScheduledOn(h, dateStr) {
 function habitCompletedOn(h, dateStr) {
   return (state.history || []).some(e => e && e.kind === 'habit' && e.id === h.id && dateStrFromTs(e.ts) === dateStr);
 }
+function historyMatchesHabit(e, h) {
+  return e && h && (e.id ? e.id === h.id : (e.name === h.name && (!e.loadout || e.loadout === h.loadout)));
+}
 // Expectation model: habits that broke from an established pattern on `dateStr`
 // (normally yesterday — the most recently "closed" day). Reused by appContext()
 // (so the main chat coach sees it) and by the check-in card trigger/prompt.
@@ -2452,7 +2575,7 @@ function computeAnomalies(dateStr) {
   const out = [];
   state.habits.filter(h => !h.archived).forEach(h => {
     if (!isScheduledOn(h, dateStr)) return;
-    const byName = hist.filter(e => e.name === h.name);
+    const byName = hist.filter(e => historyMatchesHabit(e, h));
     const last7 = byName.filter(e => e.ts >= weekAgo).length;
     const sched = (h.days || [1, 1, 1, 1, 1, 1, 1]).filter(Boolean).length;
     const wasConsistent = last7 >= Math.max(1, Math.round(sched * 0.7));
@@ -2743,6 +2866,10 @@ function ensureContext(name) {
 }
 function dayPlan(dateStr) { return (state.dayPlans || {})[dateStr] || null; }
 function todayContext() { const p = dayPlan(todayStr()); return p ? p.context : null; }
+function currentLoadout() {
+  const list = Array.isArray(state.loadouts) && state.loadouts.length ? state.loadouts : ['Default'];
+  return list.includes(state.activeLoadout) ? state.activeLoadout : list[0];
+}
 function activeModeFor(h, dateStr = todayStr()) {
   const p = dayPlan(dateStr);
   if (!p || !p.context) return null;
@@ -2800,10 +2927,8 @@ function isScheduledToday(h) {
 }
 function sectionStats(section) {
   let list = state.habits.filter(h => h.section === section && !h.archived && isScheduledToday(h));
-  // Daily habits are further filtered to today's active loadout (a habit tagged to a
-  // different loadout isn't "on the schedule" today, so it shouldn't count against
-  // the all-clear bonus or the roll-up bar). Universal habits (loadout=null) always count.
-  if (section === 'daily') { const lo = todayContext(); list = list.filter(h => h.loadout == null || h.loadout === lo); }
+  // Every habit belongs to exactly one loadout; both Daily and Extra switch together.
+  list = list.filter(h => h.loadout === currentLoadout());
   const done = list.reduce((s, h) => s + doneCount(h), 0);
   const cap = list.reduce((s, h) => s + capOf(h), 0);
   const allComplete = list.length > 0 && list.every(isComplete);
@@ -2915,10 +3040,7 @@ function habitEditHTML(h) {
         <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
       </div>
       <div class="hedit-r">
-        <select class="sect-in" data-f="loadout" title="Which loadout does this habit belong to? Universal = shows every day regardless of loadout.">
-          <option value="" ${!h.loadout ? 'selected' : ''}>🧭 — universal (every loadout) —</option>
-          ${(state.contexts || []).map(c => `<option value="${escapeHtml(c)}" ${h.loadout === c ? 'selected' : ''}>🧭 ${escapeHtml(c)} only</option>`).join('')}
-        </select>
+        <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
       </div>
       <div class="hedit-r">
         <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
@@ -3021,9 +3143,9 @@ function sortHabitsForDisplay(list) {
 function renderDailyIdentities() {
   const grid = $('#dailyIdentities'); if (!grid) return;
   const st = sectionStats('daily');   // already filtered to today's active loadout + universal habits
-  const loadout = todayContext();
+  const loadout = currentLoadout();
   if (!st.list.length) {
-    grid.innerHTML = `<div class="empty"><div class="big">🌱</div>No daily habits for ${loadout ? `the <b>${escapeHtml(loadout)}</b> loadout` : 'today'} yet — tap <b>＋ Add habit</b> below.</div>`;
+    grid.innerHTML = `<div class="empty"><div class="big">🌱</div>No daily habits in <b>${escapeHtml(loadout)}</b> yet — tap <b>＋ Add habit</b> below.</div>`;
   } else {
     grid.innerHTML = `<div class="habit-list">${sortHabitsForDisplay(st.list).map(h => habitCardHTML(h)).join('')}</div>`;
   }
@@ -3072,7 +3194,7 @@ function renderHabits() {
 // Graduated habits: resting out of rotation with their history intact, one tap to restore.
 function renderArchived() {
   const box = $('#archivedSection'); if (!box) return;
-  const arch = state.habits.filter(h => h.archived);
+  const arch = state.habits.filter(h => h.archived && h.loadout === currentLoadout());
   if (!arch.length) { box.innerHTML = ''; return; }
   box.innerHTML = `
     <div class="section-title neon-gold" style="margin-top:22px">🎓 Graduated Habits</div>
@@ -3132,7 +3254,9 @@ function addQuickQuest() {
   const inp = $('#questAddName'); const name = (inp.value || '').trim();
   if (!name) { inp.focus(); return; }
   const tier = TASK_TIERS[quickTier] ? quickTier : 'medium';
-  state.oneoffs.push({ id: uid(), emoji: '🎯', name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0 });
+  const task = { id: uid(), emoji: '🎯', name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, createdAt: Date.now() };
+  state.oneoffs.push(task);
+  logEvent('task_created', { entityType: 'task', entityId: task.id, name: task.name, category: task.category, level: task.tier, iterations: task.iterations });
   inp.value = ''; SFX.coin(); save();
   renderOneoffs(); buildHabitWheel();
   toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} 🪙`, TASK_TIERS[tier].color);
@@ -3216,8 +3340,12 @@ function completeOneoff(id, viaSpin) {
             || visible(`#oneoffGrid .qrow[data-id="${id}"] .qcheck`)
             || $('#habitWheelResult');
   addTokens(amt, card);
-  logCompletion({ ts: Date.now(), kind: 'task', name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt });
+  const completedAt = Date.now();
+  logCompletion({ ts: completedAt, kind: 'task', id: t.id, name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt, iteration: t.progress, iterations: t.iterations, viaSpin: !!viaSpin });
+  logEvent('task_completed', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted', level: t.tier || 'medium', iteration: t.progress, iterations: t.iterations, selectionSource: viaSpin ? 'quest_wheel' : 'manual', baseReward: reward, multiplier: hh * spinMult, finalReward: amt, createdAt: t.createdAt || null });
   if (t.progress >= Math.max(1, t.iterations || 1)) {
+    state.archivedOneoffs = Array.isArray(state.archivedOneoffs) ? state.archivedOneoffs : [];
+    state.archivedOneoffs.push({ ...t, status: 'completed', completedAt, archivedAt: completedAt });
     state.oneoffs = state.oneoffs.filter(x => x.id !== id); // completed → vanish
     if (editingOneoffId === id) editingOneoffId = null;
     toast(`✅ Quest complete: ${t.name}! +${amt} 🪙${tags}`, 'var(--gold)');
@@ -3311,6 +3439,8 @@ function updateDailyStreakInfo() {
 function completeHabit(id, timing) {
   const h = state.habits.find(x => x.id === id);
   if (!h) return;
+  const finishedAt = Date.now();
+  const timerSnapshot = h.timer ? { ...h.timer } : null;
   h.timer = null;                                    // a completion always ends any running timer
   const cap = capOf(h);
   const today = todayStr();
@@ -3323,7 +3453,7 @@ function completeHabit(id, timing) {
     h.best = Math.max(h.best || 0, h.streak);
   }
   h.dayCount += 1;
-  h.doneAt = Date.now(); h.doneMin = nowMinutes();   // for auto-sort: completed sink to bottom; routine order persists
+  h.doneAt = finishedAt; h.doneMin = nowMinutes();   // for auto-sort: completed sink to bottom; routine order persists
   SFX.coin();
   const hh = happyMult(h.category || 'Unsorted');
   // Pay what the row showed: today's context Mode if one is active, else the current
@@ -3335,7 +3465,10 @@ function completeHabit(id, timing) {
   addTokens(amt, card);
   // name stays the BASE habit name — history is keyed by it (streak/pattern analysis,
   // Due Soon, the AI's appContext), so a Mode must not fork a habit's history.
-  const entry = { ts: Date.now(), kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', level: lvl ? lvl.key : null, reward: amt };
+  const expectedMinutes = td.mode ? (td.minutes || null) : (lvl ? (lvl.minutes || null) : (h.timedMinutes || null));
+  const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null, reward: amt,
+    scheduledForDate: today, scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null, expectedDurationMin: expectedMinutes,
+    completionMethod: timing ? 'stopwatch' : 'checkmark' };
   if (td.mode) entry.mode = td.context;
   if (timing) {  // completion came from a play→finish session — keep actual time-on-task for the Stats/AI pattern data
     entry.actualElapsedSec = timing.actualElapsedSec;
@@ -3343,6 +3476,11 @@ function completeHabit(id, timing) {
     entry.totalPausedSec = timing.totalPausedSec;
   }
   logCompletion(entry);
+  logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null,
+    mode: td.mode ? td.context : null, scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
+    actualStartTs: timerSnapshot ? timerSnapshot.startedAt : null, actualEndTs: finishedAt,
+    actualElapsedSec: timing ? timing.actualElapsedSec : null, pauseCount: timing ? timing.pauseCount : null, totalPausedSec: timing ? timing.totalPausedSec : null,
+    completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt });
   toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.key} tier` : ''}${td.mode ? ` · 🧭 ${td.context}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
   checkBonuses();
@@ -3380,13 +3518,14 @@ function fmtTimerSec(sec) { sec = Math.max(0, Math.round(sec)); return `${Math.f
 function startHabitTimer(id) {
   const h = state.habits.find(x => x.id === id); if (!h || h.timer || isComplete(h)) return;
   h.timer = { startedAt: Date.now(), pausedAt: null, pausedTotalSec: 0, pauseCount: 0 };
+  logEvent('habit_started', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null });
   SFX.click(); save(); renderHabits();
 }
 function toggleHabitTimerPause(id) {
   const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
   const t = h.timer;
-  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; }
-  else { t.pausedAt = Date.now(); t.pauseCount = (t.pauseCount || 0) + 1; }
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; logEvent('habit_resumed', { entityType: 'habit', entityId: h.id, name: h.name }); }
+  else { t.pausedAt = Date.now(); t.pauseCount = (t.pauseCount || 0) + 1; logEvent('habit_paused', { entityType: 'habit', entityId: h.id, name: h.name, pauseCount: t.pauseCount }); }
   SFX.click(); save(); renderHabits();
 }
 // Ends the session and completes the habit, logging actual elapsed time. There's no
@@ -3415,7 +3554,7 @@ setInterval(() => {
   const justExpired = state.inventory.filter(w =>
     w.redeemed && Number.isFinite(w.activeUntil) && w.activeUntil > 0 && w.activeUntil <= now && !w.expiredSeen);
   if (justExpired.length) {
-    justExpired.forEach(w => { w.expiredSeen = true; });
+    justExpired.forEach(w => { w.expiredSeen = true; w.actualEndedAt = now; logEvent('reward_finished', { entityType: 'reward', entityId: w.rewardId || w.id, inventoryId: w.id, name: w.name, startedAt: w.actualStartedAt || null, endedAt: now, allocatedMinutes: w.activeMinutes || null, actualUsedMinutes: w.actualStartedAt ? Math.round((now - w.actualStartedAt) / 60000) : null, finishReason: 'timer_expired' }); });
     SFX.win();
     toast(`⌛ ${justExpired[0].name} — time's up!`, 'var(--gold)');
     save(); renderPrizes();
@@ -3442,7 +3581,7 @@ function medianMinute(mins) {
 // A habit's usual completion time from history (last 14 timed-stamped completions).
 // Needs ≥3 data points to be trusted; otherwise null → never shows in Due Soon.
 function habitUsualMinute(h) {
-  const es = (state.history || []).filter(e => e && e.kind === 'habit' && e.name === h.name && Number.isFinite(e.ts)).slice(-14);
+  const es = (state.history || []).filter(e => e && e.kind === 'habit' && historyMatchesHabit(e, h) && Number.isFinite(e.ts)).slice(-14);
   if (es.length < 3) return null;
   return medianMinute(es.map(e => { const d = new Date(e.ts); return d.getHours() * 60 + d.getMinutes(); }));
 }
@@ -3459,7 +3598,7 @@ function habitBlockMinute(h) { return Number.isFinite(h.scheduledMin) ? h.schedu
 // Median ACTUAL duration from real play→finish sessions — falls back to the
 // habit's planned/estimated minutes (habitCurrentMinutes) if it's never been timed.
 function habitMedianActualMinutes(h) {
-  const runs = (state.history || []).filter(e => e && e.kind === 'habit' && e.name === h.name && Number.isFinite(e.actualElapsedSec));
+  const runs = (state.history || []).filter(e => e && e.kind === 'habit' && historyMatchesHabit(e, h) && Number.isFinite(e.actualElapsedSec));
   if (runs.length < 2) return null;
   return medianMinute(runs.map(e => Math.round(e.actualElapsedSec / 60)));
 }
@@ -3467,9 +3606,9 @@ function habitMedianActualMinutes(h) {
 // from h.scheduledMin (AI-pinned) or the median completion time of the last 14 runs;
 // estimated length from the median of real play→finish sessions.
 function computeTodayBlocks() {
-  const loadout = todayContext();
+  const loadout = currentLoadout();
   return state.habits.filter(h => !h.archived && h.section === 'daily' && isScheduledToday(h)
-      && (h.loadout == null || h.loadout === loadout))
+      && h.loadout === loadout)
     .map(h => ({
       habitId: h.id, name: h.name, emoji: h.emoji, category: h.category,
       startMin: habitBlockMinute(h),
@@ -3691,7 +3830,7 @@ function renderDueSoon() {
   // Extra habits are side-quests: they stay out of Due Now until every daily quest is
   // done, so the board never points at optional work while the core routine is unfinished.
   const dailyClear = sectionStats('daily').allComplete;
-  const eligible = h => !h.archived && isScheduledToday(h) && !isComplete(h)
+  const eligible = h => !h.archived && h.loadout === currentLoadout() && isScheduledToday(h) && !isComplete(h)
     && (dailyClear || h.section !== 'extra');
   const due = state.habits
     .filter(eligible)
@@ -3840,10 +3979,12 @@ function applyResult(res) {
     if (res.reward.special === 'streakFreeze') {
       state.streakFreezes = (state.streakFreezes || 0) + 1; // banked, not added to redeemable inventory
     } else {
-      state.inventory.unshift({
+      const won = {
         id: uid(), rewardId: res.reward.id, emoji: res.reward.emoji,
         name: res.reward.name, tier: res.tier, minutes: res.reward.minutes || 0, wonAt: Date.now(), redeemed: false,
-      });
+      };
+      state.inventory.unshift(won);
+      logEvent('reward_won', { entityType: 'reward', entityId: won.rewardId, inventoryId: won.id, name: won.name, tier: won.tier, allocatedMinutes: won.minutes, wonAt: won.wonAt });
     }
   }
   save();
@@ -3877,7 +4018,8 @@ function showReveal(res) {
     $('#revealOverlay').classList.add('show');
   }
 }
-$('#revealClose').onclick = () => { SFX.click(); $('#revealOverlay').classList.remove('show'); switchView('prizes'); };
+// Collect closes the reveal in place so a win never ejects the player from the casino.
+$('#revealClose').onclick = () => { SFX.click(); $('#revealOverlay').classList.remove('show'); };
 
 function bannerFor(res, el) {
   if (res.type === 'blank') { el.textContent = '💨 So close — nothing this time'; el.style.color = 'var(--ink-dim)'; }
@@ -3891,19 +4033,26 @@ function startPlay(gameKey) {
   const g = state.games[gameKey];
   if (state.tokens < g.cost) { toast('Not enough tokens — go complete a habit! 🪙', 'var(--pink)'); SFX.lose(); return null; }
   busy = true;
+  const balanceBefore = state.tokens;
+  const startedAt = Date.now();
   spendTokens(g.cost);
   SFX.spin();
   const outcome = weightedPick(g.weights);
   const res = resolveOutcome(outcome, g);
-  return { g, outcome, res };
+  return { g, gameKey, outcome, res, balanceBefore, startedAt };
 }
-function finishPlay(res, bannerEl) {
+function finishPlay(play, bannerEl) {
+  const res = play.res || play; // tolerate any older internal caller shape
   applyResult(res);
+  logEvent('casino_played', { game: play.gameKey || 'unknown', startedAt: play.startedAt || null, cost: play.g ? play.g.cost : null,
+    outcomeType: res.type, outcomeTier: res.tier || null, tokensWon: res.type === 'tokens' ? res.amount : 0,
+    rewardId: res.type === 'reward' ? res.reward.id : null, rewardName: res.type === 'reward' ? res.reward.name : null,
+    balanceBefore: Number.isFinite(play.balanceBefore) ? play.balanceBefore : null, balanceAfter: state.tokens });
   celebrate(res);
   bannerFor(res, bannerEl);
   if (res.type === 'reward') setTimeout(() => showReveal(res), 500);
-  updateGameButtons();
   busy = false;
+  updateGameButtons();
 }
 
 /* =================================================================
@@ -3912,22 +4061,52 @@ function finishPlay(res, bannerEl) {
 function buildWheelSegments() {
   const w = state.games.wheel.weights;
   const keys = Object.keys(w).filter(k => w[k] > 0);
-  const N = Math.max(18, keys.length * 3); // bigger wheel; room for every tier
   const total = keys.reduce((s, k) => s + w[k], 0) || 1;
-  // GUARANTEE one slice per positive tier (so even a 1% legendary always shows)…
-  const counts = {}; keys.forEach(k => counts[k] = 1);
-  // …then hand out the remaining slices proportionally via largest-remainder.
-  let remaining = N - keys.length;
-  if (remaining > 0) {
-    const frac = keys.map(k => { const exact = (w[k] / total) * remaining; counts[k] += Math.floor(exact); return { k, r: exact - Math.floor(exact) }; });
-    let left = N - keys.reduce((s, k) => s + counts[k], 0);
-    frac.sort((a, b) => b.r - a.r);
-    for (let i = 0; i < left; i++) counts[frac[i % frac.length].k]++;
+  // Original-size wedges, with the newer two-neighbour unclustering retained.
+  const N = Math.max(18, keys.length * 3);
+  const exact = keys.map(k => ({ k, v: (w[k] / total) * N }));
+  const counts = {};
+  exact.forEach(x => { counts[x.k] = Math.max(1, Math.floor(x.v)); });
+  let delta = N - keys.reduce((s, k) => s + counts[k], 0);
+  if (delta > 0) {
+    const order = exact.slice().sort((a, b) => (b.v - Math.floor(b.v)) - (a.v - Math.floor(a.v)));
+    for (let i = 0; i < delta; i++) counts[order[i % order.length].k]++;
+  } else if (delta < 0) {
+    const order = exact.slice().sort((a, b) => (a.v - Math.floor(a.v)) - (b.v - Math.floor(b.v)));
+    for (let i = 0; i < -delta; i++) {
+      const x = order.find(o => counts[o.k] > 1); if (x) counts[x.k]--;
+    }
   }
+
+  const spaced = arr => arr.length === N && arr.every((k, i) =>
+    k !== arr[(i + 1) % N] && k !== arr[(i + 2) % N] &&
+    k !== arr[(i - 1 + N) % N] && k !== arr[(i - 2 + N) % N]);
   let segs = [];
-  keys.forEach(k => { for (let i = 0; i < counts[k]; i++) segs.push(k); });
-  // interleave so same colors don't clump
-  for (let i = segs.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[segs[i], segs[j]] = [segs[j], segs[i]]; }
+  // Randomized weighted construction, retried until the circular seam also satisfies
+  // the two-slice buffer. Default odds normally settle in only a handful of attempts.
+  for (let attempt = 0; attempt < 500 && !spaced(segs); attempt++) {
+    const left = { ...counts }; segs = [];
+    while (segs.length < N) {
+      const blocked = new Set(segs.slice(-2));
+      const candidates = keys.filter(k => left[k] > 0 && !blocked.has(k));
+      if (!candidates.length) break;
+      const sum = candidates.reduce((s, k) => s + left[k] * left[k], 0);
+      let roll = Math.random() * sum, chosen = candidates[0];
+      for (const k of candidates) { roll -= left[k] * left[k]; if (roll <= 0) { chosen = k; break; } }
+      segs.push(chosen); left[chosen]--;
+    }
+  }
+  // Extremely skewed custom odds can make a two-slice gap mathematically impossible.
+  // Preserve playability with an evenly interleaved display; actual result odds remain exact.
+  if (!spaced(segs)) {
+    segs = [];
+    const left = { ...counts };
+    while (segs.length < N) {
+      const candidates = keys.filter(k => left[k] > 0 && !segs.slice(-2).includes(k)).sort((a, b) => left[b] - left[a]);
+      const chosen = candidates[0] || keys.filter(k => left[k] > 0).sort((a, b) => left[b] - left[a])[0];
+      segs.push(chosen); left[chosen]--;
+    }
+  }
   wheelSegments = segs;
   paintWheel();
 }
@@ -3977,12 +4156,15 @@ function spinWheel() {
   const spins = 5 + Math.floor(Math.random() * 3);
   wheelAngle += spins * 360 + (360 - centerAngle) - jitter - (wheelAngle % 360);
   wheel.style.transform = `rotate(${wheelAngle}deg)`;
+  let settled = false;
   const onEnd = () => {
+    if (settled) return; settled = true;
     wheel.removeEventListener('transitionend', onEnd);
     orientWheelLabels(); // snap emoji upright now that the wheel has stopped
-    finishPlay(p.res, $('#wheelResult'));
+    finishPlay(p, $('#wheelResult'));
   };
   wheel.addEventListener('transitionend', onEnd);
+  setTimeout(onEnd, 5000); // recovery for browsers that occasionally drop transitionend
 }
 
 /* =================================================================
@@ -4048,7 +4230,7 @@ function settleSlots(p, finals, reels) {
     SFX.near(); toast('SO close! Two of a kind 😤', 'var(--pink)');
     if (!state.settings.reducedMotion) reels.forEach(r => { r.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-6px)' }, { transform: 'translateY(0)' }], { duration: 220, iterations: 2 }); });
   }
-  finishPlay(p.res, $('#slotsResult'));
+  finishPlay(p, $('#slotsResult'));
 }
 
 /* =================================================================
@@ -4082,7 +4264,7 @@ function rollDice() {
       e1.classList.remove('rolling'); e2.classList.remove('rolling');
       renderDie(e1, d1); renderDie(e2, d2);
       if (win) { e1.classList.add('win'); e2.classList.add('win'); }
-      finishPlay(p.res, $('#diceResult'));
+      finishPlay(p, $('#diceResult'));
     }
   }, 70);
 }
@@ -4100,7 +4282,7 @@ function openBox() {
     lid.textContent = '✨';
     SFX.coin();
     setTimeout(() => {
-      finishPlay(p.res, $('#boxResult'));
+      finishPlay(p, $('#boxResult'));
       lid.textContent = (p.res.type === 'reward') ? (p.res.reward.emoji || '🎁') : '🎁';
       setTimeout(() => { box.classList.remove('open'); lid.textContent = '🎁'; }, 1400);
     }, 250);
@@ -4134,6 +4316,7 @@ let rouChip = 1;           // selected chip value
 let rouMode = 'straight';  // active inside-bet builder
 let rouSel = [];           // numbers chosen for the in-progress combo bet
 let rouAngle = 0, rouBallAngle = 0;
+let rouPlayMeta = null;
 
 function rouRange(a, b) { const r = []; for (let i = a; i <= b; i++) r.push(String(i)); return r; }
 function rouStaked() { return rouBets.reduce((s, b) => s + b.amount, 0); }
@@ -4213,7 +4396,7 @@ function renderRoulette() {
 function updateRouletteSpinBtn() {
   const staked = rouStaked();
   const stakeEl = $('#rouStake'); if (stakeEl) stakeEl.textContent = `🪙 ${staked}`;
-  const btn = $('#rouSpinBtn'); if (btn) btn.disabled = busy || staked <= 0 || staked > state.tokens;
+  const btn = $('#rouSpinBtn'); if (btn) btn.disabled = staked <= 0 || staked > state.tokens;
 }
 
 function rouPlace(type, numbers) {
@@ -4245,6 +4428,7 @@ function rouSpin() {
   if (staked <= 0) { toast('Place a bet first 🪙', 'var(--pink)'); return; }
   if (staked > state.tokens) { toast('Not enough tokens for your bets', 'var(--pink)'); SFX.lose(); return; }
   busy = true;
+  rouPlayMeta = { startedAt: Date.now(), balanceBefore: state.tokens, cost: staked };
   spendTokens(staked);
   SFX.spin();
   $('#rouResult').textContent = '';
@@ -4292,6 +4476,10 @@ function rouResolve(win) {
     $('#rouResult').style.color = 'var(--ink-dim)';
   }
   state.stats.rouletteSpins = (state.stats.rouletteSpins || 0) + 1;
+  logEvent('casino_played', { game: 'roulette', startedAt: rouPlayMeta ? rouPlayMeta.startedAt : null, cost: staked,
+    outcomeType: payout > 0 ? 'tokens' : 'blank', outcomeTier: null, tokensWon: payout, roulettePocket: win,
+    balanceBefore: rouPlayMeta ? rouPlayMeta.balanceBefore : null, balanceAfter: state.tokens, netTokens: net });
+  rouPlayMeta = null;
   rouBets = []; rouSel = [];
   busy = false;
   save(); renderRoulette();
@@ -4400,6 +4588,7 @@ function openUltra() {
   const g = state.games.ultra;
   if (state.tokens < g.cost) { toast('Not enough tokens for an Ultra Pack 🪙', 'var(--pink)'); SFX.lose(); return; }
   flushUltra();
+  const balanceBefore = state.tokens;
   busy = true;
   spendTokens(g.cost);
   SFX.spin();
@@ -4409,6 +4598,9 @@ function openUltra() {
   ultraCards.push(ultraSlotResult(g.card10, g));                            // card 10 (rare+)
   ultraApplied = new Array(10).fill(false);
   state.stats.ultraPacks = (state.stats.ultraPacks || 0) + 1;
+  logEvent('casino_played', { game: 'ultra', startedAt: Date.now(), cost: g.cost, outcomeType: 'pack', cardCount: 10,
+    balanceBefore, balanceAfter: state.tokens,
+    preview: ultraCards.map(c => ({ type: c.type, tier: c.tier || null, tokens: c.type === 'tokens' ? c.amount : 0, rewardId: c.type === 'reward' ? c.reward.id : null })) });
   $('#ultraResult').textContent = '';
   save();
   ultraView = -2; renderUltra();
@@ -4492,7 +4684,10 @@ function updateGameButtons() {
   const map = { wheel: '#spinWheel', slots: '#pullSlots', dice: '#rollDice', box: '#openBox', ultra: '#openUltra' };
   Object.entries(state.games).forEach(([k, g]) => {
     const btn = $(map[k]); if (!btn) return;
-    btn.disabled = state.tokens < g.cost || busy;
+    // Animation safety is enforced inside each play handler. Do not visually disable
+    // every game button while a result is resolving; that used to strand buttons in a
+    // grey state if an animation callback arrived out of order.
+    btn.disabled = state.tokens < g.cost;
   });
   $('#wheelCost').textContent = `🪙 ${state.games.wheel.cost}`;
   $('#slotsCost').textContent = `🪙 ${state.games.slots.cost}`;
@@ -4660,6 +4855,7 @@ function claimFromPool(rewardId, qty) {
   if (!qty) return;
   const taken = owned.slice(0, qty);
   const item = taken[0];
+  item.redeemedAt = Date.now(); item.actualStartedAt = item.redeemedAt;
   taken.forEach(x => { x.redeemed = true; });          // all consumed
   taken.slice(1).forEach(x => { x.mergedInto = item.id; });
   const spec = rewardSpecFor(item) || {};
@@ -4670,6 +4866,7 @@ function claimFromPool(rewardId, qty) {
     let total = spec.minutes * qty;
     if (bonus) total = Math.round(total * (1 + bonusPct / 100));
     item.redeemedMinutes = total; item.activeMinutes = total;
+    item.actualStartedAt = Date.now();
     item.activeUntil = Date.now() + total * 60000;
     item.expiredSeen = false;
     toast(`🎉 ${fmtMins(total)} of ${item.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
@@ -4698,12 +4895,16 @@ function logRewardClaim(item, qty) {
     ts: Date.now(), name: item.name, emoji: item.emoji || '🎁', tier: item.tier,
     minutes: Number.isFinite(item.activeMinutes) ? item.activeMinutes : 0, qty,
   });
+  logEvent('reward_redeemed', { entityType: 'reward', entityId: item.rewardId || item.id, inventoryId: item.id, name: item.name, tier: item.tier, qty,
+    allocatedMinutes: Number.isFinite(item.activeMinutes) ? item.activeMinutes : 0, startedAt: item.actualStartedAt || null, expectedEndTs: item.activeUntil || null });
   if (state.rewardLog.length > 600) state.rewardLog = state.rewardLog.slice(-400);
 }
 // Closes out a plain reward — the Done button's action.
 function finishPlainWin(id) {
   const item = state.inventory.find(x => x.id === id); if (!item) return;
   item.activePlain = false;
+  item.actualEndedAt = Date.now();
+  logEvent('reward_finished', { entityType: 'reward', entityId: item.rewardId || item.id, inventoryId: item.id, name: item.name, startedAt: item.actualStartedAt || null, endedAt: item.actualEndedAt, finishReason: 'user_done' });
   SFX.win(); toast(`✅ ${item.name} — done`, 'var(--gold)');
   save(); renderPrizes();
 }
@@ -4738,7 +4939,7 @@ function redeemOneFrom(g) {
   if (!win.open) { toast(`🔒 ${win.reason}`, 'var(--pink)'); SFX.lose(); return; }
   const item = state.inventory.find(x => x.id === g.items[0].id);
   if (!item) return;
-  item.redeemed = true; recycleOpen = null;
+  item.redeemed = true; item.redeemedAt = Date.now(); item.actualStartedAt = item.redeemedAt; recycleOpen = null;
   const spec = rewardSpecFor(item) || {};
   const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
   const windowed = state.settings.redeem && state.settings.redeem.mode !== 'always';
@@ -4748,6 +4949,7 @@ function redeemOneFrom(g) {
     const total = bonus ? Math.round(spec.minutes * (1 + bonusPct / 100)) : spec.minutes;
     item.redeemedMinutes = total;
     item.activeMinutes = total;
+    item.actualStartedAt = Date.now();
     item.activeUntil = Date.now() + total * 60000;
     toast(`🎉 Enjoy ${fmtMins(total)} of ${item.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
     if (bonus) { SFX.win(); burst({ count: 44, colors: ['#39ff14', '#ffe600', '#00f0ff'] }); } else SFX.coin();
@@ -4759,21 +4961,29 @@ function redeemOneFrom(g) {
     toast(`🎉 ${spec.count} ${spec.unit} unlocked — count them off as you go`, 'var(--green)');
     SFX.coin();
   } else {
+    item.actualStartedAt = Date.now();
     toast('Enjoy your reward! 🎉', 'var(--green)'); SFX.coin();
   }
+  logRewardClaim(item, 1);
   save(); renderPrizes();
 }
 // Tick one rep off an active counter; the last one closes it out.
 function useOneRep(id) {
   const item = state.inventory.find(x => x.id === id); if (!item || !item.remaining) return;
   item.remaining -= 1;
-  if (item.remaining <= 0) { SFX.win(); toast(`✅ ${item.name} — all used up`, 'var(--gold)'); }
+  logEvent('reward_unit_used', { entityType: 'reward', entityId: item.rewardId || item.id, inventoryId: item.id, name: item.name, remaining: item.remaining });
+  if (item.remaining <= 0) { item.actualEndedAt = Date.now(); logEvent('reward_finished', { entityType: 'reward', entityId: item.rewardId || item.id, inventoryId: item.id, name: item.name, startedAt: item.actualStartedAt || null, endedAt: item.actualEndedAt, finishReason: 'all_units_used' }); SFX.win(); toast(`✅ ${item.name} — all used up`, 'var(--gold)'); }
   else { SFX.click(); toast(`${item.remaining} ${item.countUnit || 'left'} to go`, 'var(--cyan)'); }
   save(); renderPrizes();
 }
 // End early — stops a countdown or discards remaining reps.
 function endActiveWin(id) {
   const item = state.inventory.find(x => x.id === id); if (!item) return;
+  const endedAt = Date.now();
+  logEvent('reward_finished', { entityType: 'reward', entityId: item.rewardId || item.id, inventoryId: item.id, name: item.name,
+    startedAt: item.actualStartedAt || null, endedAt, allocatedMinutes: item.activeMinutes || null,
+    actualUsedMinutes: item.actualStartedAt ? Math.max(0, Math.round((endedAt - item.actualStartedAt) / 60000)) : null, finishReason: 'ended_early' });
+  item.actualEndedAt = endedAt;
   item.activeUntil = 0; item.remaining = 0; item.activePlain = false;
   SFX.click(); save(); renderPrizes();
 }
@@ -4887,11 +5097,14 @@ function renderPrizes() {
 function prizeTileHTML(r, ti) {
   const n = r.special ? 0 : ownedOf(r.id).length;
   const lit = n > 0;
+  const redemption = redeemWindow();
+  const locked = lit && !redemption.open;
   const title = r.special ? 'Edit the Streak Freeze in Settings'
-    : (lit ? `${n} available — tap to claim` : 'Not won yet — tap to edit');
+    : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim` : 'Not won yet — tap to edit'));
   return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
     <button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>
+    ${locked ? `<span class="prize-lock" title="${escapeHtml(redemption.reason)}" aria-label="Reward locked">🔒</span>` : ''}
     <div class="pe-wrap">
       <div class="pe">${escapeHtml(r.emoji || ti.emoji)}</div>
       ${lit ? `<span class="prize-count">${n}</span>` : ''}
@@ -5452,7 +5665,7 @@ function renderTierRewards() {
 function renderHabitEditor() {
   const box = $('#habitEditor');
   const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
-  box.innerHTML = state.habits.filter(h => !h.archived).map(h => {
+  box.innerHTML = state.habits.filter(h => !h.archived && h.loadout === currentLoadout()).map(h => {
     const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
     const dayPicker = `<span class="day-picker" title="Days this habit appears (default: every day)">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
     return `
@@ -5681,8 +5894,8 @@ function appContext() {
   });
 
   // --- Habits (active + recently graduated) ---
-  const active = state.habits.filter(h => !h.archived);
-  const archived = state.habits.filter(h => h.archived);
+  const active = state.habits.filter(h => !h.archived && h.loadout === currentLoadout());
+  const archived = state.habits.filter(h => h.archived && h.loadout === currentLoadout());
   L.push('ACTIVE HABITS:');
   if (!active.length) L.push('  (none)');
   active.forEach(h => {
@@ -5726,7 +5939,7 @@ function appContext() {
     L.push(`  - Busiest weekday: ${busiestDay}. Most activity around the ${busiestBlock} time block.`);
     const consistent = [], drifting = [], quiet = [];
     active.forEach(h => {
-      const es = hist.filter(e => e.name === h.name && e.kind === 'habit');
+      const es = hist.filter(e => e.kind === 'habit' && historyMatchesHabit(e, h));
       const last7 = es.filter(e => e.ts >= weekAgo).length;
       const last30 = es.filter(e => e.ts >= monthAgo).length;
       const sched = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
@@ -5752,7 +5965,7 @@ function appContext() {
     const planned = habitCurrentMinutes(h);
     const lvls = habitLevels(h);
     if (!planned && !(lvls && lvls.some(l => l.minutes))) return;
-    const runs = hist.filter(e => e.kind === 'habit' && e.name === h.name && Number.isFinite(e.actualElapsedSec));
+    const runs = hist.filter(e => e.kind === 'habit' && historyMatchesHabit(e, h) && Number.isFinite(e.actualElapsedSec));
     if (runs.length) {
       const actual = medianMinute(runs.map(e => Math.round(e.actualElapsedSec / 60)));
       const pauses = runs.reduce((s, e) => s + (e.pauseCount || 0), 0);
@@ -6079,7 +6292,7 @@ function applyProposal(p) {
       repeatable: !!p.repeatable, cap: clamp(parseInt(p.cap) || 1, 1, 99),
       lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0,
       days: (Array.isArray(p.days) && p.days.length === 7) ? p.days.map(Boolean) : [true, true, true, true, true, true, true],
-      category: ensureAICategory(p.category), doneAt: 0, doneMin: null,
+      category: ensureAICategory(p.category), loadout: currentLoadout(), doneAt: 0, doneMin: null,
       context: [], contextAsked: false,
       createdBy: 'ai' };
     state.habits.push(h); state.aiMeta.habits.push(h.id);
@@ -6089,9 +6302,10 @@ function applyProposal(p) {
     const tier = TASK_TIERS[p.tier] ? p.tier : 'medium';
     const q = { id: uid(), emoji: p.emoji || '🎯', name: String(p.name || 'Quest'), tier,
       category: ensureAICategory(p.category), reward: tierReward(tier),
-      iterations: clamp(parseInt(p.iterations) || 1, 1, 99), progress: 0,
+      iterations: clamp(parseInt(p.iterations) || 1, 1, 99), progress: 0, createdAt: Date.now(),
       createdBy: 'ai' };
     state.oneoffs.push(q); state.aiMeta.oneoffs.push(q.id);
+    logEvent('task_created', { entityType: 'task', entityId: q.id, name: q.name, category: q.category, level: q.tier, iterations: q.iterations, createdBy: 'ai' });
     return true;
   }
   if (t === 'category') { ensureAICategory(String(p.name || '').trim()); return true; }
@@ -6561,17 +6775,9 @@ function renderTodayContext() {
   el.innerHTML = ctx
     ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day${moded ? ` · ${moded} adapted` : ''}</span>`
     : (dayPlan(todayStr()) ? `<span class="ctx-badge">📅 planned day · streak-safe</span>` : '');
-  // Loadout switcher: manual override for today, sitting on top of whatever the
-  // Week Planner AI (or a previous manual pick) already set via setDayPlanContext.
+  // Loadouts are independent habit sets, selected through the in-app menu.
   const sw = $('#loadoutSwitch');
-  if (sw) {
-    // Kept short on purpose: a <select>'s intrinsic width is its widest option, and this
-    // one is the widest. Long labels here are what push the row off a phone screen.
-    sw.innerHTML = `<option value="">All habits</option>` +
-      (state.contexts || []).map(c => `<option value="${escapeHtml(c)}" ${ctx === c ? 'selected' : ''}>🧭 ${escapeHtml(c)}</option>`).join('') +
-      `<option value="__new">＋ New loadout…</option>`;
-    sw.value = ctx || '';
-  }
+  if (sw) sw.innerHTML = `<span>🗂️ ${escapeHtml(currentLoadout())}</span>`;
 }
 
 /* ---- the AI contract (its own prompt — the chat coach's proposal types don't apply) ---- */
@@ -6590,7 +6796,7 @@ function habitContextLines(h) {
   return bits;
 }
 function habitModeSummary() {
-  const rows = state.habits.filter(h => !h.archived).map(h => {
+  const rows = state.habits.filter(h => !h.archived && h.loadout === currentLoadout()).map(h => {
     const modes = Object.keys(h.modes || {});
     const lvls = habitLevels(h);
     const easiest = lvls ? lvls[0] : null;
@@ -7723,7 +7929,7 @@ $('#view-habits').addEventListener('click', e => {
   }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
-    const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
+    const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
     state.habits.push(nh); editingHabitId = nh.id; SFX.click(); save(); renderHabits();
     setTimeout(() => $(`.hedit[data-id="${nh.id}"] .name-in`)?.focus(), 30);
     return;
@@ -7787,16 +7993,85 @@ function onInlineHabitField(e) {
 }
 $('#view-habits').addEventListener('input', onInlineHabitField);
 $('#view-habits').addEventListener('change', onInlineHabitField);
-// Manual loadout override — same setDayPlanContext() path the Week Planner already uses,
-// just exposed directly on the Habits tab instead of only inside the Planner overlay.
-$('#loadoutSwitch').addEventListener('change', e => {
-  let v = e.target.value;
-  if (v === '__new') {
-    v = String(prompt('Name this loadout (1-2 words, e.g. School, Travel):') || '').trim();
-    if (!v) { renderTodayContext(); return; }
+/* ---- Loadout chooser/creator -------------------------------------------------------
+   Fully in-app: no native <select> or prompt. Creating a loadout can clone any chosen
+   habits, grouped by their source loadout; choosing none creates a clean blank slate. */
+let loadoutScreen = 'list';
+function openLoadoutMenu(screen = 'list') {
+  loadoutScreen = screen;
+  renderLoadoutMenu();
+  $('#loadoutOverlay').classList.add('show');
+}
+function closeLoadoutMenu() { $('#loadoutOverlay').classList.remove('show'); }
+function renderLoadoutMenu() {
+  const body = $('#loadoutBody'); if (!body) return;
+  if (loadoutScreen === 'list') {
+    body.innerHTML = `
+      <div class="pass-title">🗂️ LOADOUTS</div>
+      <div class="subtle">Each loadout has its own complete set of Daily and Extra habits.</div>
+      <div class="loadout-list">${(state.loadouts || ['Default']).map(name => {
+        const count = state.habits.filter(h => !h.archived && h.loadout === name).length;
+        return `<button class="loadout-choice ${name === currentLoadout() ? 'active' : ''}" data-loadout-pick="${escapeHtml(name)}">
+          <span>${name === currentLoadout() ? '✓ ' : ''}${escapeHtml(name)}</span><span class="subtle">${count} habit${count === 1 ? '' : 's'}</span>
+        </button>`;
+      }).join('')}</div>
+      <button class="btn purple" data-act="loadoutNew" style="width:100%">＋ Create new loadout</button>`;
+    return;
   }
-  setDayPlanContext(todayStr(), v || null);
-  SFX.click(); renderHabits();
+  const groups = (state.loadouts || ['Default']).map(name => {
+    const habits = state.habits.filter(h => !h.archived && h.loadout === name);
+    return `<details class="loadout-copy-group">
+      <summary>${escapeHtml(name)} <span class="subtle">· ${habits.length}</span></summary>
+      <div class="loadout-copy-items">${habits.length ? habits.map(h => `
+        <label class="loadout-copy-item"><input type="checkbox" data-copy-habit="${h.id}">
+          <span>${escapeHtml(h.emoji || '⭐')} <b>${escapeHtml(h.name)}</b></span>
+          <span class="subtle" style="margin-left:auto">${h.section === 'extra' ? 'Extra' : 'Daily'}</span>
+        </label>`).join('') : '<span class="subtle">No habits in this loadout.</span>'}</div>
+    </details>`;
+  }).join('');
+  body.innerHTML = `
+    <div class="pass-title">＋ NEW LOADOUT</div>
+    <div class="subtle">Name it, then optionally copy habits from any existing loadout. Select none for a blank slate.</div>
+    <input class="name-in" id="newLoadoutName" maxlength="32" placeholder="e.g. Workdays, Weekend, Travel" style="width:100%;margin-top:14px">
+    <div class="section-title" style="font-size:14px;margin-top:16px">COPY HABITS (OPTIONAL)</div>
+    <div class="loadout-copy-groups">${groups}</div>
+    <div class="row" style="gap:8px">
+      <button class="btn ghost" data-act="loadoutBack">‹ Back</button>
+      <button class="btn green" data-act="loadoutCreate" style="flex:1">Create loadout</button>
+    </div>`;
+  setTimeout(() => $('#newLoadoutName')?.focus(), 0);
+}
+function cloneHabitIntoLoadout(source, loadout) {
+  return normalizeHabit({ ...source, id: uid(), loadout, lastDone: '', streak: 0, best: 0,
+    dayDate: '', dayCount: 0, doneAt: 0, doneMin: null, timer: null, archived: false, createdBy: undefined });
+}
+function createLoadoutFromMenu() {
+  const name = String($('#newLoadoutName')?.value || '').trim();
+  if (!name) { toast('Name your loadout first', 'var(--pink)'); return; }
+  if ((state.loadouts || []).some(x => x.toLowerCase() === name.toLowerCase())) { toast('That loadout already exists', 'var(--pink)'); return; }
+  const ids = new Set($$('#loadoutBody [data-copy-habit]:checked').map(x => x.dataset.copyHabit));
+  const copies = state.habits.filter(h => ids.has(h.id)).map(h => cloneHabitIntoLoadout(h, name));
+  state.loadouts.push(name);
+  state.habits.push(...copies);
+  state.activeLoadout = name;
+  logEvent('loadout_created', { name, copiedHabitCount: copies.length });
+  save(); closeLoadoutMenu(); renderHabits(); renderHabitEditor();
+  toast(copies.length ? `${name} created with ${copies.length} copied habit${copies.length === 1 ? '' : 's'}` : `${name} created — blank slate`, 'var(--green)');
+}
+$('#loadoutSwitch').addEventListener('click', () => { SFX.click(); openLoadoutMenu('list'); });
+$('#loadoutClose').addEventListener('click', closeLoadoutMenu);
+$('#loadoutOverlay').addEventListener('click', e => { if (e.target.id === 'loadoutOverlay') closeLoadoutMenu(); });
+$('#loadoutBody').addEventListener('click', e => {
+  const pick = e.target.closest('[data-loadout-pick]');
+  if (pick) {
+    state.activeLoadout = pick.dataset.loadoutPick;
+    logEvent('loadout_selected', { name: state.activeLoadout });
+    save(); closeLoadoutMenu(); renderHabits(); return;
+  }
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'loadoutNew') { loadoutScreen = 'create'; renderLoadoutMenu(); }
+  else if (act === 'loadoutBack') { loadoutScreen = 'list'; renderLoadoutMenu(); }
+  else if (act === 'loadoutCreate') createLoadoutFromMenu();
 });
 
 // Swipe left/right on a leveled habit row (or its open editor) to move between difficulty
@@ -7855,6 +8130,10 @@ $('#view-tasks').addEventListener('click', e => {
     const id = e.target.closest('.qedit').dataset.id;
     const t = state.oneoffs.find(x => x.id === id);
     if (t && confirm(`Delete quest "${t.name}"?`)) {
+      const archivedAt = Date.now();
+      state.archivedOneoffs = Array.isArray(state.archivedOneoffs) ? state.archivedOneoffs : [];
+      state.archivedOneoffs.push({ ...t, status: 'deleted', archivedAt });
+      logEvent('task_deleted', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted', progress: t.progress || 0, iterations: t.iterations || 1, createdAt: t.createdAt || null });
       state.oneoffs = state.oneoffs.filter(x => x.id !== id);
       editingOneoffId = null;
       if (wheelPickId === id) wheelPickId = null;
@@ -7884,7 +8163,6 @@ $('#view-tasks').addEventListener('change', onInlineOneoffField);
 
 // Game tabs
 $$('#gameTabs .game-tab').forEach(t => t.addEventListener('click', () => {
-  if (busy) return;
   flushUltra(); // leaving the pack mid-reveal banks the rest
   SFX.click();
   activeGame = t.dataset.game;
@@ -7893,6 +8171,8 @@ $$('#gameTabs .game-tab').forEach(t => t.addEventListener('click', () => {
   if (activeGame === 'wheel') buildWheelSegments();
   if (activeGame === 'roulette') { buildRouletteWheel(); renderRoulette(); }
   if (activeGame === 'ultra') renderUltra();
+  const stage = $('#stage-' + activeGame);
+  if (stage) stage.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'start' });
 }));
 
 // Game buttons
@@ -8065,13 +8345,13 @@ $('#habitEditor').addEventListener('click', e => {
 });
 $('#addHabit').addEventListener('click', () => {
   SFX.click();
-  state.habits.push({ id: uid(), emoji: '⭐', name: 'New habit', section: 'daily', reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
+  state.habits.push({ id: uid(), emoji: '⭐', name: 'New habit', section: 'daily', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
   save(); renderHabitEditor();
   $('#habitEditor').lastElementChild?.querySelector('.name-in')?.select();
 });
 $('#quickHabit').addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.value.trim()) return;
-  state.habits.push({ id: uid(), emoji: '⭐', name: e.target.value.trim(), section: 'daily', reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
+  state.habits.push({ id: uid(), emoji: '⭐', name: e.target.value.trim(), section: 'daily', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
   e.target.value = ''; SFX.coin(); save(); renderHabitEditor(); renderHabits();
 });
 
@@ -8294,6 +8574,19 @@ window.HCCloudState = async function (user) {
   // destroying the very thing the notification is asking about.
   const localTs = state.updatedAt || 0;
   if (remote && remote.state && (remote.updatedAt || 0) > localTs) {
+    // If this browser made the latest cloud write, the cloud copy is authoritative and
+    // safe to restore silently. This commonly happens on reload because Firestore's
+    // server/write timestamp is a little newer than the timestamp inside the JSON save.
+    if (remote.deviceId && remote.deviceId === DEVICE_ID) {
+      state = load(remote.state);
+      cloudOn = true;
+      cloudStatus = 'ready';
+      cloudSyncedAt = remote.updatedAt || Date.now();
+      save();
+      fullRender();
+      renderCloudUI(); renderCloudBadge();
+      return;
+    }
     cloudPending = remote;
     cloudStatus = 'pending';
     renderCloudUI(); renderCloudBadge();
@@ -8439,6 +8732,35 @@ $('#view-schedule').addEventListener('click', e => {
   }
 });
 
+/* Two-finger schedule zoom. One-finger vertical scrolling and block dragging stay
+   unchanged; pinching steps through the same calibrated zoom levels as the +/- buttons. */
+let schedPinch = null;
+function touchDistance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+$('#view-schedule').addEventListener('touchstart', e => {
+  if (e.touches.length !== 2 || !e.target.closest('.sched-grid')) return;
+  if (schedDrag) { schedDrag.el.classList.remove('dragging'); schedDrag = null; }
+  schedPinch = { distance: touchDistance(e.touches[0], e.touches[1]) };
+}, { passive: true });
+$('#view-schedule').addEventListener('touchmove', e => {
+  if (!schedPinch || e.touches.length !== 2) return;
+  e.preventDefault();
+  const distance = touchDistance(e.touches[0], e.touches[1]);
+  const ratio = distance / Math.max(1, schedPinch.distance);
+  if (ratio > 1.12 || ratio < 0.89) {
+    const oldPx = schedPx();
+    const grid = $('.sched-grid'); if (!grid) return;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const contentHours = Math.max(0, (midY - grid.getBoundingClientRect().top) / oldPx);
+    schedZoomIdx += ratio > 1 ? 1 : -1;
+    applySchedZoom();
+    window.scrollBy(0, contentHours * (schedPx() - oldPx));
+    schedPinch.distance = distance;
+  }
+}, { passive: false });
+const endSchedPinch = e => { if (e.touches.length < 2) schedPinch = null; };
+$('#view-schedule').addEventListener('touchend', endSchedPinch, { passive: true });
+$('#view-schedule').addEventListener('touchcancel', () => { schedPinch = null; }, { passive: true });
+
 /* ---- Drag a prediction to re-time it. Always live: no mode to switch on. --------------
    The block moves with the finger but commits in SNAP_MIN steps, and writes the same
    h.scheduledMin the AI's scheduleBlock proposal uses, so Due Now and the predicted
@@ -8539,6 +8861,7 @@ function fullRender() {
 
 // Boot is synchronous again: the save comes from localStorage, so nothing waits on the
 // network or on an account. The cloud layer attaches later, if and when it loads.
+processClosedDayOutcomes();
 fullRender();
 
 // Collapsible settings: tap a section title to expand/collapse. Start collapsed for a clean menu.
@@ -8630,7 +8953,8 @@ setInterval(() => {
     // Not awaited on purpose: offline, this promise stays unsettled until the network
     // returns, but the write is already durable in the IndexedDB queue.
     setDoc(userDoc(auth.currentUser.uid), {
-      state: json, updatedAt: Date.now(), schema: 1, channel: window.HC_VERSION || ''
+      state: json, updatedAt: Date.now(), schema: 1, channel: window.HC_VERSION || '',
+      deviceId: window.HC_DEVICE_ID || null
     }).then(() => {
       window.HCCloudSynced && window.HCCloudSynced();
     }).catch(e => {
