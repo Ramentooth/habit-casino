@@ -231,6 +231,74 @@
     .more-row:last-child { border-bottom: 0; }
     .more-row:active { background: rgba(176,38,255,0.16); }
     .more-row.active .mr-label { color: var(--cyan); }
+    /* ---------- Prize Pool tiles: claimable when held, dimmed when not ---------- */
+    /* Dim the CONTENT, not the tile: opacity on the tile would drag the ⋯ button down
+       with it (a child can't be more opaque than its parent) and settings must stay
+       reachable on rewards you haven't won. */
+    .prize.dim { background: rgba(0,0,0,.34); }
+    .prize.dim .pe, .prize.dim .pn { opacity: .4; filter: grayscale(.8); }
+    .prize.dim:hover .pe, .prize.dim:hover .pn { opacity: .62; }
+    .prize.owned {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--pz) 20%, transparent), rgba(0,0,0,.3));
+      box-shadow: 0 0 16px color-mix(in srgb, var(--pz) 45%, transparent), inset 0 0 14px color-mix(in srgb, var(--pz) 12%, transparent);
+    }
+    .prize.owned .pn { color: #fff; }
+    /* Count rides on the emoji's top-right corner, not the tile's. */
+    .pe-wrap { position: relative; display: inline-block; }
+    .prize-count {
+      position: absolute; top: -4px; right: -14px; min-width: 21px; height: 21px; padding: 0 5px;
+      display: grid; place-items: center; border-radius: 11px;
+      background: var(--pz); color: #0a0012; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px;
+      box-shadow: 0 0 10px var(--pz); border: 2px solid rgba(4,0,10,.85);
+    }
+    /* ⋯ settings, top-right of every tile. */
+    .prize-dots {
+      position: absolute; top: 4px; right: 4px; z-index: 2;
+      width: 28px; height: 24px; padding: 0; line-height: 1;
+      display: grid; place-items: center; border-radius: 8px; cursor: pointer;
+      background: transparent; border: 1px solid transparent; color: var(--ink-dim);
+      font-size: 17px; letter-spacing: 1px;
+    }
+    .prize-dots:hover, .prize-dots:active { background: rgba(255,255,255,.09); color: #fff; }
+    .prize-foot { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; }
+    .prize-claim {
+      font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 10px;
+      letter-spacing: 1.5px; color: var(--pz); text-shadow: 0 0 8px color-mix(in srgb, var(--pz) 70%, transparent);
+    }
+    .prize-more {
+      font-size: 10px; letter-spacing: .5px; padding: 2px 7px; border-radius: 8px; cursor: pointer;
+      background: rgba(0,0,0,.35); border: 1px solid var(--panel-edge); color: var(--ink-dim);
+    }
+    .prize-more:hover, .prize-more:active { color: #fff; border-color: var(--pz); }
+    .claim-card {
+      grid-column: 1 / -1; position: relative; padding: 14px; border-radius: 14px;
+      border: 1px solid color-mix(in srgb, var(--pz) 60%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--pz) 14%, transparent), rgba(4,0,10,.85));
+    }
+    .cc-head { display: flex; align-items: center; gap: 12px; text-align: left; }
+    .cc-e { font-size: 34px; line-height: 1; }
+    .cc-n { font-weight: 800; font-size: 16px; }
+    .cc-qty { display: flex; align-items: center; gap: 10px; margin: 14px 0 12px; flex-wrap: wrap; }
+    .cc-num { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 20px; color: var(--pz); min-width: 54px; text-align: center; }
+    .cc-num .subtle { font-size: 12px; font-weight: 600; }
+    .cc-total { font-size: 13px; color: var(--ink-dim); margin-left: auto; }
+    .cc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ---------- Active Winnings ---------- */
+    .aw-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
+      border-radius: 12px; border: 1px solid color-mix(in srgb, var(--aw) 55%, transparent);
+      background: color-mix(in srgb, var(--aw) 12%, rgba(0,0,0,.25));
+    }
+    .aw-emoji { font-size: 26px; line-height: 1; flex: 0 0 auto; }
+    .aw-main { flex: 1 1 auto; min-width: 0; }
+    .aw-name { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .aw-meta { font-size: 12px; color: var(--ink-dim); margin-top: 1px; }
+    .aw-meta b { color: var(--aw); font-family: 'Orbitron', sans-serif; }
+    .aw-bar { height: 5px; border-radius: 3px; background: rgba(0,0,0,.45); margin-top: 6px; overflow: hidden; }
+    .aw-fill { height: 100%; background: var(--aw); box-shadow: 0 0 8px var(--aw); transition: width .5s linear; }
+    .spec-hint { font-size: 12px; color: var(--cyan); margin-top: 2px; }
+
     /* ---------- Block Schedule ---------- */
     .sched-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .sched-day { text-align: center; line-height: 1.25; }
@@ -241,6 +309,16 @@
     .sched-key .k-actual { background: var(--cyan); }
     .sched-key .k-pred   { border: 1px dashed var(--cyan); background: transparent; }
     .sched-key .k-moment { background: var(--ink-dim); height: 3px; }
+    .sched-key .k-reward { background: var(--gold); }
+    /* Rewards read as a different species from habits: gold-leaning, dashed-free, and
+       tagged so a glance tells you "that's when I cashed in", not "that's work I did". */
+    .sched-block.reward {
+      border-style: solid; border-left-width: 3px;
+      background: color-mix(in srgb, var(--sb) 22%, transparent);
+      box-shadow: inset 0 0 12px color-mix(in srgb, var(--sb) 14%, transparent);
+    }
+    .sched-block.reward b::before { content: '🎁 '; }
+    .sched-block.reward.moment { background: transparent; box-shadow: none; border-top: 2px dashed color-mix(in srgb, var(--sb) 85%, transparent); }
     .sched-grid { position: relative; }
     .sched-hour {
       position: absolute; left: 0; right: 0; border-top: 1px solid var(--panel-edge);
@@ -861,6 +939,7 @@
     }
     .prize-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; }
     .prize {
+      position: relative;   /* anchors the ⋯ settings button */
       background: rgba(0,0,0,0.25); border: 1px solid var(--panel-edge); border-radius: 12px;
       padding: 12px; text-align: center; transition: .15s;
     }
@@ -1488,15 +1567,22 @@
     </section>
 
     <section class="view" id="view-prizes">
-      <div class="panel" style="margin-bottom:16px">
-        <div class="section-title neon-gold">🏆 Your Winnings</div>
-        <div class="subtle">Rewards you've won. Redeem them when you cash in — or ♻ recycle ones you don't want back into tokens.</div>
-        <div id="redeemLock" class="redeem-lock" style="display:none"></div>
+      <!-- Rewards mid-use: countdowns and rep tallies, above everything else. -->
+      <div class="panel" id="activeWinsPanel" style="display:none;margin-bottom:16px;border-color:rgba(57,255,20,.45)">
+        <div class="section-title neon-green">⚡ Active Winnings</div>
+        <div class="subtle">Rewards you're using right now.</div>
+        <div id="activeWins" style="margin-top:12px"></div>
+      </div>
+      <!-- Wild cards aren't tied to a single reward, so they can't live on a pool tile. -->
+      <div class="panel" id="wildPanel" style="display:none;margin-bottom:16px">
+        <div class="section-title neon-purple">🃏 Wild Cards</div>
+        <div class="subtle">Trade one in for any reward of its rarity.</div>
         <div class="inv-grid" id="invGrid" style="margin-top:14px"></div>
       </div>
       <div class="panel">
         <div class="section-title neon-cyan">💎 Prize Pool</div>
-        <div class="subtle">Everything you can win, by rarity. Tap a prize to edit it right here.</div>
+        <div class="subtle">Everything you can win, by rarity. Lit tiles are ones you're holding — tap to claim. Dim ones you haven't won yet; tap to edit.</div>
+        <div id="redeemLock" class="redeem-lock" style="display:none"></div>
         <div id="prizePool" style="margin-top:14px"></div>
         <button class="btn ghost sm" id="addRewardInline" style="margin-top:12px">➕ Add reward</button>
       </div>
@@ -1512,10 +1598,10 @@
     <!-- ===================== BLOCK SCHEDULE ===================== -->
     <section class="view" id="view-schedule">
       <div class="section-title neon-purple">📅 Block Schedule</div>
-      <div class="subtle" style="margin-bottom:12px">Past days show what you actually did and how long it took. Today adds the AI's prediction for what's still to come, drawn dashed.</div>
-      <div style="overflow-x:auto">
-        <div id="scheduleBody" style="min-width:260px"></div>
-      </div>
+      <div class="subtle" style="margin-bottom:12px">Past days show what you actually did and how long it took, plus 🎁 when you cashed in a reward. Today adds the AI's prediction for what's still to come, drawn dashed.</div>
+      <!-- No inner scroll container: blocks are percentage-width and fit any screen, so a
+           nested overflow-x scroller only fought the page's own vertical scroll on mobile. -->
+      <div id="scheduleBody"></div>
     </section>
 
     <!-- ===================== SETTINGS ===================== -->
@@ -1918,6 +2004,10 @@ function defaultState() {
     categoryColors: {},   // per-category accent colors (seeded by ensureCategoryColors, editable in Settings)
     identityPurposes: {}, // per-identity "why" text (seeded/cleaned by ensureIdentityPurposes, same pattern as categoryColors) — the identity's own purpose; a habit's h.why is a more specific override/addition
     history: [],          // completion log for the Stats tab: { ts, kind, name, emoji, category, level, reward }
+    // Reward claims live in their OWN log, not in `history`. renderStats() treats every
+    // history entry as a completion without filtering by kind, so mixing claims in would
+    // silently inflate the weekly count, the rhythm heatmap and the intensity mix.
+    rewardLog: [],        // { ts, name, emoji, tier, minutes, qty }
     // Reflection system: quick tap-chip reasons for misses, plus deeper end-of-day
     // conversation transcripts. Both land in `reflections`; `reasonChips` grows over
     // time the same way `contexts` does (starter set + AI can propose new ones).
@@ -2037,6 +2127,8 @@ let editingOneoffId = null;    // one-off currently "blown up" into the inline e
 let editingRewardId = null;    // reward currently "blown up" into the inline editor on the Winnings screen
 let currentInvGroups = [];     // stacked inventory groups for the current Prizes render
 let recycleOpen = null;        // group key whose recycle +/- menu is open
+let claimOpenId = null;        // reward id whose claim panel is expanded in the Prize Pool
+let claimQty = 1;              // quantity chosen in that panel
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
 let editTierPage = null;       // which difficulty page the habit editor shows (null = the base habit's page)
 let addTierChoiceOpen = false; // "Add tier" harder/easier chooser expanded in the habit editor
@@ -2166,6 +2258,13 @@ function load(raw) {
     ensureHappyHours(merged);
     ensureCategoryColors(merged);
     merged.history = Array.isArray(parsed.history) ? parsed.history : [];
+    // Saves written before reward logging existed have no rewardLog — seed it, and drop
+    // any malformed rows rather than trusting them at every read site.
+    merged.rewardLog = (Array.isArray(parsed.rewardLog) ? parsed.rewardLog : [])
+      .filter(e => e && Number.isFinite(e.ts))
+      .map(e => ({ ts: e.ts, name: String(e.name || ''), emoji: String(e.emoji || '🎁'),
+                   tier: e.tier, minutes: clamp(parseInt(e.minutes) || 0, 0, 24 * 60),
+                   qty: clamp(parseInt(e.qty) || 1, 1, 999) }));
     // Chat threads — migrate the old single flat aiChatLog into one thread so no conversation is lost.
     let threads = Array.isArray(parsed.aiChatThreads) ? parsed.aiChatThreads : [];
     if (!threads.length && Array.isArray(parsed.aiChatLog) && parsed.aiChatLog.length) {
@@ -3272,6 +3371,26 @@ setInterval(() => {
       if (h && h.timer) el.textContent = fmtTimerSec(timerElapsedSec(h.timer));
     });
   }
+  // Active Winnings countdowns. Expiry has to be checked even when the Winnings tab
+  // isn't open, or a reward would sit "active" until you happened to look at it.
+  const now = Date.now();
+  const justExpired = state.inventory.filter(w =>
+    w.redeemed && Number.isFinite(w.activeUntil) && w.activeUntil > 0 && w.activeUntil <= now && !w.expiredSeen);
+  if (justExpired.length) {
+    justExpired.forEach(w => { w.expiredSeen = true; });
+    SFX.win();
+    toast(`⌛ ${justExpired[0].name} — time's up!`, 'var(--gold)');
+    save(); renderPrizes();
+  } else if ($('#view-prizes').classList.contains('active')) {
+    $$('[data-win-timer]').forEach(el => {
+      const w = state.inventory.find(x => x.id === el.dataset.winTimer);
+      if (!w || !Number.isFinite(w.activeUntil)) return;
+      const leftSec = Math.max(0, Math.round((w.activeUntil - now) / 1000));
+      el.textContent = fmtTimerSec(leftSec);
+      const fill = $(`[data-win-fill="${w.id}"]`);
+      if (fill) fill.style.width = clamp(100 - (leftSec / Math.max(1, (w.activeMinutes || 1) * 60) * 100), 0, 100) + '%';
+    });
+  }
 }, 1000);
 
 /* =================================================================
@@ -3338,7 +3457,27 @@ function computeActualBlocks(dateStr) {
       return {
         name: e.name, emoji: e.emoji, category: e.category,
         startMin: Math.max(0, endMin - durMin), endMin, durMin,
-        kind: timed ? 'actual' : 'moment',
+        kind: timed ? 'actual' : 'moment', type: 'habit',
+      };
+    })
+    .sort((a, b) => a.startMin - b.startMin);
+}
+
+// Reward claims for a date, from their own log. A duration reward ran from the moment it
+// was claimed for as long as it granted, so it draws as a real span; a counter or plain
+// treat has no measurable length and becomes a moment mark.
+function computeRewardBlocks(dateStr) {
+  return (state.rewardLog || [])
+    .filter(e => e && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
+    .map(e => {
+      const d = new Date(e.ts);
+      const startMin = d.getHours() * 60 + d.getMinutes();
+      const durMin = clamp(parseInt(e.minutes) || 0, 0, 24 * 60);
+      return {
+        name: e.name + (e.qty > 1 ? ` ×${e.qty}` : ''), emoji: e.emoji || '🎁',
+        tierHex: (TIERS[e.tier] || {}).hex,
+        startMin, endMin: startMin + durMin, durMin,
+        kind: durMin > 0 ? 'actual' : 'moment', type: 'reward',
       };
     })
     .sort((a, b) => a.startMin - b.startMin);
@@ -3374,10 +3513,11 @@ function renderBlockSchedule() {
   // Today = what already happened (solid) + what's still expected (dashed). A prediction
   // for something you've already done would just be a duplicate of the real block.
   const actual = computeActualBlocks(dateStr);
+  const rewards = computeRewardBlocks(dateStr);   // when you cashed in, alongside the work
   const doneNames = new Set(actual.map(b => b.name));
-  const blocks = isToday
+  const blocks = (isToday
     ? actual.concat(computeTodayBlocks().filter(b => !doneNames.has(b.name)))
-    : actual;
+    : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
   layoutLanes(blocks);
 
@@ -3400,16 +3540,18 @@ function renderBlockSchedule() {
   const blockEls = blocks.map(b => {
     const top = clamp((b.startMin - lo * 60) / 60 * SCHED_PX_PER_HOUR, 0, totalH);
     const height = b.kind === 'moment' ? 22 : Math.max(24, b.durMin / 60 * SCHED_PX_PER_HOUR);
-    const col = categoryColor(b.category) || 'var(--cyan)';
+    const col = b.type === 'reward'
+      ? (b.tierHex || 'var(--gold)')                 // rewards wear their rarity colour
+      : (categoryColor(b.category) || 'var(--cyan)');
     const lanes = Math.max(1, b.laneCount || 1);
     const widthPct = 100 / lanes;
     const timeLabel = b.kind === 'moment'
       ? `✓ ${fmtMinOfDay(b.startMin)}`
       : `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay((b.startMin + b.durMin) % 1440)} · ${fmtMins(Math.round(b.durMin))}`;
-    const title = `${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted ' : ''}${timeLabel}`;
+    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted ' : ''}${timeLabel}`;
     // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
     // these percentages are of the block area alone and the gutter never enters the math.
-    return `<div class="sched-block ${b.kind}" title="${escapeHtml(title)}"
+    return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}" title="${escapeHtml(title)}"
       style="top:${top}px;height:${height}px;left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
       <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${b.pinned ? ' 🤖' : ''}</b>
       ${height >= 40 && lanes <= 2 ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
@@ -3435,6 +3577,7 @@ function renderBlockSchedule() {
       <span><i class="k-actual"></i> actually done</span>
       ${isToday ? `<span><i class="k-pred"></i> predicted</span>` : ''}
       <span><i class="k-moment"></i> no timer</span>
+      <span><i class="k-reward"></i> 🎁 reward</span>
     </div>
     <div class="sched-grid" style="height:${totalH}px">${hourLines.join('')}${nowLine}
       <div class="sched-lanes">${blockEls}</div>
@@ -4286,10 +4429,60 @@ function timeAgo(ts) {
   if (s < 86400) return Math.floor(s / 3600) + 'h ago';
   return Math.floor(s / 86400) + 'd ago';
 }
-// Group identical winnings into stacks (available and redeemed kept as separate stacks).
+/* ---- Reward language detector -------------------------------------------------
+   Rewards are written in plain English ("30 min of Xbox", "ten rounds of Valorant"),
+   so read the intent straight out of the name rather than making the user fill in a
+   separate number field. A duration becomes a countdown; a count becomes a tally you
+   tick down. The explicit ⏱ minutes field, when set, always outranks the text.        */
+const NUM_WORDS = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
+  eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, sixty: 60 };
+const DUR_UNITS = { minutes: 1, minute: 1, mins: 1, min: 1, hours: 60, hour: 60, hrs: 60, hr: 60 };
+const COUNT_UNITS = ['rounds', 'round', 'games', 'game', 'matches', 'match', 'episodes', 'episode',
+  'reps', 'rep', 'sets', 'set', 'levels', 'level', 'chapters', 'chapter', 'songs', 'song',
+  'turns', 'turn', 'runs', 'run', 'lives', 'life', 'times', 'time'];
+// Longest-first: alternation matches at the first position that works, so "min" listed
+// before "minutes" would swallow the "min" and leave a stray "utes".
+const byLenDesc = a => a.slice().sort((x, y) => y.length - x.length);
+const NUM_TOKEN = '(\\d+|' + byLenDesc(Object.keys(NUM_WORDS)).join('|') + ')';
+const DUR_RE = new RegExp(NUM_TOKEN + '\\s*-?\\s*(' + byLenDesc(Object.keys(DUR_UNITS)).join('|') + ')\\b', 'i');
+const CNT_RE = new RegExp(NUM_TOKEN + '\\s*-?\\s*(' + byLenDesc(COUNT_UNITS).join('|') + ')\\b', 'i');
+
+function detectRewardSpec(name) {
+  const s = String(name == null ? '' : name).toLowerCase();
+  const toNum = t => { const n = parseInt(t, 10); return Number.isFinite(n) ? n : (NUM_WORDS[t] || 0); };
+  const d = s.match(DUR_RE), c = s.match(CNT_RE);
+  // Both present ("2 rounds in 30 minutes") → whichever the sentence leads with.
+  if (d && (!c || d.index <= c.index)) {
+    const mins = Math.round(toNum(d[1]) * DUR_UNITS[d[2].toLowerCase()]);
+    if (mins > 0 && mins <= 24 * 60) return { minutes: mins };
+  }
+  if (c) {
+    const n = toNum(c[1]);
+    if (n > 0 && n <= 999) return { count: n, unit: c[2].toLowerCase() };
+  }
+  return null;
+}
+// What a won item actually resolves to. The explicit minutes field wins over the text.
+function rewardSpecFor(item) {
+  if ((item.minutes || 0) > 0) return { minutes: item.minutes };
+  return detectRewardSpec(item.name) || null;
+}
+// Rewards being used right now — three shapes: a running countdown, a tally with reps
+// left, or a plain treat with nothing to measure, which just waits for you to tap Done.
+function isActiveWin(w) {
+  const now = Date.now();
+  return !!(w.redeemed && ((Number.isFinite(w.activeUntil) && w.activeUntil > now) ||
+    (Number.isFinite(w.remaining) && w.remaining > 0) ||
+    w.activePlain === true));
+}
+function activeWinnings() { return state.inventory.filter(isActiveWin); }
+
+// Only WILD CARDS live in their own grid now. Ordinary winnings are claimed straight from
+// their Prize Pool tile, so the old "Your Winnings" list would just duplicate them — but a
+// wild card isn't tied to any one reward, so it has nowhere else to live.
 function inventoryGroups() {
   const map = new Map();
-  state.inventory.forEach(w => {
+  state.inventory.filter(w => w.wild && !w.redeemed).forEach(w => {
     const key = (w.rewardId || (w.name + '|' + w.tier + '|' + w.emoji)) + '|' + (w.redeemed ? 'R' : 'A');
     if (!map.has(key)) map.set(key, { key, tier: w.tier, emoji: w.emoji, name: w.name, redeemed: !!w.redeemed, items: [] });
     map.get(key).items.push(w);
@@ -4369,6 +4562,94 @@ function invCardHTML(g, gi) {
     </div>`;
 }
 
+// Unclaimed copies of one reward sitting in the inventory.
+function ownedOf(rewardId) {
+  return state.inventory.filter(w => !w.redeemed && !w.wild && w.rewardId === rewardId);
+}
+
+// Claim N copies at once. They collapse into a SINGLE active entry with the amounts
+// multiplied — three 30-minute rewards is 90 minutes of Xbox, not three identical
+// countdowns racing each other to expire at the same moment.
+function claimFromPool(rewardId, qty) {
+  const win = redeemWindow();
+  if (!win.open) { toast(`🔒 ${win.reason}`, 'var(--pink)'); SFX.lose(); return; }
+  const owned = ownedOf(rewardId);
+  qty = clamp(qty, 1, owned.length);
+  if (!qty) return;
+  const taken = owned.slice(0, qty);
+  const item = taken[0];
+  taken.forEach(x => { x.redeemed = true; });          // all consumed
+  taken.slice(1).forEach(x => { x.mergedInto = item.id; });
+  const spec = rewardSpecFor(item) || {};
+  const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
+  const windowed = state.settings.redeem && state.settings.redeem.mode !== 'always';
+  if (spec.minutes > 0) {
+    const bonus = (bonusPct > 0 && windowed);
+    let total = spec.minutes * qty;
+    if (bonus) total = Math.round(total * (1 + bonusPct / 100));
+    item.redeemedMinutes = total; item.activeMinutes = total;
+    item.activeUntil = Date.now() + total * 60000;
+    item.expiredSeen = false;
+    toast(`🎉 ${fmtMins(total)} of ${item.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
+    SFX.win(); burst({ count: 40, colors: ['#39ff14', '#ffe600', '#00f0ff'] });
+  } else if (spec.count > 0) {
+    const total = spec.count * qty;
+    item.countTotal = total; item.remaining = total; item.countUnit = spec.unit || 'uses';
+    toast(`🎉 ${total} ${spec.unit} unlocked — count them off as you go`, 'var(--green)');
+    SFX.win();
+  } else {
+    // Nothing measurable in the name — it still becomes an Active Winning, just one
+    // that waits for you to tap Done rather than counting anything down.
+    item.activePlain = true;
+    item.activeQty = qty;
+    toast(`Enjoy your ${qty > 1 ? qty + '× ' : ''}${item.name}! 🎉`, 'var(--green)'); SFX.coin();
+  }
+  logRewardClaim(item, qty);
+  claimOpenId = null;
+  save(); renderPrizes();
+}
+// When a reward was cashed in, for the Schedule tab. Duration rewards carry their length
+// so they draw as a real span; everything else is a moment mark at the claim time.
+function logRewardClaim(item, qty) {
+  state.rewardLog = Array.isArray(state.rewardLog) ? state.rewardLog : [];
+  state.rewardLog.push({
+    ts: Date.now(), name: item.name, emoji: item.emoji || '🎁', tier: item.tier,
+    minutes: Number.isFinite(item.activeMinutes) ? item.activeMinutes : 0, qty,
+  });
+  if (state.rewardLog.length > 600) state.rewardLog = state.rewardLog.slice(-400);
+}
+// Closes out a plain reward — the Done button's action.
+function finishPlainWin(id) {
+  const item = state.inventory.find(x => x.id === id); if (!item) return;
+  item.activePlain = false;
+  SFX.win(); toast(`✅ ${item.name} — done`, 'var(--gold)');
+  save(); renderPrizes();
+}
+// Discard N unclaimed copies outright (no tokens back) — the old 🗑 action.
+function discardFromPool(rewardId, qty) {
+  const owned = ownedOf(rewardId);
+  qty = clamp(qty, 1, owned.length);
+  if (!qty) return;
+  const ids = new Set(owned.slice(0, qty).map(x => x.id));
+  state.inventory = state.inventory.filter(x => !ids.has(x.id));
+  SFX.click(); toast(`Discarded ${qty}× ${owned[0].name}`, 'var(--ink-dim)');
+  claimOpenId = null; save(); renderPrizes();
+}
+// Recycle N straight from the pool tile — the old Winnings grid's ♻ action, kept here
+// so trading unwanted prizes for tokens didn't disappear with that section.
+function recycleFromPool(rewardId, qty) {
+  const owned = ownedOf(rewardId);
+  qty = clamp(qty, 1, owned.length);
+  if (!qty) return;
+  const val = (RECYCLE_VALUE[owned[0].tier] || 1) * qty;
+  const ids = new Set(owned.slice(0, qty).map(x => x.id));
+  state.inventory = state.inventory.filter(x => !ids.has(x.id));
+  addTokens(val); SFX.coin();
+  toast(`♻ Recycled ${qty}× ${owned[0].name} → +${val} 🪙`, 'var(--gold)');
+  burst({ count: 22, coin: true, colors: ['#ffe600', '#ffd700'] });
+  claimOpenId = null; save(); renderPrizes();
+}
+
 // Stack actions operate on the underlying inventory items by id.
 function redeemOneFrom(g) {
   const win = redeemWindow();
@@ -4376,21 +4657,43 @@ function redeemOneFrom(g) {
   const item = state.inventory.find(x => x.id === g.items[0].id);
   if (!item) return;
   item.redeemed = true; recycleOpen = null;
-  const base = item.minutes || 0;
+  const spec = rewardSpecFor(item) || {};
   const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
   const windowed = state.settings.redeem && state.settings.redeem.mode !== 'always';
-  if (base > 0 && bonusPct > 0 && windowed) { // time reward + open bonus window
-    const total = Math.round(base * (1 + bonusPct / 100));
+  if (spec.minutes > 0) {
+    // A duration becomes a live countdown in ⚡ Active Winnings.
+    const bonus = (bonusPct > 0 && windowed);
+    const total = bonus ? Math.round(spec.minutes * (1 + bonusPct / 100)) : spec.minutes;
     item.redeemedMinutes = total;
-    toast(`🎉 Enjoy ${fmtMins(total)} of ${item.name}! (+${bonusPct}% window bonus)`, 'var(--gold)');
-    SFX.win(); burst({ count: 44, colors: ['#39ff14', '#ffe600', '#00f0ff'] });
-  } else if (base > 0) {
-    item.redeemedMinutes = base;
-    toast(`🎉 Enjoy ${fmtMins(base)} of ${item.name}!`, 'var(--green)'); SFX.coin();
+    item.activeMinutes = total;
+    item.activeUntil = Date.now() + total * 60000;
+    toast(`🎉 Enjoy ${fmtMins(total)} of ${item.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
+    if (bonus) { SFX.win(); burst({ count: 44, colors: ['#39ff14', '#ffe600', '#00f0ff'] }); } else SFX.coin();
+  } else if (spec.count > 0) {
+    // A count becomes a tally you tick down as you use it.
+    item.countTotal = spec.count;
+    item.remaining = spec.count;
+    item.countUnit = spec.unit || 'uses';
+    toast(`🎉 ${spec.count} ${spec.unit} unlocked — count them off as you go`, 'var(--green)');
+    SFX.coin();
   } else {
     toast('Enjoy your reward! 🎉', 'var(--green)'); SFX.coin();
   }
   save(); renderPrizes();
+}
+// Tick one rep off an active counter; the last one closes it out.
+function useOneRep(id) {
+  const item = state.inventory.find(x => x.id === id); if (!item || !item.remaining) return;
+  item.remaining -= 1;
+  if (item.remaining <= 0) { SFX.win(); toast(`✅ ${item.name} — all used up`, 'var(--gold)'); }
+  else { SFX.click(); toast(`${item.remaining} ${item.countUnit || 'left'} to go`, 'var(--cyan)'); }
+  save(); renderPrizes();
+}
+// End early — stops a countdown or discards remaining reps.
+function endActiveWin(id) {
+  const item = state.inventory.find(x => x.id === id); if (!item) return;
+  item.activeUntil = 0; item.remaining = 0; item.activePlain = false;
+  SFX.click(); save(); renderPrizes();
 }
 function trashOneFrom(g) {
   const id = g.items[0].id;
@@ -4408,7 +4711,61 @@ function recycleFrom(g, qty) {
   recycleOpen = null; save(); renderPrizes();
 }
 
+// ⚡ Active Winnings — what you're in the middle of using, pinned above everything else.
+function renderActiveWins() {
+  const panel = $('#activeWinsPanel'), box = $('#activeWins');
+  if (!panel || !box) return;
+  const act = activeWinnings();
+  panel.style.display = act.length ? '' : 'none';
+  if (!act.length) { box.innerHTML = ''; return; }
+  box.innerHTML = act.map(w => {
+    const col = (TIERS[w.tier] || {}).hex || 'var(--green)';
+    if (Number.isFinite(w.activeUntil) && w.activeUntil > Date.now()) {
+      const leftSec = Math.max(0, Math.round((w.activeUntil - Date.now()) / 1000));
+      const total = Math.max(1, (w.activeMinutes || 1) * 60);
+      const pct = clamp(100 - (leftSec / total * 100), 0, 100);
+      return `
+      <div class="aw-row" data-id="${w.id}" style="--aw:${col}">
+        <span class="aw-emoji">${escapeHtml(w.emoji || '🎁')}</span>
+        <div class="aw-main">
+          <div class="aw-name">${escapeHtml(w.name)}</div>
+          <div class="aw-meta">⏳ <b data-win-timer="${w.id}">${escapeHtml(fmtTimerSec(leftSec))}</b> left</div>
+          <div class="aw-bar"><div class="aw-fill" data-win-fill="${w.id}" style="width:${pct}%"></div></div>
+        </div>
+        <button class="btn ghost sm" data-act="endWin">⏹ End</button>
+      </div>`;
+    }
+    if (w.activePlain === true) {
+      // Nothing to measure — just a treat in progress and a Done button.
+      const q = w.activeQty > 1 ? ` <span class="subtle">×${w.activeQty}</span>` : '';
+      return `
+      <div class="aw-row" data-id="${w.id}" style="--aw:${col}">
+        <span class="aw-emoji">${escapeHtml(w.emoji || '🎁')}</span>
+        <div class="aw-main">
+          <div class="aw-name">${escapeHtml(w.name)}${q}</div>
+          <div class="aw-meta">🎁 enjoying it now</div>
+        </div>
+        <button class="btn green sm" data-act="finishWin">✓ Done</button>
+      </div>`;
+    }
+    const unit = w.countUnit || 'left';
+    const pct = clamp(100 - (w.remaining / Math.max(1, w.countTotal || w.remaining) * 100), 0, 100);
+    return `
+      <div class="aw-row" data-id="${w.id}" style="--aw:${col}">
+        <span class="aw-emoji">${escapeHtml(w.emoji || '🎁')}</span>
+        <div class="aw-main">
+          <div class="aw-name">${escapeHtml(w.name)}</div>
+          <div class="aw-meta">⟳ <b>${w.remaining}</b> of ${w.countTotal || w.remaining} ${escapeHtml(unit)} left</div>
+          <div class="aw-bar"><div class="aw-fill" style="width:${pct}%"></div></div>
+        </div>
+        <button class="btn green sm" data-act="useRep">− Use one</button>
+        <button class="btn ghost sm" data-act="endWin">⏹</button>
+      </div>`;
+  }).join('');
+}
+
 function renderPrizes() {
+  renderActiveWins();
   const inv = $('#invGrid');
   const lock = $('#redeemLock'), win = redeemWindow();
   if (lock) {
@@ -4416,11 +4773,10 @@ function renderPrizes() {
     else { lock.style.display = ''; lock.innerHTML = `🔒 <b>Redeeming is locked</b> — ${win.reason}.${(state.settings.redeem.timeBonus > 0) ? ` Time rewards get <b>+${state.settings.redeem.timeBonus}%</b> when it opens.` : ''} <span class="subtle">(You can still ♻ recycle.)</span>`; }
   }
   currentInvGroups = inventoryGroups();
-  if (!currentInvGroups.length) {
-    inv.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="big">🎲</div>No winnings yet — head to the <b>Casino</b> and get lucky!</div>`;
-  } else {
-    inv.innerHTML = currentInvGroups.map((g, gi) => invCardHTML(g, gi)).join('');
-  }
+  // Wild-card panel only appears when you're holding one.
+  const wildPanel = $('#wildPanel');
+  if (wildPanel) wildPanel.style.display = currentInvGroups.length ? '' : 'none';
+  if (inv) inv.innerHTML = currentInvGroups.map((g, gi) => invCardHTML(g, gi)).join('');
   // prize pool grouped by tier with live drop hints
   const pool = $('#prizePool');
   pool.innerHTML = REWARD_TIERS.map(tier => {
@@ -4434,12 +4790,85 @@ function renderPrizes() {
         <span class="subtle">${items.length} reward${items.length !== 1 ? 's' : ''} · ♻ ${RECYCLE_VALUE[tier]}🪙 each</span>
       </div>
       <div class="prize-cards">
-        ${items.map(r => r.id === editingRewardId && !r.special
-          ? rewardEditCardHTML(r)
-          : `<div class="prize${r.special ? ' special' : ''}" data-rid="${r.id}" style="border-color:${ti.hex}55" title="${r.special ? 'Edit the Streak Freeze in Settings' : 'Tap to edit'}"><div class="pe">${escapeHtml(r.emoji || ti.emoji)}</div><div class="pn">${escapeHtml(r.name)}</div>${r.special ? '<div class="special-tag">SPECIAL</div>' : ''}</div>`).join('')}
+        ${items.map(r => {
+          if (r.id === editingRewardId && !r.special) return rewardEditCardHTML(r);
+          if (r.id === claimOpenId && !r.special) return claimCardHTML(r);
+          return prizeTileHTML(r, ti);
+        }).join('')}
       </div>
     </div>`;
   }).join('') || `<div class="empty">No rewards defined yet — add one below.</div>`;
+}
+
+// A Prize Pool tile. Lit and claimable when you're holding one; dimmed when you aren't,
+// which is what makes the pool readable as "what I can cash in right now".
+function prizeTileHTML(r, ti) {
+  const n = r.special ? 0 : ownedOf(r.id).length;
+  const lit = n > 0;
+  const title = r.special ? 'Edit the Streak Freeze in Settings'
+    : (lit ? `${n} available — tap to claim` : 'Not won yet — tap to edit');
+  return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
+      style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
+    <button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>
+    <div class="pe-wrap">
+      <div class="pe">${escapeHtml(r.emoji || ti.emoji)}</div>
+      ${lit ? `<span class="prize-count">${n}</span>` : ''}
+    </div>
+    <div class="pn">${escapeHtml(r.name)}</div>
+    ${r.special ? '<div class="special-tag">SPECIAL</div>' : ''}
+    ${lit ? `<div class="prize-foot">
+      <span class="prize-claim">CLAIM</span>
+      <button class="prize-more" data-act="prizeMore" title="Claim several, recycle or discard">more</button>
+    </div>` : ''}
+  </div>`;
+}
+
+// Expanded claim panel — replaces the tile in place (same trick .prize-edit uses) and asks
+// how many to cash in before anything is consumed.
+function claimCardHTML(r) {
+  const owned = ownedOf(r.id);
+  const n = owned.length;
+  if (!n) return prizeTileHTML(r, TIERS[r.tier] || TIERS.common);
+  const ti = TIERS[r.tier] || TIERS.common;
+  const qty = clamp(claimQty, 1, n);
+  const spec = rewardSpecFor(owned[0]) || {};
+  const per = spec.minutes ? `⏳ ${fmtMins(spec.minutes)} each`
+    : spec.count ? `⟳ ${spec.count} ${escapeHtml(spec.unit)} each` : 'one-off treat';
+  const total = spec.minutes ? `${fmtMins(spec.minutes * qty)} total`
+    : spec.count ? `${spec.count * qty} ${escapeHtml(spec.unit)} total` : `${qty} claimed`;
+  const win = redeemWindow();
+  const recVal = (RECYCLE_VALUE[r.tier] || 1) * qty;
+  return `
+  <div class="claim-card" data-rid="${r.id}" style="--pz:${ti.hex}">
+    <button class="pass-close" data-act="claimCancel" title="Close">✕</button>
+    <div class="cc-head"><span class="cc-e">${escapeHtml(r.emoji || ti.emoji)}</span>
+      <div><div class="cc-n">${escapeHtml(r.name)}</div>
+      <div class="subtle">${n} available · ${per}</div></div>
+    </div>
+    <div class="cc-qty">
+      <button class="rstep" data-act="claimMinus" title="Fewer">−</button>
+      <span class="cc-num">${qty}<span class="subtle">/${n}</span></span>
+      <button class="rstep" data-act="claimPlus" title="More">+</button>
+      <span class="cc-total">${total}</span>
+    </div>
+    <div class="cc-actions">
+      ${win.open
+        ? `<button class="btn green sm" data-act="claimDo">🎁 Claim ${qty}</button>`
+        : `<button class="btn green sm" disabled title="${escapeHtml(win.reason)}">🔒 ${escapeHtml(win.reason)}</button>`}
+      <button class="btn gold sm" data-act="claimRecycle" title="Trade for tokens">♻ +${recVal}🪙</button>
+      <button class="del" data-act="claimDiscard" title="Discard ${qty} without recycling">🗑</button>
+    </div>
+  </div>`;
+}
+
+// Shows what the detector read out of the reward's name, so it's never a silent guess.
+function rewardSpecHintHTML(r) {
+  if ((r.minutes || 0) > 0) return `<div class="hedit-r"><span class="spec-hint">⏳ ${escapeHtml(fmtMins(r.minutes))} countdown when redeemed</span></div>`;
+  const spec = detectRewardSpec(r.name);
+  if (!spec) return '';
+  return `<div class="hedit-r"><span class="spec-hint">${spec.minutes
+    ? `⏳ reads as a ${escapeHtml(fmtMins(spec.minutes))} countdown`
+    : `⟳ reads as ${spec.count} ${escapeHtml(spec.unit)} to count off`} when redeemed</span></div>`;
 }
 
 // Inline reward editor card on the Winnings screen (tap a prize to open, like habits/quests)
@@ -4454,8 +4883,9 @@ function rewardEditCardHTML(r) {
       <select class="sect-in" data-rf="tier" title="Rarity">
         ${REWARD_TIERS.map(t => `<option value="${t}" ${r.tier === t ? 'selected' : ''}>${TIERS[t].emoji} ${TIERS[t].label}</option>`).join('')}
       </select>
-      <span class="pill" title="If > 0, this is a time reward (gets the unlock-window bonus)">⏱ <input class="num-in" data-rf="minutes" type="number" min="0" max="999" value="${r.minutes || 0}"> min</span>
+      <span class="pill" title="If > 0, this is a time reward (gets the unlock-window bonus). Leave at 0 to read the duration out of the name.">⏱ <input class="num-in" data-rf="minutes" type="number" min="0" max="999" value="${r.minutes || 0}"> min</span>
     </div>
+    ${rewardSpecHintHTML(r)}
     <div class="hedit-r hedit-actions">
       <button class="btn ghost sm" data-act="delRewardInline">🗑 Delete</button>
       <button class="btn green sm" data-act="closeRewardEdit">✓ Done</button>
@@ -7432,11 +7862,40 @@ $('#prizePool').addEventListener('click', e => {
     }
     return;
   }
-  const card = e.target.closest('.prize[data-rid]');
-  if (card && !card.classList.contains('special')) {   // Streak Freeze keeps its Settings editor
-    editingRewardId = card.dataset.rid; SFX.click(); renderPrizes();
-    setTimeout(() => $('#prizePool .prize-edit .name-in')?.focus(), 30);
+  // Claim panel actions (it replaces the tile in place).
+  const claim = e.target.closest('.claim-card');
+  if (claim) {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    const rid = claim.dataset.rid;
+    const n = ownedOf(rid).length;
+    if (act === 'claimMinus') { claimQty = clamp(claimQty - 1, 1, n); SFX.click(); renderPrizes(); return; }
+    if (act === 'claimPlus')  { claimQty = clamp(claimQty + 1, 1, n); SFX.click(); renderPrizes(); return; }
+    if (act === 'claimDo')      { claimFromPool(rid, claimQty); return; }
+    if (act === 'claimRecycle') { recycleFromPool(rid, claimQty); return; }
+    if (act === 'claimDiscard') { discardFromPool(rid, claimQty); return; }
+    if (act === 'claimCancel')  { claimOpenId = null; SFX.click(); renderPrizes(); return; }
+    return;
   }
+  const card = e.target.closest('.prize[data-rid]');
+  if (!card) return;
+  const rid = card.dataset.rid;
+  const openSettings = () => {
+    editingRewardId = rid; claimOpenId = null; SFX.click(); renderPrizes();
+    setTimeout(() => $('#prizePool .prize-edit .name-in')?.focus(), 30);
+  };
+  // ⋯ top-right — reward settings, on every tile whether it's claimable or not.
+  if (e.target.closest('[data-act="prizeSettings"]')) {
+    if (card.classList.contains('special')) { toast('Edit the Streak Freeze in Settings', 'var(--cyan)'); return; }
+    openSettings(); return;
+  }
+  if (card.classList.contains('special')) return;      // Streak Freeze keeps its Settings editor
+  // "more" — the bulk actions that used to be a popup on every claim.
+  if (e.target.closest('[data-act="prizeMore"]')) {
+    claimOpenId = rid; claimQty = 1; editingRewardId = null; SFX.click(); renderPrizes(); return;
+  }
+  // Body tap: quick-claim one, no dialog. Nothing to claim → settings.
+  if (card.classList.contains('owned')) claimFromPool(rid, 1);
+  else openSettings();
 });
 function onRewardInlineField(e) {
   const f = e.target.dataset.rf; if (!f) return;
@@ -7460,6 +7919,14 @@ $('#addRewardInline').addEventListener('click', () => {
 });
 
 // Prizes (delegated)
+$('#activeWins').addEventListener('click', e => {
+  const row = e.target.closest('.aw-row'); if (!row) return;
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'useRep') useOneRep(row.dataset.id);
+  else if (act === 'finishWin') finishPlainWin(row.dataset.id);
+  else if (act === 'endWin') endActiveWin(row.dataset.id);
+});
+
 $('#invGrid').addEventListener('click', e => {
   const card = e.target.closest('.inv-card'); if (!card) return;
   const g = currentInvGroups[parseInt(card.dataset.gi)]; if (!g) return;
