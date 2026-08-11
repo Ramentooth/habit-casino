@@ -318,12 +318,46 @@
       box-shadow: inset 0 0 12px color-mix(in srgb, var(--sb) 14%, transparent);
     }
     .sched-block.reward b::before { content: '🎁 '; }
-    .sched-block.reward.moment { background: transparent; box-shadow: none; border-top: 2px dashed color-mix(in srgb, var(--sb) 85%, transparent); }
-    .sched-grid { position: relative; }
+    .sched-block.reward.moment { background: transparent; box-shadow: none; border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); }
+    .sched-zoom { margin-left: auto; display: inline-flex; gap: 4px; }
+    .zbtn {
+      width: 26px; height: 22px; border-radius: 7px; cursor: pointer; line-height: 1;
+      background: rgba(0,0,0,.35); border: 1px solid var(--panel-edge); color: var(--ink);
+      font-size: 14px; font-weight: 800;
+    }
+    .zbtn:disabled { opacity: .35; cursor: default; }
+    /* Zoom = one CSS variable. Everything positioned off --ph eases to the new scale
+       together, so the day glides between zoom levels rather than snapping. */
+    .sched-grid { position: relative; transition: height .28s cubic-bezier(.4,0,.2,1); }
+    .sched-hour, .sched-sub, .sched-now, .sched-block {
+      transition: top .28s cubic-bezier(.4,0,.2,1), height .28s cubic-bezier(.4,0,.2,1);
+    }
+    .sched-block.dragging { transition: none; z-index: 5; }
     .sched-hour {
       position: absolute; left: 0; right: 0; border-top: 1px solid var(--panel-edge);
       font-size: 11px; color: var(--ink-dim); padding-left: 2px; pointer-events: none;
     }
+    /* Quarter/half-hour lines are always present; the zoom class decides which show, so
+       toggling them costs no re-render and can't fight the transition. */
+    .sched-sub {
+      position: absolute; left: 40px; right: 0; border-top: 1px dashed var(--panel-edge);
+      opacity: 0; pointer-events: none; height: 0;
+      transition: top .28s cubic-bezier(.4,0,.2,1), opacity .2s ease;
+    }
+    .sched-sub span { position: absolute; left: -38px; top: -7px; font-size: 9.5px; color: var(--ink-dim); opacity: .8; }
+    .sched-grid.zoom-4 .sched-sub.half, .sched-grid.zoom-5 .sched-sub.half { opacity: .5; }
+    .sched-grid.zoom-6 .sched-sub, .sched-grid.zoom-7 .sched-sub { opacity: .5; }
+    /* Draggable predictions: grab cursor, and touch-action:none so a vertical drag moves
+       the block instead of scrolling the page out from under it. */
+    .sched-block.draggable { cursor: grab; touch-action: none; }
+    .sched-block.draggable:active, .sched-block.dragging { cursor: grabbing; }
+    .sched-block.dragging { box-shadow: 0 6px 20px rgba(0,0,0,.6); border-style: solid; opacity: 1; }
+    .sb-unpin {
+      position: absolute; top: 2px; right: 3px; width: 18px; height: 18px; padding: 0;
+      display: grid; place-items: center; border-radius: 6px; cursor: pointer; font-size: 11px;
+      background: rgba(0,0,0,.45); border: 1px solid var(--panel-edge); color: var(--ink-dim);
+    }
+    .sb-unpin:hover { color: #fff; }
     /* Blocks live in here, already inset past the hour labels, so their left/width
        percentages are of the block area alone. */
     .sched-lanes { position: absolute; left: 56px; right: 6px; top: 0; bottom: 0; }
@@ -339,9 +373,11 @@
     .sched-block .sb-time { display: block; opacity: .7; font-size: 11px; white-space: nowrap; }
     /* Predicted = dashed and see-through; actually-done = solid. */
     .sched-block.predicted { border-style: dashed; border-left-style: dashed; background: transparent; opacity: .8; }
+    /* Untimed completions are SOLID: they really happened, they just have no measurable
+       length. Dashed is reserved for predictions, so the two can never be confused. */
     .sched-block.moment {
       background: transparent; border: 0; border-left: 0; padding-left: 0;
-      border-top: 2px dotted color-mix(in srgb, var(--sb) 70%, transparent); border-radius: 0;
+      border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); border-radius: 0;
     }
     .sched-block.moment b { font-size: 11px; opacity: .85; }
 
@@ -2174,6 +2210,8 @@ function normalizeHabit(h) {
     why: h.why != null ? String(h.why) : '',
     // Block Schedule: explicit AI/user-set target start time (minute of day), overriding
     // the inferred habitUsualMinute() median. null = not pinned, use the inferred time.
+    // A set start time, from either a drag on the Schedule or an AI scheduleBlock —
+    // deliberately not tracking which, since the two are treated identically.
     scheduledMin: Number.isFinite(h.scheduledMin) ? clamp(h.scheduledMin, 0, 1439) : null,
     // Habit-making context: what this habit actually means to the user (how they do
     // it, what "good" looks like, why) — gathered once via an AI questionnaire right
@@ -3436,7 +3474,8 @@ function computeTodayBlocks() {
       habitId: h.id, name: h.name, emoji: h.emoji, category: h.category,
       startMin: habitBlockMinute(h),
       durMin: habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
-      pinned: Number.isFinite(h.scheduledMin), complete: isComplete(h), kind: 'predicted',
+      habitId: h.id, pinned: Number.isFinite(h.scheduledMin),
+      complete: isComplete(h), kind: 'predicted', type: 'habit',
     }))
     .filter(b => Number.isFinite(b.startMin))
     .sort((a, b) => a.startMin - b.startMin);
@@ -3504,7 +3543,25 @@ function layoutLanes(blocks) {
 }
 
 let schedOffset = 0;        // 0 = today, -1 = yesterday, … (no future: we don't model it)
-const SCHED_PX_PER_HOUR = 56, SCHED_GUTTER = 56;
+// Zoom: pixels per hour. Higher zoom also splits the hour into finer gridlines so short
+// gaps between habits become visible instead of collapsing into one band.
+// Small steps so each press is a glide rather than a jump.
+const SCHED_ZOOMS = [32, 44, 56, 72, 96, 128, 168, 220];
+let schedZoomIdx = 2;
+const SNAP_MIN = 15;        // drags snap to quarter-hours
+function schedPx() { return SCHED_ZOOMS[clamp(schedZoomIdx, 0, SCHED_ZOOMS.length - 1)]; }
+// Zoom without re-rendering: only --ph changes, and CSS transitions carry every block,
+// gridline and the now-marker to their new positions together.
+function applySchedZoom() {
+  const grid = $('.sched-grid'); if (!grid) return;
+  schedZoomIdx = clamp(schedZoomIdx, 0, SCHED_ZOOMS.length - 1);
+  grid.style.setProperty('--ph', schedPx() + 'px');
+  grid.className = 'sched-grid zoom-' + schedZoomIdx;
+  const zi = $('[data-act="zoomIn"]'), zo = $('[data-act="zoomOut"]');
+  if (zi) zi.disabled = schedZoomIdx >= SCHED_ZOOMS.length - 1;
+  if (zo) zo.disabled = schedZoomIdx <= 0;
+}
+const SCHED_GUTTER = 56;
 function renderBlockSchedule() {
   const box = $('#scheduleBody'); if (!box) return;
   const dateStr = todayStr(schedOffset);
@@ -3528,18 +3585,30 @@ function renderBlockSchedule() {
     hi = Math.max(hi, Math.ceil((b.startMin + Math.max(b.durMin, 15)) / 60));
   });
   lo = clamp(lo, 0, 23); hi = clamp(hi, lo + 1, 24);
-  const totalH = (hi - lo) * SCHED_PX_PER_HOUR;
+
+  // Every vertical position is expressed as `calc(var(--ph) * hours)` rather than a baked
+  // pixel value. Zooming then only has to change --ph on the grid — no re-render — so the
+  // whole day glides between scales instead of snapping.
+  const at = hours => `calc(var(--ph) * ${+hours.toFixed(4)})`;
 
   const hourLines = [];
   for (let h = lo; h <= hi; h++) {
-    hourLines.push(`<div class="sched-hour" style="top:${(h - lo) * SCHED_PX_PER_HOUR}px">${escapeHtml(fmtMinOfDay(h * 60))}</div>`);
+    hourLines.push(`<div class="sched-hour" style="top:${at(h - lo)}">${escapeHtml(fmtMinOfDay(h * 60))}</div>`);
+    // Quarter-hour lines are always in the DOM; CSS reveals them as the zoom class grows,
+    // which is what makes a 15-minute gap visible instead of one undifferentiated band.
+    if (h < hi) {
+      for (let m = 15; m < 60; m += 15) {
+        hourLines.push(`<div class="sched-sub ${m === 30 ? 'half' : 'quarter'}" style="top:${at((h - lo) + m / 60)}"><span>${escapeHtml(fmtMinOfDay(h * 60 + m))}</span></div>`);
+      }
+    }
   }
   const nowLine = isToday && nowMinutes() >= lo * 60 && nowMinutes() <= hi * 60
-    ? `<div class="sched-now" style="top:${(nowMinutes() - lo * 60) / 60 * SCHED_PX_PER_HOUR}px"></div>` : '';
+    ? `<div class="sched-now" style="top:${at((nowMinutes() - lo * 60) / 60)}"></div>` : '';
 
   const blockEls = blocks.map(b => {
-    const top = clamp((b.startMin - lo * 60) / 60 * SCHED_PX_PER_HOUR, 0, totalH);
-    const height = b.kind === 'moment' ? 22 : Math.max(24, b.durMin / 60 * SCHED_PX_PER_HOUR);
+    const topH = (b.startMin - lo * 60) / 60;
+    const top = at(topH);
+    const height = b.kind === 'moment' ? '22px' : `max(24px, ${at(b.durMin / 60)})`;
     const col = b.type === 'reward'
       ? (b.tierHex || 'var(--gold)')                 // rewards wear their rarity colour
       : (categoryColor(b.category) || 'var(--cyan)');
@@ -3548,13 +3617,21 @@ function renderBlockSchedule() {
     const timeLabel = b.kind === 'moment'
       ? `✓ ${fmtMinOfDay(b.startMin)}`
       : `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay((b.startMin + b.durMin) % 1440)} · ${fmtMins(Math.round(b.durMin))}`;
-    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted ' : ''}${timeLabel}`;
+    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted (drag to move)' : ''}${timeLabel}`;
+    // Predictions are always draggable — no mode to enter. Anything that already happened
+    // stays put: it's a record, not a plan, so moving it would be rewriting history.
+    const drag = b.kind === 'predicted' && b.habitId;
+    const pin = b.pinned ? ' 📌' : '';
     // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
     // these percentages are of the block area alone and the gutter never enters the math.
-    return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}" title="${escapeHtml(title)}"
-      style="top:${top}px;height:${height}px;left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
-      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${b.pinned ? ' 🤖' : ''}</b>
-      ${height >= 40 && lanes <= 2 ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
+    // Tall enough to show a time? Show it — during a drag it doubles as the readout.
+    const showTime = b.kind !== 'moment' && (b.durMin / 60 * 96 >= 40) && lanes <= 2;
+    return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}"
+      title="${escapeHtml(title)}"${drag ? ` data-habit="${b.habitId}" data-start="${b.startMin}"` : ''}
+      style="top:${top};height:${height};left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
+      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
+      ${showTime || drag ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
+      ${drag && b.pinned ? `<button class="sb-unpin" data-act="unpin" title="Back to my usual time">✕</button>` : ''}
     </div>`;
   }).join('');
 
@@ -3578,11 +3655,16 @@ function renderBlockSchedule() {
       ${isToday ? `<span><i class="k-pred"></i> predicted</span>` : ''}
       <span><i class="k-moment"></i> no timer</span>
       <span><i class="k-reward"></i> 🎁 reward</span>
+      <span class="sched-zoom">
+        <button class="zbtn" data-act="zoomOut" title="Zoom out">−</button>
+        <button class="zbtn" data-act="zoomIn" title="Zoom in">+</button>
+      </span>
     </div>
-    <div class="sched-grid" style="height:${totalH}px">${hourLines.join('')}${nowLine}
+    <div class="sched-grid zoom-${schedZoomIdx}" data-lo="${lo}"
+         style="--ph:${schedPx()}px;height:calc(var(--ph) * ${hi - lo})">${hourLines.join('')}${nowLine}
       <div class="sched-lanes">${blockEls}</div>
     </div>
-    ${anyPinned ? `<div class="hint" style="margin-top:6px">🤖 = the AI adjusted this habit's usual time</div>` : ''}
+    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a dashed block to say when you'll actually do it — it snaps to 15 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your usual.' : ''}</div>` : ''}
     ${!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>${escapeHtml(emptyMsg)}</div>` : ''}`;
 }
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
@@ -6159,7 +6241,7 @@ function applyProposal(p) {
     const h = state.habits.find(x => x.id === p.habitId); if (!h) return false;
     if (!Number.isFinite(parseInt(p.startMin))) return false;
     h.scheduledMin = clamp(parseInt(p.startMin), 0, 1439);
-    return true;
+       return true;
   }
   return false;
 }
@@ -8346,7 +8428,61 @@ $('#view-schedule').addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'schedPrev') { schedOffset -= 1; SFX.click(); renderBlockSchedule(); return; }
   if (act === 'schedNext' && schedOffset < 0) { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
+  if (act === 'zoomIn')  { schedZoomIdx += 1; SFX.click(); applySchedZoom(); return; }
+  if (act === 'zoomOut') { schedZoomIdx -= 1; SFX.click(); applySchedZoom(); return; }
+  if (act === 'unpin') {
+    const el = e.target.closest('.sched-block'); if (!el) return;
+    const h = state.habits.find(x => x.id === el.dataset.habit); if (!h) return;
+    h.scheduledMin = null;
+    SFX.click(); toast(`${h.name} back to its usual time`, 'var(--cyan)');
+    save(); renderBlockSchedule(); renderHabits();
+  }
 });
+
+/* ---- Drag a prediction to re-time it. Always live: no mode to switch on. --------------
+   The block moves with the finger but commits in SNAP_MIN steps, and writes the same
+   h.scheduledMin the AI's scheduleBlock proposal uses, so Due Now and the predicted
+   layout immediately agree with what you dragged.                                       */
+let schedDrag = null;
+$('#view-schedule').addEventListener('pointerdown', e => {
+  const el = e.target.closest('.sched-block.draggable');
+  if (!el || e.target.closest('[data-act]')) return;
+  const grid = $('.sched-grid'); if (!grid) return;
+  schedDrag = {
+    el, id: el.dataset.habit, start: parseInt(el.dataset.start, 10),
+    lo: parseInt(grid.dataset.lo, 10) * 60, y0: e.clientY, min: parseInt(el.dataset.start, 10), moved: false,
+  };
+  // Capture keeps the gesture alive if the finger leaves the block; not fatal if refused.
+  try { el.setPointerCapture(e.pointerId); } catch (err) {}
+  el.classList.add('dragging');
+});
+$('#view-schedule').addEventListener('pointermove', e => {
+  if (!schedDrag) return;
+  const dy = e.clientY - schedDrag.y0;
+  if (!schedDrag.moved && Math.abs(dy) < 4) return;      // ignore a plain tap
+  schedDrag.moved = true;
+  const deltaMin = dy / schedPx() * 60;
+  const m = clamp(Math.round((schedDrag.start + deltaMin) / SNAP_MIN) * SNAP_MIN, 0, 1439);
+  schedDrag.min = m;
+  schedDrag.el.style.top = `calc(var(--ph) * ${((m - schedDrag.lo) / 60).toFixed(4)})`;
+  const t = schedDrag.el.querySelector('.sb-time');
+  if (t) t.textContent = fmtMinOfDay(m);
+});
+function endSchedDrag() {
+  if (!schedDrag) return;
+  const d = schedDrag; schedDrag = null;
+  d.el.classList.remove('dragging');
+  if (!d.moved || d.min === d.start) { renderBlockSchedule(); return; }
+  const h = state.habits.find(x => x.id === d.id);
+  if (h) {
+    h.scheduledMin = d.min;
+    SFX.coin(); toast(`${h.name} → ${fmtMinOfDay(d.min)}`, 'var(--cyan)');
+    save(); renderHabits();
+  }
+  renderBlockSchedule();
+}
+$('#view-schedule').addEventListener('pointerup', endSchedDrag);
+$('#view-schedule').addEventListener('pointercancel', endSchedDrag);
 
 $('#view-settings').addEventListener('click', async e => {
   if (e.target.closest('#cloudSignIn')) {
