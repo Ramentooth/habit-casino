@@ -231,6 +231,42 @@
     .more-row:last-child { border-bottom: 0; }
     .more-row:active { background: rgba(176,38,255,0.16); }
     .more-row.active .mr-label { color: var(--cyan); }
+    /* ---------- Block Schedule ---------- */
+    .sched-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .sched-day { text-align: center; line-height: 1.25; }
+    .sched-day b { font-family: 'Orbitron', sans-serif; font-size: 15px; letter-spacing: .5px; color: var(--cyan); }
+    .sched-day .subtle { display: block; font-size: 11px; }
+    .sched-key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--ink-dim); margin-bottom: 10px; }
+    .sched-key i { display: inline-block; width: 16px; height: 9px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+    .sched-key .k-actual { background: var(--cyan); }
+    .sched-key .k-pred   { border: 1px dashed var(--cyan); background: transparent; }
+    .sched-key .k-moment { background: var(--ink-dim); height: 3px; }
+    .sched-grid { position: relative; }
+    .sched-hour {
+      position: absolute; left: 0; right: 0; border-top: 1px solid var(--panel-edge);
+      font-size: 11px; color: var(--ink-dim); padding-left: 2px; pointer-events: none;
+    }
+    /* Blocks live in here, already inset past the hour labels, so their left/width
+       percentages are of the block area alone. */
+    .sched-lanes { position: absolute; left: 56px; right: 6px; top: 0; bottom: 0; }
+    .sched-now { position: absolute; left: 48px; right: 0; border-top: 2px solid var(--pink); box-shadow: 0 0 8px var(--pink); z-index: 3; }
+    .sched-now::before { content: ''; position: absolute; left: 0; top: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--pink); }
+    .sched-block {
+      position: absolute; overflow: hidden; border-radius: 7px; padding: 3px 7px; font-size: 12px;
+      background: color-mix(in srgb, var(--sb) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--sb) 55%, transparent);
+      border-left: 3px solid var(--sb);
+    }
+    .sched-block b { display: block; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sched-block .sb-time { display: block; opacity: .7; font-size: 11px; white-space: nowrap; }
+    /* Predicted = dashed and see-through; actually-done = solid. */
+    .sched-block.predicted { border-style: dashed; border-left-style: dashed; background: transparent; opacity: .8; }
+    .sched-block.moment {
+      background: transparent; border: 0; border-left: 0; padding-left: 0;
+      border-top: 2px dotted color-mix(in srgb, var(--sb) 70%, transparent); border-radius: 0;
+    }
+    .sched-block.moment b { font-size: 11px; opacity: .85; }
+
     /* Red "needs attention" dot — on the More tab and on the row it belongs to. */
     .nav-dot {
       position: absolute; top: 5px; left: 50%; margin-left: 8px;
@@ -1476,7 +1512,7 @@
     <!-- ===================== BLOCK SCHEDULE ===================== -->
     <section class="view" id="view-schedule">
       <div class="section-title neon-purple">📅 Block Schedule</div>
-      <div class="subtle" style="margin-bottom:12px">How your day usually flows — auto-filled from actual play→finish times. Visualization only for now; ask the AI Coach or a check-in conversation to move something and it'll show up here with a 🤖 tag.</div>
+      <div class="subtle" style="margin-bottom:12px">Past days show what you actually did and how long it took. Today adds the AI's prediction for what's still to come, drawn dashed.</div>
       <div style="overflow-x:auto">
         <div id="scheduleBody" style="min-width:260px"></div>
       </div>
@@ -3270,6 +3306,9 @@ function habitMedianActualMinutes(h) {
   if (runs.length < 2) return null;
   return medianMinute(runs.map(e => Math.round(e.actualElapsedSec / 60)));
 }
+// PREDICTED blocks for today — what the AI expects, drawn dashed. Estimated start comes
+// from h.scheduledMin (AI-pinned) or the median completion time of the last 14 runs;
+// estimated length from the median of real play→finish sessions.
 function computeTodayBlocks() {
   const loadout = todayContext();
   return state.habits.filter(h => !h.archived && h.section === 'daily' && isScheduledToday(h)
@@ -3278,32 +3317,130 @@ function computeTodayBlocks() {
       habitId: h.id, name: h.name, emoji: h.emoji, category: h.category,
       startMin: habitBlockMinute(h),
       durMin: habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
-      pinned: Number.isFinite(h.scheduledMin), complete: isComplete(h),
+      pinned: Number.isFinite(h.scheduledMin), complete: isComplete(h), kind: 'predicted',
     }))
     .filter(b => Number.isFinite(b.startMin))
     .sort((a, b) => a.startMin - b.startMin);
 }
-const SCHED_START_HOUR = 5, SCHED_END_HOUR = 23, SCHED_PX_PER_HOUR = 56;
+
+// ACTUAL blocks for any date, reconstructed from the completion log. A timed run gives a
+// real span (finished at `ts`, ran `actualElapsedSec`), so start = end − duration. A habit
+// ticked off without the stopwatch only tells us WHEN it finished, never how long it took —
+// those become zero-length "moment" marks rather than an invented duration.
+function computeActualBlocks(dateStr) {
+  return (state.history || [])
+    .filter(e => e && e.kind === 'habit' && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
+    .map(e => {
+      const d = new Date(e.ts);
+      const endMin = d.getHours() * 60 + d.getMinutes();
+      const timed = Number.isFinite(e.actualElapsedSec) && e.actualElapsedSec >= 60;
+      const durMin = timed ? Math.round(e.actualElapsedSec / 60) : 0;
+      return {
+        name: e.name, emoji: e.emoji, category: e.category,
+        startMin: Math.max(0, endMin - durMin), endMin, durMin,
+        kind: timed ? 'actual' : 'moment',
+      };
+    })
+    .sort((a, b) => a.startMin - b.startMin);
+}
+
+// Blocks that overlap in time get parallel lanes instead of being stacked on top of each
+// other. Without this a busy hour renders as one illegible pile of text.
+// Walk in start order, close a cluster whenever a block starts after everything so far has
+// ended, then within the cluster drop each block into the first lane that's free.
+function layoutLanes(blocks) {
+  let cluster = [], lanes = [], clusterEnd = -1;
+  const closeCluster = () => { cluster.forEach(b => { b.laneCount = lanes.length; }); cluster = []; lanes = []; clusterEnd = -1; };
+  blocks.forEach(b => {
+    const end = b.startMin + Math.max(b.durMin, 12);   // 12min floor so marks still claim a lane
+    if (b.startMin >= clusterEnd && cluster.length) closeCluster();
+    let lane = lanes.findIndex(laneEnd => laneEnd <= b.startMin);
+    if (lane === -1) { lane = lanes.length; lanes.push(end); } else { lanes[lane] = end; }
+    b.lane = lane;
+    cluster.push(b);
+    clusterEnd = Math.max(clusterEnd, end);
+  });
+  if (cluster.length) closeCluster();
+  return blocks;
+}
+
+let schedOffset = 0;        // 0 = today, -1 = yesterday, … (no future: we don't model it)
+const SCHED_PX_PER_HOUR = 56, SCHED_GUTTER = 56;
 function renderBlockSchedule() {
   const box = $('#scheduleBody'); if (!box) return;
-  const blocks = computeTodayBlocks();
-  const totalH = (SCHED_END_HOUR - SCHED_START_HOUR) * SCHED_PX_PER_HOUR;
+  const dateStr = todayStr(schedOffset);
+  const isToday = schedOffset === 0;
+
+  // Today = what already happened (solid) + what's still expected (dashed). A prediction
+  // for something you've already done would just be a duplicate of the real block.
+  const actual = computeActualBlocks(dateStr);
+  const doneNames = new Set(actual.map(b => b.name));
+  const blocks = isToday
+    ? actual.concat(computeTodayBlocks().filter(b => !doneNames.has(b.name)))
+    : actual;
+  blocks.sort((a, b) => a.startMin - b.startMin);
+  layoutLanes(blocks);
+
+  // Frame the grid around the day's real span rather than a fixed 5am–11pm window.
+  let lo = 7, hi = 21;
+  blocks.forEach(b => {
+    lo = Math.min(lo, Math.floor(b.startMin / 60));
+    hi = Math.max(hi, Math.ceil((b.startMin + Math.max(b.durMin, 15)) / 60));
+  });
+  lo = clamp(lo, 0, 23); hi = clamp(hi, lo + 1, 24);
+  const totalH = (hi - lo) * SCHED_PX_PER_HOUR;
+
   const hourLines = [];
-  for (let h = SCHED_START_HOUR; h <= SCHED_END_HOUR; h++) {
-    hourLines.push(`<div style="position:absolute;top:${(h - SCHED_START_HOUR) * SCHED_PX_PER_HOUR}px;left:0;right:0;border-top:1px solid var(--panel-edge);font-size:11px;color:var(--ink-dim);padding-left:4px">${escapeHtml(fmtMinOfDay(h * 60))}</div>`);
+  for (let h = lo; h <= hi; h++) {
+    hourLines.push(`<div class="sched-hour" style="top:${(h - lo) * SCHED_PX_PER_HOUR}px">${escapeHtml(fmtMinOfDay(h * 60))}</div>`);
   }
-  const anyPinned = blocks.some(b => b.pinned);
+  const nowLine = isToday && nowMinutes() >= lo * 60 && nowMinutes() <= hi * 60
+    ? `<div class="sched-now" style="top:${(nowMinutes() - lo * 60) / 60 * SCHED_PX_PER_HOUR}px"></div>` : '';
+
   const blockEls = blocks.map(b => {
-    const top = clamp((b.startMin - SCHED_START_HOUR * 60) / 60 * SCHED_PX_PER_HOUR, 0, totalH);
-    const height = Math.max(20, b.durMin / 60 * SCHED_PX_PER_HOUR);
+    const top = clamp((b.startMin - lo * 60) / 60 * SCHED_PX_PER_HOUR, 0, totalH);
+    const height = b.kind === 'moment' ? 22 : Math.max(24, b.durMin / 60 * SCHED_PX_PER_HOUR);
     const col = categoryColor(b.category) || 'var(--cyan)';
-    return `<div class="sched-block" style="position:absolute;left:56px;right:8px;top:${top}px;height:${height}px;background:${col}22;border-left:3px solid ${col};border-radius:6px;padding:3px 8px;overflow:hidden;font-size:12px;${b.complete ? 'opacity:.55' : ''}">
-      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}</b>${b.pinned ? ' 🤖' : ''}<br><span style="opacity:.7">${escapeHtml(fmtMinOfDay(b.startMin))} · ~${escapeHtml(fmtMins(Math.round(b.durMin)))}</span>
+    const lanes = Math.max(1, b.laneCount || 1);
+    const widthPct = 100 / lanes;
+    const timeLabel = b.kind === 'moment'
+      ? `✓ ${fmtMinOfDay(b.startMin)}`
+      : `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay((b.startMin + b.durMin) % 1440)} · ${fmtMins(Math.round(b.durMin))}`;
+    const title = `${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted ' : ''}${timeLabel}`;
+    // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
+    // these percentages are of the block area alone and the gutter never enters the math.
+    return `<div class="sched-block ${b.kind}" title="${escapeHtml(title)}"
+      style="top:${top}px;height:${height}px;left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
+      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${b.pinned ? ' 🤖' : ''}</b>
+      ${height >= 40 && lanes <= 2 ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
     </div>`;
   }).join('');
-  box.innerHTML = `<div style="position:relative;height:${totalH}px;margin-left:0">${hourLines.join('')}${blockEls}</div>` +
-    (anyPinned ? `<div class="hint" style="margin-top:6px">🤖 = the AI adjusted this habit's usual time</div>` : '') +
-    (!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>No daily habits scheduled for today's loadout yet.</div>` : '');
+
+  const label = isToday ? 'Today' : (schedOffset === -1 ? 'Yesterday' : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }));
+  const anyPinned = blocks.some(b => b.pinned);
+  const emptyMsg = isToday
+    ? 'Nothing logged or predicted for today yet.'
+    : 'Nothing was logged on this day.';
+
+  box.innerHTML = `
+    <div class="sched-nav">
+      <button class="btn ghost sm" data-act="schedPrev">‹</button>
+      <div class="sched-day">
+        <b>${escapeHtml(label)}</b>
+        <span class="subtle">${escapeHtml(new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</span>
+      </div>
+      <button class="btn ghost sm" data-act="schedNext"${isToday ? ' disabled' : ''}>›</button>
+    </div>
+    <div class="sched-key">
+      <span><i class="k-actual"></i> actually done</span>
+      ${isToday ? `<span><i class="k-pred"></i> predicted</span>` : ''}
+      <span><i class="k-moment"></i> no timer</span>
+    </div>
+    <div class="sched-grid" style="height:${totalH}px">${hourLines.join('')}${nowLine}
+      <div class="sched-lanes">${blockEls}</div>
+    </div>
+    ${anyPinned ? `<div class="hint" style="margin-top:6px">🤖 = the AI adjusted this habit's usual time</div>` : ''}
+    ${!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>${escapeHtml(emptyMsg)}</div>` : ''}`;
 }
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
 // Once the usual time passes it drops back into the regular list — no "overdue" flag.
@@ -7735,6 +7872,13 @@ $('#authOverlay').addEventListener('click', async e => {
     try { await window.HCCloud.signInEmail(email, pass, authMode === 'up'); }
     catch (err) { authFail(err.message || 'Sign-in failed'); }
   }
+});
+
+// Block Schedule day stepper. Forward stops at today — nothing models a future day.
+$('#view-schedule').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'schedPrev') { schedOffset -= 1; SFX.click(); renderBlockSchedule(); return; }
+  if (act === 'schedNext' && schedOffset < 0) { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
 });
 
 $('#view-settings').addEventListener('click', async e => {
