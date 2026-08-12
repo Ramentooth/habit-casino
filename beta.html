@@ -1316,17 +1316,6 @@
       padding: 3px 10px; border-radius: 999px; color: var(--cyan);
       border: 1px solid rgba(0,240,255,.5); background: rgba(0,240,255,.1);
     }
-    .mode-tag {
-      display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 800; padding: 1px 7px;
-      border-radius: 999px; color: var(--cyan); border: 1px solid rgba(0,240,255,.45);
-      background: rgba(0,240,255,.1); white-space: nowrap; vertical-align: middle;
-    }
-    .hrow.moded { border-color: rgba(0,240,255,.5); }
-    .hedit-modes { flex-direction: column; align-items: stretch; gap: 2px; }
-    .modes-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
-    .mode-empty { font-size: 12px; }
-    .mode-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 0; border-top: 1px dashed var(--panel-edge); }
-    .mode-row .mode-name { flex: 1 1 120px; font-weight: 700; font-size: 13px; }
     .plan-week-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .plan-week-nav .wk { flex: 1 1 auto; text-align: center; font-weight: 800; font-size: 13px; }
     .plan-day { border: 1px solid var(--panel-edge); border-radius: 12px; padding: 8px 10px; margin-bottom: 8px; background: rgba(0,0,0,0.22); }
@@ -1544,6 +1533,66 @@
     .sched-now { border-top-color: var(--gs-edge-hi) !important; box-shadow: none !important; }
     .sched-now::before { background: var(--gs-edge-hi) !important; }
 
+    /* --- Editor sheet ------------------------------------------------------ */
+    .edit-overlay {
+      position: fixed; inset: 0; z-index: 78; display: none;
+      background: rgba(0,0,0,.72); opacity: 0; transition: opacity .22s ease;
+    }
+    .edit-overlay.show { display: block; opacity: 1; }
+    .edit-sheet {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      max-height: 88vh; overflow-y: auto;
+      padding: 8px max(14px, env(safe-area-inset-left)) calc(18px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+      background: var(--gs-panel); border-top: 1px solid var(--gs-edge);
+      border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.65);
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.22,.9,.3,1);
+    }
+    .edit-overlay.show .edit-sheet { transform: translateY(0); }
+    .edit-grab { width: 40px; height: 4px; border-radius: 2px; background: var(--gs-edge-hi); margin: 4px auto 10px; }
+    .edit-sheet .pass-close { top: 10px; right: 10px; }
+    /* The editor cards lose their own frame in here — the sheet is the frame. */
+    .edit-sheet .hedit, .edit-sheet .prize-edit {
+      background: transparent !important; border: 0 !important; padding: 0; margin: 0;
+    }
+    .edit-more-btn { margin-left: auto; }
+    .hedit-more { display: flex; flex-direction: column; gap: 10px; }
+
+    /* --- Schedule: + button and its picker sheet --------------------------- */
+    .sched-fab {
+      position: fixed; z-index: 44; right: 14px; bottom: calc(80px + env(safe-area-inset-bottom));
+      width: 54px; height: 54px; border-radius: 50%; cursor: pointer;
+      display: grid; place-items: center; font-size: 28px; line-height: 1;
+      background: var(--gs-lite); color: var(--gs-on-lite);
+      border: 1px solid transparent; box-shadow: 0 8px 18px rgba(0,0,0,.5);
+    }
+    .sched-fab:active { transform: scale(.94); }
+    body.more-open .sched-fab { opacity: 0; pointer-events: none; }
+    .pick-sheet {
+      position: fixed; left: 0; right: 0; z-index: 46;
+      bottom: calc(66px + env(safe-area-inset-bottom));
+      max-height: 60vh; overflow-y: auto;
+      background: var(--gs-panel); border-top: 1px solid var(--gs-edge);
+      box-shadow: 0 -10px 34px rgba(0,0,0,.6);
+      transform: translateY(102%); opacity: 0; pointer-events: none;
+      transition: transform .26s cubic-bezier(.22,.9,.3,1), opacity .18s ease;
+    }
+    .pick-sheet.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .pick-head {
+      position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: var(--gs-panel); border-bottom: 1px solid var(--gs-edge);
+      font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .5px;
+    }
+    .pick-head .pass-close { position: static; }
+    .pick-sec { padding: 10px 16px 4px; font-size: 11px; letter-spacing: 1px; color: var(--ink-dim); text-transform: uppercase; }
+    .pick-row {
+      display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; text-align: left;
+      padding: 12px 16px; background: transparent; border: 0; border-bottom: 1px solid var(--gs-edge); color: var(--ink);
+    }
+    .pick-row:active { background: rgba(255,255,255,.06); }
+    .pick-e { font-size: 22px; line-height: 1; }
+    .pick-n { flex: 1 1 auto; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     /* --- overlays --------------------------------------------------------- */
     .pass-overlay, .auth-overlay, .wild-overlay, .more-scrim { background: rgba(0,0,0,.76); }
     .pass-modal, .auth-card, .wild-modal { background: var(--gs-panel); border-color: var(--gs-edge); }
@@ -1572,6 +1621,15 @@
     <div class="spacer"></div>
     <button class="iconbtn" id="soundBtn" title="Toggle sound">🔊</button>
   </header>
+
+  <!-- Editor sheet: habits, quests and rewards all edit here, sliding up from the bottom. -->
+  <div class="edit-overlay" id="editOverlay" aria-hidden="true">
+    <div class="edit-sheet" id="editSheet" role="dialog" aria-modal="true">
+      <div class="edit-grab"></div>
+      <button class="pass-close" data-act="closeEditor" title="Close">✕</button>
+      <div id="editSheetBody"></div>
+    </div>
+  </div>
 
   <div class="more-scrim" id="moreScrim"></div>
 
@@ -1833,6 +1891,15 @@
       <!-- No inner scroll container: blocks are percentage-width and fit any screen, so a
            nested overflow-x scroller only fought the page's own vertical scroll on mobile. -->
       <div id="scheduleBody"></div>
+      <!-- Add a habit or quest to the day being viewed. Only on this tab. -->
+      <button class="sched-fab" id="schedAddBtn" title="Add to this day" aria-label="Add to this day">＋</button>
+      <div class="pick-sheet" id="schedPickSheet" aria-hidden="true">
+        <div class="pick-head">
+          <span id="schedPickTitle">Add to today</span>
+          <button class="pass-close" data-act="schedPickClose" title="Close">✕</button>
+        </div>
+        <div id="schedPickBody"></div>
+      </div>
     </section>
 
     <!-- ===================== SETTINGS ===================== -->
@@ -2266,6 +2333,10 @@ function defaultState() {
     // history entry as a completion without filtering by kind, so mixing claims in would
     // silently inflate the weekly count, the rhythm heatmap and the intensity mix.
     rewardLog: [],        // { ts, name, emoji, tier, minutes, qty }
+    // Per-DATE schedule plans. h.scheduledMin is a single time that applies to every day,
+    // so it can't express "Thursday at 3pm, just this once" and can't hold a quest at all.
+    // These entries are what the Schedule's drag and its + button write to.
+    plannedBlocks: {},    // 'YYYY-MM-DD' → [{ id, kind:'habit'|'task', refId, startMin, durMin }]
     // Reflection system: quick tap-chip reasons for misses, plus deeper end-of-day
     // conversation transcripts. Both land in `reflections`; `reasonChips` grows over
     // time the same way `contexts` does (starter set + AI can propose new ones).
@@ -2520,6 +2591,13 @@ function load(raw) {
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
         createdAt: Number.isFinite(t.createdAt) ? t.createdAt : null,
         createdBy: t.createdBy === 'ai' ? 'ai' : undefined,
+        // Same running-stopwatch shape habits use, so a quest can be timed and land on
+        // the Block Schedule as a real span instead of a zero-length mark.
+        timer: (t.timer && Number.isFinite(t.timer.startedAt))
+          ? { startedAt: t.timer.startedAt,
+              pausedAt: Number.isFinite(t.timer.pausedAt) ? t.timer.pausedAt : null,
+              pausedTotalSec: t.timer.pausedTotalSec || 0, pauseCount: t.timer.pauseCount || 0 }
+          : null,
       };
     });
     merged.archivedOneoffs = Array.isArray(parsed.archivedOneoffs) ? parsed.archivedOneoffs : [];
@@ -2541,6 +2619,19 @@ function load(raw) {
       .map(e => ({ ts: e.ts, name: String(e.name || ''), emoji: String(e.emoji || '🎁'),
                    tier: e.tier, minutes: clamp(parseInt(e.minutes) || 0, 0, 24 * 60),
                    qty: clamp(parseInt(e.qty) || 1, 1, 999) }));
+    // Per-date schedule plans. Validate the shape here rather than trusting it at every
+    // lookup; a malformed row would otherwise surface as a NaN-positioned block.
+    merged.plannedBlocks = {};
+    const rawPlanned = (parsed.plannedBlocks && typeof parsed.plannedBlocks === 'object' && !Array.isArray(parsed.plannedBlocks)) ? parsed.plannedBlocks : {};
+    Object.keys(rawPlanned).forEach(d => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Array.isArray(rawPlanned[d])) return;
+      const rows = rawPlanned[d]
+        .filter(b => b && b.refId && Number.isFinite(parseInt(b.startMin)))
+        .map(b => ({ id: b.id || uid(), kind: b.kind === 'task' ? 'task' : 'habit',
+                     refId: String(b.refId), startMin: clamp(parseInt(b.startMin), 0, 1439),
+                     durMin: clamp(parseInt(b.durMin) || 15, 1, 24 * 60) }));
+      if (rows.length) merged.plannedBlocks[d] = rows;
+    });
     // Chat threads — migrate the old single flat aiChatLog into one thread so no conversation is lost.
     let threads = Array.isArray(parsed.aiChatThreads) ? parsed.aiChatThreads : [];
     if (!threads.length && Array.isArray(parsed.aiChatLog) && parsed.aiChatLog.length) {
@@ -3020,23 +3111,19 @@ function currentLoadout() {
   const list = Array.isArray(state.loadouts) && state.loadouts.length ? state.loadouts : ['Default'];
   return list.includes(state.activeLoadout) ? state.activeLoadout : list[0];
 }
-function activeModeFor(h, dateStr = todayStr()) {
-  const p = dayPlan(dateStr);
-  if (!p || !p.context) return null;
-  return (h.modes || {})[p.context] || null;
-}
-// Today's display values for a habit: the Mode wins over the difficulty level, which
-// wins over the plain habit. Everything user-facing goes through this.
+// Today's display values for a habit: the difficulty level wins over the plain habit.
+// Everything user-facing goes through this.
+// (Context "Modes" used to override these too. That feature is gone — loadouts cover the
+//  same ground without the overlap. `h.modes` is still preserved on save so nothing is
+//  destroyed, but nothing reads it any more.)
 function habitToday(h) {
   const lvls = habitLevels(h);
   const lvl = lvls ? lvls[curLevelIndex(h)] : null;
-  const mode = activeModeFor(h);
-  const ctx = mode ? todayContext() : null;
   return {
-    lvl, mode, context: ctx,
-    name: mode ? mode.name : (lvl ? (lvl.name || h.name) : h.name),
-    reward: mode ? mode.reward : (lvl ? lvl.reward : h.reward),
-    minutes: mode ? (mode.minutes || 0) : (lvl ? (lvl.minutes || 0) : (h.timedMinutes || 0)),
+    lvl, mode: null, context: null,
+    name: lvl ? (lvl.name || h.name) : h.name,
+    reward: lvl ? lvl.reward : h.reward,
+    minutes: lvl ? (lvl.minutes || 0) : (h.timedMinutes || 0),
   };
 }
 function capOf(h) { return h.repeatable ? Math.max(1, h.cap) : 1; }
@@ -3091,7 +3178,6 @@ function dailyLoadoutHabits() { return sectionStats('daily').list; }
 // tap anywhere else (data-act="editHabit") to "blow up" the inline editor.
 function habitCardHTML(h, usualMin) {
   const cap = capOf(h), dc = doneCount(h), complete = dc >= cap, s = currentStreak(h);
-  if (h.id === editingHabitId) return habitEditHTML(h);
   let sub = h.repeatable
     ? `${dc}/${cap} today` + (s > 0 ? ` · 🔥 ${s}` : '')
     : (complete ? 'Done today' : (s > 0 ? `🔥 ${s} day${s > 1 ? 's' : ''} streak` : 'No streak yet'));
@@ -3131,15 +3217,13 @@ function habitCardHTML(h, usualMin) {
   } else {
     rightBits = `<button class="hrow-check" data-act="done" aria-label="Complete">✓</button>`;
   }
-  const modeTag = td.mode
-    ? `<span class="mode-tag" title="${escapeHtml(td.mode.desc || `Adapted for a ${td.context} day`)}">🧭 ${escapeHtml(td.context)} mode</span>` : '';
   return `
-    <div class="hrow ${complete ? 'done' : ''}${td.mode ? ' moded' : ''}" data-id="${h.id}" data-act="editHabit"${rowStyle}>
+    <div class="hrow ${complete ? 'done' : ''}" data-id="${h.id}" data-act="editHabit"${rowStyle}>
       ${hhTag}
       ${chevL}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
       <div class="hrow-main">
-        <div class="hrow-name">${escapeHtml(td.name)}${modeTag}</div>
+        <div class="hrow-name">${escapeHtml(td.name)}</div>
         <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
       </div>
       ${pill}
@@ -3180,65 +3264,46 @@ function habitEditHTML(h) {
         <input class="name-in" data-f="name" value="${escapeHtml(h.name)}" placeholder="Habit name">
       </div>
       <div class="hedit-r">
-        <select class="sect-in" data-f="section" title="Section">
-          <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
-          <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
-        </select>
         <select class="sect-in" data-f="category" title="Identity (drives Pass goals)">
           ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${h.category === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
         </select>
         <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
       </div>
-      <div class="hedit-r">
-        <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
-      </div>
-      <div class="hedit-r">
-        <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
-      </div>
-      <div class="hedit-r">
-        <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
-        <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
-      </div>
-      <div class="hedit-r">
-        <span class="pill" title="Optional estimate only — every habit can be played/finished with ▶ regardless of this number. Used for the &quot;usually ~Xm&quot; hint and the AI's planned-vs-actual comparisons.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
-        <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0)}</span>
-      </div>
       <div class="hedit-r hedit-days">${dayPicker}</div>
-      ${modesEditHTML(h)}
+      ${editMoreOpen ? `
+      <div class="hedit-more">
+        <div class="hedit-r">
+          <select class="sect-in" data-f="section" title="Section">
+            <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
+            <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
+          </select>
+          <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
+        </div>
+        <div class="hedit-r">
+          <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
+        </div>
+        <div class="hedit-r">
+          <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
+          <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
+        </div>
+        <div class="hedit-r">
+          <span class="pill" title="Optional estimate only — every habit can be played/finished with ▶ regardless of this number. Used for the &quot;usually ~Xm&quot; hint and the AI's planned-vs-actual comparisons.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
+          <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0)}</span>
+        </div>
+        <div class="hedit-r">${addTierBtn}</div>
+        <div class="hedit-r">
+          <button class="btn ghost sm" data-act="graduate" title="Archive this habit — it leaves the rotation but keeps its history">🎓 Graduate</button>
+          <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
+        </div>
+      </div>` : ''}
       <div class="hedit-r hedit-actions">
-        ${addTierBtn}
-        <button class="btn ghost sm" data-act="graduate" title="Archive this habit — it leaves the rotation but keeps its history">🎓 Graduate</button>
-        <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
         <button class="btn green sm" data-act="closeEdit">✓ Done</button>
+        <button class="btn ghost sm edit-more-btn" data-act="editMore" aria-expanded="${editMoreOpen}">${editMoreOpen ? '⌃ Less' : '⋯ More'}</button>
       </div>
       ${lvls ? tierDotsHTML(lvls, page) : ''}
     </div>`;
 }
 
-// Context Modes block inside the habit editor: what this habit turns into on each
-// kind of day. Separate axis from the tier ladder above — no interaction between them.
-function modesEditHTML(h) {
-  const modes = h.modes || {};
-  const keys = Object.keys(modes);
-  const rows = keys.map(ctx => {
-    const m = modes[ctx];
-    return `<div class="mode-row">
-      <span class="ctx-badge">🧭 ${escapeHtml(ctx)}</span>
-      <span class="mode-name">${escapeHtml(m.name)}</span>
-      <span class="pill">🪙 ${m.reward}</span>
-      ${m.minutes > 0 ? `<span class="pill">⏱ ${fmtMins(m.minutes)}</span>` : ''}
-      <button class="del" data-act="delMode" data-ctx="${escapeHtml(ctx)}" title="Remove this mode">✕</button>
-    </div>`;
-  }).join('');
-  return `
-    <div class="hedit-r hedit-modes">
-      <div class="modes-head">
-        <span class="subtle">🧭 Modes — what this becomes on a travel / school / odd day</span>
-        <button class="btn ghost sm" data-act="genMode" style="color:var(--purple)">✨ Generate mode</button>
-      </div>
-      ${rows || `<div class="subtle mode-empty">No modes yet — on a planned day this stays on its normal version (and a miss won't break the streak).</div>`}
-    </div>`;
-}
 
 // Editor page for one of the extra tiers: just a title + token payout.
 function tierEditHTML(h, page) {
@@ -3332,6 +3397,7 @@ function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt
 }
 
 function renderHabits() {
+  syncEditorSheet();
   renderTodayContext();
   renderDueSoon();
   renderDailyIdentities();
@@ -3423,10 +3489,24 @@ function oneoffCardHTML(t) {
   const catPill = (t.category && t.category !== 'Unsorted')
     ? `<span class="pill qcat"${cc ? ` style="color:${cc};border-color:${cc}"` : ''}>🏷️ ${escapeHtml(t.category)}</span>` : '';
   const hhTag = happyTagHTML(t.category);
+  // Same ▶ / ✓ pair habits have: ▶ runs an open stopwatch so the quest lands on the
+  // Block Schedule as a real span, ✓ stays available for anything not worth timing.
+  let leftBits;
+  if (t.timer) {
+    const paused = !!t.timer.pausedAt;
+    subBits.unshift(`⏱ <b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`);
+    leftBits = `
+        <button class="hrow-check timer-btn" data-act="pauseOneoffTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
+        <button class="hrow-check timer-btn" data-act="finishOneoffTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
+  } else {
+    leftBits = `
+        <button class="hrow-check timer-btn qcheck" data-act="startOneoffTimer" aria-label="Start" style="color:var(--purple)">▶</button>
+        <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Quick complete">✓</button>`;
+  }
   return `
       <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}" data-act="editOneoff"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
         ${hhTag}
-        <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Complete">✓</button>
+        ${leftBits}
         <span class="hrow-emoji">${escapeHtml(t.emoji || '🎯')}</span>
         <div class="hrow-main">
           <div class="hrow-name">${escapeHtml(t.name)}</div>
@@ -3437,12 +3517,13 @@ function oneoffCardHTML(t) {
       </div>`;
 }
 function renderOneoffs() {
+  syncEditorSheet();
   const grid = $('#oneoffGrid'); if (!grid) return;
   if (!state.oneoffs.length) {
     grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
   } else {
     grid.innerHTML = state.oneoffs.map(t =>
-      t.id === editingOneoffId ? oneoffEditHTML(t) : oneoffCardHTML(t)).join('');
+      oneoffCardHTML(t)).join('');
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
 }
@@ -3473,8 +3554,9 @@ function oneoffEditHTML(t) {
 
 // Complete one iteration of a one-off; when it reaches its target it disappears.
 // viaSpin = true when done from the Quest Wheel result (earns a spin bonus).
-function completeOneoff(id, viaSpin) {
+function completeOneoff(id, viaSpin, timing) {
   const t = state.oneoffs.find(x => x.id === id); if (!t) return;
+  t.timer = null;                                    // a completion always ends any running timer
   t.progress = (t.progress || 0) + 1;
   SFX.coin();
   const hh = happyMult(t.category || 'Unsorted');
@@ -3491,7 +3573,9 @@ function completeOneoff(id, viaSpin) {
             || $('#habitWheelResult');
   addTokens(amt, card);
   const completedAt = Date.now();
-  logCompletion({ ts: completedAt, kind: 'task', id: t.id, name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt, iteration: t.progress, iterations: t.iterations, viaSpin: !!viaSpin });
+  logCompletion({ ts: completedAt, kind: 'task', id: t.id, name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt, iteration: t.progress, iterations: t.iterations, viaSpin: !!viaSpin,
+    actualElapsedSec: (timing && Number.isFinite(timing.actualElapsedSec)) ? timing.actualElapsedSec : undefined,
+    pauseCount: timing ? timing.pauseCount : undefined, totalPausedSec: timing ? timing.totalPausedSec : undefined });
   logEvent('task_completed', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted', level: t.tier || 'medium', iteration: t.progress, iterations: t.iterations, selectionSource: viaSpin ? 'quest_wheel' : 'manual', baseReward: reward, multiplier: hh * spinMult, finalReward: amt, createdAt: t.createdAt || null });
   if (t.progress >= Math.max(1, t.iterations || 1)) {
     state.archivedOneoffs = Array.isArray(state.archivedOneoffs) ? state.archivedOneoffs : [];
@@ -3615,11 +3699,10 @@ function completeHabit(id, timing) {
   addTokens(amt, card);
   // name stays the BASE habit name — history is keyed by it (streak/pattern analysis,
   // Due Soon, the AI's appContext), so a Mode must not fork a habit's history.
-  const expectedMinutes = td.mode ? (td.minutes || null) : (lvl ? (lvl.minutes || null) : (h.timedMinutes || null));
+  const expectedMinutes = lvl ? (lvl.minutes || null) : (h.timedMinutes || null);
   const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null, reward: amt,
     scheduledForDate: today, scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null, expectedDurationMin: expectedMinutes,
     completionMethod: timing ? 'stopwatch' : 'checkmark' };
-  if (td.mode) entry.mode = td.context;
   if (timing) {  // completion came from a play→finish session — keep actual time-on-task for the Stats/AI pattern data
     entry.actualElapsedSec = timing.actualElapsedSec;
     entry.pauseCount = timing.pauseCount;
@@ -3627,11 +3710,11 @@ function completeHabit(id, timing) {
   }
   logCompletion(entry);
   logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null,
-    mode: td.mode ? td.context : null, scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
+    scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
     actualStartTs: timerSnapshot ? timerSnapshot.startedAt : null, actualEndTs: finishedAt,
     actualElapsedSec: timing ? timing.actualElapsedSec : null, pauseCount: timing ? timing.pauseCount : null, totalPausedSec: timing ? timing.totalPausedSec : null,
     completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt });
-  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.key} tier` : ''}${td.mode ? ` · 🧭 ${td.context}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
+  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.key} tier` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
   checkBonuses();
   passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
@@ -3688,14 +3771,41 @@ function finishTimedHabit(id) {
   completeHabit(id, { actualElapsedSec: Math.round(timerElapsedSec(t)),
                       pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0) });
 }
+
+/* ---- Quest stopwatches. Same three verbs as habits, so a one-off can be timed and
+   therefore drawn on the Block Schedule as a real span rather than a moment mark. ---- */
+function startOneoffTimer(id) {
+  const t = state.oneoffs.find(x => x.id === id); if (!t || t.timer) return;
+  t.timer = { startedAt: Date.now(), pausedAt: null, pausedTotalSec: 0, pauseCount: 0 };
+  logEvent('task_started', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted' });
+  SFX.click(); save(); renderOneoffs(); renderHabits();
+}
+function toggleOneoffTimerPause(id) {
+  const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
+  const t = q.timer;
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; logEvent('task_resumed', { entityType: 'task', entityId: q.id, name: q.name }); }
+  else { t.pausedAt = Date.now(); t.pauseCount = (t.pauseCount || 0) + 1; logEvent('task_paused', { entityType: 'task', entityId: q.id, name: q.name, pauseCount: t.pauseCount }); }
+  SFX.click(); save(); renderOneoffs(); renderHabits();
+}
+function finishTimedOneoff(id) {
+  const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
+  const t = q.timer;
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; }
+  completeOneoff(id, false, { actualElapsedSec: Math.round(timerElapsedSec(t)),
+                              pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0) });
+}
 // 1s tick: just refreshes visible elapsed-time readouts in place — no auto-finish,
 // since an open stopwatch has no target to hit. The user always taps Finish themselves.
 setInterval(() => {
-  const running = state.habits.some(h => h.timer);
+  const running = state.habits.some(h => h.timer) || state.oneoffs.some(t => t.timer);
   if (running && $('#view-habits').classList.contains('active')) {
     $$('[data-timer-elapsed]').forEach(el => {
       const h = state.habits.find(x => x.id === el.dataset.timerElapsed);
       if (h && h.timer) el.textContent = fmtTimerSec(timerElapsedSec(h.timer));
+    });
+    $$('[data-timer-elapsed-task]').forEach(el => {
+      const t = state.oneoffs.find(x => x.id === el.dataset.timerElapsedTask);
+      if (t && t.timer) el.textContent = fmtTimerSec(timerElapsedSec(t.timer));
     });
   }
   // Active Winnings countdowns. Expiry has to be checked even when the Winnings tab
@@ -3755,20 +3865,48 @@ function habitMedianActualMinutes(h) {
 // PREDICTED blocks for today — what the AI expects, drawn dashed. Estimated start comes
 // from h.scheduledMin (AI-pinned) or the median completion time of the last 14 runs;
 // estimated length from the median of real play→finish sessions.
-function computeTodayBlocks() {
+// Explicit per-date plans for one day, resolved back to their habit/quest.
+function plannedFor(dateStr) {
+  return ((state.plannedBlocks || {})[dateStr] || []).map(b => {
+    const src = b.kind === 'task'
+      ? (state.oneoffs || []).find(t => t.id === b.refId)
+      : (state.habits || []).find(h => h.id === b.refId && !h.archived);
+    if (!src) return null;                       // habit/quest was deleted — drop the plan
+    return {
+      planId: b.id, refId: b.refId, planKind: b.kind,
+      habitId: b.kind === 'habit' ? src.id : null,
+      name: src.name, emoji: src.emoji, category: src.category,
+      startMin: b.startMin, durMin: b.durMin,
+      pinned: true, complete: false, kind: 'predicted', type: b.kind === 'task' ? 'task' : 'habit',
+    };
+  }).filter(Boolean);
+}
+
+// PREDICTED blocks for any date: the day's scheduled habits at their inferred usual time,
+// plus anything explicitly planned for that date. An explicit plan wins — if you dragged
+// a habit to 3pm on Thursday, we don't also draw its usual 8am block.
+function computeDayBlocks(dateStr) {
   const loadout = currentLoadout();
-  return state.habits.filter(h => !h.archived && h.section === 'daily' && isScheduledToday(h)
-      && h.loadout === loadout)
+  const isToday = dateStr === todayStr();
+  const planned = plannedFor(dateStr);
+  const plannedRefs = new Set(planned.map(p => p.refId));
+  const inferred = state.habits.filter(h => !h.archived && h.section === 'daily'
+      && isScheduledOn(h, dateStr) && h.loadout === loadout && !plannedRefs.has(h.id))
     .map(h => ({
-      habitId: h.id, name: h.name, emoji: h.emoji, category: h.category,
+      habitId: h.id, refId: h.id, planKind: 'habit',
+      name: h.name, emoji: h.emoji, category: h.category,
       startMin: habitBlockMinute(h),
       durMin: habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
-      habitId: h.id, pinned: Number.isFinite(h.scheduledMin),
-      complete: isComplete(h), kind: 'predicted', type: 'habit',
+      pinned: Number.isFinite(h.scheduledMin),
+      // "Complete" only means anything for today; a future day hasn't happened yet.
+      complete: isToday ? isComplete(h) : false,
+      kind: 'predicted', type: 'habit',
     }))
-    .filter(b => Number.isFinite(b.startMin))
-    .sort((a, b) => a.startMin - b.startMin);
+    .filter(b => Number.isFinite(b.startMin));
+  return inferred.concat(planned).sort((a, b) => a.startMin - b.startMin);
 }
+// Back-compat alias — Due Soon and the AI context still ask for "today".
+function computeTodayBlocks() { return computeDayBlocks(todayStr()); }
 
 // ACTUAL blocks for any date, reconstructed from the completion log. A timed run gives a
 // real span (finished at `ts`, ran `actualElapsedSec`), so start = end − duration. A habit
@@ -3776,7 +3914,7 @@ function computeTodayBlocks() {
 // those become zero-length "moment" marks rather than an invented duration.
 function computeActualBlocks(dateStr) {
   return (state.history || [])
-    .filter(e => e && e.kind === 'habit' && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
+    .filter(e => e && (e.kind === 'habit' || e.kind === 'task') && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
     .map(e => {
       const d = new Date(e.ts);
       const endMin = d.getHours() * 60 + d.getMinutes();
@@ -3785,7 +3923,7 @@ function computeActualBlocks(dateStr) {
       return {
         name: e.name, emoji: e.emoji, category: e.category,
         startMin: Math.max(0, endMin - durMin), endMin, durMin,
-        kind: timed ? 'actual' : 'moment', type: 'habit',
+        kind: timed ? 'actual' : 'moment', type: e.kind === 'task' ? 'task' : 'habit',
       };
     })
     .sort((a, b) => a.startMin - b.startMin);
@@ -3831,7 +3969,7 @@ function layoutLanes(blocks) {
   return blocks;
 }
 
-let schedOffset = 0;        // 0 = today, -1 = yesterday, … (no future: we don't model it)
+let schedOffset = 0;        // 0 = today, negative = past, positive = planning ahead
 // Zoom: pixels per hour. Higher zoom also splits the hour into finer gridlines so short
 // gaps between habits become visible instead of collapsing into one band.
 // Small steps so each press is a glide rather than a jump.
@@ -3858,11 +3996,14 @@ function renderBlockSchedule() {
 
   // Today = what already happened (solid) + what's still expected (dashed). A prediction
   // for something you've already done would just be a duplicate of the real block.
-  const actual = computeActualBlocks(dateStr);
-  const rewards = computeRewardBlocks(dateStr);   // when you cashed in, alongside the work
+  const isFuture = schedOffset > 0;
+  // Future days have no history — they're pure plan. Past days are pure record. Today is
+  // both: what already happened, plus what's still expected.
+  const actual = isFuture ? [] : computeActualBlocks(dateStr);
+  const rewards = isFuture ? [] : computeRewardBlocks(dateStr);
   const doneNames = new Set(actual.map(b => b.name));
-  const blocks = (isToday
-    ? actual.concat(computeTodayBlocks().filter(b => !doneNames.has(b.name)))
+  const blocks = (isToday || isFuture
+    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
     : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
   layoutLanes(blocks);
@@ -3909,14 +4050,14 @@ function renderBlockSchedule() {
     const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted (drag to move)' : ''}${timeLabel}`;
     // Predictions are always draggable — no mode to enter. Anything that already happened
     // stays put: it's a record, not a plan, so moving it would be rewriting history.
-    const drag = b.kind === 'predicted' && b.habitId;
+    const drag = b.kind === 'predicted' && b.refId;
     const pin = b.pinned ? ' 📌' : '';
     // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
     // these percentages are of the block area alone and the gutter never enters the math.
     // Tall enough to show a time? Show it — during a drag it doubles as the readout.
     const showTime = b.kind !== 'moment' && (b.durMin / 60 * 96 >= 40) && lanes <= 2;
     return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}"
-      title="${escapeHtml(title)}"${drag ? ` data-habit="${b.habitId}" data-start="${b.startMin}"` : ''}
+      title="${escapeHtml(title)}"${drag ? ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"` : ''}
       style="top:${top};height:${height};left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
       <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
       ${showTime || drag ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
@@ -3924,10 +4065,13 @@ function renderBlockSchedule() {
     </div>`;
   }).join('');
 
-  const label = isToday ? 'Today' : (schedOffset === -1 ? 'Yesterday' : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }));
+  const label = isToday ? 'Today'
+    : schedOffset === -1 ? 'Yesterday'
+    : schedOffset === 1 ? 'Tomorrow'
+    : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
   const anyPinned = blocks.some(b => b.pinned);
-  const emptyMsg = isToday
-    ? 'Nothing logged or predicted for today yet.'
+  const emptyMsg = isFuture ? 'Nothing planned for this day yet — tap + to add something.'
+    : isToday ? 'Nothing logged or predicted for today yet.'
     : 'Nothing was logged on this day.';
 
   box.innerHTML = `
@@ -3937,7 +4081,7 @@ function renderBlockSchedule() {
         <b>${escapeHtml(label)}</b>
         <span class="subtle">${escapeHtml(new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</span>
       </div>
-      <button class="btn ghost sm" data-act="schedNext"${isToday ? ' disabled' : ''}>›</button>
+      <button class="btn ghost sm" data-act="schedNext">›</button>
     </div>
     <div class="sched-key">
       <span><i class="k-actual"></i> actually done</span>
@@ -3993,7 +4137,7 @@ function renderDueSoon() {
   let rows = '', sub = '';
   if (due.length) {
     sub = 'Coming up in your usual routine — knock these out first.';
-    rows = due.map(x => x.h.id === editingHabitId ? '' : habitCardHTML(x.h, x.m)).join('');
+    rows = due.map(x => habitCardHTML(x.h, x.m)).join('');
   } else {
     const active = new Set(activeHappyHours().map(a => a.cat));
     const hh = active.size
@@ -4001,7 +4145,7 @@ function renderDueSoon() {
       : [];
     if (hh.length) {
       sub = 'Happy hour is live — do these now to grab the token bonus.';
-      rows = hh.map(h => h.id === editingHabitId ? '' : habitCardHTML(h)).join('');
+      rows = hh.map(h => habitCardHTML(h)).join('');
     } else {
       // Last fallback: nothing is due and nothing is boosted (or the habits are simply
       // finished), so the board would sit empty — fill it with a couple of one-off
@@ -5207,6 +5351,7 @@ function renderActiveWins() {
 }
 
 function renderPrizes() {
+  syncEditorSheet();
   renderActiveWins();
   const inv = $('#invGrid');
   const lock = $('#redeemLock'), win = redeemWindow();
@@ -5233,7 +5378,6 @@ function renderPrizes() {
       </div>
       <div class="prize-cards">
         ${items.map(r => {
-          if (r.id === editingRewardId && !r.special) return rewardEditCardHTML(r);
           if (r.id === claimOpenId && !r.special) return claimCardHTML(r);
           return prizeTileHTML(r, ti);
         }).join('')}
@@ -6062,14 +6206,10 @@ function appContext() {
 
   // --- Week Planner: kinds of day + the habit Modes that adapt to them ---
   const plannedDays = Object.keys(state.dayPlans || {}).filter(d => daysBetween(todayStr(), d) >= 0).sort();
-  const modeLines = active.filter(h => Object.keys(h.modes || {}).length)
-    .map(h => `  - "${h.name}": ${Object.keys(h.modes).map(c => `${c} → "${h.modes[c].name}" (+${h.modes[c].reward}🪙)`).join(', ')}`);
-  if ((state.contexts || []).length || plannedDays.length || modeLines.length) {
+  if ((state.contexts || []).length || plannedDays.length) {
     L.push('', 'DAY CONTEXTS (Week Planner — misses on a planned day never break a streak):');
     L.push(`  - Known kinds of day: ${(state.contexts || []).join(', ') || 'none yet'}`);
     if (plannedDays.length) L.push(`  - Planned ahead: ${plannedDays.slice(0, 10).map(d => `${d}${(state.dayPlans[d].context ? ` [${state.dayPlans[d].context}]` : ' [unclassified]')}`).join(', ')}`);
-    if (modeLines.length) L.push('  - Habit modes already saved:', ...modeLines);
-    L.push('  - Modes and day plans are managed in the Week Planner, NOT from chat — mention it if the user asks, but do not propose modes here.');
   }
 
   // --- One-off quests ---
@@ -6370,13 +6510,6 @@ function describeProposal(p) {
     return { kind: 'Day context', title: `📅 ${fmtPlanDate(p.date)} → ${p.context}`,
              detail: (isNew ? 'new context · ' : '') + (p.raw || (dayPlan(p.date) || {}).raw || 'Misses this day won\'t break your streak.') };
   }
-  if (t === 'habitMode') {
-    const h = state.habits.find(x => x.id === p.habitId);
-    const bits = [`+${clamp(parseInt(p.reward) || 0, 0, 999)} 🪙`];
-    if (parseInt(p.minutes) > 0) bits.push(`⏱ ${fmtMins(clamp(parseInt(p.minutes), 0, 999))}`);
-    if (p.desc) bits.push(p.desc);
-    return { kind: 'Habit mode', title: h ? `🧭 ${h.name} [${p.context}] → "${p.name}"` : '(habit gone)', detail: bits.join(' · ') };
-  }
   if (t === 'addTier') {
     const h = state.habits.find(x => x.id === p.habitId);
     const easier = p.side !== 'harder';
@@ -6544,18 +6677,6 @@ function applyProposal(p) {
   }
   // --- A context Mode on one habit. Saved per habit per context and reused
   // automatically the next time that context comes around — never regenerated. ---
-  if (t === 'habitMode') {
-    const h = state.habits.find(x => x.id === p.habitId); if (!h) return false;
-    const ctx = ensureContext(p.context); if (!ctx) return false;
-    const name = String(p.name || h.name).trim(); if (!name) return false;
-    h.modes = (h.modes && typeof h.modes === 'object') ? h.modes : {};
-    h.modes[ctx] = { name, reward: clamp(parseInt(p.reward) || h.reward, 0, 999),
-                     minutes: clamp(parseInt(p.minutes) || 0, 0, 999),
-                     desc: String(p.desc || ''), createdBy: 'ai' };
-    state.aiMeta.modes = Array.isArray(state.aiMeta.modes) ? state.aiMeta.modes : [];
-    if (!state.aiMeta.modes.some(m => m.habitId === h.id && m.context === ctx)) state.aiMeta.modes.push({ habitId: h.id, context: ctx });
-    return true;
-  }
   // --- Create a difficulty tier (tierChange can only SWITCH between existing ones).
   // Same ladder math as the manual ➕ Add tier buttons in the habit editor. ---
   if (t === 'addTier') {
@@ -6717,15 +6838,8 @@ function clearAIData() {
   const nQ = state.oneoffs.filter(isAiQuest).length;
   const nR = state.rewards.filter(isAiReward).length;
   const nC = (meta.categories || []).filter(c => (state.categories || []).includes(c)).length;
-  // AI-written context Modes on habits the user keeps — the habit stays, the mode goes.
-  const aiModes = (meta.modes || []).filter(m => {
-    const h = state.habits.find(x => x.id === m.habitId);
-    return h && !isAiHabit(h) && (h.modes || {})[m.context] && h.modes[m.context].createdBy === 'ai';
-  });
-  const nM = aiModes.length;
-  if (!nH && !nQ && !nR && !nC && !nM) { toast('No AI-created items to clear 🤖', 'var(--cyan)'); return; }
-  if (!confirm(`Delete ${nH} AI habit(s), ${nQ} quest(s), ${nR} reward(s), ${nC} categorie(s), ${nM} habit mode(s)?\nYour own items, stats/history, day plans and the chat log are untouched.`)) return;
-  aiModes.forEach(m => { const h = state.habits.find(x => x.id === m.habitId); if (h && h.modes) delete h.modes[m.context]; });
+  if (!nH && !nQ && !nR && !nC) { toast('No AI-created items to clear 🤖', 'var(--cyan)'); return; }
+  if (!confirm(`Delete ${nH} AI habit(s), ${nQ} quest(s), ${nR} reward(s), ${nC} categorie(s)?\nYour own items, stats/history, day plans and the chat log are untouched.`)) return;
   state.habits = state.habits.filter(h => !isAiHabit(h));
   state.oneoffs = state.oneoffs.filter(t => !isAiQuest(t));
   state.rewards = state.rewards.filter(r => !isAiReward(r));
@@ -6757,7 +6871,7 @@ let planMessage = '';      // the AI's summary line for this batch
 let planError = '';
 let planBusy = false;
 let planScope = 'week';    // 'week' | 'single'
-let planTarget = null;     // single-habit flow: { habitId, kind: 'mode'|'tier', context, side }
+let planTarget = null;     // single-habit flow: { habitId, kind: 'tier', side }
 
 const PLAN_DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const PLAN_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -6851,30 +6965,19 @@ function planWeekHTML() {
     </button>
     <div class="hint">The AI reads each day, names the kind of day it is, and adapts habits that don't fit it. Nothing changes until you tap Apply.</div>`;
 }
+// Only the difficulty-tier flow remains here; context Modes were removed in favour of
+// Loadouts, which cover "what does this kind of day look like" without the overlap.
 function planSingleHTML() {
   const h = state.habits.find(x => x.id === planTarget.habitId);
   if (!h) return `<div class="subtle">That habit is gone.</div>`;
-  if (planTarget.kind === 'tier') {
-    return `
-      <div class="subtle" style="margin-bottom:10px">Add a difficulty tier to <b>${escapeHtml(h.name)}</b> — the AI writes the name, payout and duration.</div>
-      <div class="chip-row">
-        <button class="chip ${planTarget.side === 'easier' ? 'cat-chip sel' : ''}" data-planside="easier">⬇ Easier</button>
-        <button class="chip ${planTarget.side === 'harder' ? 'cat-chip sel' : ''}" data-planside="harder">⬆ Harder</button>
-      </div>
-      <button class="btn purple" data-act="planGenerate" ${planBusy ? 'disabled' : ''} style="width:100%;margin-top:12px">
-        ${planBusy ? '🤖 thinking…' : '✨ Generate tier'}
-      </button>`;
-  }
-  const chips = (state.contexts || []).map(c =>
-    `<button class="chip cat-chip ${planTarget.context === c ? 'sel' : ''}" data-planctxpick="${escapeHtml(c)}">🧭 ${escapeHtml(c)}</button>`).join('');
   return `
-    <div class="subtle" style="margin-bottom:10px">What kind of day should <b>${escapeHtml(h.name)}</b> adapt to?</div>
-    <div class="chip-row">${chips || '<span class="subtle">No contexts yet — name one below.</span>'}</div>
-    <div class="hedit-r" style="margin-top:10px">
-      <input class="name-in" id="planCtxInput" value="${escapeHtml(planTarget.context || '')}" placeholder="e.g. Travel, School, Camping">
+    <div class="subtle" style="margin-bottom:10px">Add a difficulty tier to <b>${escapeHtml(h.name)}</b> — the AI writes the name, payout and duration.</div>
+    <div class="chip-row">
+      <button class="chip ${planTarget.side === 'easier' ? 'cat-chip sel' : ''}" data-planside="easier">⬇ Easier</button>
+      <button class="chip ${planTarget.side === 'harder' ? 'cat-chip sel' : ''}" data-planside="harder">⬆ Harder</button>
     </div>
     <button class="btn purple" data-act="planGenerate" ${planBusy ? 'disabled' : ''} style="width:100%;margin-top:12px">
-      ${planBusy ? '🤖 thinking…' : '✨ Generate mode'}
+      ${planBusy ? '🤖 thinking…' : '✨ Generate tier'}
     </button>`;
 }
 function planResultHTML() {
@@ -6903,7 +7006,7 @@ function renderPlanner() {
   // emoji sits OUTSIDE .pass-title — that class clips its text to a gradient, which
   // turns an emoji into a solid blob.
   const [icon, title] = planScope === 'week' ? ['📅', 'PLAN MY WEEK']
-    : (planTarget && planTarget.kind === 'tier' ? ['✨', 'AI-FILL TIER'] : ['🧭', 'GENERATE MODE']);
+    : ['✨', 'AI-FILL TIER'];
   const sub = planScope === 'week'
     ? 'Say what each day looks like. Days you flag never break a streak — miss or not.'
     : 'Saved for next time this kind of day comes around.';
@@ -6921,9 +7024,8 @@ function renderPlanner() {
 function renderTodayContext() {
   const el = $('#todayCtxBadge'); if (!el) return;
   const ctx = todayContext();
-  const moded = ctx ? state.habits.filter(h => !h.archived && (h.modes || {})[ctx]).length : 0;
   el.innerHTML = ctx
-    ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day${moded ? ` · ${moded} adapted` : ''}</span>`
+    ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day</span>`
     : (dayPlan(todayStr()) ? `<span class="ctx-badge">📅 planned day · streak-safe</span>` : '');
   // Loadouts are independent habit sets, selected through the in-app menu.
   const sw = $('#loadoutSwitch');
@@ -6936,7 +7038,7 @@ function renderTodayContext() {
 // What the user actually said this habit means to them (h.why + the onboarding
 // questionnaire's Q&A) — without this, mode/tier generation is just guessing
 // ("practice cello" → "hum it 5 times"), which is exactly the failure mode this
-// was built to fix. Shared by habitModeSummary, tierFillSystemPrompt, and appContext.
+// was built to fix. Shared by habitPlanSummary, tierFillSystemPrompt, and appContext.
 function habitContextLines(h) {
   const bits = [];
   if (h.why) bits.push(`why: "${h.why}"`);
@@ -6945,17 +7047,14 @@ function habitContextLines(h) {
   }
   return bits;
 }
-function habitModeSummary() {
+function habitPlanSummary() {
   const rows = state.habits.filter(h => !h.archived && h.loadout === currentLoadout()).map(h => {
-    const modes = Object.keys(h.modes || {});
     const lvls = habitLevels(h);
     const easiest = lvls ? lvls[0] : null;
-    const bits = [modes.length
-      ? `saved modes: ${modes.map(c => `${c}="${h.modes[c].name}" (+${h.modes[c].reward}🪙${h.modes[c].minutes ? `, ${h.modes[c].minutes}m` : ''})`).join(', ')}`
-      : 'saved modes: none'];
-    if (easiest) bits.push(`easiest difficulty tier: "${easiest.name || h.name}" (+${easiest.reward}🪙${easiest.minutes ? `, ${easiest.minutes}m` : ''})`);
+    const bits = [];
+    if (easiest) bits.push(`easiest difficulty tier: "${easiest.name || h.name}" (+${easiest.reward}\u{1F5D9}${easiest.minutes ? `, ${easiest.minutes}m` : ''})`);
     bits.push(...habitContextLines(h));
-    return `  - id=${h.id} "${h.name}" (+${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m` : ''}) — ${bits.join(' · ')}`;
+    return `  - id=${h.id} "${h.name}" (+${h.reward}\u{1F5D9}${h.timedMinutes ? `, ${h.timedMinutes}m` : ''})${bits.length ? ` \u2014 ${bits.join(' \u00b7 ')}` : ''}`;
   });
   return rows.join('\n') || '  (no active habits)';
 }
@@ -6981,7 +7080,7 @@ The user's habits were built around a normal day at home. They've told you what 
 EXISTING CONTEXT TAXONOMY: ${(state.contexts || []).join(', ') || '(none yet)'}
 
 HABITS AND WHAT THEY ALREADY HAVE:
-${habitModeSummary()}
+${habitPlanSummary()}
 
 ${PLAN_RULES}
 
@@ -6990,27 +7089,8 @@ ${dayInputs.map(d => `  ${d.date} (${fmtPlanDate(d.date)}): ${d.raw}`).join('\n'
 
 OUTPUT FORMAT
 Respond with ONE JSON object, no markdown fences:
-{"message":"short, warm, concrete summary for the user","dayContexts":[{"date":"YYYY-MM-DD","context":"Travel","isNewContext":true}],"modeProposals":[{"type":"habitMode","habitId":"<id from the list above>","context":"Travel","name":"Hum through the piece from memory","reward":3,"minutes":5,"desc":"why this still counts","reason":"why the normal version won't fit"}]}
+{"message":"short, warm, concrete summary for the user","dayContexts":[{"date":"YYYY-MM-DD","context":"Travel","isNewContext":true}]}
 Only include days the user actually described. habitId must be one of the ids listed above. Nothing is applied until the user taps Apply on each card — propose, never claim you changed anything.
-
-APP STATE & OBSERVED PATTERNS:
-${appContext()}`;
-}
-function singleModeSystemPrompt(h, ctx) {
-  return `You are the planning assistant inside HabitCasinoAI, a gamified habit tracker. Philosophy: CONSISTENCY OVER INTENSITY.
-
-The user wants ONE habit adapted to ONE kind of day.
-HABIT: id=${h.id} "${h.name}" (+${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m timed` : ''}, category ${h.category || 'Unsorted'})
-${habitModeSummary().split('\n').filter(l => l.includes(`id=${h.id} `)).join('\n')}
-CONTEXT: "${ctx}"
-EXISTING CONTEXT TAXONOMY: ${(state.contexts || []).join(', ') || '(none yet)'}
-
-${PLAN_RULES}
-
-OUTPUT FORMAT
-Respond with ONE JSON object, no markdown fences:
-{"message":"one or two sentences","modeProposals":[{"type":"habitMode","habitId":"${h.id}","context":"${ctx}","name":"...","reward":${h.reward},"minutes":0,"desc":"why this still counts","reason":"..."}]}
-If no realistic adapted version of this habit exists for that kind of day, return an empty modeProposals array and say so plainly.
 
 APP STATE & OBSERVED PATTERNS:
 ${appContext()}`;
@@ -7058,17 +7138,13 @@ function parsePlannerReply(raw) {
       if (!d || !d.date || !d.context) return;
       push({ type: 'dayContext', date: String(d.date), context: String(d.context), raw: planDrafts[d.date] || '' });
     });
-    (Array.isArray(o.modeProposals) ? o.modeProposals : []).forEach(m => {
-      if (!m || !m.habitId || !m.context || !m.name) return;
-      push({ ...m, type: 'habitMode' });
-    });
     (Array.isArray(o.tierProposals) ? o.tierProposals : []).forEach(t => {
       if (!t || !t.habitId || !t.name) return;
       push({ ...t, type: 'addTier' });
     });
   }
   base.proposals.forEach(p => {   // model answered in the general chat shape — still usable
-    if (p && ['dayContext', 'habitMode', 'addTier'].includes(p.type)) push(p);
+    if (p && ['dayContext', 'addTier'].includes(p.type)) push(p);
   });
   return { message: base.message === '(no message)' ? '' : base.message, proposals: props };
 }
@@ -7097,14 +7173,8 @@ function runPlanGenerate() {
     return;
   }
   const h = state.habits.find(x => x.id === planTarget.habitId); if (!h) return;
-  if (planTarget.kind === 'tier') {
-    runPlannerAI(tierFillSystemPrompt(h, planTarget.side), `Write the new ${planTarget.side} tier.`);
-    return;
-  }
-  const ctx = String(planTarget.context || '').trim();
-  if (!ctx) { toast('Name the kind of day first 🧭', 'var(--pink)'); return; }
-  if ((h.modes || {})[ctx] && !confirm(`"${h.name}" already has a ${ctx} mode ("${h.modes[ctx].name}"). Generate a replacement?`)) return;
-  runPlannerAI(singleModeSystemPrompt(h, ctx), `Adapt "${h.name}" to a ${ctx} day.`);
+  // 'tier' is the only single-habit flow left — context Modes were removed (Loadouts cover it).
+  runPlannerAI(tierFillSystemPrompt(h, planTarget.side), `Write the new ${planTarget.side} tier.`);
 }
 
 /* ---- planner wiring ---- */
@@ -7114,17 +7184,12 @@ $('#planBody').addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   const side = e.target.closest('[data-planside]');
   if (side) { planTarget.side = side.dataset.planside; SFX.click(); renderPlanner(); return; }
-  const pick = e.target.closest('[data-planctxpick]');
-  if (pick) { planTarget.context = pick.dataset.planctxpick; SFX.click(); renderPlanner(); return; }
   if (act === 'planPrevWeek' || act === 'planNextWeek') {
     planWeekOffset = Math.max(0, planWeekOffset + (act === 'planNextWeek' ? 1 : -1));
     planWeekDates().forEach(d => { if (planDrafts[d] == null) { const p = dayPlan(d); planDrafts[d] = p ? p.raw || '' : ''; } });
     SFX.click(); renderPlanner(); return;
   }
   if (act === 'planGenerate') {
-    if (planScope === 'single' && planTarget.kind === 'mode') {   // take whatever's typed, not just the chip
-      const inp = $('#planCtxInput'); if (inp) planTarget.context = inp.value.trim();
-    }
     runPlanGenerate(); return;
   }
   if (act === 'planApplyAll') {
@@ -7151,7 +7216,6 @@ $('#planBody').addEventListener('click', e => {
 $('#planBody').addEventListener('input', e => {
   const d = e.target.dataset.planraw;
   if (d) { planDrafts[d] = e.target.value; return; }
-  if (e.target.id === 'planCtxInput' && planTarget) planTarget.context = e.target.value.trim();
 });
 $('#planBody').addEventListener('change', e => {
   const raw = e.target.dataset.planraw;
@@ -7273,7 +7337,7 @@ function startQuestionnaire(format) {
 
 /* ---- Habit-making context: same overlay, different kind. Fires once, right
    after a brand-new habit is first named and closed out of the editor — this
-   is what feeds habitModeSummary()/tierFillSystemPrompt() with what the habit
+   is what feeds habitPlanSummary()/tierFillSystemPrompt() with what the habit
    actually MEANS (how it's done, what "good" looks like, why), so a Travel
    mode or a new tier is grounded instead of a guess like "cello x5". ---- */
 function openHabitContextPicker(habitId) {
@@ -7355,7 +7419,7 @@ function reflectionSystemPrompt() {
   return `You are the reflection coach inside HabitCasinoAI, a gamified habit tracker. Philosophy: CONSISTENCY OVER INTENSITY.
 
 WHAT YOU'RE DOING
-A handful of habits broke from their established pattern. Your job is almost entirely to ASK, briefly and kindly, what happened — not to lecture, and not to propose changes as your opening move. This is a ${checkinFormat === 'voice' ? 'SPOKEN conversation capped at 2 minutes total — keep every message to one short sentence' : 'short text exchange capped at 4 of your questions total'}. Ask ONE question at a time. Only after the user has actually explained something may you optionally end with ONE proposal (never more than one or two total) if it's clear a habit is genuinely miscalibrated — using the same proposal shapes the main chat coach uses (tierChange, scheduleChange, habitMode, dropHabit, settingsChange, scheduleBlock — the last one pins the habit's Block Schedule time to a new startMin in minutes-since-midnight when the real pattern says it happens at a different time). If nothing needs changing, don't propose anything — understanding what happened is a complete, valid outcome on its own.
+A handful of habits broke from their established pattern. Your job is almost entirely to ASK, briefly and kindly, what happened — not to lecture, and not to propose changes as your opening move. This is a ${checkinFormat === 'voice' ? 'SPOKEN conversation capped at 2 minutes total — keep every message to one short sentence' : 'short text exchange capped at 4 of your questions total'}. Ask ONE question at a time. Only after the user has actually explained something may you optionally end with ONE proposal (never more than one or two total) if it's clear a habit is genuinely miscalibrated — using the same proposal shapes the main chat coach uses (tierChange, scheduleChange, dropHabit, settingsChange, scheduleBlock — the last one pins the habit's Block Schedule time to a new startMin in minutes-since-midnight when the real pattern says it happens at a different time). If nothing needs changing, don't propose anything — understanding what happened is a complete, valid outcome on its own.
 
 TODAY'S ANOMALIES:
 ${lines}
@@ -7957,7 +8021,7 @@ $('#soundBtn').addEventListener('click', () => {
 });
 
 // Habit completion (delegated) — whole compact row is the tap target
-$('#view-habits').addEventListener('click', e => {
+function onHabitsClick(e) {
   if (Date.now() - lastSwipeAt < 400) return;   // a tier swipe just ended — don't treat it as a tap
   const act = e.target.closest('[data-act]')?.dataset.act;
   // Quest rows can now appear in Due Now, but their handlers live on #view-tasks and
@@ -7965,7 +8029,10 @@ $('#view-habits').addEventListener('click', e => {
   const qrow = e.target.closest('.qrow');
   if (qrow) {
     if (act === 'doneOneoff') { completeOneoff(qrow.dataset.id, false); renderHabits(); return; }
-    editingOneoffId = qrow.dataset.id; SFX.click(); switchView('tasks'); renderOneoffs(); return;
+    if (act === 'startOneoffTimer') { startOneoffTimer(qrow.dataset.id); return; }
+    if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(qrow.dataset.id); return; }
+    if (act === 'finishOneoffTimer') { finishTimedOneoff(qrow.dataset.id); renderHabits(); return; }
+    SFX.click(); switchView('tasks'); openEditor('oneoff', qrow.dataset.id); return;
   }
   if (act === 'toggleGroup') {
     const g = e.target.closest('.habit-group'); if (!g) return;
@@ -7990,7 +8057,7 @@ $('#view-habits').addEventListener('click', e => {
     }
     SFX.coin(); save(); renderHabits(); return;
   }
-  if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
+  if (act === 'editHabit') { SFX.click(); openEditor('habit', e.target.closest('.hrow').dataset.id); return; }
   if (act === 'closeEdit') {
     const h = state.habits.find(x => x.id === editingHabitId);
     editingHabitId = null; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits();
@@ -8022,20 +8089,9 @@ $('#view-habits').addEventListener('click', e => {
     return;
   }
   if (act === 'openPlanner') { SFX.click(); openPlanner(); return; }
-  if (act === 'genMode' || act === 'aiTier') {
+  if (act === 'aiTier') {
     const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
-    SFX.click(); openPlannerSingle(id, act === 'genMode' ? 'mode' : 'tier');
-    return;
-  }
-  if (act === 'delMode') {
-    const btn = e.target.closest('[data-act="delMode"]');
-    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
-    const ctx = btn.dataset.ctx;
-    if (h && h.modes && h.modes[ctx]) {
-      delete h.modes[ctx];
-      state.aiMeta.modes = (state.aiMeta.modes || []).filter(m => !(m.habitId === h.id && m.context === ctx));
-      SFX.click(); save(); renderHabits();
-    }
+    SFX.click(); openPlannerSingle(id, 'tier');
     return;
   }
   if (act === 'addTier') { addTierChoiceOpen = true; SFX.click(); renderHabits(); return; }
@@ -8099,7 +8155,7 @@ $('#view-habits').addEventListener('click', e => {
       dayBtn.classList.toggle('active', h.days[i]); save();
     }
   }
-});
+}
 // Inline editor field edits (text/number on input, select/checkbox on change)
 function onInlineHabitField(e) {
   const tf = e.target.dataset.tf;   // fields on an extra-tier page
@@ -8141,8 +8197,86 @@ function onInlineHabitField(e) {
   }
   save();
 }
+$('#view-habits').addEventListener('click', onHabitsClick);
+$('#view-habits').addEventListener('pointerdown', onHabitPointerDown);
+$('#view-habits').addEventListener('pointerup', onHabitPointerUp);
 $('#view-habits').addEventListener('input', onInlineHabitField);
 $('#view-habits').addEventListener('change', onInlineHabitField);
+
+/* =================================================================
+   EDITOR SHEET — habits, quests and rewards all edit in one sheet that
+   slides up from the bottom instead of unfolding inside the list.
+
+   The editors' markup functions are unchanged; only their host moved. That
+   move breaks every delegated handler that was bound to #view-habits /
+   #view-tasks / #prizePool, so the same named handlers are re-bound here and
+   dispatched by whichever editor is open. Do not duplicate their logic.
+   ================================================================= */
+let editMoreOpen = false;   // "More" disclosure inside the habit editor
+
+function openEditor(kind, id) {
+  editingHabitId = editingOneoffId = editingRewardId = null;
+  if (kind === 'habit') editingHabitId = id;
+  else if (kind === 'oneoff') editingOneoffId = id;
+  else editingRewardId = id;
+  editMoreOpen = false;                       // a freshly opened editor starts compact
+  editTierPage = null; addTierChoiceOpen = false;
+  renderEditSheet();
+  $('#editOverlay').classList.add('show');
+  setTimeout(() => $('#editSheet .name-in')?.focus(), 260);   // after the slide settles
+}
+function closeEditor() {
+  $('#editOverlay').classList.remove('show');
+  editingHabitId = editingOneoffId = editingRewardId = null;
+  editTierPage = null; addTierChoiceOpen = false; editMoreOpen = false;
+  renderHabits(); renderOneoffs(); renderPrizes();
+}
+function editorIsOpen() { return !!(editingHabitId || editingOneoffId || editingRewardId); }
+// Called from every list re-render. The existing Done/Delete handlers just null the
+// editing id and re-render — this is what turns that into the sheet actually closing,
+// so none of them needed to learn about the overlay.
+function syncEditorSheet() {
+  const ov = $('#editOverlay'); if (!ov) return;
+  if (editorIsOpen()) renderEditSheet();
+  else ov.classList.remove('show');
+}
+
+function renderEditSheet() {
+  const body = $('#editSheetBody'); if (!body) return;
+  let html = '';
+  if (editingHabitId) {
+    const h = state.habits.find(x => x.id === editingHabitId);
+    html = h ? habitEditHTML(h) : '';
+  } else if (editingOneoffId) {
+    const t = state.oneoffs.find(x => x.id === editingOneoffId);
+    html = t ? oneoffEditHTML(t) : '';
+  } else if (editingRewardId) {
+    const r = state.rewards.find(x => x.id === editingRewardId);
+    html = r ? rewardEditCardHTML(r) : '';
+  }
+  if (!html) { closeEditor(); return; }
+  body.innerHTML = html;
+}
+
+// One dispatch point: route to whichever container handler owns the open editor, so a
+// quest editor never runs the habit branches (or reads a .qrow that isn't there).
+$('#editOverlay').addEventListener('click', e => {
+  if (e.target.id === 'editOverlay' || e.target.closest('[data-act="closeEditor"]')) { SFX.click(); closeEditor(); return; }
+  if (e.target.closest('[data-act="editMore"]')) { editMoreOpen = !editMoreOpen; SFX.click(); renderEditSheet(); return; }
+  if (editingHabitId) onHabitsClick(e);
+  else if (editingOneoffId) onTasksClick(e);
+  else if (editingRewardId) onPrizePoolClick(e);
+});
+const editSheetField = e => {
+  if (editingHabitId) onInlineHabitField(e);
+  else if (editingOneoffId) onInlineOneoffField(e);
+  else if (editingRewardId) onRewardInlineField(e);
+};
+$('#editOverlay').addEventListener('input', editSheetField);
+$('#editOverlay').addEventListener('change', editSheetField);
+$('#editOverlay').addEventListener('pointerdown', onHabitPointerDown);   // tier swiping
+$('#editOverlay').addEventListener('pointerup', onHabitPointerUp);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && editorIsOpen()) closeEditor(); });
 /* ---- Loadout chooser/creator -------------------------------------------------------
    Fully in-app: no native <select> or prompt. Creating a loadout can clone any chosen
    habits, grouped by their source loadout; choosing none creates a clean blank slate. */
@@ -8227,14 +8361,14 @@ $('#loadoutBody').addEventListener('click', e => {
 // Swipe left/right on a leveled habit row (or its open editor) to move between difficulty
 // tiers — left = easier, right = harder. Vertical scrolling stays untouched (touch-action: pan-y).
 let swipeStart = null, lastSwipeAt = 0;
-$('#view-habits').addEventListener('pointerdown', e => {
+function onHabitPointerDown(e) {
   swipeStart = null;
   if (e.target.closest('input, select, button, .day-picker')) return;  // don't hijack controls
   const row = e.target.closest('.hrow[data-id], .hedit[data-id]');
   if (!row) return;
   swipeStart = { x: e.clientX, y: e.clientY, id: row.dataset.id, isEdit: row.classList.contains('hedit') };
-});
-$('#view-habits').addEventListener('pointerup', e => {
+}
+function onHabitPointerUp(e) {
   const s = swipeStart; swipeStart = null;
   if (!s) return;
   const dx = e.clientX - s.x, dy = e.clientY - s.y;
@@ -8251,10 +8385,10 @@ $('#view-habits').addEventListener('pointerup', e => {
     save();
   }
   SFX.click(); renderHabits();
-});
+}
 
 // Tasks view: quick-add bar + to-do list + quest wheel (delegated)
-$('#view-tasks').addEventListener('click', e => {
+function onTasksClick(e) {
   if (e.target.closest('#spinHabitWheel')) { spinHabitWheel(); return; }
   if (e.target.closest('#questAddBtn')) { addQuickQuest(); return; }
   const tierChip = e.target.closest('#questTierChips .chip');
@@ -8274,7 +8408,10 @@ $('#view-tasks').addEventListener('click', e => {
   if (spinDone) { completeOneoff(spinDone.dataset.id, true); return; } // viaSpin → spin bonus
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'doneOneoff') { completeOneoff(e.target.closest('.qrow').dataset.id, false); return; }
-  if (act === 'editOneoff') { editingOneoffId = e.target.closest('.qrow').dataset.id; SFX.click(); renderOneoffs(); return; }
+  if (act === 'startOneoffTimer') { startOneoffTimer(e.target.closest('.qrow').dataset.id); return; }
+  if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(e.target.closest('.qrow').dataset.id); return; }
+  if (act === 'finishOneoffTimer') { finishTimedOneoff(e.target.closest('.qrow').dataset.id); return; }
+  if (act === 'editOneoff') { SFX.click(); openEditor('oneoff', e.target.closest('.qrow').dataset.id); return; }
   if (act === 'closeOneoffEdit') { editingOneoffId = null; SFX.click(); renderOneoffs(); buildHabitWheel(); return; }
   if (act === 'delOneoffEdit') {
     const id = e.target.closest('.qedit').dataset.id;
@@ -8292,7 +8429,7 @@ $('#view-tasks').addEventListener('click', e => {
     }
     return;
   }
-});
+}
 $('#questAddName').addEventListener('keydown', e => { if (e.key === 'Enter') addQuickQuest(); });
 // Inline one-off editor field edits (text/number on input, selects on change)
 function onInlineOneoffField(e) {
@@ -8308,6 +8445,7 @@ function onInlineOneoffField(e) {
   else t[f] = e.target.value;
   save();
 }
+$('#view-tasks').addEventListener('click', onTasksClick);
 $('#view-tasks').addEventListener('input', onInlineOneoffField);
 $('#view-tasks').addEventListener('change', onInlineOneoffField);
 
@@ -8362,7 +8500,7 @@ $('#stage-roulette').addEventListener('click', e => {
 });
 
 // Winnings screen: inline reward editing in the Prize Pool (tap a card to edit)
-$('#prizePool').addEventListener('click', e => {
+function onPrizePoolClick(e) {
   if (e.target.closest('[data-act="closeRewardEdit"]')) { editingRewardId = null; SFX.click(); renderPrizes(); return; }
   if (e.target.closest('[data-act="delRewardInline"]')) {
     const id = e.target.closest('.prize-edit').dataset.id;
@@ -8392,8 +8530,7 @@ $('#prizePool').addEventListener('click', e => {
   if (!card) return;
   const rid = card.dataset.rid;
   const openSettings = () => {
-    editingRewardId = rid; claimOpenId = null; SFX.click(); renderPrizes();
-    setTimeout(() => $('#prizePool .prize-edit .name-in')?.focus(), 30);
+    claimOpenId = null; SFX.click(); openEditor('reward', rid);
   };
   // ⋯ top-right — reward settings, on every tile whether it's claimable or not.
   if (e.target.closest('[data-act="prizeSettings"]')) {
@@ -8408,7 +8545,7 @@ $('#prizePool').addEventListener('click', e => {
   // Body tap: quick-claim one, no dialog. Nothing to claim → settings.
   if (card.classList.contains('owned')) claimFromPool(rid, 1);
   else openSettings();
-});
+}
 function onRewardInlineField(e) {
   const f = e.target.dataset.rf; if (!f) return;
   const isSelect = e.target.tagName === 'SELECT';
@@ -8421,6 +8558,7 @@ function onRewardInlineField(e) {
   else r[f] = e.target.value;
   save();
 }
+$('#prizePool').addEventListener('click', onPrizePoolClick);
 $('#prizePool').addEventListener('input', onRewardInlineField);
 $('#prizePool').addEventListener('change', onRewardInlineField);
 $('#addRewardInline').addEventListener('click', () => {
@@ -8870,15 +9008,14 @@ $('#authOverlay').addEventListener('click', async e => {
 $('#view-schedule').addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'schedPrev') { schedOffset -= 1; SFX.click(); renderBlockSchedule(); return; }
-  if (act === 'schedNext' && schedOffset < 0) { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
+  if (act === 'schedNext') { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
   if (act === 'zoomIn')  { schedZoomIdx += 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'zoomOut') { schedZoomIdx -= 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'unpin') {
     const el = e.target.closest('.sched-block'); if (!el) return;
-    const h = state.habits.find(x => x.id === el.dataset.habit); if (!h) return;
-    h.scheduledMin = null;
-    SFX.click(); toast(`${h.name} back to its usual time`, 'var(--cyan)');
-    save(); renderBlockSchedule(); renderHabits();
+    removePlannedBlock(todayStr(schedOffset), el.dataset.ref);
+    SFX.click(); toast('Removed from this day', 'var(--cyan)');
+    renderBlockSchedule(); renderHabits();
   }
 });
 
@@ -8921,7 +9058,8 @@ $('#view-schedule').addEventListener('pointerdown', e => {
   if (!el || e.target.closest('[data-act]')) return;
   const grid = $('.sched-grid'); if (!grid) return;
   schedDrag = {
-    el, id: el.dataset.habit, start: parseInt(el.dataset.start, 10),
+    el, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
+    durMin: parseInt(el.dataset.dur, 10) || 15, start: parseInt(el.dataset.start, 10),
     lo: parseInt(grid.dataset.lo, 10) * 60, y0: e.clientY, min: parseInt(el.dataset.start, 10), moved: false,
   };
   // Capture keeps the gesture alive if the finger leaves the block; not fatal if refused.
@@ -8945,16 +9083,84 @@ function endSchedDrag() {
   const d = schedDrag; schedDrag = null;
   d.el.classList.remove('dragging');
   if (!d.moved || d.min === d.start) { renderBlockSchedule(); return; }
-  const h = state.habits.find(x => x.id === d.id);
-  if (h) {
-    h.scheduledMin = d.min;
-    SFX.coin(); toast(`${h.name} → ${fmtMinOfDay(d.min)}`, 'var(--cyan)');
-    save(); renderHabits();
-  }
-  renderBlockSchedule();
+  // Writes the DAY being viewed, not the habit's global usual time — that's what makes
+  // "Thursday at 3pm, just this once" possible and leaves every other day alone.
+  const name = upsertPlannedBlock(todayStr(schedOffset), d.refKind, d.refId, d.min, d.durMin);
+  if (name) { SFX.coin(); toast(`${name} → ${fmtMinOfDay(d.min)}`, 'var(--cyan)'); }
+  renderBlockSchedule(); renderHabits();
+}
+
+// Insert or move one planned block on a date. Returns the entity's name, or null if the
+// habit/quest has since been deleted.
+function upsertPlannedBlock(dateStr, kind, refId, startMin, durMin) {
+  const src = kind === 'task'
+    ? (state.oneoffs || []).find(t => t.id === refId)
+    : (state.habits || []).find(h => h.id === refId);
+  if (!src) return null;
+  state.plannedBlocks = state.plannedBlocks || {};
+  const list = state.plannedBlocks[dateStr] = state.plannedBlocks[dateStr] || [];
+  const existing = list.find(b => b.refId === refId && b.kind === kind);
+  if (existing) { existing.startMin = clamp(startMin, 0, 1439); existing.durMin = clamp(durMin || existing.durMin, 1, 1440); }
+  else list.push({ id: uid(), kind, refId, startMin: clamp(startMin, 0, 1439), durMin: clamp(durMin || 15, 1, 1440) });
+  save();
+  return src.name;
+}
+function removePlannedBlock(dateStr, refId) {
+  const list = (state.plannedBlocks || {})[dateStr]; if (!list) return;
+  state.plannedBlocks[dateStr] = list.filter(b => b.refId !== refId);
+  if (!state.plannedBlocks[dateStr].length) delete state.plannedBlocks[dateStr];
+  save();
 }
 $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
+
+/* ---- + button: put a habit or quest onto the day you're looking at ---------------- */
+function schedPickOpen() {
+  const dateStr = todayStr(schedOffset);
+  const shown = new Set(computeDayBlocks(dateStr).map(b => b.refId).filter(Boolean));
+  const habits = state.habits.filter(h => !h.archived && !shown.has(h.id));
+  const quests = state.oneoffs.filter(t => !shown.has(t.id));
+  const row = (o, kind) => `
+    <button class="pick-row" data-pick="${o.id}" data-pickkind="${kind}">
+      <span class="pick-e">${escapeHtml(o.emoji || (kind === 'task' ? '🎯' : '⭐'))}</span>
+      <span class="pick-n">${escapeHtml(o.name)}</span>
+      <span class="subtle">${kind === 'task' ? 'quest' : (o.section === 'extra' ? 'extra' : 'daily')}</span>
+    </button>`;
+  const sec = (title, list, kind) => list.length
+    ? `<div class="pick-sec">${title}</div>${list.map(o => row(o, kind)).join('')}` : '';
+  const label = schedOffset === 0 ? 'today' : schedOffset === 1 ? 'tomorrow'
+    : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  $('#schedPickTitle').textContent = `Add to ${label}`;
+  $('#schedPickBody').innerHTML = (sec('Habits', habits, 'habit') + sec('Quests', quests, 'task'))
+    || `<div class="subtle" style="padding:14px 0">Everything is already on this day.</div>`;
+  $('#schedPickSheet').classList.add('show');
+  $('#schedPickSheet').setAttribute('aria-hidden', 'false');
+}
+function schedPickClose() {
+  $('#schedPickSheet').classList.remove('show');
+  $('#schedPickSheet').setAttribute('aria-hidden', 'true');
+}
+// Drop new blocks after whatever's already planned so they don't land on top of it.
+function nextFreeMinute(dateStr) {
+  const blocks = computeDayBlocks(dateStr);
+  if (!blocks.length) return 9 * 60;
+  const end = Math.max(...blocks.map(b => b.startMin + Math.max(b.durMin, 15)));
+  return clamp(Math.ceil(end / SNAP_MIN) * SNAP_MIN, 0, 23 * 60);
+}
+$('#schedAddBtn').addEventListener('click', () => { SFX.click(); schedPickOpen(); });
+$('#schedPickSheet').addEventListener('click', e => {
+  if (e.target.closest('[data-act="schedPickClose"]')) { SFX.click(); schedPickClose(); return; }
+  const pick = e.target.closest('[data-pick]'); if (!pick) return;
+  const dateStr = todayStr(schedOffset);
+  const kind = pick.dataset.pickkind;
+  const src = kind === 'task'
+    ? state.oneoffs.find(t => t.id === pick.dataset.pick)
+    : state.habits.find(h => h.id === pick.dataset.pick);
+  const dur = src ? (kind === 'task' ? 30 : (habitMedianActualMinutes(src) || habitCurrentMinutes(src) || 15)) : 15;
+  const name = upsertPlannedBlock(dateStr, kind, pick.dataset.pick, nextFreeMinute(dateStr), dur);
+  if (name) { SFX.coin(); toast(`${name} added — drag to place it`, 'var(--cyan)'); }
+  schedPickClose(); renderBlockSchedule();
+});
 
 $('#view-settings').addEventListener('click', async e => {
   if (e.target.closest('#cloudSignIn')) {
