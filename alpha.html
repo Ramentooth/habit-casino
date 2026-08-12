@@ -1400,6 +1400,167 @@
       .loadout-modal { padding-left: 14px; padding-right: 14px; }
     }
 
+    /* =====================================================================
+       GREYSCALE SURFACES
+       Everything structural becomes grey; TEXT keeps its neon colours, the
+       casino game visuals (wheel / reels / dice / roulette / ultra pack) keep
+       theirs, and emojis are untouched. Written as a trailing override layer
+       so the original palette survives underneath — delete this block to
+       restore the colour theme exactly.
+
+       Depth ramp, darkest → lightest:
+         1 bars ....... top header + bottom tab bar
+         2 background . the page itself
+         3 titles ..... section panels & banners (Due Now, casino game boxes)
+         4 cards ...... habits, quests, winnings, prizes
+         5 controls ... buttons, checkboxes, inputs
+       ===================================================================== */
+    :root {
+      --gs1: #050507;   /* bars */
+      --gs2: #0d0d0f;   /* background */
+      --gs3: #16161a;   /* title / section surfaces */
+      --gs4: #222228;   /* item cards */
+      --gs5: #3a3a43;   /* buttons & checkboxes */
+      --gs-edge: rgba(255,255,255,0.14);
+      --gs-edge-hi: rgba(255,255,255,0.26);
+      /* Purple border + panel tokens feed dozens of rules — recolouring them
+         here greys most of the app's chrome in one move. */
+      --panel: var(--gs3);
+      --panel-edge: var(--gs-edge);
+      --bg0: var(--gs2);
+      --bg1: var(--gs2);
+      --bg2: var(--gs3);
+    }
+
+    /* --- 1. bars --------------------------------------------------------- */
+    header { background: var(--gs1); border-bottom: 1px solid var(--gs-edge); }
+    nav.bottomnav { background: var(--gs1); border-top: 1px solid var(--gs-edge); }
+    .tab.active {
+      background: var(--gs4); border-color: var(--gs-edge-hi);
+      box-shadow: inset 0 0 12px rgba(255,255,255,.05);
+    }
+    .more-tab.open { background: var(--gs4); border-color: var(--gs-edge-hi); box-shadow: none; }
+    /* The sheet is an extension of the tab bar, so it belongs at bar depth, not panel
+       depth — rows stay transparent and are separated by dividers alone. */
+    .more-sheet { background: var(--gs1); border-top: 1px solid var(--gs-edge); }
+    .more-row { background: transparent; border-bottom-color: var(--gs-edge); }
+    .more-row:active { background: rgba(255,255,255,.07); }
+
+    /* --- 2. background --------------------------------------------------- */
+    body { background: var(--gs2); }
+    /* #bg and #grid sit BEHIND body at z-index -3/-2, so greying body alone left a
+       purple/cyan/pink wash over the whole app — that colour cast was also what made
+       every surface read lighter than its level. Both are neutral now. */
+    #bg {
+      background:
+        radial-gradient(1200px 800px at 15% -10%, rgba(255,255,255,0.05), transparent 60%),
+        radial-gradient(900px 900px at 50% 120%, rgba(255,255,255,0.035), transparent 60%),
+        var(--gs2);
+      animation: none;
+    }
+    #grid {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      opacity: .35;
+    }
+
+    /* --- 3. title / section surfaces ------------------------------------- */
+    .panel { background: var(--gs3); border: 1px solid var(--gs-edge); box-shadow: none; }
+    .daily-banner, .daily-banner.extra-banner {
+      background: var(--gs3); border: 1px solid var(--gs-edge);
+    }
+    .redeem-lock, .hh-banner, .quest-add, .oneoff-section { background: var(--gs3); border-color: var(--gs-edge); }
+    .pool-group { background: var(--gs3); border-color: var(--gs-edge); }
+    .sched-grid, .sched-hour, .sched-sub { border-color: var(--gs-edge); }
+
+    /* --- 4. item cards --------------------------------------------------- */
+    .hrow, .qrow, .inv-card, .prize, .editrow, .aw-row, .claim-card, .hedit, .prize-edit {
+      background: var(--gs4) !important;
+      border-color: var(--gs-edge) !important;
+      box-shadow: none !important;
+    }
+    /* These carry a per-item colour in an inline style; overriding the custom
+       property greys the whole rule set without touching each usage. */
+    .prize     { --pz: var(--gs5) !important; }
+    .aw-row    { --aw: var(--gs5) !important; }
+    .sched-block { --sb: #8a8a96 !important; }
+    .hrow.done { background: var(--gs4) !important; border-color: var(--gs-edge-hi) !important; }
+    .hrow.done .hrow-name { text-decoration-color: var(--gs-edge-hi); }
+    .hrow.arch { background: var(--gs4) !important; }
+    .prize.owned { background: var(--gs4) !important; box-shadow: 0 0 0 1px var(--gs-edge-hi) inset !important; }
+    /* .prize.special declares its cyan border with !important, so match the weight. */
+    .prize.special { border-color: var(--gs-edge-hi) !important; box-shadow: none !important; }
+    .prize-count { background: var(--gs5); color: var(--ink); box-shadow: none; border-color: var(--gs3); }
+    .hh-tag { background: var(--gs5); color: var(--ink); box-shadow: none; }
+    .progress-wrap { background: rgba(0,0,0,.45); border-color: var(--gs-edge); }
+    .progress-fill, .progress-fill.extra { background: var(--gs5); box-shadow: none; }
+
+    /* --- 5. controls: buttons, checkboxes, inputs ------------------------- */
+    .btn, .btn.cyan, .btn.gold, .btn.green, .btn.purple, .btn.ghost, .btn.cost, .auth-google {
+      background: var(--gs5); color: var(--ink);
+      border: 1px solid var(--gs-edge-hi); box-shadow: none; text-shadow: none;
+    }
+    .btn:hover, .btn.ghost:hover, .btn.cyan:hover { box-shadow: none; transform: translateY(-2px); }
+    .btn:active { transform: translateY(1px); box-shadow: none; }
+    .hrow-check { background: var(--gs5); border: 2px solid var(--gs-edge-hi); }
+    .hrow.done .hrow-check {
+      background: var(--gs-edge-hi); border-color: var(--gs-edge-hi);
+      color: var(--ink); box-shadow: none;
+    }
+    .chip, .rstep, .zbtn, .prize-more, .del, .day-dot, .sb-unpin, .iconbtn {
+      background: var(--gs5); border-color: var(--gs-edge-hi); color: var(--ink);
+    }
+    .chip.sel, .day-dot.active { background: var(--gs-edge-hi); border-color: var(--gs-edge-hi); color: var(--ink); }
+    .name-in, .num-in, .sect-in, .emoji-in, input, textarea, select {
+      background: var(--gs5); border-color: var(--gs-edge-hi); color: var(--ink);
+    }
+    .prize-dots { color: var(--ink-dim); }
+    .prize-dots:hover { background: rgba(255,255,255,.1); }
+
+    /* --- stragglers: surfaces coloured by inline styles or their own rules --- */
+    /* The Due Now banner sets a gold border inline, which outranks a plain rule. */
+    .daily-banner, .daily-banner.slim { border-color: var(--gs-edge) !important; }
+    /* Reward/level pills: grey the chip, keep the number's colour (it's text). */
+    .hrow-reward, .pill, .badge, .stack-badge, .ucard, .mini-card {
+      background: var(--gs4) !important; border-color: var(--gs-edge-hi) !important; box-shadow: none !important;
+    }
+    .xpbar { border-color: var(--gs-edge); background: rgba(0,0,0,.4); }
+    .xpbar > * { background: var(--gs5) !important; box-shadow: none !important; }
+    .pass-fab {
+      background: var(--gs4); border: 2px solid var(--gs-edge-hi);
+      box-shadow: 0 8px 18px rgba(0,0,0,.5); animation: none;
+    }
+    .pf-lvl { background: rgba(0,0,0,.4); }
+    .ver-badge, .ver-badge.alpha, .ver-badge.beta {
+      background: var(--gs5) !important; color: var(--ink) !important; box-shadow: none !important;
+    }
+    /* Overlays & modals sit on the same ramp as panels. */
+    .pass-overlay, .auth-overlay, .wild-overlay, .more-scrim { background: rgba(0,0,0,.72); }
+    .pass-modal, .auth-card, .wild-modal { background: var(--gs3); border-color: var(--gs-edge); }
+    .cloud-pending { background: rgba(255,255,255,.05); border-color: var(--gs-edge-hi); }
+    /* Header balance pill + streak pips: chip greys, the numbers stay gold/orange. */
+    #balance, .balance { background: var(--gs4) !important; border-color: var(--gs-edge-hi) !important; box-shadow: none !important; }
+    .streak-count { border-color: var(--gs-edge-hi) !important; }
+    .pip-dot, .pip-dot.on, .pip-dot.full {
+      background: rgba(255,255,255,.12) !important; border-color: var(--gs-edge) !important; box-shadow: none !important;
+    }
+    .freeze-chip, .streak-line .chip { background: var(--gs5) !important; border-color: var(--gs-edge-hi) !important; box-shadow: none !important; }
+    /* Chat bubbles — sender is still readable from which side they sit on. */
+    .ai-msg.user     { background: var(--gs5); border-color: var(--gs-edge-hi); }
+    .ai-msg.assistant{ background: var(--gs4); border-color: var(--gs-edge); }
+    .ai-msg.err      { background: var(--gs4); border-color: var(--gs-edge-hi); }
+    .prop-card, .qcard, .checkin-prop { background: var(--gs4) !important; border-color: var(--gs-edge) !important; }
+    /* Tier chips carry their rarity colour inline; the chip greys, the label stays lit. */
+    .chip, .tier-chip { background: var(--gs5) !important; border-color: var(--gs-edge-hi) !important; }
+    .chip.sel, .tier-chip.sel { background: var(--gs-edge-hi) !important; color: var(--ink) !important; }
+    /* Schedule legend keys: solid / dashed / line still tell them apart without colour. */
+    .sched-key i { background: var(--gs5) !important; border-color: var(--gs-edge-hi) !important; }
+    .sched-now { border-top-color: var(--gs-edge-hi) !important; box-shadow: none !important; }
+    .sched-now::before { background: var(--gs-edge-hi) !important; }
+    /* Casino game internals keep their colour — undo the token-driven greying that
+       leaked in through --panel-edge on their containers only. */
+    .game-tab.active { background: var(--gs4); border-color: var(--gs-edge-hi); }
   </style>
 </head>
 <body>
