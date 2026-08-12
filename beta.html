@@ -497,7 +497,8 @@
       background: linear-gradient(160deg, rgba(176,38,255,0.10), rgba(20,6,42,0.55));
       border: 1px solid var(--panel-edge);
     }
-    /* Habit difficulty levels: rim color + tier word live inside the reward pill; swipe to change */
+    /* Habit difficulty levels. The ONLY coloured thing is the "tier N" word in the pill —
+       no rim, no tinted pill, no coloured dots. Swipe the row to change tier. */
     .hrow, .hedit { touch-action: pan-y; }
     .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1; padding: 4px 9px 3px; }
     .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
@@ -505,9 +506,65 @@
     .tier-head { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; }
     .tier-dots { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; }
     .tdot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.18); }
+    .tdot.on { background: rgba(255,255,255,.75); }
     .tier-hint { font-family: 'Rajdhani', sans-serif; font-size: 10px; color: var(--ink-dim); font-weight: 700; letter-spacing: .5px; margin-left: 6px; }
-    .tier-choice { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    /* Tier carousel. Every level is rendered up front in a track offset by -index×100%,
+       so a swipe is one transform away — nothing is built or re-rendered mid-gesture,
+       which is what makes it track the finger instead of stepping. Only the parts that
+       actually differ per tier live inside; emoji, chevrons and buttons stay outside. */
+    .hrow-swipe { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    .hrow-track { display: flex; transition: transform .3s cubic-bezier(.22,.9,.3,1); }
+    .hrow-track.dragging { transition: none; }
+    .hrow-pane { flex: 0 0 100%; display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .hrow-pane .hrow-main { flex: 1 1 auto; min-width: 0; }
+    /* Same idea for the editor sheet's tier pages. Height is set from the active page in
+       JS, since the pages are different heights and a flex track takes the tallest. */
+    .hedit-swipe { overflow: hidden; transition: height .3s cubic-bezier(.22,.9,.3,1); }
+    .hedit-track { display: flex; align-items: flex-start; transition: transform .3s cubic-bezier(.22,.9,.3,1); }
+    .hedit-track.dragging { transition: none; }
+    .hedit-track > .hedit { flex: 0 0 100%; }
+
+    /* --- Difficulty ladder popup ----------------------------------------------------
+       The whole tier system on one line: ✚ at each end to grow it easier/harder, boxes
+       in between that drag to reorder. */
+    .ladder-wrap { display: flex; align-items: stretch; gap: 8px; margin: 12px 0 6px; }
+    .ladder-end { display: flex; flex-direction: column; align-items: center; gap: 4px; justify-content: center; flex: 0 0 auto; }
+    .ladder-add {
+      width: 34px; height: 34px; border-radius: 10px; cursor: pointer; font-size: 17px; font-weight: 900;
+      display: grid; place-items: center; font-family: inherit;
+      background: var(--gs-lite); color: var(--gs-on-lite); border: 1px solid transparent;
+    }
+    .ladder-add:active { transform: scale(.92); }
+    .ladder-ai {
+      width: 34px; height: 26px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: inherit;
+      display: grid; place-items: center; background: var(--gs-ctl); color: var(--ink); border: 1px solid var(--gs-edge);
+    }
+    .ladder-endlab { font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: .5px; color: var(--ink-dim); text-transform: uppercase; }
+    .ladder-strip { flex: 1 1 auto; display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: thin; }
+    .ladder-strip.dragging { overflow-x: hidden; touch-action: none; }
+    .ladder-box {
+      position: relative; flex: 0 0 128px; cursor: grab; user-select: none; touch-action: pan-y;
+      padding: 9px 10px 10px; border-radius: 12px;
+      background: var(--gs-card); border: 1px solid var(--gs-edge);
+      transition: transform .18s cubic-bezier(.22,.9,.3,1);
+    }
+    .ladder-box.base { border-color: var(--gs-edge-hi); }
+    .ladder-box.lifted { transition: none; cursor: grabbing; z-index: 3; box-shadow: 0 10px 22px rgba(0,0,0,.6); }
+    .lb-tier { font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; }
+    .lb-name { font-size: 13px; font-weight: 700; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-reward { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 900; color: var(--ink-dim); margin-top: 3px; }
+    .lb-star { position: absolute; top: 6px; right: 8px; font-size: 11px; color: var(--ink-dim); }
+    .lb-del {
+      position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; cursor: pointer;
+      border-radius: 7px; display: grid; place-items: center; font-size: 11px; font-family: inherit;
+      background: transparent; border: 0; color: var(--ink-dim);
+    }
+    .lb-del:hover { background: rgba(255,255,255,.08); color: #fff; }
+    /* Two class names so this beats .edit-overlay's own z-index regardless of source
+       order — the ladder has to sit above the editor sheet it was opened from. */
+    .edit-overlay.tier-overlay { z-index: 79; }
     /* Graduated (archived) habit rows */
     #archivedSection { padding-bottom: 96px; } /* keep the last Restore button clear of the Habit Pass FAB */
     .hrow.arch { cursor: default; opacity: .8; background: linear-gradient(160deg, rgba(255,215,0,0.06), rgba(20,6,42,0.5)); border-color: rgba(255,215,0,0.28); }
@@ -1631,6 +1688,17 @@
     </div>
   </div>
 
+  <!-- Difficulty ladder: the whole tier system of one habit on a single line, with a ✚
+       at each end to grow it easier or harder, and drag-to-reorder between. Sits above
+       the editor sheet, which stays open behind it. -->
+  <div class="edit-overlay tier-overlay" id="tierOverlay" aria-hidden="true">
+    <div class="edit-sheet tier-sheet" id="tierSheet" role="dialog" aria-modal="true">
+      <div class="edit-grab"></div>
+      <button class="pass-close" data-act="closeTierLadder" title="Close">✕</button>
+      <div id="tierSheetBody"></div>
+    </div>
+  </div>
+
   <div class="more-scrim" id="moreScrim"></div>
 
   <nav id="nav" class="bottomnav">
@@ -2464,7 +2532,7 @@ let claimOpenId = null;        // reward id whose claim panel is expanded in the
 let claimQty = 1;              // quantity chosen in that panel
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
 let editTierPage = null;       // which difficulty page the habit editor shows (null = the base habit's page)
-let addTierChoiceOpen = false; // "Add tier" harder/easier chooser expanded in the habit editor
+let tierLadderId = null;       // habit whose difficulty ladder is open in the tier popup
 let passGoalsOpen = true;      // Habit Pass "Goals" dropdown open/closed
 let recycleQty = 1;            // quantity selected in that menu
 
@@ -2488,6 +2556,10 @@ function normalizeHabit(h) {
   return {
     id: h.id || uid(),
     emoji: (h.emoji != null ? h.emoji : '⭐'),
+    // True only while the icon is still the seed one we picked at creation. While it's
+    // set, typing the name auto-picks a matching emoji; the first manual edit clears it
+    // forever. Legacy saves have no flag → false, so old habits are never touched.
+    emojiAuto: !!h.emojiAuto,
     name: (h.name != null ? h.name : 'Habit'),
     section: h.section === 'extra' ? 'extra' : 'daily',
     reward: Number.isFinite(h.reward) ? h.reward : 1,
@@ -2518,8 +2590,9 @@ function normalizeHabit(h) {
     contextAsked: !!h.contextAsked,
     doneAt: h.doneAt || 0,
     doneMin: Number.isFinite(h.doneMin) ? h.doneMin : null,
-    // difficulty levels: up to 2 extra variants (easiest → hardest); baseIdx = where the habit itself sits
-    tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 2).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1, minutes: (t && Number.isFinite(t.minutes)) ? t.minutes : 0 })) : [],
+    // difficulty levels: any number of extra variants (easiest → hardest); baseIdx = where
+    // the habit itself sits. The slice is junk-data protection, not a product limit.
+    tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 20).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1, minutes: (t && Number.isFinite(t.minutes)) ? t.minutes : 0 })) : [],
     // context Modes — an INDEPENDENT axis from `tiers`: keyed by context name, they
     // swap the habit's name/reward/minutes on days the Week Planner flagged.
     // h.modes['Travel'] = { name, reward, minutes, desc, createdBy }
@@ -2587,6 +2660,7 @@ function load(raw) {
       const tier = TASK_TIERS[t.tier] ? t.tier : (reward <= 7 ? 'easy' : reward <= 14 ? 'medium' : 'hard');
       return {
         id: t.id || uid(), emoji: (t.emoji != null ? t.emoji : '🎯'), name: (t.name != null ? t.name : 'Quest'),
+        emojiAuto: !!t.emojiAuto,   // see normalizeHabit — auto-pick until the user edits the icon
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
         createdAt: Number.isFinite(t.createdAt) ? t.createdAt : null,
@@ -3064,22 +3138,35 @@ function renderTopbar() {
 /* =================================================================
    HABITS VIEW
    ================================================================= */
-// Habit difficulty levels: a habit may carry up to 2 extra tiers in h.tiers (ordered
-// easiest → hardest); h.baseIdx says where the ORIGINAL habit sits in that ladder, so
-// added tiers can be easier OR harder than it. Labels come from the ladder size:
-// 2 levels → easy/hard, 3 levels → easy/medium/hard.
+// Habit difficulty levels: a habit may carry any number of extra tiers in h.tiers
+// (ordered easiest → hardest); h.baseIdx says where the ORIGINAL habit sits in that
+// ladder, so added tiers can be easier OR harder than it. Levels are labelled purely by
+// position — "tier 1" is always the easiest, "tier N" the hardest.
 // Completing ANY level counts as one normal completion; only the payout differs.
-const LEVEL_COLORS = { easy: 'var(--green)', medium: 'var(--yellow)', hard: '#ff2d2d' };
+//
+// Colour is TEXT-ONLY: nothing about a tier tints the row, the reward pill or the editor
+// frame. The one coloured thing is the "tier N" word itself, on a green→yellow→red ramp,
+// so the ladder reads as a scale rather than as a status.
+function tierColor(i, n) {
+  if (n <= 1) return 'var(--ink-dim)';
+  const hue = 120 - 120 * (i / (n - 1));   // 0 → green(120), last → red(0), middles yellow
+  return `hsl(${Math.round(hue)}, 100%, 55%)`;
+}
+// Coarse band, for history/stats only. The Stats "intensity mix" chart buckets on
+// easy/medium/hard and quests log the same words, so habit completions keep landing in
+// the right column however tall the ladder grows — and rows written before numeric
+// tiers existed stay valid.
+function tierBand(i, n) { return i === 0 ? 'easy' : (i >= n - 1 ? 'hard' : 'medium'); }
 function habitLevels(h) {
   const extras = Array.isArray(h.tiers) ? h.tiers : [];
   if (!extras.length) return null;                       // no tier system on this habit
   const n = extras.length + 1;
   const baseIdx = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1); // legacy saves: base was hardest
-  const keys = n === 2 ? ['easy', 'hard'] : ['easy', 'medium', 'hard'];
   const lvls = []; let e = 0;
   for (let i = 0; i < n; i++) {
-    if (i === baseIdx) lvls.push({ key: keys[i], name: h.name, reward: h.reward, minutes: h.timedMinutes || 0, base: true });
-    else { const t = extras[e]; lvls.push({ key: keys[i], name: t.name, reward: t.reward, minutes: t.minutes || 0, base: false, tIdx: e }); e++; }
+    const meta = { idx: i, n, label: `tier ${i + 1}`, color: tierColor(i, n), band: tierBand(i, n) };
+    if (i === baseIdx) lvls.push({ ...meta, name: h.name, reward: h.reward, minutes: h.timedMinutes || 0, base: true });
+    else { const t = extras[e]; lvls.push({ ...meta, name: t.name, reward: t.reward, minutes: t.minutes || 0, base: false, tIdx: e }); e++; }
   }
   return lvls;                                           // ordered easiest → hardest
 }
@@ -3186,78 +3273,91 @@ function habitCardHTML(h, usualMin) {
   const li = lvls ? curLevelIndex(h) : -1;
   const lvl = lvls ? lvls[li] : null;
   const hhTag = happyTagHTML(h.category);
-  const rim = lvl ? LEVEL_COLORS[lvl.key] : null;
   // No category stripe or label here on purpose: the checklist is ONE flat list per
   // section. Categories still drive Pass goals & happy hours, just invisibly.
-  const rowStyle = lvl ? ` style="border-color:${rim}"` : '';
-  // Today's context Mode (if any) overrides the displayed name/reward/minutes —
-  // same single checkbox, no "pick a version" decision in the moment.
+  // No tier rim either — the tier only shows up as the coloured word in the pill.
   const td = habitToday(h);
-  const pill = lvl
-    ? `<span class="hrow-reward lvl" style="color:${rim};border-color:${rim};background:rgba(0,0,0,0.25)">+${td.reward} 🪙<i class="lvl-word">${lvl.key}</i></span>`
-    : `<span class="hrow-reward">+${td.reward} 🪙</span>`;
   const chevL = (lvl && li > 0) ? `<span class="lvl-chev">‹</span>` : '';
   const chevR = (lvl && li < lvls.length - 1) ? `<span class="lvl-chev">›</span>` : '';
   // In-progress tracking: ▶ starts an open stopwatch (no pre-set duration needed) so the
   // AI learns actual time-on-task for every habit, not just ones explicitly marked "timed".
   // ✓ Quick Complete stays available alongside it for anything not worth timing.
-  const mins = td.minutes;   // still shown as an informational "usually ~Xm" estimate
-  let rightBits, subLine = sub;
+  let rightBits, timerSub = null;
   if (h.timer) {
     const paused = !!h.timer.pausedAt;
-    subLine = `⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`;
+    // One readout per pane; the 1s ticker updates every match, so duplicates are fine.
+    timerSub = `⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`;
     rightBits = `
       <button class="hrow-check timer-btn" data-act="pauseTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
       <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
   } else if (!complete) {
-    if (mins > 0) subLine += ` · ~${fmtMins(mins)} usual`;
     rightBits = `
       <button class="hrow-check timer-btn" data-act="startTimer" aria-label="Start" style="color:var(--purple)">▶</button>
       <button class="hrow-check" data-act="done" aria-label="Quick complete">✓</button>`;
   } else {
     rightBits = `<button class="hrow-check" data-act="done" aria-label="Complete">✓</button>`;
   }
+  // The name + sub + reward pill for ONE level. Everything else on the row (emoji,
+  // chevrons, the ✓/▶ buttons) is tier-independent and stays outside the carousel.
+  const paneHTML = (name, reward, minutes, word) => {
+    let subLine = timerSub != null ? timerSub : sub;
+    if (timerSub == null && !complete && minutes > 0) subLine += ` · ~${fmtMins(minutes)} usual`;
+    return `
+      <div class="hrow-pane">
+        <div class="hrow-main">
+          <div class="hrow-name">${escapeHtml(name)}</div>
+          <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
+        </div>
+        ${word
+          ? `<span class="hrow-reward lvl">+${reward} 🪙<i class="lvl-word" style="color:${word.color}">${word.label}</i></span>`
+          : `<span class="hrow-reward">+${reward} 🪙</span>`}
+      </div>`;
+  };
+  // Leveled habits get every tier rendered up front in a track offset by -index×100%.
+  // That's what lets the swipe follow the finger: dragging just nudges the transform,
+  // with no re-render and nothing to build mid-gesture. Plain habits emit one pane and
+  // no track at all, so they cost exactly what they did before.
+  const body = lvls
+    ? `<div class="hrow-swipe"><div class="hrow-track" data-idx="${li}" style="transform:translateX(${-li * 100}%)">${
+        lvls.map(l => paneHTML(l.name || h.name, l.reward, l.minutes || 0, l)).join('')}</div></div>`
+    : `<div class="hrow-swipe">${paneHTML(td.name, td.reward, td.minutes, null)}</div>`;
   return `
-    <div class="hrow ${complete ? 'done' : ''}" data-id="${h.id}" data-act="editHabit"${rowStyle}>
+    <div class="hrow ${complete ? 'done' : ''}${lvls ? ' leveled' : ''}" data-id="${h.id}" data-act="editHabit">
       ${hhTag}
       ${chevL}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
-      <div class="hrow-main">
-        <div class="hrow-name">${escapeHtml(td.name)}</div>
-        <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
-      </div>
-      ${pill}
+      ${body}
       ${rightBits}
       ${chevR}
     </div>`;
 }
 
-// Inline "blown-up" habit editor (full create/edit on the Habits screen)
-function habitEditHTML(h) {
+// Every page of the habit editor at once, in one track offset by -page×100%, so tier
+// pages can slide under the finger exactly like the checklist rows do. Each page carries
+// data-page so field handlers know which tier they're writing to without consulting the
+// global editTierPage — otherwise an input on an off-screen page would edit the wrong one.
+function habitEditPagesHTML(h) {
   const lvls = habitLevels(h);
-  const pageCount = lvls ? lvls.length : 1;
+  if (!lvls) return `<div class="hedit-swipe"><div class="hedit-track" data-idx="0" style="transform:translateX(0%)">${habitEditHTML(h)}</div></div>`;
+  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.findIndex(l => l.base), 0, lvls.length - 1);
+  const pages = lvls.map((l, i) => l.base ? habitEditHTML(h, i) : tierEditHTML(h, i)).join('');
+  return `<div class="hedit-swipe"><div class="hedit-track" data-idx="${page}" style="transform:translateX(${-page * 100}%)">${pages}</div></div>`;
+}
+
+// Inline "blown-up" habit editor (full create/edit on the Habits screen)
+function habitEditHTML(h, pageIdx) {
+  const lvls = habitLevels(h);
   const basePage = lvls ? lvls.findIndex(l => l.base) : 0;
-  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : basePage, 0, pageCount - 1);
-  if (lvls && !lvls[page].base) return tierEditHTML(h, page);   // extra-tier pages
-  const extras = Array.isArray(h.tiers) ? h.tiers : [];
-  // "Add tier" first asks which side the new tier goes on (harder demotes this habit, easier keeps it on top)
-  const addTierBtn = addTierChoiceOpen
-    ? `<div class="tier-choice">
-         <div class="subtle" style="flex-basis:100%">Where does the new tier sit?</div>
-         <button class="btn ghost sm" data-act="addTierHarder">⬆ Harder — this habit becomes the easier one</button>
-         <button class="btn ghost sm" data-act="addTierEasier">⬇ Easier — this habit stays the harder one</button>
-         <button class="btn ghost sm" data-act="addTierCancel">✕ Cancel</button>
-       </div>`
-    : `<button class="btn ghost sm" data-act="addTier" ${extras.length >= 2 ? 'disabled' : ''}>➕ Add tier${extras.length >= 2 ? ' (max)' : ''}</button>
-       <button class="btn ghost sm" data-act="aiTier" ${extras.length >= 2 ? 'disabled' : ''} title="Let the AI write the new tier's name, payout and duration" style="color:var(--purple)">✨ AI-fill</button>`;
+  const page = Number.isFinite(pageIdx) ? pageIdx : basePage;
+  const addTierBtn = `<button class="btn ghost sm" data-act="addTier">➕ Add tier</button>
+       <span class="tier-hint">${lvls ? `${lvls.length} tiers · tap to reorder or add` : 'split this habit into easier / harder versions'}</span>`;
   const baseLvl = lvls ? lvls[basePage] : null;
-  const baseHint = !lvls ? '' : (basePage > 0 && basePage < lvls.length - 1 ? '‹ swipe ›' : (basePage > 0 ? '‹ swipe left for easier' : 'swipe right for harder ›'));
-  const tierHead = lvls ? `<div class="tier-head" style="color:${LEVEL_COLORS[baseLvl.key]}">${baseLvl.key.toUpperCase()} TIER <span class="tier-hint">· the original · ${baseHint}</span></div>` : '';
+  const tierHead = lvls ? `<div class="tier-head"><span style="color:${baseLvl.color}">${baseLvl.label.toUpperCase()}</span> <span class="tier-hint">· the original · ‹ swipe ›</span></div>` : '';
   const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
   const dayPicker = `<span class="day-picker">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
   return `
-    <div class="hedit" data-id="${h.id}"${lvls ? ` style="border-color:${LEVEL_COLORS[baseLvl.key]}"` : ''}>
+    <div class="hedit" data-id="${h.id}" data-page="${page}">
       ${tierHead}
       <div class="hedit-r">
         <input class="emoji-in" data-f="emoji" maxlength="4" value="${escapeHtml(h.emoji)}">
@@ -3310,13 +3410,11 @@ function tierEditHTML(h, page) {
   const lvls = habitLevels(h);
   const lvl = lvls[page];
   const t = h.tiers[lvl.tIdx];
-  const col = LEVEL_COLORS[lvl.key];
   const baseIdx = lvls.findIndex(l => l.base);
-  const hint = page < baseIdx ? 'swipe right for harder ›' : '‹ swipe left for easier';
   const flavor = page < baseIdx ? 'lighter version' : 'harder version';
   return `
-    <div class="hedit" data-id="${h.id}" style="border-color:${col}">
-      <div class="tier-head" style="color:${col}">${lvl.key.toUpperCase()} TIER <span class="tier-hint">${hint}</span></div>
+    <div class="hedit" data-id="${h.id}" data-page="${page}">
+      <div class="tier-head"><span style="color:${lvl.color}">${lvl.label.toUpperCase()}</span> <span class="tier-hint">‹ swipe ›</span></div>
       <div class="hedit-r">
         <input class="name-in" data-tf="name" value="${escapeHtml(t.name)}" placeholder="e.g. ${escapeHtml(h.name)} — ${flavor}">
         <span class="pill">🪙 <input class="num-in" data-tf="reward" type="number" min="0" max="999" value="${t.reward}"> tokens</span>
@@ -3325,16 +3423,20 @@ function tierEditHTML(h, page) {
         <span class="pill" title="0 = not timed. When set, this tier shows a ▶ timer instead of a checkbox.">⏱ <input class="num-in" data-tf="minutes" type="number" min="0" max="999" value="${t.minutes || 0}"> min timer</span>
         <span class="timer-suggest">${timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0)}</span>
       </div>
-      <div class="hedit-r hedit-actions">
+      <div class="hedit-r">
+        <button class="btn ghost sm" data-act="addTier">➕ Add tier</button>
         <button class="btn ghost sm" data-act="removeTier">🗑 Remove tier</button>
+      </div>
+      <div class="hedit-r hedit-actions">
         <button class="btn green sm" data-act="closeEdit">✓ Done</button>
       </div>
       ${tierDotsHTML(lvls, page)}
     </div>`;
 }
+// Position dots only — the tier's colour lives on its "tier N" word, nowhere else.
 function tierDotsHTML(lvls, cur) {
   return `<div class="tier-dots">${lvls.map((l, i) =>
-    `<span class="tdot ${i === cur ? 'on' : ''}"${i === cur ? ` style="background:${LEVEL_COLORS[l.key]}"` : ''}></span>`).join('')}<span class="tier-hint">‹ swipe ›</span></div>`;
+    `<span class="tdot ${i === cur ? 'on' : ''}"></span>`).join('')}<span class="tier-hint">‹ swipe ›</span></div>`;
 }
 
 // Shared incomplete-first / usual-time sort used by both the daily identity
@@ -3470,7 +3572,8 @@ function addQuickQuest() {
   const inp = $('#questAddName'); const name = (inp.value || '').trim();
   if (!name) { inp.focus(); return; }
   const tier = TASK_TIERS[quickTier] ? quickTier : 'medium';
-  const task = { id: uid(), emoji: '🎯', name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, createdAt: Date.now() };
+  // The quick-add bar has no editor open, so the icon is guessed once here instead.
+  const task = { id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, createdAt: Date.now() };
   state.oneoffs.push(task);
   logEvent('task_created', { entityType: 'task', entityId: task.id, name: task.name, category: task.category, level: task.tier, iterations: task.iterations });
   inp.value = ''; SFX.coin(); save();
@@ -3700,7 +3803,11 @@ function completeHabit(id, timing) {
   // name stays the BASE habit name — history is keyed by it (streak/pattern analysis,
   // Due Soon, the AI's appContext), so a Mode must not fork a habit's history.
   const expectedMinutes = lvl ? (lvl.minutes || null) : (h.timedMinutes || null);
-  const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null, reward: amt,
+  // `level` stays a coarse easy/medium/hard band so the Stats intensity chart keeps
+  // working across any ladder height (and alongside rows written before numeric tiers);
+  // tierIndex/tierCount carry the exact position for anything that wants it.
+  const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.band : null, reward: amt,
+    tierIndex: lvl ? lvl.idx : null, tierCount: lvl ? lvl.n : null,
     scheduledForDate: today, scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null, expectedDurationMin: expectedMinutes,
     completionMethod: timing ? 'stopwatch' : 'checkmark' };
   if (timing) {  // completion came from a play→finish session — keep actual time-on-task for the Stats/AI pattern data
@@ -3709,12 +3816,13 @@ function completeHabit(id, timing) {
     entry.totalPausedSec = timing.totalPausedSec;
   }
   logCompletion(entry);
-  logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null,
+  logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.band : null,
+    tierIndex: lvl ? lvl.idx : null, tierCount: lvl ? lvl.n : null,
     scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
     actualStartTs: timerSnapshot ? timerSnapshot.startedAt : null, actualEndTs: finishedAt,
     actualElapsedSec: timing ? timing.actualElapsedSec : null, pauseCount: timing ? timing.pauseCount : null, totalPausedSec: timing ? timing.totalPausedSec : null,
     completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt });
-  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.key} tier` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
+  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.label}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
   checkBonuses();
   passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
@@ -3734,6 +3842,132 @@ function detectMinutes(text) {
   const total = Math.round((hr ? parseFloat(hr[1]) * 60 : 0) + (mn ? parseFloat(mn[1]) : 0));
   return clamp(total, 0, 999);
 }
+/* ---- Emoji guessing. Unlike duration detection above, this one IS applied silently —
+   but only while the item still wears the seed icon it was created with (`emojiAuto`).
+   The moment the user types their own emoji the flag clears for good, so we never
+   overwrite a deliberate choice, and legacy saves (no flag → false) are never touched.
+   Ordered longest/most-specific first: "dog walk" must beat "walk". ---- */
+const EMOJI_KEYWORDS = [
+  // --- movement ---
+  ['🏃', ['run', 'running', 'jog', 'jogging', 'sprint', 'cardio', '5k', '10k', 'marathon']],
+  ['🚶', ['walk', 'walking', 'steps', 'stroll']],
+  ['🥾', ['hike', 'hiking', 'trail', 'trek']],
+  ['🚴', ['bike', 'biking', 'cycle', 'cycling', 'ride']],
+  ['🏊', ['swim', 'swimming', 'pool laps', 'laps']],
+  ['🏋️', ['gym', 'lift', 'lifting', 'weights', 'workout', 'strength', 'squat', 'bench', 'deadlift']],
+  ['🧘', ['meditate', 'meditation', 'mindful', 'breathe', 'breathing', 'yoga', 'zen', 'calm']],
+  ['🤸', ['stretch', 'stretching', 'mobility', 'warmup', 'warm up']],
+  ['🧗', ['climb', 'climbing', 'bouldering']],
+  ['⚽', ['soccer', 'football practice']],
+  ['🏀', ['basketball', 'hoops']],
+  ['🎾', ['tennis']],
+  ['⛳', ['golf']],
+  ['🥋', ['martial arts', 'karate', 'judo', 'jiu jitsu', 'bjj', 'taekwondo']],
+  ['🛹', ['skate', 'skateboard']],
+  ['💃', ['dance', 'dancing', 'choreo']],
+  // --- mind / study ---
+  ['📚', ['read', 'reading', 'book', 'books', 'chapter', 'novel']],
+  ['📖', ['study', 'studying', 'revise', 'revision', 'homework', 'flashcards', 'anki']],
+  ['✍️', ['write', 'writing', 'essay', 'blog', 'draft']],
+  ['📓', ['journal', 'journaling', 'diary', 'reflect', 'reflection', 'gratitude']],
+  ['🧠', ['learn', 'learning', 'memorize', 'brain', 'course', 'lecture']],
+  ['💻', ['code', 'coding', 'program', 'programming', 'leetcode', 'debug', 'commit', 'build']],
+  ['🗣️', ['speak', 'speaking', 'pronunciation', 'conversation practice', 'language']],
+  ['🇯🇵', ['japanese', 'kanji', 'hiragana', 'katakana', 'nihongo']],
+  ['🇪🇸', ['spanish', 'español']],
+  ['🇫🇷', ['french', 'français']],
+  ['🇩🇪', ['german', 'deutsch']],
+  ['🇰🇷', ['korean', 'hangul']],
+  ['🇨🇳', ['chinese', 'mandarin', 'hanzi']],
+  ['🔢', ['math', 'maths', 'algebra', 'calculus', 'arithmetic']],
+  ['🔬', ['science', 'lab', 'chemistry', 'biology', 'physics', 'experiment']],
+  ['♟️', ['chess', 'puzzle']],
+  // --- music / art ---
+  ['🎻', ['cello', 'violin', 'viola', 'strings']],
+  ['🎸', ['guitar', 'bass', 'ukulele', 'riff']],
+  ['🎹', ['piano', 'keyboard practice', 'keys', 'scales']],
+  ['🥁', ['drum', 'drums', 'percussion']],
+  ['🎺', ['trumpet', 'horn', 'sax', 'saxophone', 'trombone']],
+  ['🎤', ['sing', 'singing', 'vocals', 'karaoke', 'voice']],
+  ['🎵', ['music', 'practice instrument', 'compose', 'songwriting']],
+  ['🎨', ['draw', 'drawing', 'paint', 'painting', 'sketch', 'art', 'doodle']],
+  ['📷', ['photo', 'photos', 'photography', 'camera', 'shoot']],
+  ['🎬', ['film', 'video', 'edit footage', 'youtube', 'movie']],
+  // --- health / body ---
+  ['💧', ['water', 'hydrate', 'hydration', 'drink water']],
+  ['💊', ['vitamin', 'vitamins', 'supplement', 'supplements', 'medication', 'meds', 'pill', 'pills']],
+  ['😴', ['sleep', 'bed', 'bedtime', 'nap', 'rest', 'wake up', 'wake']],
+  ['🦷', ['brush', 'teeth', 'floss', 'dental']],
+  ['🚿', ['shower', 'bath', 'wash up']],
+  ['🧴', ['skincare', 'sunscreen', 'moisturize', 'lotion']],
+  ['🥗', ['salad', 'veggies', 'vegetables', 'greens', 'healthy meal', 'eat healthy']],
+  ['🍳', ['cook', 'cooking', 'breakfast', 'meal prep', 'meal-prep']],
+  ['🍽️', ['lunch', 'dinner', 'eat', 'meal']],
+  ['🍎', ['fruit', 'apple', 'snack healthy']],
+  ['☕', ['coffee', 'tea', 'espresso', 'matcha']],
+  ['🚭', ['quit smoking', 'no smoking', 'nicotine', 'vape']],
+  ['🚫', ['no alcohol', 'sober', 'no sugar', 'no junk', 'avoid']],
+  ['⚖️', ['weigh', 'weight', 'scale']],
+  // --- home / chores ---
+  ['🧹', ['clean', 'cleaning', 'tidy', 'sweep', 'declutter', 'vacuum']],
+  ['🧺', ['laundry', 'wash clothes', 'fold clothes']],
+  ['🍽️', ['dishes', 'dishwasher']],
+  ['🛏️', ['make bed', 'make the bed']],
+  ['🗑️', ['trash', 'garbage', 'bins', 'recycling']],
+  ['🌱', ['plant', 'plants', 'garden', 'gardening', 'water plants']],
+  ['🔧', ['fix', 'repair', 'maintenance']],
+  ['🛒', ['groceries', 'grocery', 'shopping', 'shop']],
+  // --- pets / people ---
+  ['🐕', ['dog', 'puppy', 'walk the dog']],
+  ['🐈', ['cat', 'kitten', 'litter']],
+  ['🤝', ['reach out', 'friend', 'friends', 'catch up', 'social', 'hang out']],
+  ['📞', ['call', 'phone', 'ring']],
+  ['💌', ['message', 'text', 'email', 'reply', 'inbox', 'letter']],
+  ['👨‍👩‍👧', ['family', 'parents', 'mom', 'dad', 'kids']],
+  ['❤️', ['partner', 'date night', 'spouse', 'wife', 'husband', 'girlfriend', 'boyfriend']],
+  // --- work / money / admin ---
+  ['💼', ['work', 'job', 'shift', 'client']],
+  ['📧', ['emails', 'check email']],
+  ['📅', ['plan', 'planning', 'schedule', 'calendar', 'agenda', 'weekly review']],
+  ['✅', ['todo', 'to-do', 'tasks', 'checklist', 'inbox zero']],
+  ['💰', ['budget', 'money', 'save', 'savings', 'finances', 'expenses', 'invest']],
+  ['🧾', ['bills', 'invoice', 'taxes', 'receipts']],
+  ['📊', ['track', 'review numbers', 'metrics', 'report', 'analytics']],
+  // --- spirit / misc ---
+  ['🙏', ['pray', 'prayer', 'church', 'scripture', 'bible', 'devotion']],
+  ['☀️', ['sunlight', 'sunshine', 'morning light', 'outside', 'outdoors', 'fresh air']],
+  ['🎮', ['game', 'gaming', 'play games']],
+  ['📱', ['screen time', 'phone time', 'social media', 'scroll']],
+  ['🎧', ['podcast', 'audiobook', 'listen']],
+  ['🧊', ['cold shower', 'ice bath', 'cold plunge']],
+];
+// Longest keyword wins, not first in the table — otherwise "walk the dog" trips over
+// plain "walk" and comes back 🚶. Word-boundary matched so "runny nose" isn't 🏃.
+const EMOJI_MATCHERS = EMOJI_KEYWORDS
+  .flatMap(([emoji, words]) => words.map(w => ({
+    emoji, len: w.length,
+    re: new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i'),
+  })))
+  .sort((a, b) => b.len - a.len);
+function guessEmoji(name) {
+  const s = String(name || '').toLowerCase().trim();
+  if (!s) return null;
+  for (const m of EMOJI_MATCHERS) if (m.re.test(s)) return m.emoji;
+  return null;
+}
+// Applies a guess to a habit/quest that's still wearing its seed icon, and pushes the
+// new value straight into the open editor's emoji input — no re-render, so the caret
+// stays put in the name field the user is mid-word in.
+function autoEmoji(item, box) {
+  if (!item || !item.emojiAuto) return false;
+  const g = guessEmoji(item.name);
+  if (!g || g === item.emoji) return false;
+  item.emoji = g;
+  const inp = box && box.querySelector('.emoji-in');
+  if (inp) inp.value = g;
+  return true;
+}
+
 // Duration detection is suggest-only — never applied silently ("buy 15 apples" would misfire).
 // The chip shows in the inline editor; tapping ✓ writes the minutes, ✕ dismisses that suggestion.
 let timerSuggestDismissed = '';   // "<habitId>:<page>:<minutes>" the user said no to (transient)
@@ -6197,7 +6431,7 @@ function appContext() {
     const sched = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
     const age = daysAgo(firstSeen[h.name]), last = daysAgo(lastSeen[h.name]);
     const tmins = habitCurrentMinutes(h);
-    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` tier=${lvl.key}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk, streak ${currentStreak(h)} (best ${h.best || 0})${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
+    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` on tier ${lvl.idx + 1}/${lvl.n}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk, streak ${currentStreak(h)} (best ${h.best || 0})${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
   });
   if (archived.length) {
     L.push('RECENTLY GRADUATED (archived — history intact, can be restored):');
@@ -6346,7 +6580,7 @@ PROPOSAL SHAPES (omit any field you're not setting):
 Editing existing things — PREFER THESE:
 - {"type":"settingsChange","path":"settings.tierRewards.easy","to":<value>,"reason":"..."}  dot-path into state. Allowed paths: settings.tierRewards.{easy,medium,hard}, settings.dailyBonus, settings.extraBonus, settings.weeklyBonus, settings.happyHours.<Category>.{start,end,mult,enabled}, settings.streakFreeze.{enabled,tier,emoji,name} (enabled=true|false, tier=common|rare|epic|legendary, emoji/name=short strings), pass.xpPerLevel, pass.proCost, pass.perXP.{daily,task}, games.wheel.cost, games.wheel.tokenWin.0, games.wheel.tokenWin.1, games.wheel.weights.{blank,tokens,common,rare,epic,legendary}. Sound & reduced-motion settings are NOT editable — never propose changes to them.
 - {"type":"rewardEdit","id":"<existing reward id>","name":"...","emoji":"...","tier":"common|rare|epic|legendary","minutes":0}  edits a reward in place; include only fields you're changing; NEVER creates one
-- {"type":"tierChange","targetKind":"habit|quest","id":"<id>","to":"easy|medium|hard OR a token number for plain habits","reason":"..."}
+- {"type":"tierChange","targetKind":"habit|quest","id":"<id>","to":"<value>","reason":"..."}  quests: easy|medium|hard. Habits with a difficulty ladder: the tier NUMBER (1 = easiest, counting up) — the ladder can be any height, see "on tier N/M" in the habit list. Habits with no ladder: a token number.
 - {"type":"scheduleChange","id":"<habit id>","days":[7 booleans Sun..Sat],"reason":"..."}
 - {"type":"dropHabit","id":"<habit id>","reason":"..."}  archives it, history intact
 - {"type":"categoryRename","from":"<existing category>","to":"<new name>","reason":"..."}  renames it everywhere (habits, quests, pass goals, happy hours); "Unsorted" can't be renamed
@@ -6616,7 +6850,16 @@ function applyProposal(p) {
     }
     const h = state.habits.find(x => x.id === p.id); if (!h) return false;
     const lvls = habitLevels(h);
-    if (lvls) { const i = lvls.findIndex(l => l.key === p.to); if (i < 0) return false; h.curTier = i; return true; }
+    // `to` may be a 1-based tier number, or the coarse easy/medium/hard band the model
+    // used to speak — those map to the bottom / middle / top of whatever ladder exists.
+    if (lvls) {
+      const n = lvls.length;
+      const num = parseInt(p.to);
+      let i = Number.isFinite(num) ? num - 1
+        : (p.to === 'easy' ? 0 : p.to === 'hard' ? n - 1 : p.to === 'medium' ? Math.floor((n - 1) / 2) : -1);
+      if (!(i >= 0 && i < n)) return false;
+      h.curTier = i; return true;
+    }
     const n = parseInt(p.to); if (!Number.isFinite(n)) return false;
     h.reward = clamp(n, 0, 999); return true;
   }
@@ -6682,7 +6925,6 @@ function applyProposal(p) {
   if (t === 'addTier') {
     const h = state.habits.find(x => x.id === p.habitId); if (!h) return false;
     h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
-    if (h.tiers.length >= 2) return false;                 // ladder is full (3 levels max)
     const name = String(p.name || '').trim(); if (!name) return false;
     const n = h.tiers.length + 1;                          // level count BEFORE adding
     const curBase = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1);
@@ -6918,10 +7160,12 @@ function openPlanner() {
   $('#planOverlay').classList.add('show');
 }
 // Single-habit entry points from the habit editor — same overlay, same cards.
-function openPlannerSingle(habitId, kind) {
+function openPlannerSingle(habitId, kind, side) {
   const h = state.habits.find(x => x.id === habitId); if (!h) return;
   planScope = 'single';
-  planTarget = { habitId, kind, context: todayContext() || (state.contexts || [])[0] || '', side: 'easier' };
+  // The ladder popup already knows which end the ✚ was on, so it passes the side in
+  // rather than making the user answer the same question twice.
+  planTarget = { habitId, kind, context: todayContext() || (state.contexts || [])[0] || '', side: side === 'harder' ? 'harder' : 'easier' };
   planProposals = []; planMessage = ''; planError = '';
   renderPlanner();
   $('#planOverlay').classList.add('show');
@@ -7097,7 +7341,7 @@ ${appContext()}`;
 }
 function tierFillSystemPrompt(h, side) {
   const lvls = habitLevels(h);
-  const ladder = lvls ? lvls.map(l => `${l.key}: "${l.name || h.name}" +${l.reward}🪙${l.minutes ? `, ${l.minutes}m` : ''}${l.base ? ' (the original)' : ''}`).join(' | ') : `(only the original: "${h.name}" +${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m` : ''})`;
+  const ladder = lvls ? lvls.map(l => `${l.label}: "${l.name || h.name}" +${l.reward}🪙${l.minutes ? `, ${l.minutes}m` : ''}${l.base ? ' (the original)' : ''}`).join(' | ') : `(only the original: "${h.name}" +${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m` : ''})`;
   return `You are the planning assistant inside HabitCasinoAI, a gamified habit tracker. Philosophy: CONSISTENCY OVER INTENSITY.
 
 The user wants ONE new DIFFICULTY tier on a habit. Difficulty tiers are the energy axis: the same habit at a size that matches how much they've got today. Completing any tier counts as one completion; only the payout differs.
@@ -8060,7 +8304,7 @@ function onHabitsClick(e) {
   if (act === 'editHabit') { SFX.click(); openEditor('habit', e.target.closest('.hrow').dataset.id); return; }
   if (act === 'closeEdit') {
     const h = state.habits.find(x => x.id === editingHabitId);
-    editingHabitId = null; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits();
+    editingHabitId = null; editTierPage = null; SFX.click(); renderHabits();
     // First time this habit's ever been closed out of the editor: offer the AI a
     // chance to ask what this habit actually means (how you do it, what "good"
     // looks like, why) — so later mode/tier suggestions are grounded, not guessed.
@@ -8071,7 +8315,7 @@ function onHabitsClick(e) {
     const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
     if (h) {
       h.archived = true;
-      editingHabitId = null; editTierPage = null; addTierChoiceOpen = false;
+      editingHabitId = null; editTierPage = null;
       SFX.win(); burst({ count: 70, colors: ['#ffd700', '#00f0ff', '#b026ff'] });
       toast(`🎓 ${h.name} graduated — resting in the archive`, 'var(--gold)');
       save(); renderHabits();
@@ -8089,55 +8333,24 @@ function onHabitsClick(e) {
     return;
   }
   if (act === 'openPlanner') { SFX.click(); openPlanner(); return; }
-  if (act === 'aiTier') {
+  // One button now: which side the new tier goes on is answered spatially, inside the
+  // ladder popup, by which ✚ you press.
+  if (act === 'addTier') {
     const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
-    SFX.click(); openPlannerSingle(id, 'tier');
-    return;
-  }
-  if (act === 'addTier') { addTierChoiceOpen = true; SFX.click(); renderHabits(); return; }
-  if (act === 'addTierCancel') { addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
-  if (act === 'addTierHarder' || act === 'addTierEasier') {
-    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
-    addTierChoiceOpen = false;
-    if (h) {
-      h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
-      if (h.tiers.length < 2) {
-        const n = h.tiers.length + 1;   // level count BEFORE adding
-        const curBase = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1);
-        const harder = act === 'addTierHarder';
-        const nt = { name: '', reward: harder
-          ? Math.max((h.reward || 1) + 1, Math.round((h.reward || 1) * 1.5))
-          : Math.max(1, Math.round((h.reward || 1) * 0.5)) };
-        if (harder) { h.tiers.push(nt); h.baseIdx = curBase; editTierPage = n; }        // new hardest → base shifts down a label
-        else { h.tiers.unshift(nt); h.baseIdx = curBase + 1; editTierPage = 0; }        // new easiest → base stays on top
-        h.curTier = null;
-        SFX.click(); save(); renderHabits();
-        setTimeout(() => $(`.hedit[data-id="${h.id}"] [data-tf="name"]`)?.focus(), 30);
-      }
-    }
-    return;
+    SFX.click(); openTierLadder(id); return;
   }
   if (act === 'removeTier') {
-    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
-    const lvls = h && habitLevels(h);
-    if (lvls) {
-      const pg = clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1);
-      const lvl = lvls[pg];
-      if (!lvl.base) {
-        const curBase = lvls.findIndex(l => l.base);
-        h.tiers.splice(lvl.tIdx, 1);
-        h.baseIdx = h.tiers.length ? (pg < curBase ? curBase - 1 : curBase) : null;
-        h.curTier = null; editTierPage = null;   // back to the base page / default level
-        SFX.click(); save(); renderHabits();
-      }
-    }
+    const box = e.target.closest('.hedit'); if (!box) return;
+    const h = state.habits.find(x => x.id === box.dataset.id);
+    if (h) removeTierAt(h, parseInt(box.dataset.page));
     return;
   }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
-    const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
-    state.habits.push(nh); editingHabitId = nh.id; SFX.click(); save(); renderHabits();
-    setTimeout(() => $(`.hedit[data-id="${nh.id}"] .name-in`)?.focus(), 30);
+    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
+    // openEditor, not a bare editingHabitId — only it raises the sheet, and a brand-new
+    // habit with no name is useless until you can type into it.
+    state.habits.push(nh); SFX.click(); save(); renderHabits(); openEditor('habit', nh.id);
     return;
   }
   if (act === 'delHabit') {
@@ -8164,7 +8377,11 @@ function onInlineHabitField(e) {
     const box = e.target.closest('.hedit'); if (!box) return;
     const h = state.habits.find(x => x.id === box.dataset.id); if (!h) return;
     const lvls = habitLevels(h); if (!lvls) return;
-    const lvl = lvls[clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1)];
+    // Which tier this input belongs to comes from the PAGE it's on, not from the global
+    // editTierPage — every page is in the DOM at once now, so the global would let an
+    // off-screen page's input write to whichever tier happens to be showing.
+    const page = clamp(parseInt(box.dataset.page) || 0, 0, lvls.length - 1);
+    const lvl = lvls[page];
     const t = lvl.base ? null : (h.tiers || [])[lvl.tIdx];
     if (!t) return;
     if (tf === 'reward') t.reward = clamp(parseInt(e.target.value) || 0, 0, 999);
@@ -8172,7 +8389,7 @@ function onInlineHabitField(e) {
     else {
       t.name = e.target.value;
       const sug = box.querySelector('.timer-suggest');   // live duration detection as the name is typed
-      if (sug) sug.innerHTML = timerSuggestHTML(h.id, String(clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1)), t.name, t.minutes || 0);
+      if (sug) sug.innerHTML = timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0);
     }
     save(); return;
   }
@@ -8188,18 +8405,22 @@ function onInlineHabitField(e) {
   else if (f === 'section') h.section = (e.target.value === 'extra' ? 'extra' : 'daily');
   else if (f === 'loadout') { h.loadout = e.target.value.trim() ? e.target.value.trim() : null; renderHabits(); } // '' = universal
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
+  else if (f === 'emoji') { h.emoji = e.target.value; h.emojiAuto = false; }   // a deliberate icon — stop guessing
   else {
     h[f] = e.target.value;
     if (f === 'name') {
       const sug = box.querySelector('.timer-suggest');   // live duration detection as the name is typed
       if (sug) sug.innerHTML = timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0);
+      autoEmoji(h, box);                                 // and an icon to match, until the user picks one
     }
   }
   save();
 }
 $('#view-habits').addEventListener('click', onHabitsClick);
 $('#view-habits').addEventListener('pointerdown', onHabitPointerDown);
+$('#view-habits').addEventListener('pointermove', onHabitPointerMove);
 $('#view-habits').addEventListener('pointerup', onHabitPointerUp);
+$('#view-habits').addEventListener('pointercancel', onHabitPointerUp);
 $('#view-habits').addEventListener('input', onInlineHabitField);
 $('#view-habits').addEventListener('change', onInlineHabitField);
 
@@ -8220,15 +8441,19 @@ function openEditor(kind, id) {
   else if (kind === 'oneoff') editingOneoffId = id;
   else editingRewardId = id;
   editMoreOpen = false;                       // a freshly opened editor starts compact
-  editTierPage = null; addTierChoiceOpen = false;
-  renderEditSheet();
+  editTierPage = null;
+  // Show BEFORE rendering: the sheet measures its active page to set its own height, and
+  // a display:none overlay measures 0, which would collapse it to an empty strip.
   $('#editOverlay').classList.add('show');
-  setTimeout(() => $('#editSheet .name-in')?.focus(), 260);   // after the slide settles
+  renderEditSheet();
+  // Focus the page that's actually showing — with every tier page in the DOM, a plain
+  // '#editSheet .name-in' would grab an off-screen one.
+  setTimeout(() => (activeEditPane() || $('#editSheet'))?.querySelector('.name-in')?.focus(), 260);
 }
 function closeEditor() {
   $('#editOverlay').classList.remove('show');
   editingHabitId = editingOneoffId = editingRewardId = null;
-  editTierPage = null; addTierChoiceOpen = false; editMoreOpen = false;
+  editTierPage = null; editMoreOpen = false;
   renderHabits(); renderOneoffs(); renderPrizes();
 }
 function editorIsOpen() { return !!(editingHabitId || editingOneoffId || editingRewardId); }
@@ -8246,7 +8471,7 @@ function renderEditSheet() {
   let html = '';
   if (editingHabitId) {
     const h = state.habits.find(x => x.id === editingHabitId);
-    html = h ? habitEditHTML(h) : '';
+    html = h ? habitEditPagesHTML(h) : '';   // every tier page in one swipeable track
   } else if (editingOneoffId) {
     const t = state.oneoffs.find(x => x.id === editingOneoffId);
     html = t ? oneoffEditHTML(t) : '';
@@ -8256,6 +8481,23 @@ function renderEditSheet() {
   }
   if (!html) { closeEditor(); return; }
   body.innerHTML = html;
+  syncEditSheetHeight();
+}
+// The editor page currently on screen (the sheet holds all of a habit's tier pages).
+function activeEditPane() {
+  const track = $('#editSheetBody .hedit-track'); if (!track) return null;
+  return track.children[clamp(parseInt(track.dataset.idx) || 0, 0, track.children.length - 1)] || null;
+}
+// A flex track takes the height of its TALLEST page, which would leave dead space under
+// short ones. Pin the viewport to whichever page is showing instead, and let it animate
+// so the sheet grows and shrinks in step with the slide.
+function syncEditSheetHeight() {
+  const wrap = $('#editSheetBody .hedit-swipe'); if (!wrap) return;
+  const pane = activeEditPane();
+  const hgt = pane ? pane.offsetHeight : 0;
+  // A zero measurement means we're hidden (or not laid out yet). Pinning to 0 would
+  // clip the sheet to nothing, so leave it auto and let the next sync set a real value.
+  wrap.style.height = hgt ? hgt + 'px' : '';
 }
 
 // One dispatch point: route to whichever container handler owns the open editor, so a
@@ -8275,8 +8517,187 @@ const editSheetField = e => {
 $('#editOverlay').addEventListener('input', editSheetField);
 $('#editOverlay').addEventListener('change', editSheetField);
 $('#editOverlay').addEventListener('pointerdown', onHabitPointerDown);   // tier swiping
+$('#editOverlay').addEventListener('pointermove', onHabitPointerMove);
 $('#editOverlay').addEventListener('pointerup', onHabitPointerUp);
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && editorIsOpen()) closeEditor(); });
+$('#editOverlay').addEventListener('pointercancel', onHabitPointerUp);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (tierLadderId) closeTierLadder();          // ladder sits on top — it closes first
+  else if (editorIsOpen()) closeEditor();
+});
+
+/* =================================================================
+   DIFFICULTY LADDER — the whole tier system of one habit on one line.
+
+   The save shape doesn't change: `h.tiers` still holds only the EXTRA tiers
+   (easiest → hardest) and `h.baseIdx` still says where the habit itself sits among
+   them. Reordering just rebuilds both from the strip's visual order, so ladders
+   written by older versions load and edit with no migration.
+   ================================================================= */
+function openTierLadder(id) {
+  tierLadderId = id;
+  renderTierLadder();
+  $('#tierOverlay').classList.add('show');
+}
+function closeTierLadder() {
+  tierLadderId = null;
+  $('#tierOverlay').classList.remove('show');
+}
+// One box per level, in ladder order. The base box is the habit itself, so it can be
+// dragged but never deleted — removing it would mean deleting the habit.
+function renderTierLadder() {
+  const body = $('#tierSheetBody'); if (!body) return;
+  const h = state.habits.find(x => x.id === tierLadderId);
+  if (!h) { closeTierLadder(); return; }
+  const lvls = habitLevels(h);
+  const boxes = lvls
+    ? lvls.map(l => `
+      <div class="ladder-box${l.base ? ' base' : ''}" data-page="${l.idx}">
+        <div class="lb-tier" style="color:${l.color}">${l.label}</div>
+        <div class="lb-name">${escapeHtml(l.name || h.name || 'Untitled')}</div>
+        <div class="lb-reward">+${l.reward} 🪙</div>
+        ${l.base ? `<span class="lb-star" title="The habit itself">★</span>`
+                 : `<button class="lb-del" data-act="ladderDel" data-page="${l.idx}" title="Remove this tier">🗑</button>`}
+      </div>`).join('')
+    : `<div class="ladder-box base" data-page="0">
+         <div class="lb-tier" style="color:var(--ink-dim)">no tiers</div>
+         <div class="lb-name">${escapeHtml(h.name || 'Untitled')}</div>
+         <div class="lb-reward">+${h.reward} 🪙</div>
+         <span class="lb-star" title="The habit itself">★</span>
+       </div>`;
+  body.innerHTML = `
+    <div class="pass-title">🪜 DIFFICULTY TIERS</div>
+    <div class="subtle">Same habit, different sizes. Completing any tier counts as one completion — only the payout changes. Drag to reorder; tap a tier to edit it.</div>
+    <div class="ladder-wrap">
+      <div class="ladder-end">
+        <button class="ladder-add" data-act="ladderAdd" data-side="easier" title="Add an easier tier">✚</button>
+        <button class="ladder-ai" data-act="ladderAI" data-side="easier" title="Let the AI write an easier tier">✨</button>
+        <span class="ladder-endlab">easier</span>
+      </div>
+      <div class="ladder-strip" id="ladderStrip">${boxes}</div>
+      <div class="ladder-end">
+        <button class="ladder-add" data-act="ladderAdd" data-side="harder" title="Add a harder tier">✚</button>
+        <button class="ladder-ai" data-act="ladderAI" data-side="harder" title="Let the AI write a harder tier">✨</button>
+        <span class="ladder-endlab">harder</span>
+      </div>
+    </div>
+    <div class="hedit-r hedit-actions"><button class="btn green sm" data-act="closeTierLadder">✓ Done</button></div>`;
+}
+// Grow the ladder at one end. The base habit keeps its slot when the new tier goes on
+// top of it, and shifts up one when the new tier slides in underneath.
+function addTierSide(h, side) {
+  h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
+  const n = h.tiers.length + 1;                                                  // level count BEFORE adding
+  const curBase = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1);
+  const harder = side === 'harder';
+  const nt = { name: '', minutes: 0, reward: harder
+    ? Math.max((h.reward || 1) + 1, Math.round((h.reward || 1) * 1.5))
+    : Math.max(1, Math.round((h.reward || 1) * 0.5)) };
+  if (harder) { h.tiers.push(nt); h.baseIdx = curBase; editTierPage = n; }
+  else { h.tiers.unshift(nt); h.baseIdx = curBase + 1; editTierPage = 0; }
+  h.curTier = null;
+  save();
+}
+function removeTierAt(h, page) {
+  const lvls = habitLevels(h); if (!lvls) return false;
+  if (!(page >= 0 && page < lvls.length)) return false;
+  const lvl = lvls[page];
+  if (lvl.base) return false;                       // that's the habit, not a tier
+  const curBase = lvls.findIndex(l => l.base);
+  h.tiers.splice(lvl.tIdx, 1);
+  h.baseIdx = h.tiers.length ? (page < curBase ? curBase - 1 : curBase) : null;
+  h.curTier = null; editTierPage = null;            // back to the base page / default level
+  SFX.click(); save(); renderHabits(); renderTierLadder();
+  return true;
+}
+// Rewrites h.tiers + h.baseIdx from a visual ordering of ladder positions.
+// `order` is the old page index of each box, in its new left-to-right order.
+function reorderTiers(h, order) {
+  const lvls = habitLevels(h); if (!lvls) return;
+  if (order.length !== lvls.length) return;
+  const items = order.map(i => lvls[i]);
+  h.tiers = items.filter(l => !l.base).map(l => ({ name: l.name, reward: l.reward, minutes: l.minutes || 0 }));
+  h.baseIdx = items.findIndex(l => l.base);
+  // Both "which tier am I on" and "which page is open" point at positions whose meaning
+  // just changed, so neither survives the shuffle.
+  h.curTier = null; editTierPage = null;
+  save(); renderHabits(); syncEditorSheet(); renderTierLadder();
+}
+
+$('#tierOverlay').addEventListener('click', e => {
+  if (e.target.id === 'tierOverlay' || e.target.closest('[data-act="closeTierLadder"]')) { SFX.click(); closeTierLadder(); return; }
+  const h = state.habits.find(x => x.id === tierLadderId); if (!h) return;
+  const btn = e.target.closest('[data-act]');
+  const act = btn && btn.dataset.act;
+  if (act === 'ladderAdd') {
+    addTierSide(h, btn.dataset.side);
+    SFX.click(); renderHabits(); renderTierLadder(); syncEditorSheet();
+    closeTierLadder();                                   // land straight on the new tier's page
+    setTimeout(() => $('#editSheetBody .hedit-track [data-tf="name"]')?.focus(), 320);
+    return;
+  }
+  if (act === 'ladderAI') { SFX.click(); closeTierLadder(); openPlannerSingle(h.id, 'tier', btn.dataset.side); return; }
+  if (act === 'ladderDel') { removeTierAt(h, parseInt(btn.dataset.page)); return; }
+  if (ladderDragged) return;                             // a reorder just ended — not a tap
+  const box = e.target.closest('.ladder-box');
+  if (box && habitLevels(h)) {                           // tap a tier → open its editor page
+    editTierPage = clamp(parseInt(box.dataset.page) || 0, 0, habitLevels(h).length - 1);
+    SFX.click(); closeTierLadder(); syncEditorSheet();
+  }
+});
+
+/* ---- Drag-to-reorder on the ladder strip. Pointer events rather than HTML5 drag &
+   drop, which doesn't work on touch at all. The dragged box follows the finger; the
+   others slide out of its way with a transition so the gap opens where it'll land. ---- */
+let ladderDrag = null, ladderDragged = false;
+$('#tierOverlay').addEventListener('pointerdown', e => {
+  const box = e.target.closest('.ladder-box');
+  const strip = $('#ladderStrip');
+  if (!box || !strip || e.target.closest('.lb-del')) return;
+  const boxes = Array.from(strip.children);
+  if (boxes.length < 2) return;
+  ladderDragged = false;
+  ladderDrag = {
+    strip, boxes, box, from: boxes.indexOf(box), to: boxes.indexOf(box),
+    x0: e.clientX, w: box.offsetWidth + 10,   // width + the strip's gap
+  };
+  box.setPointerCapture(e.pointerId);
+});
+$('#tierOverlay').addEventListener('pointermove', e => {
+  const d = ladderDrag; if (!d) return;
+  const dx = e.clientX - d.x0;
+  if (!ladderDragged && Math.abs(dx) < 6) return;
+  if (!ladderDragged) { ladderDragged = true; d.strip.classList.add('dragging'); d.box.classList.add('lifted'); }
+  d.box.style.transform = `translateX(${dx}px) scale(1.05)`;
+  const to = clamp(d.from + Math.round(dx / d.w), 0, d.boxes.length - 1);
+  if (to !== d.to) {
+    d.to = to;
+    // Everything between the box's home and its target shifts one slot the other way.
+    d.boxes.forEach((b, i) => {
+      if (b === d.box) return;
+      let shift = 0;
+      if (d.from < to && i > d.from && i <= to) shift = -d.w;
+      else if (d.from > to && i >= to && i < d.from) shift = d.w;
+      b.style.transform = shift ? `translateX(${shift}px)` : '';
+    });
+    SFX.click();
+  }
+});
+const endLadderDrag = () => {
+  const d = ladderDrag; if (!d) return;
+  ladderDrag = null;
+  d.strip.classList.remove('dragging');
+  d.box.classList.remove('lifted');
+  d.boxes.forEach(b => { b.style.transform = ''; });
+  if (!ladderDragged || d.to === d.from) { setTimeout(() => { ladderDragged = false; }, 0); return; }
+  const h = state.habits.find(x => x.id === tierLadderId);
+  const order = d.boxes.map(b => parseInt(b.dataset.page));
+  order.splice(d.to, 0, order.splice(d.from, 1)[0]);
+  if (h) reorderTiers(h, order);
+  setTimeout(() => { ladderDragged = false; }, 0);   // let the click that follows fizzle first
+};
+$('#tierOverlay').addEventListener('pointerup', endLadderDrag);
+$('#tierOverlay').addEventListener('pointercancel', endLadderDrag);
 /* ---- Loadout chooser/creator -------------------------------------------------------
    Fully in-app: no native <select> or prompt. Creating a loadout can clone any chosen
    habits, grouped by their source loadout; choosing none creates a clean blank slate. */
@@ -8358,33 +8779,75 @@ $('#loadoutBody').addEventListener('click', e => {
   else if (act === 'loadoutCreate') createLoadoutFromMenu();
 });
 
-// Swipe left/right on a leveled habit row (or its open editor) to move between difficulty
-// tiers — left = easier, right = harder. Vertical scrolling stays untouched (touch-action: pan-y).
+/* ---- Tier swiping, on a checklist row or on the editor sheet's tier pages.
+   Both surfaces render EVERY tier up front in a track offset by -index×100%, so the
+   gesture is pure transform maths: nothing is built or re-rendered while the finger is
+   down, which is what makes it track smoothly instead of stepping.
+
+   Direction: swipe LEFT for harder. Since the track sits at -index×100%, dragging left
+   already uncovers the next index along, so the harder tier physically comes in from
+   the right edge and the maths needs no inversion.
+
+   Vertical scrolling is untouched — the row keeps touch-action: pan-y, and we only
+   claim the gesture once it's clearly more horizontal than vertical. ---- */
 let swipeStart = null, lastSwipeAt = 0;
+const SWIPE_SLOP = 10;          // px of movement before we decide the gesture is horizontal
 function onHabitPointerDown(e) {
   swipeStart = null;
   if (e.target.closest('input, select, button, .day-picker')) return;  // don't hijack controls
   const row = e.target.closest('.hrow[data-id], .hedit[data-id]');
   if (!row) return;
-  swipeStart = { x: e.clientX, y: e.clientY, id: row.dataset.id, isEdit: row.classList.contains('hedit') };
+  const isEdit = row.classList.contains('hedit');
+  const track = isEdit ? row.closest('.hedit-swipe')?.querySelector('.hedit-track')
+                       : row.querySelector('.hrow-track');
+  if (!track) return;                                    // habit has no tiers — nothing to page
+  const h = state.habits.find(x => x.id === row.dataset.id);
+  const lvls = h && habitLevels(h); if (!lvls || lvls.length < 2) return;
+  swipeStart = {
+    x: e.clientX, y: e.clientY, id: row.dataset.id, isEdit, track, n: lvls.length,
+    idx: clamp(parseInt(track.dataset.idx) || 0, 0, lvls.length - 1),
+    w: track.getBoundingClientRect().width || 1,
+    active: false,
+  };
+}
+function onHabitPointerMove(e) {
+  const s = swipeStart; if (!s) return;
+  const dx = e.clientX - s.x, dy = e.clientY - s.y;
+  if (!s.active) {
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_SLOP) { swipeStart = null; return; }  // it's a scroll
+    if (Math.abs(dx) < SWIPE_SLOP) return;
+    s.active = true;
+    s.track.classList.add('dragging');
+  }
+  // Past either end there's nothing to reveal, so resistance tells the finger so.
+  let off = dx;
+  if ((s.idx === 0 && dx > 0) || (s.idx === s.n - 1 && dx < 0)) off = dx * 0.35;
+  s.track.style.transform = `translateX(calc(${-s.idx * 100}% + ${off}px))`;
 }
 function onHabitPointerUp(e) {
   const s = swipeStart; swipeStart = null;
-  if (!s) return;
-  const dx = e.clientX - s.x, dy = e.clientY - s.y;
-  if (Math.abs(dx) < 44 || Math.abs(dy) > 60) return;   // not a deliberate horizontal swipe
+  if (!s || !s.active) return;
+  const dx = e.clientX - s.x;
+  const threshold = Math.min(64, s.w * 0.28);
+  // Swipe left (dx < 0) → next index → the harder tier.
+  const dir = Math.abs(dx) >= threshold ? (dx < 0 ? 1 : -1) : 0;
+  const to = clamp(s.idx + dir, 0, s.n - 1);
+  lastSwipeAt = Date.now();                              // suppress the click this gesture fires
+  s.track.classList.remove('dragging');                  // transition back on — it animates the settle
+  s.track.style.transform = `translateX(${-to * 100}%)`;
+  s.track.dataset.idx = String(to);
+  if (to === s.idx) return;                              // sprang back; nothing changed
+  SFX.click();
   const h = state.habits.find(x => x.id === s.id); if (!h) return;
-  const lvls = habitLevels(h); if (!lvls) return;
-  const dir = dx < 0 ? -1 : 1;                          // swipe left → easier, right → harder
-  lastSwipeAt = Date.now();                             // suppress the click this gesture fires
-  if (s.isEdit) {
-    const cur = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.findIndex(l => l.base), 0, lvls.length - 1);
-    editTierPage = clamp(cur + dir, 0, lvls.length - 1);
-  } else {
-    h.curTier = clamp(curLevelIndex(h) + dir, 0, lvls.length - 1);
-    save();
-  }
-  SFX.click(); renderHabits();
+  if (s.isEdit) { editTierPage = to; syncEditSheetHeight(); }
+  else { h.curTier = to; save(); }
+  // Re-render only once the slide has finished, so the DOM swap is invisible. The row is
+  // already sitting at the destination offset, so nothing jumps when it's replaced.
+  const settle = () => { if (s.isEdit) renderEditSheet(); else renderHabits(); };
+  let done = false;
+  const once = () => { if (done) return; done = true; s.track.removeEventListener('transitionend', once); settle(); };
+  s.track.addEventListener('transitionend', once);
+  setTimeout(once, 360);                                 // fallback if the transition never fires
 }
 
 // Tasks view: quick-add bar + to-do list + quest wheel (delegated)
@@ -8442,7 +8905,11 @@ function onInlineOneoffField(e) {
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
   else if (f === 'category') t.category = e.target.value;
-  else t[f] = e.target.value;
+  else if (f === 'emoji') { t.emoji = e.target.value; t.emojiAuto = false; }   // a deliberate icon — stop guessing
+  else {
+    t[f] = e.target.value;
+    if (f === 'name') autoEmoji(t, box);
+  }
   save();
 }
 $('#view-tasks').addEventListener('click', onTasksClick);
