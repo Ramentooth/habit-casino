@@ -497,7 +497,8 @@
       background: linear-gradient(160deg, rgba(176,38,255,0.10), rgba(20,6,42,0.55));
       border: 1px solid var(--panel-edge);
     }
-    /* Habit difficulty levels: rim color + tier word live inside the reward pill; swipe to change */
+    /* Habit difficulty levels. The ONLY coloured thing is the "tier N" word in the pill —
+       no rim, no tinted pill, no coloured dots. Swipe the row to change tier. */
     .hrow, .hedit { touch-action: pan-y; }
     .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1; padding: 4px 9px 3px; }
     .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
@@ -505,9 +506,90 @@
     .tier-head { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; }
     .tier-dots { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; }
     .tdot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.18); }
+    .tdot.on { background: rgba(255,255,255,.75); }
     .tier-hint { font-family: 'Rajdhani', sans-serif; font-size: 10px; color: var(--ink-dim); font-weight: 700; letter-spacing: .5px; margin-left: 6px; }
-    .tier-choice { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    /* Tier carousel. Every level is rendered up front in a track offset by -index×100%,
+       so a swipe is one transform away — nothing is built or re-rendered mid-gesture,
+       which is what makes it track the finger instead of stepping. Only the parts that
+       actually differ per tier live inside; emoji, chevrons and buttons stay outside. */
+    .hrow-swipe { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    .hrow-track { display: flex; transition: transform .3s cubic-bezier(.22,.9,.3,1); }
+    .hrow-track.dragging { transition: none; }
+    .hrow-pane { flex: 0 0 100%; display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .hrow-pane .hrow-main { flex: 1 1 auto; min-width: 0; }
+    /* Same idea for the editor sheet's tier pages. Height is set from the active page in
+       JS, since the pages are different heights and a flex track takes the tallest. */
+    .hedit-swipe { overflow: hidden; transition: height .3s cubic-bezier(.22,.9,.3,1); }
+    .hedit-track { display: flex; align-items: flex-start; transition: transform .3s cubic-bezier(.22,.9,.3,1); }
+    .hedit-track.dragging { transition: none; }
+    .hedit-track > .hedit { flex: 0 0 100%; }
+
+    /* --- Difficulty ladder popup ----------------------------------------------------
+       The whole tier system on one line: ✚ at each end to grow it easier/harder, boxes
+       in between that drag to reorder. */
+    .ladder-wrap { display: flex; align-items: stretch; gap: 8px; margin: 12px 0 6px; }
+    .ladder-end { display: flex; flex-direction: column; align-items: center; gap: 4px; justify-content: center; flex: 0 0 auto; }
+    .ladder-add {
+      width: 34px; height: 34px; border-radius: 10px; cursor: pointer; font-size: 17px; font-weight: 900;
+      display: grid; place-items: center; font-family: inherit;
+      background: var(--gs-lite); color: var(--gs-on-lite); border: 1px solid transparent;
+    }
+    .ladder-add:active { transform: scale(.92); }
+    .ladder-ai {
+      width: 34px; height: 26px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: inherit;
+      display: grid; place-items: center; background: var(--gs-ctl); color: var(--ink); border: 1px solid var(--gs-edge);
+    }
+    .ladder-endlab { font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: .5px; color: var(--ink-dim); text-transform: uppercase; }
+    .ladder-strip { flex: 1 1 auto; display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: thin; }
+    .ladder-strip.dragging { overflow-x: hidden; touch-action: none; }
+    .ladder-box {
+      position: relative; flex: 0 0 128px; cursor: grab; user-select: none; touch-action: pan-y;
+      padding: 9px 10px 10px; border-radius: 12px;
+      background: var(--gs-card); border: 1px solid var(--gs-edge);
+      transition: transform .18s cubic-bezier(.22,.9,.3,1);
+    }
+    .ladder-box.base { border-color: var(--gs-edge-hi); }
+    .ladder-box.lifted { transition: none; cursor: grabbing; z-index: 3; box-shadow: 0 10px 22px rgba(0,0,0,.6); }
+    .lb-tier { font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; }
+    .lb-name { font-size: 13px; font-weight: 700; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-reward { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 900; color: var(--ink-dim); margin-top: 3px; }
+    .lb-star { position: absolute; top: 6px; right: 8px; font-size: 11px; color: var(--ink-dim); }
+    .lb-del {
+      position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; cursor: pointer;
+      border-radius: 7px; display: grid; place-items: center; font-size: 11px; font-family: inherit;
+      background: transparent; border: 0; color: var(--ink-dim);
+    }
+    .lb-del:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+    /* --- Backup / recovery rows ------------------------------------------------- */
+    /* The recovery card is short — it shouldn't inherit the Habit Pass's full-height sheet. */
+    #recoverModal { height: auto; top: 50%; transform: translate(-50%, -50%); max-height: min(880px, calc(100vh - 24px)); overflow-y: auto; }
+    .bak-list { max-height: 46vh; overflow-y: auto; margin: 4px 0; }
+    .bak-row { display: flex; align-items: center; gap: 8px; padding: 9px 10px; margin-bottom: 6px; }
+    .bak-main { flex: 1 1 auto; min-width: 0; }
+    .bak-when { font-weight: 700; font-size: 13px; }
+    .bak-sub { font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 1px; }
+    .bak-head {
+      font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+      color: var(--ink-dim); text-transform: uppercase; margin: 12px 0 6px;
+    }
+    .bak-head:first-child { margin-top: 4px; }
+    /* A user slot is a deliberate act — give it a visible edge so it reads as different
+       from the rotation it sits above. */
+    .bak-row.slot { border-color: var(--gs-edge-hi) !important; }
+    .bak-row.slot.empty { border-style: dashed !important; }
+    .bak-row.slot.empty .bak-when { color: var(--ink-dim); }
+    .bak-tag {
+      display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+      font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: .4px;
+      background: rgba(255,255,255,.08); color: var(--ink-dim); vertical-align: middle;
+    }
+    #recoverModal code { font-size: 11px; word-break: break-word; }
+    /* Two class names so this beats .edit-overlay's own z-index regardless of source
+       order — the ladder has to sit above the editor sheet it was opened from. */
+    .edit-overlay.tier-overlay { z-index: 79; }
     /* Graduated (archived) habit rows */
     #archivedSection { padding-bottom: 96px; } /* keep the last Restore button clear of the Habit Pass FAB */
     .hrow.arch { cursor: default; opacity: .8; background: linear-gradient(160deg, rgba(255,215,0,0.06), rgba(20,6,42,0.5)); border-color: rgba(255,215,0,0.28); }
@@ -1316,17 +1398,6 @@
       padding: 3px 10px; border-radius: 999px; color: var(--cyan);
       border: 1px solid rgba(0,240,255,.5); background: rgba(0,240,255,.1);
     }
-    .mode-tag {
-      display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 800; padding: 1px 7px;
-      border-radius: 999px; color: var(--cyan); border: 1px solid rgba(0,240,255,.45);
-      background: rgba(0,240,255,.1); white-space: nowrap; vertical-align: middle;
-    }
-    .hrow.moded { border-color: rgba(0,240,255,.5); }
-    .hedit-modes { flex-direction: column; align-items: stretch; gap: 2px; }
-    .modes-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
-    .mode-empty { font-size: 12px; }
-    .mode-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 0; border-top: 1px dashed var(--panel-edge); }
-    .mode-row .mode-name { flex: 1 1 120px; font-weight: 700; font-size: 13px; }
     .plan-week-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .plan-week-nav .wk { flex: 1 1 auto; text-align: center; font-weight: 800; font-size: 13px; }
     .plan-day { border: 1px solid var(--panel-edge); border-radius: 12px; padding: 8px 10px; margin-bottom: 8px; background: rgba(0,0,0,0.22); }
@@ -1544,6 +1615,66 @@
     .sched-now { border-top-color: var(--gs-edge-hi) !important; box-shadow: none !important; }
     .sched-now::before { background: var(--gs-edge-hi) !important; }
 
+    /* --- Editor sheet ------------------------------------------------------ */
+    .edit-overlay {
+      position: fixed; inset: 0; z-index: 78; display: none;
+      background: rgba(0,0,0,.72); opacity: 0; transition: opacity .22s ease;
+    }
+    .edit-overlay.show { display: block; opacity: 1; }
+    .edit-sheet {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      max-height: 88vh; overflow-y: auto;
+      padding: 8px max(14px, env(safe-area-inset-left)) calc(18px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+      background: var(--gs-panel); border-top: 1px solid var(--gs-edge);
+      border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.65);
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.22,.9,.3,1);
+    }
+    .edit-overlay.show .edit-sheet { transform: translateY(0); }
+    .edit-grab { width: 40px; height: 4px; border-radius: 2px; background: var(--gs-edge-hi); margin: 4px auto 10px; }
+    .edit-sheet .pass-close { top: 10px; right: 10px; }
+    /* The editor cards lose their own frame in here — the sheet is the frame. */
+    .edit-sheet .hedit, .edit-sheet .prize-edit {
+      background: transparent !important; border: 0 !important; padding: 0; margin: 0;
+    }
+    .edit-more-btn { margin-left: auto; }
+    .hedit-more { display: flex; flex-direction: column; gap: 10px; }
+
+    /* --- Schedule: + button and its picker sheet --------------------------- */
+    .sched-fab {
+      position: fixed; z-index: 44; right: 14px; bottom: calc(80px + env(safe-area-inset-bottom));
+      width: 54px; height: 54px; border-radius: 50%; cursor: pointer;
+      display: grid; place-items: center; font-size: 28px; line-height: 1;
+      background: var(--gs-lite); color: var(--gs-on-lite);
+      border: 1px solid transparent; box-shadow: 0 8px 18px rgba(0,0,0,.5);
+    }
+    .sched-fab:active { transform: scale(.94); }
+    body.more-open .sched-fab { opacity: 0; pointer-events: none; }
+    .pick-sheet {
+      position: fixed; left: 0; right: 0; z-index: 46;
+      bottom: calc(66px + env(safe-area-inset-bottom));
+      max-height: 60vh; overflow-y: auto;
+      background: var(--gs-panel); border-top: 1px solid var(--gs-edge);
+      box-shadow: 0 -10px 34px rgba(0,0,0,.6);
+      transform: translateY(102%); opacity: 0; pointer-events: none;
+      transition: transform .26s cubic-bezier(.22,.9,.3,1), opacity .18s ease;
+    }
+    .pick-sheet.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .pick-head {
+      position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: var(--gs-panel); border-bottom: 1px solid var(--gs-edge);
+      font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .5px;
+    }
+    .pick-head .pass-close { position: static; }
+    .pick-sec { padding: 10px 16px 4px; font-size: 11px; letter-spacing: 1px; color: var(--ink-dim); text-transform: uppercase; }
+    .pick-row {
+      display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; text-align: left;
+      padding: 12px 16px; background: transparent; border: 0; border-bottom: 1px solid var(--gs-edge); color: var(--ink);
+    }
+    .pick-row:active { background: rgba(255,255,255,.06); }
+    .pick-e { font-size: 22px; line-height: 1; }
+    .pick-n { flex: 1 1 auto; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     /* --- overlays --------------------------------------------------------- */
     .pass-overlay, .auth-overlay, .wild-overlay, .more-scrim { background: rgba(0,0,0,.76); }
     .pass-modal, .auth-card, .wild-modal { background: var(--gs-panel); border-color: var(--gs-edge); }
@@ -1572,6 +1703,32 @@
     <div class="spacer"></div>
     <button class="iconbtn" id="soundBtn" title="Toggle sound">🔊</button>
   </header>
+
+  <!-- Editor sheet: habits, quests and rewards all edit here, sliding up from the bottom. -->
+  <div class="edit-overlay" id="editOverlay" aria-hidden="true">
+    <div class="edit-sheet" id="editSheet" role="dialog" aria-modal="true">
+      <div class="edit-grab"></div>
+      <button class="pass-close" data-act="closeEditor" title="Close">✕</button>
+      <div id="editSheetBody"></div>
+    </div>
+  </div>
+
+  <!-- Save recovery. Shown only when load() couldn't read habitCasino.v1. Nothing is
+       written over the unreadable save until one of these buttons is pressed. -->
+  <div class="pass-overlay" id="recoverOverlay" aria-hidden="true">
+    <div class="pass-modal" id="recoverModal" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <!-- Difficulty ladder: the whole tier system of one habit on a single line, with a ✚
+       at each end to grow it easier or harder, and drag-to-reorder between. Sits above
+       the editor sheet, which stays open behind it. -->
+  <div class="edit-overlay tier-overlay" id="tierOverlay" aria-hidden="true">
+    <div class="edit-sheet tier-sheet" id="tierSheet" role="dialog" aria-modal="true">
+      <div class="edit-grab"></div>
+      <button class="pass-close" data-act="closeTierLadder" title="Close">✕</button>
+      <div id="tierSheetBody"></div>
+    </div>
+  </div>
 
   <div class="more-scrim" id="moreScrim"></div>
 
@@ -1833,6 +1990,15 @@
       <!-- No inner scroll container: blocks are percentage-width and fit any screen, so a
            nested overflow-x scroller only fought the page's own vertical scroll on mobile. -->
       <div id="scheduleBody"></div>
+      <!-- Add a habit or quest to the day being viewed. Only on this tab. -->
+      <button class="sched-fab" id="schedAddBtn" title="Add to this day" aria-label="Add to this day">＋</button>
+      <div class="pick-sheet" id="schedPickSheet" aria-hidden="true">
+        <div class="pick-head">
+          <span id="schedPickTitle">Add to today</span>
+          <button class="pass-close" data-act="schedPickClose" title="Close">✕</button>
+        </div>
+        <div id="schedPickBody"></div>
+      </div>
     </section>
 
     <!-- ===================== SETTINGS ===================== -->
@@ -2028,6 +2194,10 @@
         </div>
         <input type="file" id="importFile" accept="application/json" style="display:none">
         <div class="hint">Your save lives in the cloud and follows you between devices. Export still gives you an offline copy.</div>
+        <hr class="set-sep">
+        <div class="ver-label">🛟 BACKUPS</div>
+        <div id="backupList"></div>
+        <div class="hint">Kept automatically on this device: one every time the app starts, plus one a day. Restoring backs up the current save first, so you can always undo it.</div>
         <hr class="set-sep">
         <div class="ver-label">☁️ CLOUD SAVE</div>
         <div id="cloudRow"></div>
@@ -2266,6 +2436,10 @@ function defaultState() {
     // history entry as a completion without filtering by kind, so mixing claims in would
     // silently inflate the weekly count, the rhythm heatmap and the intensity mix.
     rewardLog: [],        // { ts, name, emoji, tier, minutes, qty }
+    // Per-DATE schedule plans. h.scheduledMin is a single time that applies to every day,
+    // so it can't express "Thursday at 3pm, just this once" and can't hold a quest at all.
+    // These entries are what the Schedule's drag and its + button write to.
+    plannedBlocks: {},    // 'YYYY-MM-DD' → [{ id, kind:'habit'|'task', refId, startMin, durMin }]
     // Reflection system: quick tap-chip reasons for misses, plus deeper end-of-day
     // conversation transcripts. Both land in `reflections`; `reasonChips` grows over
     // time the same way `contexts` does (starter set + AI can propose new ones).
@@ -2372,9 +2546,153 @@ function ensureIdentityPurposes(st = state) {
 }
 
 function readLocal() { try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; } }
+
+/* =================================================================
+   BACKUPS — rolling copies of the save under their OWN keys.
+
+   The single save slot has no undo. If a new build's migration throws, or a bad
+   restore lands, or the app writes a bad state for any reason, the previous copy is
+   gone. These snapshots are the safety net, and they live under separate localStorage
+   keys so nothing that touches habitCasino.v1 can take them with it.
+
+   The important one is taken at BOOT, before the freshly-loaded build has had any
+   chance to write: that snapshot is exactly "my data as the previous version left it".
+   ================================================================= */
+const BACKUP_PREFIX = 'habitCasino.bak.';
+const BACKUP_INDEX_KEY = 'habitCasino.bakIndex';
+const BACKUP_MAX = 8;              // most recent AUTO copies kept (slots are never pruned)
+const BACKUP_SLOTS = 3;            // manual save slots the user controls
+const BACKUP_BUDGET = 2000000;     // chars across ALL backups — localStorage gives ~5M total
+
+// Two kinds share one index, one storage layout and one restore path:
+//   'auto' — taken by the app (boot, daily, before a restore/import/reset). Rotates.
+//   'slot' — pressed by the user into slot 1-3. Only ever replaced by the user.
+// Pruning only ever touches 'auto', so a manual backup can't be aged out from under
+// someone who deliberately made it.
+function readBackupIndex() {
+  try {
+    const idx = JSON.parse(localStorage.getItem(BACKUP_INDEX_KEY) || '[]');
+    // Drop entries whose payload is gone (quota eviction, manual clearing, …).
+    return (Array.isArray(idx) ? idx : [])
+      .filter(b => b && b.key && localStorage.getItem(b.key) != null)
+      .map(b => ({ ...b, kind: b.kind === 'slot' ? 'slot' : 'auto', id: b.id || b.key.slice(BACKUP_PREFIX.length) }));
+  } catch (e) { return []; }
+}
+function writeBackupIndex(idx) {
+  try { localStorage.setItem(BACKUP_INDEX_KEY, JSON.stringify(idx)); } catch (e) {}
+}
+// Newest first, with the numbers the restore list shows so a user can tell copies apart.
+function listBackups() { return readBackupIndex().sort((a, b) => b.ts - a.ts); }
+function listAutoBackups() { return listBackups().filter(b => b.kind === 'auto'); }
+// Always length BACKUP_SLOTS, with a null for each empty slot, so the UI can render
+// "Slot 2 — empty" without special-casing.
+function listSlots() {
+  const byslot = listBackups().filter(b => b.kind === 'slot');
+  return Array.from({ length: BACKUP_SLOTS }, (_, i) => byslot.find(b => b.slot === i + 1) || null);
+}
+function dropBackup(key, idx) {
+  try { localStorage.removeItem(key); } catch (e) {}
+  return idx.filter(b => b.key !== key);
+}
+// Keep the newest BACKUP_MAX autos, and stay inside the byte budget by dropping oldest
+// first. Never drops the newest auto however big it is — some net is better than none —
+// and never drops a user slot at all.
+function pruneBackups(idx) {
+  let out = idx.slice().sort((a, b) => b.ts - a.ts);
+  const autos = () => out.filter(b => b.kind !== 'slot');
+  while (autos().length > BACKUP_MAX) {
+    const list = autos();
+    out = dropBackup(list[list.length - 1].key, out);
+  }
+  let total = out.reduce((n, b) => n + (b.bytes || 0), 0);
+  while (autos().length > 1 && total > BACKUP_BUDGET) {
+    const list = autos();
+    const victim = list[list.length - 1];
+    total -= victim.bytes || 0;
+    out = dropBackup(victim.key, out);
+  }
+  return out;
+}
+// A one-line description of what's inside, so the restore list is readable without
+// parsing anything at display time.
+function backupSummary(raw) {
+  try {
+    const s = JSON.parse(raw);
+    return {
+      tokens: Number.isFinite(s.tokens) ? s.tokens : null,
+      habits: Array.isArray(s.habits) ? s.habits.length : null,
+      quests: Array.isArray(s.oneoffs) ? s.oneoffs.length : null,
+      history: Array.isArray(s.history) ? s.history.length : null,
+      updatedAt: Number.isFinite(s.updatedAt) ? s.updatedAt : null,
+    };
+  } catch (e) { return { unreadable: true }; }
+}
+// Store `raw` verbatim — a backup that reformats what it saved isn't a backup. Returns
+// the index entry, or null when nothing was written.
+// opts: { kind:'auto'|'slot', slot:1-3, label:'…' }
+function writeBackup(raw, reason, opts) {
+  if (!raw || typeof raw !== 'string') return null;
+  const o = opts || {};
+  const kind = o.kind === 'slot' ? 'slot' : 'auto';
+  let idx = readBackupIndex().sort((a, b) => b.ts - a.ts);
+  // Don't stack identical AUTO copies — boot-after-boot with no changes would otherwise
+  // push every real backup out of the window. A slot press is always honoured: the user
+  // asked for it, and it has to land in the slot they chose.
+  if (kind === 'auto') {
+    const newest = idx.find(b => b.kind === 'auto');
+    if (newest && newest.bytes === raw.length && localStorage.getItem(newest.key) === raw) return newest;
+  } else {
+    idx = idx.filter(b => { if (b.kind === 'slot' && b.slot === o.slot) { try { localStorage.removeItem(b.key); } catch (e) {} return false; } return true; });
+  }
+  const ts = Date.now();
+  // Two backups in the same millisecond must not share a key. They would point at one
+  // localStorage slot, so pruning either one would delete the payload out from under
+  // BOTH — and restoreBackup writes two in a row (pre-restore + unreadable), so this is
+  // reachable in ordinary use, not just in a tight loop.
+  let id = String(ts);
+  for (let n = 1; localStorage.getItem(BACKUP_PREFIX + id) != null || idx.some(b => b.id === id); n++) id = `${ts}-${n}`;
+  const entry = { id, key: BACKUP_PREFIX + id, ts, kind, reason: reason || 'auto', bytes: raw.length,
+                  ver: APP_VERSION, ...(kind === 'slot' ? { slot: o.slot, label: o.label || '' } : {}),
+                  ...backupSummary(raw) };
+  idx = pruneBackups([entry, ...idx]);
+  // Under quota pressure, keep dropping the oldest AUTO and retrying rather than giving up.
+  for (;;) {
+    try { localStorage.setItem(entry.key, raw); break; }
+    catch (e) {
+      const autos = idx.filter(b => b.kind !== 'slot' && b.id !== entry.id);
+      if (!autos.length) { console.warn('No room for a backup', e); return null; }
+      idx = dropBackup(autos[autos.length - 1].key, idx);
+    }
+  }
+  writeBackupIndex(idx);
+  cloudBackupPush(entry, raw);        // mirror upward when signed in (no-op otherwise)
+  return entry;
+}
+function readBackup(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+// Delete one backup outright (a user emptying a slot). Autos age out on their own.
+function deleteBackup(key) {
+  const entry = listBackups().find(b => b.key === key);
+  writeBackupIndex(dropBackup(key, readBackupIndex()));
+  if (entry) cloudBackupDelete(entry.id);
+}
+
+// Set by load()'s catch. Read at boot to decide whether saving is safe.
+let lastLoadFailed = null;
+// While true, save() will not touch habitCasino.v1. This is what stops a failed load
+// from overwriting a save we could still rescue.
+let saveLocked = false;
+
 // localStorage is the source of truth and boots synchronously — the app is fully usable
 // with no account and no network. Signing in adds Firestore as a mirror (see CLOUD SAVE).
-let state = load(readLocal());
+const bootRaw = readLocal();
+let state = load(bootRaw);
+// Snapshot what was on disk BEFORE this build gets a chance to write anything. If this
+// build's migration is broken, this is the copy that saves the user.
+if (bootRaw) writeBackup(bootRaw, 'boot');
+// A save we couldn't read is never overwritten automatically — the recovery screen at
+// INIT asks what to do with it. A SALVAGED load keeps writing: the data is all there,
+// and locking would throw away everything done in the session instead.
+if (lastLoadFailed && !lastLoadFailed.salvaged) saveLocked = true;
 let activeGame = 'wheel';
 let wheelSegments = [];
 let wheelAngle = 0;
@@ -2393,7 +2711,7 @@ let claimOpenId = null;        // reward id whose claim panel is expanded in the
 let claimQty = 1;              // quantity chosen in that panel
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
 let editTierPage = null;       // which difficulty page the habit editor shows (null = the base habit's page)
-let addTierChoiceOpen = false; // "Add tier" harder/easier chooser expanded in the habit editor
+let tierLadderId = null;       // habit whose difficulty ladder is open in the tier popup
 let passGoalsOpen = true;      // Habit Pass "Goals" dropdown open/closed
 let recycleQty = 1;            // quantity selected in that menu
 
@@ -2417,6 +2735,10 @@ function normalizeHabit(h) {
   return {
     id: h.id || uid(),
     emoji: (h.emoji != null ? h.emoji : '⭐'),
+    // True only while the icon is still the seed one we picked at creation. While it's
+    // set, typing the name auto-picks a matching emoji; the first manual edit clears it
+    // forever. Legacy saves have no flag → false, so old habits are never touched.
+    emojiAuto: !!h.emojiAuto,
     name: (h.name != null ? h.name : 'Habit'),
     section: h.section === 'extra' ? 'extra' : 'daily',
     reward: Number.isFinite(h.reward) ? h.reward : 1,
@@ -2447,8 +2769,9 @@ function normalizeHabit(h) {
     contextAsked: !!h.contextAsked,
     doneAt: h.doneAt || 0,
     doneMin: Number.isFinite(h.doneMin) ? h.doneMin : null,
-    // difficulty levels: up to 2 extra variants (easiest → hardest); baseIdx = where the habit itself sits
-    tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 2).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1, minutes: (t && Number.isFinite(t.minutes)) ? t.minutes : 0 })) : [],
+    // difficulty levels: any number of extra variants (easiest → hardest); baseIdx = where
+    // the habit itself sits. The slice is junk-data protection, not a product limit.
+    tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 20).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1, minutes: (t && Number.isFinite(t.minutes)) ? t.minutes : 0 })) : [],
     // context Modes — an INDEPENDENT axis from `tiers`: keyed by context name, they
     // swap the habit's name/reward/minutes on days the Week Planner flagged.
     // h.modes['Travel'] = { name, reward, minutes, desc, createdBy }
@@ -2475,6 +2798,10 @@ function normalizeHabit(h) {
 // localStorage — this function deliberately doesn't know or care which, so the
 // backward-compat merge below is untouched by the move to the cloud.
 function load(raw) {
+  // Always reports THIS call's outcome. Without the reset a stale failure from an earlier
+  // call makes the next successful load look broken — which made restoring a perfectly
+  // good backup impossible. Callers that need the previous value save it themselves.
+  lastLoadFailed = null;
   try {
     if (!raw) { const s = defaultState(); ensureHappyHours(s); ensureCategoryColors(s); return s; }
     const parsed = JSON.parse(raw);
@@ -2516,10 +2843,18 @@ function load(raw) {
       const tier = TASK_TIERS[t.tier] ? t.tier : (reward <= 7 ? 'easy' : reward <= 14 ? 'medium' : 'hard');
       return {
         id: t.id || uid(), emoji: (t.emoji != null ? t.emoji : '🎯'), name: (t.name != null ? t.name : 'Quest'),
+        emojiAuto: !!t.emojiAuto,   // see normalizeHabit — auto-pick until the user edits the icon
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
         createdAt: Number.isFinite(t.createdAt) ? t.createdAt : null,
         createdBy: t.createdBy === 'ai' ? 'ai' : undefined,
+        // Same running-stopwatch shape habits use, so a quest can be timed and land on
+        // the Block Schedule as a real span instead of a zero-length mark.
+        timer: (t.timer && Number.isFinite(t.timer.startedAt))
+          ? { startedAt: t.timer.startedAt,
+              pausedAt: Number.isFinite(t.timer.pausedAt) ? t.timer.pausedAt : null,
+              pausedTotalSec: t.timer.pausedTotalSec || 0, pauseCount: t.timer.pauseCount || 0 }
+          : null,
       };
     });
     merged.archivedOneoffs = Array.isArray(parsed.archivedOneoffs) ? parsed.archivedOneoffs : [];
@@ -2541,6 +2876,19 @@ function load(raw) {
       .map(e => ({ ts: e.ts, name: String(e.name || ''), emoji: String(e.emoji || '🎁'),
                    tier: e.tier, minutes: clamp(parseInt(e.minutes) || 0, 0, 24 * 60),
                    qty: clamp(parseInt(e.qty) || 1, 1, 999) }));
+    // Per-date schedule plans. Validate the shape here rather than trusting it at every
+    // lookup; a malformed row would otherwise surface as a NaN-positioned block.
+    merged.plannedBlocks = {};
+    const rawPlanned = (parsed.plannedBlocks && typeof parsed.plannedBlocks === 'object' && !Array.isArray(parsed.plannedBlocks)) ? parsed.plannedBlocks : {};
+    Object.keys(rawPlanned).forEach(d => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Array.isArray(rawPlanned[d])) return;
+      const rows = rawPlanned[d]
+        .filter(b => b && b.refId && Number.isFinite(parseInt(b.startMin)))
+        .map(b => ({ id: b.id || uid(), kind: b.kind === 'task' ? 'task' : 'habit',
+                     refId: String(b.refId), startMin: clamp(parseInt(b.startMin), 0, 1439),
+                     durMin: clamp(parseInt(b.durMin) || 15, 1, 24 * 60) }));
+      if (rows.length) merged.plannedBlocks[d] = rows;
+    });
     // Chat threads — migrate the old single flat aiChatLog into one thread so no conversation is lost.
     let threads = Array.isArray(parsed.aiChatThreads) ? parsed.aiChatThreads : [];
     if (!threads.length && Array.isArray(parsed.aiChatLog) && parsed.aiChatLog.length) {
@@ -2603,7 +2951,29 @@ function load(raw) {
     }
     return merged;
   } catch (e) {
-    console.warn('Load failed, using defaults', e);
+    // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
+    // migration above used to land here and hand back a pristine defaultState() with
+    // nothing but a console.warn — and the very next save() then wrote that empty state
+    // over the user's real one. One migration bug in a new build = every save on every
+    // device silently destroyed the first time it ran. This has actually happened.
+    //
+    // So: fail loudly, salvage what we can, and record what went wrong. Whoever calls
+    // load() at boot is responsible for checking lastLoadFailed and locking save().
+    console.error('Load failed', e);
+    lastLoadFailed = { error: String((e && e.message) || e), salvaged: false, at: Date.now() };
+    // Stage 2 — the JSON itself may be perfectly fine and only a migration choked on it.
+    // Rebuilding from the parsed object keeps the user's real habits, tokens and history
+    // instead of pretending they're a brand-new user.
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.habits)) {
+        const s = { ...defaultState(), ...parsed };
+        s.habits = parsed.habits.map(normalizeHabit);
+        ensureHappyHours(s); ensureCategoryColors(s); ensureIdentityPurposes(s);
+        lastLoadFailed.salvaged = true;
+        return s;
+      }
+    } catch (e2) { /* not even parseable — fall through to a clean slate */ }
     const s = defaultState(); ensureHappyHours(s); ensureCategoryColors(s); return s;
   }
 }
@@ -2616,14 +2986,41 @@ const CLOUD_LIMIT = 700000;   // chars of JSON — comfortably under Firestore's
 // throw if this lived beside the rest of the cloud state.
 let cloudOn = false;          // signed in AND reconciled — only then do we mirror upward
 function save() {
+  // A save we couldn't read is still sitting in habitCasino.v1 and may be the only good
+  // copy left. Nothing gets written over it until the recovery screen resolves it.
+  if (saveLocked) return;
   state.updatedAt = Date.now();
   let json = JSON.stringify(state);
   // Only trim while syncing: localStorage alone has room to spare, and silently
   // dropping a signed-out user's chat history would be gratuitous.
   if (cloudOn && json.length > CLOUD_LIMIT) json = trimForCloud(json);
+  // First save of a new day: keep the copy we're about to replace. Boot backups only
+  // span launches, so without this a week of daily use in one long-lived tab would leave
+  // exactly one restore point.
+  maybeDailyBackup();
   try { localStorage.setItem(STORAGE_KEY, json); }
-  catch (e) { toast('Browser storage is full — export your save', 'var(--pink)'); }
+  catch (e) {
+    // Out of room. Backups are the likeliest bulk, and a save that can't be written is a
+    // worse outcome than a shorter backup history — drop the oldest and try once more.
+    let idx = listBackups();
+    while (idx.length > 1) {
+      idx = dropBackup(idx[idx.length - 1].key, idx);
+      writeBackupIndex(idx);
+      try { localStorage.setItem(STORAGE_KEY, json); return; } catch (e2) { /* keep going */ }
+    }
+    toast('Browser storage is full — export your save', 'var(--pink)');
+  }
   if (cloudOn && window.HCCloud) window.HCCloud.save(json);
+}
+let lastDailyBackupDay = null;
+function maybeDailyBackup() {
+  const day = todayStr();
+  if (lastDailyBackupDay === day) return;         // already handled this session
+  lastDailyBackupDay = day;
+  const newest = listBackups()[0];
+  if (newest && new Date(newest.ts).toDateString() === new Date().toDateString()) return;
+  const prev = readLocal();                        // the copy about to be overwritten
+  if (prev) writeBackup(prev, 'daily');
 }
 // `history` is already capped at 2000 entries, but chat threads grow without bound and
 // are the one thing that could push the document past Firestore's hard 1 MiB limit —
@@ -2973,22 +3370,35 @@ function renderTopbar() {
 /* =================================================================
    HABITS VIEW
    ================================================================= */
-// Habit difficulty levels: a habit may carry up to 2 extra tiers in h.tiers (ordered
-// easiest → hardest); h.baseIdx says where the ORIGINAL habit sits in that ladder, so
-// added tiers can be easier OR harder than it. Labels come from the ladder size:
-// 2 levels → easy/hard, 3 levels → easy/medium/hard.
+// Habit difficulty levels: a habit may carry any number of extra tiers in h.tiers
+// (ordered easiest → hardest); h.baseIdx says where the ORIGINAL habit sits in that
+// ladder, so added tiers can be easier OR harder than it. Levels are labelled purely by
+// position — "tier 1" is always the easiest, "tier N" the hardest.
 // Completing ANY level counts as one normal completion; only the payout differs.
-const LEVEL_COLORS = { easy: 'var(--green)', medium: 'var(--yellow)', hard: '#ff2d2d' };
+//
+// Colour is TEXT-ONLY: nothing about a tier tints the row, the reward pill or the editor
+// frame. The one coloured thing is the "tier N" word itself, on a green→yellow→red ramp,
+// so the ladder reads as a scale rather than as a status.
+function tierColor(i, n) {
+  if (n <= 1) return 'var(--ink-dim)';
+  const hue = 120 - 120 * (i / (n - 1));   // 0 → green(120), last → red(0), middles yellow
+  return `hsl(${Math.round(hue)}, 100%, 55%)`;
+}
+// Coarse band, for history/stats only. The Stats "intensity mix" chart buckets on
+// easy/medium/hard and quests log the same words, so habit completions keep landing in
+// the right column however tall the ladder grows — and rows written before numeric
+// tiers existed stay valid.
+function tierBand(i, n) { return i === 0 ? 'easy' : (i >= n - 1 ? 'hard' : 'medium'); }
 function habitLevels(h) {
   const extras = Array.isArray(h.tiers) ? h.tiers : [];
   if (!extras.length) return null;                       // no tier system on this habit
   const n = extras.length + 1;
   const baseIdx = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1); // legacy saves: base was hardest
-  const keys = n === 2 ? ['easy', 'hard'] : ['easy', 'medium', 'hard'];
   const lvls = []; let e = 0;
   for (let i = 0; i < n; i++) {
-    if (i === baseIdx) lvls.push({ key: keys[i], name: h.name, reward: h.reward, minutes: h.timedMinutes || 0, base: true });
-    else { const t = extras[e]; lvls.push({ key: keys[i], name: t.name, reward: t.reward, minutes: t.minutes || 0, base: false, tIdx: e }); e++; }
+    const meta = { idx: i, n, label: `tier ${i + 1}`, color: tierColor(i, n), band: tierBand(i, n) };
+    if (i === baseIdx) lvls.push({ ...meta, name: h.name, reward: h.reward, minutes: h.timedMinutes || 0, base: true });
+    else { const t = extras[e]; lvls.push({ ...meta, name: t.name, reward: t.reward, minutes: t.minutes || 0, base: false, tIdx: e }); e++; }
   }
   return lvls;                                           // ordered easiest → hardest
 }
@@ -3020,23 +3430,19 @@ function currentLoadout() {
   const list = Array.isArray(state.loadouts) && state.loadouts.length ? state.loadouts : ['Default'];
   return list.includes(state.activeLoadout) ? state.activeLoadout : list[0];
 }
-function activeModeFor(h, dateStr = todayStr()) {
-  const p = dayPlan(dateStr);
-  if (!p || !p.context) return null;
-  return (h.modes || {})[p.context] || null;
-}
-// Today's display values for a habit: the Mode wins over the difficulty level, which
-// wins over the plain habit. Everything user-facing goes through this.
+// Today's display values for a habit: the difficulty level wins over the plain habit.
+// Everything user-facing goes through this.
+// (Context "Modes" used to override these too. That feature is gone — loadouts cover the
+//  same ground without the overlap. `h.modes` is still preserved on save so nothing is
+//  destroyed, but nothing reads it any more.)
 function habitToday(h) {
   const lvls = habitLevels(h);
   const lvl = lvls ? lvls[curLevelIndex(h)] : null;
-  const mode = activeModeFor(h);
-  const ctx = mode ? todayContext() : null;
   return {
-    lvl, mode, context: ctx,
-    name: mode ? mode.name : (lvl ? (lvl.name || h.name) : h.name),
-    reward: mode ? mode.reward : (lvl ? lvl.reward : h.reward),
-    minutes: mode ? (mode.minutes || 0) : (lvl ? (lvl.minutes || 0) : (h.timedMinutes || 0)),
+    lvl, mode: null, context: null,
+    name: lvl ? (lvl.name || h.name) : h.name,
+    reward: lvl ? lvl.reward : h.reward,
+    minutes: lvl ? (lvl.minutes || 0) : (h.timedMinutes || 0),
   };
 }
 function capOf(h) { return h.repeatable ? Math.max(1, h.cap) : 1; }
@@ -3091,7 +3497,6 @@ function dailyLoadoutHabits() { return sectionStats('daily').list; }
 // tap anywhere else (data-act="editHabit") to "blow up" the inline editor.
 function habitCardHTML(h, usualMin) {
   const cap = capOf(h), dc = doneCount(h), complete = dc >= cap, s = currentStreak(h);
-  if (h.id === editingHabitId) return habitEditHTML(h);
   let sub = h.repeatable
     ? `${dc}/${cap} today` + (s > 0 ? ` · 🔥 ${s}` : '')
     : (complete ? 'Done today' : (s > 0 ? `🔥 ${s} day${s > 1 ? 's' : ''} streak` : 'No streak yet'));
@@ -3100,158 +3505,148 @@ function habitCardHTML(h, usualMin) {
   const li = lvls ? curLevelIndex(h) : -1;
   const lvl = lvls ? lvls[li] : null;
   const hhTag = happyTagHTML(h.category);
-  const rim = lvl ? LEVEL_COLORS[lvl.key] : null;
   // No category stripe or label here on purpose: the checklist is ONE flat list per
   // section. Categories still drive Pass goals & happy hours, just invisibly.
-  const rowStyle = lvl ? ` style="border-color:${rim}"` : '';
-  // Today's context Mode (if any) overrides the displayed name/reward/minutes —
-  // same single checkbox, no "pick a version" decision in the moment.
+  // No tier rim either — the tier only shows up as the coloured word in the pill.
   const td = habitToday(h);
-  const pill = lvl
-    ? `<span class="hrow-reward lvl" style="color:${rim};border-color:${rim};background:rgba(0,0,0,0.25)">+${td.reward} 🪙<i class="lvl-word">${lvl.key}</i></span>`
-    : `<span class="hrow-reward">+${td.reward} 🪙</span>`;
   const chevL = (lvl && li > 0) ? `<span class="lvl-chev">‹</span>` : '';
   const chevR = (lvl && li < lvls.length - 1) ? `<span class="lvl-chev">›</span>` : '';
   // In-progress tracking: ▶ starts an open stopwatch (no pre-set duration needed) so the
   // AI learns actual time-on-task for every habit, not just ones explicitly marked "timed".
   // ✓ Quick Complete stays available alongside it for anything not worth timing.
-  const mins = td.minutes;   // still shown as an informational "usually ~Xm" estimate
-  let rightBits, subLine = sub;
+  let rightBits, timerSub = null;
   if (h.timer) {
     const paused = !!h.timer.pausedAt;
-    subLine = `⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`;
+    // One readout per pane; the 1s ticker updates every match, so duplicates are fine.
+    timerSub = `⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`;
     rightBits = `
       <button class="hrow-check timer-btn" data-act="pauseTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
       <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
   } else if (!complete) {
-    if (mins > 0) subLine += ` · ~${fmtMins(mins)} usual`;
     rightBits = `
       <button class="hrow-check timer-btn" data-act="startTimer" aria-label="Start" style="color:var(--purple)">▶</button>
       <button class="hrow-check" data-act="done" aria-label="Quick complete">✓</button>`;
   } else {
     rightBits = `<button class="hrow-check" data-act="done" aria-label="Complete">✓</button>`;
   }
-  const modeTag = td.mode
-    ? `<span class="mode-tag" title="${escapeHtml(td.mode.desc || `Adapted for a ${td.context} day`)}">🧭 ${escapeHtml(td.context)} mode</span>` : '';
+  // The name + sub + reward pill for ONE level. Everything else on the row (emoji,
+  // chevrons, the ✓/▶ buttons) is tier-independent and stays outside the carousel.
+  const paneHTML = (name, reward, minutes, word) => {
+    let subLine = timerSub != null ? timerSub : sub;
+    if (timerSub == null && !complete && minutes > 0) subLine += ` · ~${fmtMins(minutes)} usual`;
+    return `
+      <div class="hrow-pane">
+        <div class="hrow-main">
+          <div class="hrow-name">${escapeHtml(name)}</div>
+          <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
+        </div>
+        ${word
+          ? `<span class="hrow-reward lvl">+${reward} 🪙<i class="lvl-word" style="color:${word.color}">${word.label}</i></span>`
+          : `<span class="hrow-reward">+${reward} 🪙</span>`}
+      </div>`;
+  };
+  // Leveled habits get every tier rendered up front in a track offset by -index×100%.
+  // That's what lets the swipe follow the finger: dragging just nudges the transform,
+  // with no re-render and nothing to build mid-gesture. Plain habits emit one pane and
+  // no track at all, so they cost exactly what they did before.
+  const body = lvls
+    ? `<div class="hrow-swipe"><div class="hrow-track" data-idx="${li}" style="transform:translateX(${-li * 100}%)">${
+        lvls.map(l => paneHTML(l.name || h.name, l.reward, l.minutes || 0, l)).join('')}</div></div>`
+    : `<div class="hrow-swipe">${paneHTML(td.name, td.reward, td.minutes, null)}</div>`;
   return `
-    <div class="hrow ${complete ? 'done' : ''}${td.mode ? ' moded' : ''}" data-id="${h.id}" data-act="editHabit"${rowStyle}>
+    <div class="hrow ${complete ? 'done' : ''}${lvls ? ' leveled' : ''}" data-id="${h.id}" data-act="editHabit">
       ${hhTag}
       ${chevL}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
-      <div class="hrow-main">
-        <div class="hrow-name">${escapeHtml(td.name)}${modeTag}</div>
-        <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
-      </div>
-      ${pill}
+      ${body}
       ${rightBits}
       ${chevR}
     </div>`;
 }
 
-// Inline "blown-up" habit editor (full create/edit on the Habits screen)
-function habitEditHTML(h) {
+// Every page of the habit editor at once, in one track offset by -page×100%, so tier
+// pages can slide under the finger exactly like the checklist rows do. Each page carries
+// data-page so field handlers know which tier they're writing to without consulting the
+// global editTierPage — otherwise an input on an off-screen page would edit the wrong one.
+function habitEditPagesHTML(h) {
   const lvls = habitLevels(h);
-  const pageCount = lvls ? lvls.length : 1;
+  if (!lvls) return `<div class="hedit-swipe"><div class="hedit-track" data-idx="0" style="transform:translateX(0%)">${habitEditHTML(h)}</div></div>`;
+  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.findIndex(l => l.base), 0, lvls.length - 1);
+  const pages = lvls.map((l, i) => l.base ? habitEditHTML(h, i) : tierEditHTML(h, i)).join('');
+  return `<div class="hedit-swipe"><div class="hedit-track" data-idx="${page}" style="transform:translateX(${-page * 100}%)">${pages}</div></div>`;
+}
+
+// Inline "blown-up" habit editor (full create/edit on the Habits screen)
+function habitEditHTML(h, pageIdx) {
+  const lvls = habitLevels(h);
   const basePage = lvls ? lvls.findIndex(l => l.base) : 0;
-  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : basePage, 0, pageCount - 1);
-  if (lvls && !lvls[page].base) return tierEditHTML(h, page);   // extra-tier pages
-  const extras = Array.isArray(h.tiers) ? h.tiers : [];
-  // "Add tier" first asks which side the new tier goes on (harder demotes this habit, easier keeps it on top)
-  const addTierBtn = addTierChoiceOpen
-    ? `<div class="tier-choice">
-         <div class="subtle" style="flex-basis:100%">Where does the new tier sit?</div>
-         <button class="btn ghost sm" data-act="addTierHarder">⬆ Harder — this habit becomes the easier one</button>
-         <button class="btn ghost sm" data-act="addTierEasier">⬇ Easier — this habit stays the harder one</button>
-         <button class="btn ghost sm" data-act="addTierCancel">✕ Cancel</button>
-       </div>`
-    : `<button class="btn ghost sm" data-act="addTier" ${extras.length >= 2 ? 'disabled' : ''}>➕ Add tier${extras.length >= 2 ? ' (max)' : ''}</button>
-       <button class="btn ghost sm" data-act="aiTier" ${extras.length >= 2 ? 'disabled' : ''} title="Let the AI write the new tier's name, payout and duration" style="color:var(--purple)">✨ AI-fill</button>`;
+  const page = Number.isFinite(pageIdx) ? pageIdx : basePage;
+  const addTierBtn = `<button class="btn ghost sm" data-act="addTier">➕ Add tier</button>
+       <span class="tier-hint">${lvls ? `${lvls.length} tiers · tap to reorder or add` : 'split this habit into easier / harder versions'}</span>`;
   const baseLvl = lvls ? lvls[basePage] : null;
-  const baseHint = !lvls ? '' : (basePage > 0 && basePage < lvls.length - 1 ? '‹ swipe ›' : (basePage > 0 ? '‹ swipe left for easier' : 'swipe right for harder ›'));
-  const tierHead = lvls ? `<div class="tier-head" style="color:${LEVEL_COLORS[baseLvl.key]}">${baseLvl.key.toUpperCase()} TIER <span class="tier-hint">· the original · ${baseHint}</span></div>` : '';
+  const tierHead = lvls ? `<div class="tier-head"><span style="color:${baseLvl.color}">${baseLvl.label.toUpperCase()}</span> <span class="tier-hint">· the original · ‹ swipe ›</span></div>` : '';
   const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
   const dayPicker = `<span class="day-picker">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
   return `
-    <div class="hedit" data-id="${h.id}"${lvls ? ` style="border-color:${LEVEL_COLORS[baseLvl.key]}"` : ''}>
+    <div class="hedit" data-id="${h.id}" data-page="${page}">
       ${tierHead}
       <div class="hedit-r">
         <input class="emoji-in" data-f="emoji" maxlength="4" value="${escapeHtml(h.emoji)}">
         <input class="name-in" data-f="name" value="${escapeHtml(h.name)}" placeholder="Habit name">
       </div>
       <div class="hedit-r">
-        <select class="sect-in" data-f="section" title="Section">
-          <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
-          <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
-        </select>
         <select class="sect-in" data-f="category" title="Identity (drives Pass goals)">
           ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${h.category === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
         </select>
         <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
       </div>
-      <div class="hedit-r">
-        <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
-      </div>
-      <div class="hedit-r">
-        <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
-      </div>
-      <div class="hedit-r">
-        <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
-        <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
-      </div>
-      <div class="hedit-r">
-        <span class="pill" title="Optional estimate only — every habit can be played/finished with ▶ regardless of this number. Used for the &quot;usually ~Xm&quot; hint and the AI's planned-vs-actual comparisons.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
-        <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0)}</span>
-      </div>
       <div class="hedit-r hedit-days">${dayPicker}</div>
-      ${modesEditHTML(h)}
+      ${editMoreOpen ? `
+      <div class="hedit-more">
+        <div class="hedit-r">
+          <select class="sect-in" data-f="section" title="Section">
+            <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
+            <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
+          </select>
+          <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
+        </div>
+        <div class="hedit-r">
+          <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
+        </div>
+        <div class="hedit-r">
+          <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
+          <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
+        </div>
+        <div class="hedit-r">
+          <span class="pill" title="Optional estimate only — every habit can be played/finished with ▶ regardless of this number. Used for the &quot;usually ~Xm&quot; hint and the AI's planned-vs-actual comparisons.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
+          <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0)}</span>
+        </div>
+        <div class="hedit-r">${addTierBtn}</div>
+        <div class="hedit-r">
+          <button class="btn ghost sm" data-act="graduate" title="Archive this habit — it leaves the rotation but keeps its history">🎓 Graduate</button>
+          <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
+        </div>
+      </div>` : ''}
       <div class="hedit-r hedit-actions">
-        ${addTierBtn}
-        <button class="btn ghost sm" data-act="graduate" title="Archive this habit — it leaves the rotation but keeps its history">🎓 Graduate</button>
-        <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
         <button class="btn green sm" data-act="closeEdit">✓ Done</button>
+        <button class="btn ghost sm edit-more-btn" data-act="editMore" aria-expanded="${editMoreOpen}">${editMoreOpen ? '⌃ Less' : '⋯ More'}</button>
       </div>
       ${lvls ? tierDotsHTML(lvls, page) : ''}
     </div>`;
 }
 
-// Context Modes block inside the habit editor: what this habit turns into on each
-// kind of day. Separate axis from the tier ladder above — no interaction between them.
-function modesEditHTML(h) {
-  const modes = h.modes || {};
-  const keys = Object.keys(modes);
-  const rows = keys.map(ctx => {
-    const m = modes[ctx];
-    return `<div class="mode-row">
-      <span class="ctx-badge">🧭 ${escapeHtml(ctx)}</span>
-      <span class="mode-name">${escapeHtml(m.name)}</span>
-      <span class="pill">🪙 ${m.reward}</span>
-      ${m.minutes > 0 ? `<span class="pill">⏱ ${fmtMins(m.minutes)}</span>` : ''}
-      <button class="del" data-act="delMode" data-ctx="${escapeHtml(ctx)}" title="Remove this mode">✕</button>
-    </div>`;
-  }).join('');
-  return `
-    <div class="hedit-r hedit-modes">
-      <div class="modes-head">
-        <span class="subtle">🧭 Modes — what this becomes on a travel / school / odd day</span>
-        <button class="btn ghost sm" data-act="genMode" style="color:var(--purple)">✨ Generate mode</button>
-      </div>
-      ${rows || `<div class="subtle mode-empty">No modes yet — on a planned day this stays on its normal version (and a miss won't break the streak).</div>`}
-    </div>`;
-}
 
 // Editor page for one of the extra tiers: just a title + token payout.
 function tierEditHTML(h, page) {
   const lvls = habitLevels(h);
   const lvl = lvls[page];
   const t = h.tiers[lvl.tIdx];
-  const col = LEVEL_COLORS[lvl.key];
   const baseIdx = lvls.findIndex(l => l.base);
-  const hint = page < baseIdx ? 'swipe right for harder ›' : '‹ swipe left for easier';
   const flavor = page < baseIdx ? 'lighter version' : 'harder version';
   return `
-    <div class="hedit" data-id="${h.id}" style="border-color:${col}">
-      <div class="tier-head" style="color:${col}">${lvl.key.toUpperCase()} TIER <span class="tier-hint">${hint}</span></div>
+    <div class="hedit" data-id="${h.id}" data-page="${page}">
+      <div class="tier-head"><span style="color:${lvl.color}">${lvl.label.toUpperCase()}</span> <span class="tier-hint">‹ swipe ›</span></div>
       <div class="hedit-r">
         <input class="name-in" data-tf="name" value="${escapeHtml(t.name)}" placeholder="e.g. ${escapeHtml(h.name)} — ${flavor}">
         <span class="pill">🪙 <input class="num-in" data-tf="reward" type="number" min="0" max="999" value="${t.reward}"> tokens</span>
@@ -3260,16 +3655,20 @@ function tierEditHTML(h, page) {
         <span class="pill" title="0 = not timed. When set, this tier shows a ▶ timer instead of a checkbox.">⏱ <input class="num-in" data-tf="minutes" type="number" min="0" max="999" value="${t.minutes || 0}"> min timer</span>
         <span class="timer-suggest">${timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0)}</span>
       </div>
-      <div class="hedit-r hedit-actions">
+      <div class="hedit-r">
+        <button class="btn ghost sm" data-act="addTier">➕ Add tier</button>
         <button class="btn ghost sm" data-act="removeTier">🗑 Remove tier</button>
+      </div>
+      <div class="hedit-r hedit-actions">
         <button class="btn green sm" data-act="closeEdit">✓ Done</button>
       </div>
       ${tierDotsHTML(lvls, page)}
     </div>`;
 }
+// Position dots only — the tier's colour lives on its "tier N" word, nowhere else.
 function tierDotsHTML(lvls, cur) {
   return `<div class="tier-dots">${lvls.map((l, i) =>
-    `<span class="tdot ${i === cur ? 'on' : ''}"${i === cur ? ` style="background:${LEVEL_COLORS[l.key]}"` : ''}></span>`).join('')}<span class="tier-hint">‹ swipe ›</span></div>`;
+    `<span class="tdot ${i === cur ? 'on' : ''}"></span>`).join('')}<span class="tier-hint">‹ swipe ›</span></div>`;
 }
 
 // Shared incomplete-first / usual-time sort used by both the daily identity
@@ -3332,6 +3731,7 @@ function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt
 }
 
 function renderHabits() {
+  syncEditorSheet();
   renderTodayContext();
   renderDueSoon();
   renderDailyIdentities();
@@ -3404,7 +3804,8 @@ function addQuickQuest() {
   const inp = $('#questAddName'); const name = (inp.value || '').trim();
   if (!name) { inp.focus(); return; }
   const tier = TASK_TIERS[quickTier] ? quickTier : 'medium';
-  const task = { id: uid(), emoji: '🎯', name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, createdAt: Date.now() };
+  // The quick-add bar has no editor open, so the icon is guessed once here instead.
+  const task = { id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, createdAt: Date.now() };
   state.oneoffs.push(task);
   logEvent('task_created', { entityType: 'task', entityId: task.id, name: task.name, category: task.category, level: task.tier, iterations: task.iterations });
   inp.value = ''; SFX.coin(); save();
@@ -3423,10 +3824,24 @@ function oneoffCardHTML(t) {
   const catPill = (t.category && t.category !== 'Unsorted')
     ? `<span class="pill qcat"${cc ? ` style="color:${cc};border-color:${cc}"` : ''}>🏷️ ${escapeHtml(t.category)}</span>` : '';
   const hhTag = happyTagHTML(t.category);
+  // Same ▶ / ✓ pair habits have: ▶ runs an open stopwatch so the quest lands on the
+  // Block Schedule as a real span, ✓ stays available for anything not worth timing.
+  let leftBits;
+  if (t.timer) {
+    const paused = !!t.timer.pausedAt;
+    subBits.unshift(`⏱ <b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`);
+    leftBits = `
+        <button class="hrow-check timer-btn" data-act="pauseOneoffTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
+        <button class="hrow-check timer-btn" data-act="finishOneoffTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
+  } else {
+    leftBits = `
+        <button class="hrow-check timer-btn qcheck" data-act="startOneoffTimer" aria-label="Start" style="color:var(--purple)">▶</button>
+        <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Quick complete">✓</button>`;
+  }
   return `
       <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}" data-act="editOneoff"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
         ${hhTag}
-        <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Complete">✓</button>
+        ${leftBits}
         <span class="hrow-emoji">${escapeHtml(t.emoji || '🎯')}</span>
         <div class="hrow-main">
           <div class="hrow-name">${escapeHtml(t.name)}</div>
@@ -3437,12 +3852,13 @@ function oneoffCardHTML(t) {
       </div>`;
 }
 function renderOneoffs() {
+  syncEditorSheet();
   const grid = $('#oneoffGrid'); if (!grid) return;
   if (!state.oneoffs.length) {
     grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
   } else {
     grid.innerHTML = state.oneoffs.map(t =>
-      t.id === editingOneoffId ? oneoffEditHTML(t) : oneoffCardHTML(t)).join('');
+      oneoffCardHTML(t)).join('');
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
 }
@@ -3473,8 +3889,9 @@ function oneoffEditHTML(t) {
 
 // Complete one iteration of a one-off; when it reaches its target it disappears.
 // viaSpin = true when done from the Quest Wheel result (earns a spin bonus).
-function completeOneoff(id, viaSpin) {
+function completeOneoff(id, viaSpin, timing) {
   const t = state.oneoffs.find(x => x.id === id); if (!t) return;
+  t.timer = null;                                    // a completion always ends any running timer
   t.progress = (t.progress || 0) + 1;
   SFX.coin();
   const hh = happyMult(t.category || 'Unsorted');
@@ -3491,7 +3908,9 @@ function completeOneoff(id, viaSpin) {
             || $('#habitWheelResult');
   addTokens(amt, card);
   const completedAt = Date.now();
-  logCompletion({ ts: completedAt, kind: 'task', id: t.id, name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt, iteration: t.progress, iterations: t.iterations, viaSpin: !!viaSpin });
+  logCompletion({ ts: completedAt, kind: 'task', id: t.id, name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt, iteration: t.progress, iterations: t.iterations, viaSpin: !!viaSpin,
+    actualElapsedSec: (timing && Number.isFinite(timing.actualElapsedSec)) ? timing.actualElapsedSec : undefined,
+    pauseCount: timing ? timing.pauseCount : undefined, totalPausedSec: timing ? timing.totalPausedSec : undefined });
   logEvent('task_completed', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted', level: t.tier || 'medium', iteration: t.progress, iterations: t.iterations, selectionSource: viaSpin ? 'quest_wheel' : 'manual', baseReward: reward, multiplier: hh * spinMult, finalReward: amt, createdAt: t.createdAt || null });
   if (t.progress >= Math.max(1, t.iterations || 1)) {
     state.archivedOneoffs = Array.isArray(state.archivedOneoffs) ? state.archivedOneoffs : [];
@@ -3615,23 +4034,27 @@ function completeHabit(id, timing) {
   addTokens(amt, card);
   // name stays the BASE habit name — history is keyed by it (streak/pattern analysis,
   // Due Soon, the AI's appContext), so a Mode must not fork a habit's history.
-  const expectedMinutes = td.mode ? (td.minutes || null) : (lvl ? (lvl.minutes || null) : (h.timedMinutes || null));
-  const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null, reward: amt,
+  const expectedMinutes = lvl ? (lvl.minutes || null) : (h.timedMinutes || null);
+  // `level` stays a coarse easy/medium/hard band so the Stats intensity chart keeps
+  // working across any ladder height (and alongside rows written before numeric tiers);
+  // tierIndex/tierCount carry the exact position for anything that wants it.
+  const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.band : null, reward: amt,
+    tierIndex: lvl ? lvl.idx : null, tierCount: lvl ? lvl.n : null,
     scheduledForDate: today, scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null, expectedDurationMin: expectedMinutes,
     completionMethod: timing ? 'stopwatch' : 'checkmark' };
-  if (td.mode) entry.mode = td.context;
   if (timing) {  // completion came from a play→finish session — keep actual time-on-task for the Stats/AI pattern data
     entry.actualElapsedSec = timing.actualElapsedSec;
     entry.pauseCount = timing.pauseCount;
     entry.totalPausedSec = timing.totalPausedSec;
   }
   logCompletion(entry);
-  logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.key : null,
-    mode: td.mode ? td.context : null, scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
+  logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.band : null,
+    tierIndex: lvl ? lvl.idx : null, tierCount: lvl ? lvl.n : null,
+    scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
     actualStartTs: timerSnapshot ? timerSnapshot.startedAt : null, actualEndTs: finishedAt,
     actualElapsedSec: timing ? timing.actualElapsedSec : null, pauseCount: timing ? timing.pauseCount : null, totalPausedSec: timing ? timing.totalPausedSec : null,
     completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt });
-  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.key} tier` : ''}${td.mode ? ` · 🧭 ${td.context}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
+  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.label}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
   checkBonuses();
   passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
@@ -3651,6 +4074,132 @@ function detectMinutes(text) {
   const total = Math.round((hr ? parseFloat(hr[1]) * 60 : 0) + (mn ? parseFloat(mn[1]) : 0));
   return clamp(total, 0, 999);
 }
+/* ---- Emoji guessing. Unlike duration detection above, this one IS applied silently —
+   but only while the item still wears the seed icon it was created with (`emojiAuto`).
+   The moment the user types their own emoji the flag clears for good, so we never
+   overwrite a deliberate choice, and legacy saves (no flag → false) are never touched.
+   Ordered longest/most-specific first: "dog walk" must beat "walk". ---- */
+const EMOJI_KEYWORDS = [
+  // --- movement ---
+  ['🏃', ['run', 'running', 'jog', 'jogging', 'sprint', 'cardio', '5k', '10k', 'marathon']],
+  ['🚶', ['walk', 'walking', 'steps', 'stroll']],
+  ['🥾', ['hike', 'hiking', 'trail', 'trek']],
+  ['🚴', ['bike', 'biking', 'cycle', 'cycling', 'ride']],
+  ['🏊', ['swim', 'swimming', 'pool laps', 'laps']],
+  ['🏋️', ['gym', 'lift', 'lifting', 'weights', 'workout', 'strength', 'squat', 'bench', 'deadlift']],
+  ['🧘', ['meditate', 'meditation', 'mindful', 'breathe', 'breathing', 'yoga', 'zen', 'calm']],
+  ['🤸', ['stretch', 'stretching', 'mobility', 'warmup', 'warm up']],
+  ['🧗', ['climb', 'climbing', 'bouldering']],
+  ['⚽', ['soccer', 'football practice']],
+  ['🏀', ['basketball', 'hoops']],
+  ['🎾', ['tennis']],
+  ['⛳', ['golf']],
+  ['🥋', ['martial arts', 'karate', 'judo', 'jiu jitsu', 'bjj', 'taekwondo']],
+  ['🛹', ['skate', 'skateboard']],
+  ['💃', ['dance', 'dancing', 'choreo']],
+  // --- mind / study ---
+  ['📚', ['read', 'reading', 'book', 'books', 'chapter', 'novel']],
+  ['📖', ['study', 'studying', 'revise', 'revision', 'homework', 'flashcards', 'anki']],
+  ['✍️', ['write', 'writing', 'essay', 'blog', 'draft']],
+  ['📓', ['journal', 'journaling', 'diary', 'reflect', 'reflection', 'gratitude']],
+  ['🧠', ['learn', 'learning', 'memorize', 'brain', 'course', 'lecture']],
+  ['💻', ['code', 'coding', 'program', 'programming', 'leetcode', 'debug', 'commit', 'build']],
+  ['🗣️', ['speak', 'speaking', 'pronunciation', 'conversation practice', 'language']],
+  ['🇯🇵', ['japanese', 'kanji', 'hiragana', 'katakana', 'nihongo']],
+  ['🇪🇸', ['spanish', 'español']],
+  ['🇫🇷', ['french', 'français']],
+  ['🇩🇪', ['german', 'deutsch']],
+  ['🇰🇷', ['korean', 'hangul']],
+  ['🇨🇳', ['chinese', 'mandarin', 'hanzi']],
+  ['🔢', ['math', 'maths', 'algebra', 'calculus', 'arithmetic']],
+  ['🔬', ['science', 'lab', 'chemistry', 'biology', 'physics', 'experiment']],
+  ['♟️', ['chess', 'puzzle']],
+  // --- music / art ---
+  ['🎻', ['cello', 'violin', 'viola', 'strings']],
+  ['🎸', ['guitar', 'bass', 'ukulele', 'riff']],
+  ['🎹', ['piano', 'keyboard practice', 'keys', 'scales']],
+  ['🥁', ['drum', 'drums', 'percussion']],
+  ['🎺', ['trumpet', 'horn', 'sax', 'saxophone', 'trombone']],
+  ['🎤', ['sing', 'singing', 'vocals', 'karaoke', 'voice']],
+  ['🎵', ['music', 'practice instrument', 'compose', 'songwriting']],
+  ['🎨', ['draw', 'drawing', 'paint', 'painting', 'sketch', 'art', 'doodle']],
+  ['📷', ['photo', 'photos', 'photography', 'camera', 'shoot']],
+  ['🎬', ['film', 'video', 'edit footage', 'youtube', 'movie']],
+  // --- health / body ---
+  ['💧', ['water', 'hydrate', 'hydration', 'drink water']],
+  ['💊', ['vitamin', 'vitamins', 'supplement', 'supplements', 'medication', 'meds', 'pill', 'pills']],
+  ['😴', ['sleep', 'bed', 'bedtime', 'nap', 'rest', 'wake up', 'wake']],
+  ['🦷', ['brush', 'teeth', 'floss', 'dental']],
+  ['🚿', ['shower', 'bath', 'wash up']],
+  ['🧴', ['skincare', 'sunscreen', 'moisturize', 'lotion']],
+  ['🥗', ['salad', 'veggies', 'vegetables', 'greens', 'healthy meal', 'eat healthy']],
+  ['🍳', ['cook', 'cooking', 'breakfast', 'meal prep', 'meal-prep']],
+  ['🍽️', ['lunch', 'dinner', 'eat', 'meal']],
+  ['🍎', ['fruit', 'apple', 'snack healthy']],
+  ['☕', ['coffee', 'tea', 'espresso', 'matcha']],
+  ['🚭', ['quit smoking', 'no smoking', 'nicotine', 'vape']],
+  ['🚫', ['no alcohol', 'sober', 'no sugar', 'no junk', 'avoid']],
+  ['⚖️', ['weigh', 'weight', 'scale']],
+  // --- home / chores ---
+  ['🧹', ['clean', 'cleaning', 'tidy', 'sweep', 'declutter', 'vacuum']],
+  ['🧺', ['laundry', 'wash clothes', 'fold clothes']],
+  ['🍽️', ['dishes', 'dishwasher']],
+  ['🛏️', ['make bed', 'make the bed']],
+  ['🗑️', ['trash', 'garbage', 'bins', 'recycling']],
+  ['🌱', ['plant', 'plants', 'garden', 'gardening', 'water plants']],
+  ['🔧', ['fix', 'repair', 'maintenance']],
+  ['🛒', ['groceries', 'grocery', 'shopping', 'shop']],
+  // --- pets / people ---
+  ['🐕', ['dog', 'puppy', 'walk the dog']],
+  ['🐈', ['cat', 'kitten', 'litter']],
+  ['🤝', ['reach out', 'friend', 'friends', 'catch up', 'social', 'hang out']],
+  ['📞', ['call', 'phone', 'ring']],
+  ['💌', ['message', 'text', 'email', 'reply', 'inbox', 'letter']],
+  ['👨‍👩‍👧', ['family', 'parents', 'mom', 'dad', 'kids']],
+  ['❤️', ['partner', 'date night', 'spouse', 'wife', 'husband', 'girlfriend', 'boyfriend']],
+  // --- work / money / admin ---
+  ['💼', ['work', 'job', 'shift', 'client']],
+  ['📧', ['emails', 'check email']],
+  ['📅', ['plan', 'planning', 'schedule', 'calendar', 'agenda', 'weekly review']],
+  ['✅', ['todo', 'to-do', 'tasks', 'checklist', 'inbox zero']],
+  ['💰', ['budget', 'money', 'save', 'savings', 'finances', 'expenses', 'invest']],
+  ['🧾', ['bills', 'invoice', 'taxes', 'receipts']],
+  ['📊', ['track', 'review numbers', 'metrics', 'report', 'analytics']],
+  // --- spirit / misc ---
+  ['🙏', ['pray', 'prayer', 'church', 'scripture', 'bible', 'devotion']],
+  ['☀️', ['sunlight', 'sunshine', 'morning light', 'outside', 'outdoors', 'fresh air']],
+  ['🎮', ['game', 'gaming', 'play games']],
+  ['📱', ['screen time', 'phone time', 'social media', 'scroll']],
+  ['🎧', ['podcast', 'audiobook', 'listen']],
+  ['🧊', ['cold shower', 'ice bath', 'cold plunge']],
+];
+// Longest keyword wins, not first in the table — otherwise "walk the dog" trips over
+// plain "walk" and comes back 🚶. Word-boundary matched so "runny nose" isn't 🏃.
+const EMOJI_MATCHERS = EMOJI_KEYWORDS
+  .flatMap(([emoji, words]) => words.map(w => ({
+    emoji, len: w.length,
+    re: new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i'),
+  })))
+  .sort((a, b) => b.len - a.len);
+function guessEmoji(name) {
+  const s = String(name || '').toLowerCase().trim();
+  if (!s) return null;
+  for (const m of EMOJI_MATCHERS) if (m.re.test(s)) return m.emoji;
+  return null;
+}
+// Applies a guess to a habit/quest that's still wearing its seed icon, and pushes the
+// new value straight into the open editor's emoji input — no re-render, so the caret
+// stays put in the name field the user is mid-word in.
+function autoEmoji(item, box) {
+  if (!item || !item.emojiAuto) return false;
+  const g = guessEmoji(item.name);
+  if (!g || g === item.emoji) return false;
+  item.emoji = g;
+  const inp = box && box.querySelector('.emoji-in');
+  if (inp) inp.value = g;
+  return true;
+}
+
 // Duration detection is suggest-only — never applied silently ("buy 15 apples" would misfire).
 // The chip shows in the inline editor; tapping ✓ writes the minutes, ✕ dismisses that suggestion.
 let timerSuggestDismissed = '';   // "<habitId>:<page>:<minutes>" the user said no to (transient)
@@ -3688,14 +4237,41 @@ function finishTimedHabit(id) {
   completeHabit(id, { actualElapsedSec: Math.round(timerElapsedSec(t)),
                       pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0) });
 }
+
+/* ---- Quest stopwatches. Same three verbs as habits, so a one-off can be timed and
+   therefore drawn on the Block Schedule as a real span rather than a moment mark. ---- */
+function startOneoffTimer(id) {
+  const t = state.oneoffs.find(x => x.id === id); if (!t || t.timer) return;
+  t.timer = { startedAt: Date.now(), pausedAt: null, pausedTotalSec: 0, pauseCount: 0 };
+  logEvent('task_started', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted' });
+  SFX.click(); save(); renderOneoffs(); renderHabits();
+}
+function toggleOneoffTimerPause(id) {
+  const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
+  const t = q.timer;
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; logEvent('task_resumed', { entityType: 'task', entityId: q.id, name: q.name }); }
+  else { t.pausedAt = Date.now(); t.pauseCount = (t.pauseCount || 0) + 1; logEvent('task_paused', { entityType: 'task', entityId: q.id, name: q.name, pauseCount: t.pauseCount }); }
+  SFX.click(); save(); renderOneoffs(); renderHabits();
+}
+function finishTimedOneoff(id) {
+  const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
+  const t = q.timer;
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; }
+  completeOneoff(id, false, { actualElapsedSec: Math.round(timerElapsedSec(t)),
+                              pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0) });
+}
 // 1s tick: just refreshes visible elapsed-time readouts in place — no auto-finish,
 // since an open stopwatch has no target to hit. The user always taps Finish themselves.
 setInterval(() => {
-  const running = state.habits.some(h => h.timer);
+  const running = state.habits.some(h => h.timer) || state.oneoffs.some(t => t.timer);
   if (running && $('#view-habits').classList.contains('active')) {
     $$('[data-timer-elapsed]').forEach(el => {
       const h = state.habits.find(x => x.id === el.dataset.timerElapsed);
       if (h && h.timer) el.textContent = fmtTimerSec(timerElapsedSec(h.timer));
+    });
+    $$('[data-timer-elapsed-task]').forEach(el => {
+      const t = state.oneoffs.find(x => x.id === el.dataset.timerElapsedTask);
+      if (t && t.timer) el.textContent = fmtTimerSec(timerElapsedSec(t.timer));
     });
   }
   // Active Winnings countdowns. Expiry has to be checked even when the Winnings tab
@@ -3755,20 +4331,48 @@ function habitMedianActualMinutes(h) {
 // PREDICTED blocks for today — what the AI expects, drawn dashed. Estimated start comes
 // from h.scheduledMin (AI-pinned) or the median completion time of the last 14 runs;
 // estimated length from the median of real play→finish sessions.
-function computeTodayBlocks() {
+// Explicit per-date plans for one day, resolved back to their habit/quest.
+function plannedFor(dateStr) {
+  return ((state.plannedBlocks || {})[dateStr] || []).map(b => {
+    const src = b.kind === 'task'
+      ? (state.oneoffs || []).find(t => t.id === b.refId)
+      : (state.habits || []).find(h => h.id === b.refId && !h.archived);
+    if (!src) return null;                       // habit/quest was deleted — drop the plan
+    return {
+      planId: b.id, refId: b.refId, planKind: b.kind,
+      habitId: b.kind === 'habit' ? src.id : null,
+      name: src.name, emoji: src.emoji, category: src.category,
+      startMin: b.startMin, durMin: b.durMin,
+      pinned: true, complete: false, kind: 'predicted', type: b.kind === 'task' ? 'task' : 'habit',
+    };
+  }).filter(Boolean);
+}
+
+// PREDICTED blocks for any date: the day's scheduled habits at their inferred usual time,
+// plus anything explicitly planned for that date. An explicit plan wins — if you dragged
+// a habit to 3pm on Thursday, we don't also draw its usual 8am block.
+function computeDayBlocks(dateStr) {
   const loadout = currentLoadout();
-  return state.habits.filter(h => !h.archived && h.section === 'daily' && isScheduledToday(h)
-      && h.loadout === loadout)
+  const isToday = dateStr === todayStr();
+  const planned = plannedFor(dateStr);
+  const plannedRefs = new Set(planned.map(p => p.refId));
+  const inferred = state.habits.filter(h => !h.archived && h.section === 'daily'
+      && isScheduledOn(h, dateStr) && h.loadout === loadout && !plannedRefs.has(h.id))
     .map(h => ({
-      habitId: h.id, name: h.name, emoji: h.emoji, category: h.category,
+      habitId: h.id, refId: h.id, planKind: 'habit',
+      name: h.name, emoji: h.emoji, category: h.category,
       startMin: habitBlockMinute(h),
       durMin: habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
-      habitId: h.id, pinned: Number.isFinite(h.scheduledMin),
-      complete: isComplete(h), kind: 'predicted', type: 'habit',
+      pinned: Number.isFinite(h.scheduledMin),
+      // "Complete" only means anything for today; a future day hasn't happened yet.
+      complete: isToday ? isComplete(h) : false,
+      kind: 'predicted', type: 'habit',
     }))
-    .filter(b => Number.isFinite(b.startMin))
-    .sort((a, b) => a.startMin - b.startMin);
+    .filter(b => Number.isFinite(b.startMin));
+  return inferred.concat(planned).sort((a, b) => a.startMin - b.startMin);
 }
+// Back-compat alias — Due Soon and the AI context still ask for "today".
+function computeTodayBlocks() { return computeDayBlocks(todayStr()); }
 
 // ACTUAL blocks for any date, reconstructed from the completion log. A timed run gives a
 // real span (finished at `ts`, ran `actualElapsedSec`), so start = end − duration. A habit
@@ -3776,7 +4380,7 @@ function computeTodayBlocks() {
 // those become zero-length "moment" marks rather than an invented duration.
 function computeActualBlocks(dateStr) {
   return (state.history || [])
-    .filter(e => e && e.kind === 'habit' && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
+    .filter(e => e && (e.kind === 'habit' || e.kind === 'task') && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
     .map(e => {
       const d = new Date(e.ts);
       const endMin = d.getHours() * 60 + d.getMinutes();
@@ -3785,7 +4389,7 @@ function computeActualBlocks(dateStr) {
       return {
         name: e.name, emoji: e.emoji, category: e.category,
         startMin: Math.max(0, endMin - durMin), endMin, durMin,
-        kind: timed ? 'actual' : 'moment', type: 'habit',
+        kind: timed ? 'actual' : 'moment', type: e.kind === 'task' ? 'task' : 'habit',
       };
     })
     .sort((a, b) => a.startMin - b.startMin);
@@ -3831,7 +4435,7 @@ function layoutLanes(blocks) {
   return blocks;
 }
 
-let schedOffset = 0;        // 0 = today, -1 = yesterday, … (no future: we don't model it)
+let schedOffset = 0;        // 0 = today, negative = past, positive = planning ahead
 // Zoom: pixels per hour. Higher zoom also splits the hour into finer gridlines so short
 // gaps between habits become visible instead of collapsing into one band.
 // Small steps so each press is a glide rather than a jump.
@@ -3858,11 +4462,14 @@ function renderBlockSchedule() {
 
   // Today = what already happened (solid) + what's still expected (dashed). A prediction
   // for something you've already done would just be a duplicate of the real block.
-  const actual = computeActualBlocks(dateStr);
-  const rewards = computeRewardBlocks(dateStr);   // when you cashed in, alongside the work
+  const isFuture = schedOffset > 0;
+  // Future days have no history — they're pure plan. Past days are pure record. Today is
+  // both: what already happened, plus what's still expected.
+  const actual = isFuture ? [] : computeActualBlocks(dateStr);
+  const rewards = isFuture ? [] : computeRewardBlocks(dateStr);
   const doneNames = new Set(actual.map(b => b.name));
-  const blocks = (isToday
-    ? actual.concat(computeTodayBlocks().filter(b => !doneNames.has(b.name)))
+  const blocks = (isToday || isFuture
+    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
     : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
   layoutLanes(blocks);
@@ -3909,14 +4516,14 @@ function renderBlockSchedule() {
     const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted (drag to move)' : ''}${timeLabel}`;
     // Predictions are always draggable — no mode to enter. Anything that already happened
     // stays put: it's a record, not a plan, so moving it would be rewriting history.
-    const drag = b.kind === 'predicted' && b.habitId;
+    const drag = b.kind === 'predicted' && b.refId;
     const pin = b.pinned ? ' 📌' : '';
     // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
     // these percentages are of the block area alone and the gutter never enters the math.
     // Tall enough to show a time? Show it — during a drag it doubles as the readout.
     const showTime = b.kind !== 'moment' && (b.durMin / 60 * 96 >= 40) && lanes <= 2;
     return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}"
-      title="${escapeHtml(title)}"${drag ? ` data-habit="${b.habitId}" data-start="${b.startMin}"` : ''}
+      title="${escapeHtml(title)}"${drag ? ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"` : ''}
       style="top:${top};height:${height};left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
       <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
       ${showTime || drag ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
@@ -3924,10 +4531,13 @@ function renderBlockSchedule() {
     </div>`;
   }).join('');
 
-  const label = isToday ? 'Today' : (schedOffset === -1 ? 'Yesterday' : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }));
+  const label = isToday ? 'Today'
+    : schedOffset === -1 ? 'Yesterday'
+    : schedOffset === 1 ? 'Tomorrow'
+    : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
   const anyPinned = blocks.some(b => b.pinned);
-  const emptyMsg = isToday
-    ? 'Nothing logged or predicted for today yet.'
+  const emptyMsg = isFuture ? 'Nothing planned for this day yet — tap + to add something.'
+    : isToday ? 'Nothing logged or predicted for today yet.'
     : 'Nothing was logged on this day.';
 
   box.innerHTML = `
@@ -3937,7 +4547,7 @@ function renderBlockSchedule() {
         <b>${escapeHtml(label)}</b>
         <span class="subtle">${escapeHtml(new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</span>
       </div>
-      <button class="btn ghost sm" data-act="schedNext"${isToday ? ' disabled' : ''}>›</button>
+      <button class="btn ghost sm" data-act="schedNext">›</button>
     </div>
     <div class="sched-key">
       <span><i class="k-actual"></i> actually done</span>
@@ -3993,7 +4603,7 @@ function renderDueSoon() {
   let rows = '', sub = '';
   if (due.length) {
     sub = 'Coming up in your usual routine — knock these out first.';
-    rows = due.map(x => x.h.id === editingHabitId ? '' : habitCardHTML(x.h, x.m)).join('');
+    rows = due.map(x => habitCardHTML(x.h, x.m)).join('');
   } else {
     const active = new Set(activeHappyHours().map(a => a.cat));
     const hh = active.size
@@ -4001,7 +4611,7 @@ function renderDueSoon() {
       : [];
     if (hh.length) {
       sub = 'Happy hour is live — do these now to grab the token bonus.';
-      rows = hh.map(h => h.id === editingHabitId ? '' : habitCardHTML(h)).join('');
+      rows = hh.map(h => habitCardHTML(h)).join('');
     } else {
       // Last fallback: nothing is due and nothing is boosted (or the habits are simply
       // finished), so the board would sit empty — fill it with a couple of one-off
@@ -5207,6 +5817,7 @@ function renderActiveWins() {
 }
 
 function renderPrizes() {
+  syncEditorSheet();
   renderActiveWins();
   const inv = $('#invGrid');
   const lock = $('#redeemLock'), win = redeemWindow();
@@ -5233,7 +5844,6 @@ function renderPrizes() {
       </div>
       <div class="prize-cards">
         ${items.map(r => {
-          if (r.id === editingRewardId && !r.special) return rewardEditCardHTML(r);
           if (r.id === claimOpenId && !r.special) return claimCardHTML(r);
           return prizeTileHTML(r, ti);
         }).join('')}
@@ -6053,7 +6663,7 @@ function appContext() {
     const sched = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
     const age = daysAgo(firstSeen[h.name]), last = daysAgo(lastSeen[h.name]);
     const tmins = habitCurrentMinutes(h);
-    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` tier=${lvl.key}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk, streak ${currentStreak(h)} (best ${h.best || 0})${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
+    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` on tier ${lvl.idx + 1}/${lvl.n}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk, streak ${currentStreak(h)} (best ${h.best || 0})${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
   });
   if (archived.length) {
     L.push('RECENTLY GRADUATED (archived — history intact, can be restored):');
@@ -6062,14 +6672,10 @@ function appContext() {
 
   // --- Week Planner: kinds of day + the habit Modes that adapt to them ---
   const plannedDays = Object.keys(state.dayPlans || {}).filter(d => daysBetween(todayStr(), d) >= 0).sort();
-  const modeLines = active.filter(h => Object.keys(h.modes || {}).length)
-    .map(h => `  - "${h.name}": ${Object.keys(h.modes).map(c => `${c} → "${h.modes[c].name}" (+${h.modes[c].reward}🪙)`).join(', ')}`);
-  if ((state.contexts || []).length || plannedDays.length || modeLines.length) {
+  if ((state.contexts || []).length || plannedDays.length) {
     L.push('', 'DAY CONTEXTS (Week Planner — misses on a planned day never break a streak):');
     L.push(`  - Known kinds of day: ${(state.contexts || []).join(', ') || 'none yet'}`);
     if (plannedDays.length) L.push(`  - Planned ahead: ${plannedDays.slice(0, 10).map(d => `${d}${(state.dayPlans[d].context ? ` [${state.dayPlans[d].context}]` : ' [unclassified]')}`).join(', ')}`);
-    if (modeLines.length) L.push('  - Habit modes already saved:', ...modeLines);
-    L.push('  - Modes and day plans are managed in the Week Planner, NOT from chat — mention it if the user asks, but do not propose modes here.');
   }
 
   // --- One-off quests ---
@@ -6206,7 +6812,7 @@ PROPOSAL SHAPES (omit any field you're not setting):
 Editing existing things — PREFER THESE:
 - {"type":"settingsChange","path":"settings.tierRewards.easy","to":<value>,"reason":"..."}  dot-path into state. Allowed paths: settings.tierRewards.{easy,medium,hard}, settings.dailyBonus, settings.extraBonus, settings.weeklyBonus, settings.happyHours.<Category>.{start,end,mult,enabled}, settings.streakFreeze.{enabled,tier,emoji,name} (enabled=true|false, tier=common|rare|epic|legendary, emoji/name=short strings), pass.xpPerLevel, pass.proCost, pass.perXP.{daily,task}, games.wheel.cost, games.wheel.tokenWin.0, games.wheel.tokenWin.1, games.wheel.weights.{blank,tokens,common,rare,epic,legendary}. Sound & reduced-motion settings are NOT editable — never propose changes to them.
 - {"type":"rewardEdit","id":"<existing reward id>","name":"...","emoji":"...","tier":"common|rare|epic|legendary","minutes":0}  edits a reward in place; include only fields you're changing; NEVER creates one
-- {"type":"tierChange","targetKind":"habit|quest","id":"<id>","to":"easy|medium|hard OR a token number for plain habits","reason":"..."}
+- {"type":"tierChange","targetKind":"habit|quest","id":"<id>","to":"<value>","reason":"..."}  quests: easy|medium|hard. Habits with a difficulty ladder: the tier NUMBER (1 = easiest, counting up) — the ladder can be any height, see "on tier N/M" in the habit list. Habits with no ladder: a token number.
 - {"type":"scheduleChange","id":"<habit id>","days":[7 booleans Sun..Sat],"reason":"..."}
 - {"type":"dropHabit","id":"<habit id>","reason":"..."}  archives it, history intact
 - {"type":"categoryRename","from":"<existing category>","to":"<new name>","reason":"..."}  renames it everywhere (habits, quests, pass goals, happy hours); "Unsorted" can't be renamed
@@ -6370,13 +6976,6 @@ function describeProposal(p) {
     return { kind: 'Day context', title: `📅 ${fmtPlanDate(p.date)} → ${p.context}`,
              detail: (isNew ? 'new context · ' : '') + (p.raw || (dayPlan(p.date) || {}).raw || 'Misses this day won\'t break your streak.') };
   }
-  if (t === 'habitMode') {
-    const h = state.habits.find(x => x.id === p.habitId);
-    const bits = [`+${clamp(parseInt(p.reward) || 0, 0, 999)} 🪙`];
-    if (parseInt(p.minutes) > 0) bits.push(`⏱ ${fmtMins(clamp(parseInt(p.minutes), 0, 999))}`);
-    if (p.desc) bits.push(p.desc);
-    return { kind: 'Habit mode', title: h ? `🧭 ${h.name} [${p.context}] → "${p.name}"` : '(habit gone)', detail: bits.join(' · ') };
-  }
   if (t === 'addTier') {
     const h = state.habits.find(x => x.id === p.habitId);
     const easier = p.side !== 'harder';
@@ -6483,7 +7082,16 @@ function applyProposal(p) {
     }
     const h = state.habits.find(x => x.id === p.id); if (!h) return false;
     const lvls = habitLevels(h);
-    if (lvls) { const i = lvls.findIndex(l => l.key === p.to); if (i < 0) return false; h.curTier = i; return true; }
+    // `to` may be a 1-based tier number, or the coarse easy/medium/hard band the model
+    // used to speak — those map to the bottom / middle / top of whatever ladder exists.
+    if (lvls) {
+      const n = lvls.length;
+      const num = parseInt(p.to);
+      let i = Number.isFinite(num) ? num - 1
+        : (p.to === 'easy' ? 0 : p.to === 'hard' ? n - 1 : p.to === 'medium' ? Math.floor((n - 1) / 2) : -1);
+      if (!(i >= 0 && i < n)) return false;
+      h.curTier = i; return true;
+    }
     const n = parseInt(p.to); if (!Number.isFinite(n)) return false;
     h.reward = clamp(n, 0, 999); return true;
   }
@@ -6544,24 +7152,11 @@ function applyProposal(p) {
   }
   // --- A context Mode on one habit. Saved per habit per context and reused
   // automatically the next time that context comes around — never regenerated. ---
-  if (t === 'habitMode') {
-    const h = state.habits.find(x => x.id === p.habitId); if (!h) return false;
-    const ctx = ensureContext(p.context); if (!ctx) return false;
-    const name = String(p.name || h.name).trim(); if (!name) return false;
-    h.modes = (h.modes && typeof h.modes === 'object') ? h.modes : {};
-    h.modes[ctx] = { name, reward: clamp(parseInt(p.reward) || h.reward, 0, 999),
-                     minutes: clamp(parseInt(p.minutes) || 0, 0, 999),
-                     desc: String(p.desc || ''), createdBy: 'ai' };
-    state.aiMeta.modes = Array.isArray(state.aiMeta.modes) ? state.aiMeta.modes : [];
-    if (!state.aiMeta.modes.some(m => m.habitId === h.id && m.context === ctx)) state.aiMeta.modes.push({ habitId: h.id, context: ctx });
-    return true;
-  }
   // --- Create a difficulty tier (tierChange can only SWITCH between existing ones).
   // Same ladder math as the manual ➕ Add tier buttons in the habit editor. ---
   if (t === 'addTier') {
     const h = state.habits.find(x => x.id === p.habitId); if (!h) return false;
     h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
-    if (h.tiers.length >= 2) return false;                 // ladder is full (3 levels max)
     const name = String(p.name || '').trim(); if (!name) return false;
     const n = h.tiers.length + 1;                          // level count BEFORE adding
     const curBase = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1);
@@ -6717,15 +7312,8 @@ function clearAIData() {
   const nQ = state.oneoffs.filter(isAiQuest).length;
   const nR = state.rewards.filter(isAiReward).length;
   const nC = (meta.categories || []).filter(c => (state.categories || []).includes(c)).length;
-  // AI-written context Modes on habits the user keeps — the habit stays, the mode goes.
-  const aiModes = (meta.modes || []).filter(m => {
-    const h = state.habits.find(x => x.id === m.habitId);
-    return h && !isAiHabit(h) && (h.modes || {})[m.context] && h.modes[m.context].createdBy === 'ai';
-  });
-  const nM = aiModes.length;
-  if (!nH && !nQ && !nR && !nC && !nM) { toast('No AI-created items to clear 🤖', 'var(--cyan)'); return; }
-  if (!confirm(`Delete ${nH} AI habit(s), ${nQ} quest(s), ${nR} reward(s), ${nC} categorie(s), ${nM} habit mode(s)?\nYour own items, stats/history, day plans and the chat log are untouched.`)) return;
-  aiModes.forEach(m => { const h = state.habits.find(x => x.id === m.habitId); if (h && h.modes) delete h.modes[m.context]; });
+  if (!nH && !nQ && !nR && !nC) { toast('No AI-created items to clear 🤖', 'var(--cyan)'); return; }
+  if (!confirm(`Delete ${nH} AI habit(s), ${nQ} quest(s), ${nR} reward(s), ${nC} categorie(s)?\nYour own items, stats/history, day plans and the chat log are untouched.`)) return;
   state.habits = state.habits.filter(h => !isAiHabit(h));
   state.oneoffs = state.oneoffs.filter(t => !isAiQuest(t));
   state.rewards = state.rewards.filter(r => !isAiReward(r));
@@ -6757,7 +7345,7 @@ let planMessage = '';      // the AI's summary line for this batch
 let planError = '';
 let planBusy = false;
 let planScope = 'week';    // 'week' | 'single'
-let planTarget = null;     // single-habit flow: { habitId, kind: 'mode'|'tier', context, side }
+let planTarget = null;     // single-habit flow: { habitId, kind: 'tier', side }
 
 const PLAN_DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const PLAN_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -6804,10 +7392,12 @@ function openPlanner() {
   $('#planOverlay').classList.add('show');
 }
 // Single-habit entry points from the habit editor — same overlay, same cards.
-function openPlannerSingle(habitId, kind) {
+function openPlannerSingle(habitId, kind, side) {
   const h = state.habits.find(x => x.id === habitId); if (!h) return;
   planScope = 'single';
-  planTarget = { habitId, kind, context: todayContext() || (state.contexts || [])[0] || '', side: 'easier' };
+  // The ladder popup already knows which end the ✚ was on, so it passes the side in
+  // rather than making the user answer the same question twice.
+  planTarget = { habitId, kind, context: todayContext() || (state.contexts || [])[0] || '', side: side === 'harder' ? 'harder' : 'easier' };
   planProposals = []; planMessage = ''; planError = '';
   renderPlanner();
   $('#planOverlay').classList.add('show');
@@ -6851,30 +7441,19 @@ function planWeekHTML() {
     </button>
     <div class="hint">The AI reads each day, names the kind of day it is, and adapts habits that don't fit it. Nothing changes until you tap Apply.</div>`;
 }
+// Only the difficulty-tier flow remains here; context Modes were removed in favour of
+// Loadouts, which cover "what does this kind of day look like" without the overlap.
 function planSingleHTML() {
   const h = state.habits.find(x => x.id === planTarget.habitId);
   if (!h) return `<div class="subtle">That habit is gone.</div>`;
-  if (planTarget.kind === 'tier') {
-    return `
-      <div class="subtle" style="margin-bottom:10px">Add a difficulty tier to <b>${escapeHtml(h.name)}</b> — the AI writes the name, payout and duration.</div>
-      <div class="chip-row">
-        <button class="chip ${planTarget.side === 'easier' ? 'cat-chip sel' : ''}" data-planside="easier">⬇ Easier</button>
-        <button class="chip ${planTarget.side === 'harder' ? 'cat-chip sel' : ''}" data-planside="harder">⬆ Harder</button>
-      </div>
-      <button class="btn purple" data-act="planGenerate" ${planBusy ? 'disabled' : ''} style="width:100%;margin-top:12px">
-        ${planBusy ? '🤖 thinking…' : '✨ Generate tier'}
-      </button>`;
-  }
-  const chips = (state.contexts || []).map(c =>
-    `<button class="chip cat-chip ${planTarget.context === c ? 'sel' : ''}" data-planctxpick="${escapeHtml(c)}">🧭 ${escapeHtml(c)}</button>`).join('');
   return `
-    <div class="subtle" style="margin-bottom:10px">What kind of day should <b>${escapeHtml(h.name)}</b> adapt to?</div>
-    <div class="chip-row">${chips || '<span class="subtle">No contexts yet — name one below.</span>'}</div>
-    <div class="hedit-r" style="margin-top:10px">
-      <input class="name-in" id="planCtxInput" value="${escapeHtml(planTarget.context || '')}" placeholder="e.g. Travel, School, Camping">
+    <div class="subtle" style="margin-bottom:10px">Add a difficulty tier to <b>${escapeHtml(h.name)}</b> — the AI writes the name, payout and duration.</div>
+    <div class="chip-row">
+      <button class="chip ${planTarget.side === 'easier' ? 'cat-chip sel' : ''}" data-planside="easier">⬇ Easier</button>
+      <button class="chip ${planTarget.side === 'harder' ? 'cat-chip sel' : ''}" data-planside="harder">⬆ Harder</button>
     </div>
     <button class="btn purple" data-act="planGenerate" ${planBusy ? 'disabled' : ''} style="width:100%;margin-top:12px">
-      ${planBusy ? '🤖 thinking…' : '✨ Generate mode'}
+      ${planBusy ? '🤖 thinking…' : '✨ Generate tier'}
     </button>`;
 }
 function planResultHTML() {
@@ -6903,7 +7482,7 @@ function renderPlanner() {
   // emoji sits OUTSIDE .pass-title — that class clips its text to a gradient, which
   // turns an emoji into a solid blob.
   const [icon, title] = planScope === 'week' ? ['📅', 'PLAN MY WEEK']
-    : (planTarget && planTarget.kind === 'tier' ? ['✨', 'AI-FILL TIER'] : ['🧭', 'GENERATE MODE']);
+    : ['✨', 'AI-FILL TIER'];
   const sub = planScope === 'week'
     ? 'Say what each day looks like. Days you flag never break a streak — miss or not.'
     : 'Saved for next time this kind of day comes around.';
@@ -6921,9 +7500,8 @@ function renderPlanner() {
 function renderTodayContext() {
   const el = $('#todayCtxBadge'); if (!el) return;
   const ctx = todayContext();
-  const moded = ctx ? state.habits.filter(h => !h.archived && (h.modes || {})[ctx]).length : 0;
   el.innerHTML = ctx
-    ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day${moded ? ` · ${moded} adapted` : ''}</span>`
+    ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day</span>`
     : (dayPlan(todayStr()) ? `<span class="ctx-badge">📅 planned day · streak-safe</span>` : '');
   // Loadouts are independent habit sets, selected through the in-app menu.
   const sw = $('#loadoutSwitch');
@@ -6936,7 +7514,7 @@ function renderTodayContext() {
 // What the user actually said this habit means to them (h.why + the onboarding
 // questionnaire's Q&A) — without this, mode/tier generation is just guessing
 // ("practice cello" → "hum it 5 times"), which is exactly the failure mode this
-// was built to fix. Shared by habitModeSummary, tierFillSystemPrompt, and appContext.
+// was built to fix. Shared by habitPlanSummary, tierFillSystemPrompt, and appContext.
 function habitContextLines(h) {
   const bits = [];
   if (h.why) bits.push(`why: "${h.why}"`);
@@ -6945,17 +7523,14 @@ function habitContextLines(h) {
   }
   return bits;
 }
-function habitModeSummary() {
+function habitPlanSummary() {
   const rows = state.habits.filter(h => !h.archived && h.loadout === currentLoadout()).map(h => {
-    const modes = Object.keys(h.modes || {});
     const lvls = habitLevels(h);
     const easiest = lvls ? lvls[0] : null;
-    const bits = [modes.length
-      ? `saved modes: ${modes.map(c => `${c}="${h.modes[c].name}" (+${h.modes[c].reward}🪙${h.modes[c].minutes ? `, ${h.modes[c].minutes}m` : ''})`).join(', ')}`
-      : 'saved modes: none'];
-    if (easiest) bits.push(`easiest difficulty tier: "${easiest.name || h.name}" (+${easiest.reward}🪙${easiest.minutes ? `, ${easiest.minutes}m` : ''})`);
+    const bits = [];
+    if (easiest) bits.push(`easiest difficulty tier: "${easiest.name || h.name}" (+${easiest.reward}\u{1F5D9}${easiest.minutes ? `, ${easiest.minutes}m` : ''})`);
     bits.push(...habitContextLines(h));
-    return `  - id=${h.id} "${h.name}" (+${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m` : ''}) — ${bits.join(' · ')}`;
+    return `  - id=${h.id} "${h.name}" (+${h.reward}\u{1F5D9}${h.timedMinutes ? `, ${h.timedMinutes}m` : ''})${bits.length ? ` \u2014 ${bits.join(' \u00b7 ')}` : ''}`;
   });
   return rows.join('\n') || '  (no active habits)';
 }
@@ -6981,7 +7556,7 @@ The user's habits were built around a normal day at home. They've told you what 
 EXISTING CONTEXT TAXONOMY: ${(state.contexts || []).join(', ') || '(none yet)'}
 
 HABITS AND WHAT THEY ALREADY HAVE:
-${habitModeSummary()}
+${habitPlanSummary()}
 
 ${PLAN_RULES}
 
@@ -6990,34 +7565,15 @@ ${dayInputs.map(d => `  ${d.date} (${fmtPlanDate(d.date)}): ${d.raw}`).join('\n'
 
 OUTPUT FORMAT
 Respond with ONE JSON object, no markdown fences:
-{"message":"short, warm, concrete summary for the user","dayContexts":[{"date":"YYYY-MM-DD","context":"Travel","isNewContext":true}],"modeProposals":[{"type":"habitMode","habitId":"<id from the list above>","context":"Travel","name":"Hum through the piece from memory","reward":3,"minutes":5,"desc":"why this still counts","reason":"why the normal version won't fit"}]}
+{"message":"short, warm, concrete summary for the user","dayContexts":[{"date":"YYYY-MM-DD","context":"Travel","isNewContext":true}]}
 Only include days the user actually described. habitId must be one of the ids listed above. Nothing is applied until the user taps Apply on each card — propose, never claim you changed anything.
-
-APP STATE & OBSERVED PATTERNS:
-${appContext()}`;
-}
-function singleModeSystemPrompt(h, ctx) {
-  return `You are the planning assistant inside HabitCasinoAI, a gamified habit tracker. Philosophy: CONSISTENCY OVER INTENSITY.
-
-The user wants ONE habit adapted to ONE kind of day.
-HABIT: id=${h.id} "${h.name}" (+${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m timed` : ''}, category ${h.category || 'Unsorted'})
-${habitModeSummary().split('\n').filter(l => l.includes(`id=${h.id} `)).join('\n')}
-CONTEXT: "${ctx}"
-EXISTING CONTEXT TAXONOMY: ${(state.contexts || []).join(', ') || '(none yet)'}
-
-${PLAN_RULES}
-
-OUTPUT FORMAT
-Respond with ONE JSON object, no markdown fences:
-{"message":"one or two sentences","modeProposals":[{"type":"habitMode","habitId":"${h.id}","context":"${ctx}","name":"...","reward":${h.reward},"minutes":0,"desc":"why this still counts","reason":"..."}]}
-If no realistic adapted version of this habit exists for that kind of day, return an empty modeProposals array and say so plainly.
 
 APP STATE & OBSERVED PATTERNS:
 ${appContext()}`;
 }
 function tierFillSystemPrompt(h, side) {
   const lvls = habitLevels(h);
-  const ladder = lvls ? lvls.map(l => `${l.key}: "${l.name || h.name}" +${l.reward}🪙${l.minutes ? `, ${l.minutes}m` : ''}${l.base ? ' (the original)' : ''}`).join(' | ') : `(only the original: "${h.name}" +${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m` : ''})`;
+  const ladder = lvls ? lvls.map(l => `${l.label}: "${l.name || h.name}" +${l.reward}🪙${l.minutes ? `, ${l.minutes}m` : ''}${l.base ? ' (the original)' : ''}`).join(' | ') : `(only the original: "${h.name}" +${h.reward}🪙${h.timedMinutes ? `, ${h.timedMinutes}m` : ''})`;
   return `You are the planning assistant inside HabitCasinoAI, a gamified habit tracker. Philosophy: CONSISTENCY OVER INTENSITY.
 
 The user wants ONE new DIFFICULTY tier on a habit. Difficulty tiers are the energy axis: the same habit at a size that matches how much they've got today. Completing any tier counts as one completion; only the payout differs.
@@ -7058,17 +7614,13 @@ function parsePlannerReply(raw) {
       if (!d || !d.date || !d.context) return;
       push({ type: 'dayContext', date: String(d.date), context: String(d.context), raw: planDrafts[d.date] || '' });
     });
-    (Array.isArray(o.modeProposals) ? o.modeProposals : []).forEach(m => {
-      if (!m || !m.habitId || !m.context || !m.name) return;
-      push({ ...m, type: 'habitMode' });
-    });
     (Array.isArray(o.tierProposals) ? o.tierProposals : []).forEach(t => {
       if (!t || !t.habitId || !t.name) return;
       push({ ...t, type: 'addTier' });
     });
   }
   base.proposals.forEach(p => {   // model answered in the general chat shape — still usable
-    if (p && ['dayContext', 'habitMode', 'addTier'].includes(p.type)) push(p);
+    if (p && ['dayContext', 'addTier'].includes(p.type)) push(p);
   });
   return { message: base.message === '(no message)' ? '' : base.message, proposals: props };
 }
@@ -7097,14 +7649,8 @@ function runPlanGenerate() {
     return;
   }
   const h = state.habits.find(x => x.id === planTarget.habitId); if (!h) return;
-  if (planTarget.kind === 'tier') {
-    runPlannerAI(tierFillSystemPrompt(h, planTarget.side), `Write the new ${planTarget.side} tier.`);
-    return;
-  }
-  const ctx = String(planTarget.context || '').trim();
-  if (!ctx) { toast('Name the kind of day first 🧭', 'var(--pink)'); return; }
-  if ((h.modes || {})[ctx] && !confirm(`"${h.name}" already has a ${ctx} mode ("${h.modes[ctx].name}"). Generate a replacement?`)) return;
-  runPlannerAI(singleModeSystemPrompt(h, ctx), `Adapt "${h.name}" to a ${ctx} day.`);
+  // 'tier' is the only single-habit flow left — context Modes were removed (Loadouts cover it).
+  runPlannerAI(tierFillSystemPrompt(h, planTarget.side), `Write the new ${planTarget.side} tier.`);
 }
 
 /* ---- planner wiring ---- */
@@ -7114,17 +7660,12 @@ $('#planBody').addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   const side = e.target.closest('[data-planside]');
   if (side) { planTarget.side = side.dataset.planside; SFX.click(); renderPlanner(); return; }
-  const pick = e.target.closest('[data-planctxpick]');
-  if (pick) { planTarget.context = pick.dataset.planctxpick; SFX.click(); renderPlanner(); return; }
   if (act === 'planPrevWeek' || act === 'planNextWeek') {
     planWeekOffset = Math.max(0, planWeekOffset + (act === 'planNextWeek' ? 1 : -1));
     planWeekDates().forEach(d => { if (planDrafts[d] == null) { const p = dayPlan(d); planDrafts[d] = p ? p.raw || '' : ''; } });
     SFX.click(); renderPlanner(); return;
   }
   if (act === 'planGenerate') {
-    if (planScope === 'single' && planTarget.kind === 'mode') {   // take whatever's typed, not just the chip
-      const inp = $('#planCtxInput'); if (inp) planTarget.context = inp.value.trim();
-    }
     runPlanGenerate(); return;
   }
   if (act === 'planApplyAll') {
@@ -7151,7 +7692,6 @@ $('#planBody').addEventListener('click', e => {
 $('#planBody').addEventListener('input', e => {
   const d = e.target.dataset.planraw;
   if (d) { planDrafts[d] = e.target.value; return; }
-  if (e.target.id === 'planCtxInput' && planTarget) planTarget.context = e.target.value.trim();
 });
 $('#planBody').addEventListener('change', e => {
   const raw = e.target.dataset.planraw;
@@ -7273,7 +7813,7 @@ function startQuestionnaire(format) {
 
 /* ---- Habit-making context: same overlay, different kind. Fires once, right
    after a brand-new habit is first named and closed out of the editor — this
-   is what feeds habitModeSummary()/tierFillSystemPrompt() with what the habit
+   is what feeds habitPlanSummary()/tierFillSystemPrompt() with what the habit
    actually MEANS (how it's done, what "good" looks like, why), so a Travel
    mode or a new tier is grounded instead of a guess like "cello x5". ---- */
 function openHabitContextPicker(habitId) {
@@ -7355,7 +7895,7 @@ function reflectionSystemPrompt() {
   return `You are the reflection coach inside HabitCasinoAI, a gamified habit tracker. Philosophy: CONSISTENCY OVER INTENSITY.
 
 WHAT YOU'RE DOING
-A handful of habits broke from their established pattern. Your job is almost entirely to ASK, briefly and kindly, what happened — not to lecture, and not to propose changes as your opening move. This is a ${checkinFormat === 'voice' ? 'SPOKEN conversation capped at 2 minutes total — keep every message to one short sentence' : 'short text exchange capped at 4 of your questions total'}. Ask ONE question at a time. Only after the user has actually explained something may you optionally end with ONE proposal (never more than one or two total) if it's clear a habit is genuinely miscalibrated — using the same proposal shapes the main chat coach uses (tierChange, scheduleChange, habitMode, dropHabit, settingsChange, scheduleBlock — the last one pins the habit's Block Schedule time to a new startMin in minutes-since-midnight when the real pattern says it happens at a different time). If nothing needs changing, don't propose anything — understanding what happened is a complete, valid outcome on its own.
+A handful of habits broke from their established pattern. Your job is almost entirely to ASK, briefly and kindly, what happened — not to lecture, and not to propose changes as your opening move. This is a ${checkinFormat === 'voice' ? 'SPOKEN conversation capped at 2 minutes total — keep every message to one short sentence' : 'short text exchange capped at 4 of your questions total'}. Ask ONE question at a time. Only after the user has actually explained something may you optionally end with ONE proposal (never more than one or two total) if it's clear a habit is genuinely miscalibrated — using the same proposal shapes the main chat coach uses (tierChange, scheduleChange, dropHabit, settingsChange, scheduleBlock — the last one pins the habit's Block Schedule time to a new startMin in minutes-since-midnight when the real pattern says it happens at a different time). If nothing needs changing, don't propose anything — understanding what happened is a complete, valid outcome on its own.
 
 TODAY'S ANOMALIES:
 ${lines}
@@ -7957,7 +8497,7 @@ $('#soundBtn').addEventListener('click', () => {
 });
 
 // Habit completion (delegated) — whole compact row is the tap target
-$('#view-habits').addEventListener('click', e => {
+function onHabitsClick(e) {
   if (Date.now() - lastSwipeAt < 400) return;   // a tier swipe just ended — don't treat it as a tap
   const act = e.target.closest('[data-act]')?.dataset.act;
   // Quest rows can now appear in Due Now, but their handlers live on #view-tasks and
@@ -7965,7 +8505,10 @@ $('#view-habits').addEventListener('click', e => {
   const qrow = e.target.closest('.qrow');
   if (qrow) {
     if (act === 'doneOneoff') { completeOneoff(qrow.dataset.id, false); renderHabits(); return; }
-    editingOneoffId = qrow.dataset.id; SFX.click(); switchView('tasks'); renderOneoffs(); return;
+    if (act === 'startOneoffTimer') { startOneoffTimer(qrow.dataset.id); return; }
+    if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(qrow.dataset.id); return; }
+    if (act === 'finishOneoffTimer') { finishTimedOneoff(qrow.dataset.id); renderHabits(); return; }
+    SFX.click(); switchView('tasks'); openEditor('oneoff', qrow.dataset.id); return;
   }
   if (act === 'toggleGroup') {
     const g = e.target.closest('.habit-group'); if (!g) return;
@@ -7990,10 +8533,10 @@ $('#view-habits').addEventListener('click', e => {
     }
     SFX.coin(); save(); renderHabits(); return;
   }
-  if (act === 'editHabit') { editingHabitId = e.target.closest('.hrow').dataset.id; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
+  if (act === 'editHabit') { SFX.click(); openEditor('habit', e.target.closest('.hrow').dataset.id); return; }
   if (act === 'closeEdit') {
     const h = state.habits.find(x => x.id === editingHabitId);
-    editingHabitId = null; editTierPage = null; addTierChoiceOpen = false; SFX.click(); renderHabits();
+    editingHabitId = null; editTierPage = null; SFX.click(); renderHabits();
     // First time this habit's ever been closed out of the editor: offer the AI a
     // chance to ask what this habit actually means (how you do it, what "good"
     // looks like, why) — so later mode/tier suggestions are grounded, not guessed.
@@ -8004,7 +8547,7 @@ $('#view-habits').addEventListener('click', e => {
     const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
     if (h) {
       h.archived = true;
-      editingHabitId = null; editTierPage = null; addTierChoiceOpen = false;
+      editingHabitId = null; editTierPage = null;
       SFX.win(); burst({ count: 70, colors: ['#ffd700', '#00f0ff', '#b026ff'] });
       toast(`🎓 ${h.name} graduated — resting in the archive`, 'var(--gold)');
       save(); renderHabits();
@@ -8022,66 +8565,24 @@ $('#view-habits').addEventListener('click', e => {
     return;
   }
   if (act === 'openPlanner') { SFX.click(); openPlanner(); return; }
-  if (act === 'genMode' || act === 'aiTier') {
+  // One button now: which side the new tier goes on is answered spatially, inside the
+  // ladder popup, by which ✚ you press.
+  if (act === 'addTier') {
     const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
-    SFX.click(); openPlannerSingle(id, act === 'genMode' ? 'mode' : 'tier');
-    return;
-  }
-  if (act === 'delMode') {
-    const btn = e.target.closest('[data-act="delMode"]');
-    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
-    const ctx = btn.dataset.ctx;
-    if (h && h.modes && h.modes[ctx]) {
-      delete h.modes[ctx];
-      state.aiMeta.modes = (state.aiMeta.modes || []).filter(m => !(m.habitId === h.id && m.context === ctx));
-      SFX.click(); save(); renderHabits();
-    }
-    return;
-  }
-  if (act === 'addTier') { addTierChoiceOpen = true; SFX.click(); renderHabits(); return; }
-  if (act === 'addTierCancel') { addTierChoiceOpen = false; SFX.click(); renderHabits(); return; }
-  if (act === 'addTierHarder' || act === 'addTierEasier') {
-    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
-    addTierChoiceOpen = false;
-    if (h) {
-      h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
-      if (h.tiers.length < 2) {
-        const n = h.tiers.length + 1;   // level count BEFORE adding
-        const curBase = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1);
-        const harder = act === 'addTierHarder';
-        const nt = { name: '', reward: harder
-          ? Math.max((h.reward || 1) + 1, Math.round((h.reward || 1) * 1.5))
-          : Math.max(1, Math.round((h.reward || 1) * 0.5)) };
-        if (harder) { h.tiers.push(nt); h.baseIdx = curBase; editTierPage = n; }        // new hardest → base shifts down a label
-        else { h.tiers.unshift(nt); h.baseIdx = curBase + 1; editTierPage = 0; }        // new easiest → base stays on top
-        h.curTier = null;
-        SFX.click(); save(); renderHabits();
-        setTimeout(() => $(`.hedit[data-id="${h.id}"] [data-tf="name"]`)?.focus(), 30);
-      }
-    }
-    return;
+    SFX.click(); openTierLadder(id); return;
   }
   if (act === 'removeTier') {
-    const h = state.habits.find(x => x.id === e.target.closest('.hedit').dataset.id);
-    const lvls = h && habitLevels(h);
-    if (lvls) {
-      const pg = clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1);
-      const lvl = lvls[pg];
-      if (!lvl.base) {
-        const curBase = lvls.findIndex(l => l.base);
-        h.tiers.splice(lvl.tIdx, 1);
-        h.baseIdx = h.tiers.length ? (pg < curBase ? curBase - 1 : curBase) : null;
-        h.curTier = null; editTierPage = null;   // back to the base page / default level
-        SFX.click(); save(); renderHabits();
-      }
-    }
+    const box = e.target.closest('.hedit'); if (!box) return;
+    const h = state.habits.find(x => x.id === box.dataset.id);
+    if (h) removeTierAt(h, parseInt(box.dataset.page));
     return;
   }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
-    const nh = { id: uid(), emoji: '⭐', name: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
-    state.habits.push(nh); editingHabitId = nh.id; SFX.click(); save(); renderHabits();
-    setTimeout(() => $(`.hedit[data-id="${nh.id}"] .name-in`)?.focus(), 30);
+    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
+    // openEditor, not a bare editingHabitId — only it raises the sheet, and a brand-new
+    // habit with no name is useless until you can type into it.
+    state.habits.push(nh); SFX.click(); save(); renderHabits(); openEditor('habit', nh.id);
     return;
   }
   if (act === 'delHabit') {
@@ -8099,7 +8600,7 @@ $('#view-habits').addEventListener('click', e => {
       dayBtn.classList.toggle('active', h.days[i]); save();
     }
   }
-});
+}
 // Inline editor field edits (text/number on input, select/checkbox on change)
 function onInlineHabitField(e) {
   const tf = e.target.dataset.tf;   // fields on an extra-tier page
@@ -8108,7 +8609,11 @@ function onInlineHabitField(e) {
     const box = e.target.closest('.hedit'); if (!box) return;
     const h = state.habits.find(x => x.id === box.dataset.id); if (!h) return;
     const lvls = habitLevels(h); if (!lvls) return;
-    const lvl = lvls[clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1)];
+    // Which tier this input belongs to comes from the PAGE it's on, not from the global
+    // editTierPage — every page is in the DOM at once now, so the global would let an
+    // off-screen page's input write to whichever tier happens to be showing.
+    const page = clamp(parseInt(box.dataset.page) || 0, 0, lvls.length - 1);
+    const lvl = lvls[page];
     const t = lvl.base ? null : (h.tiers || [])[lvl.tIdx];
     if (!t) return;
     if (tf === 'reward') t.reward = clamp(parseInt(e.target.value) || 0, 0, 999);
@@ -8116,7 +8621,7 @@ function onInlineHabitField(e) {
     else {
       t.name = e.target.value;
       const sug = box.querySelector('.timer-suggest');   // live duration detection as the name is typed
-      if (sug) sug.innerHTML = timerSuggestHTML(h.id, String(clamp(Number.isFinite(editTierPage) ? editTierPage : 0, 0, lvls.length - 1)), t.name, t.minutes || 0);
+      if (sug) sug.innerHTML = timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0);
     }
     save(); return;
   }
@@ -8132,17 +8637,299 @@ function onInlineHabitField(e) {
   else if (f === 'section') h.section = (e.target.value === 'extra' ? 'extra' : 'daily');
   else if (f === 'loadout') { h.loadout = e.target.value.trim() ? e.target.value.trim() : null; renderHabits(); } // '' = universal
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
+  else if (f === 'emoji') { h.emoji = e.target.value; h.emojiAuto = false; }   // a deliberate icon — stop guessing
   else {
     h[f] = e.target.value;
     if (f === 'name') {
       const sug = box.querySelector('.timer-suggest');   // live duration detection as the name is typed
       if (sug) sug.innerHTML = timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0);
+      autoEmoji(h, box);                                 // and an icon to match, until the user picks one
     }
   }
   save();
 }
+$('#view-habits').addEventListener('click', onHabitsClick);
+$('#view-habits').addEventListener('pointerdown', onHabitPointerDown);
+$('#view-habits').addEventListener('pointermove', onHabitPointerMove);
+$('#view-habits').addEventListener('pointerup', onHabitPointerUp);
+$('#view-habits').addEventListener('pointercancel', onHabitPointerUp);
 $('#view-habits').addEventListener('input', onInlineHabitField);
 $('#view-habits').addEventListener('change', onInlineHabitField);
+
+/* =================================================================
+   EDITOR SHEET — habits, quests and rewards all edit in one sheet that
+   slides up from the bottom instead of unfolding inside the list.
+
+   The editors' markup functions are unchanged; only their host moved. That
+   move breaks every delegated handler that was bound to #view-habits /
+   #view-tasks / #prizePool, so the same named handlers are re-bound here and
+   dispatched by whichever editor is open. Do not duplicate their logic.
+   ================================================================= */
+let editMoreOpen = false;   // "More" disclosure inside the habit editor
+
+function openEditor(kind, id) {
+  editingHabitId = editingOneoffId = editingRewardId = null;
+  if (kind === 'habit') editingHabitId = id;
+  else if (kind === 'oneoff') editingOneoffId = id;
+  else editingRewardId = id;
+  editMoreOpen = false;                       // a freshly opened editor starts compact
+  editTierPage = null;
+  // Show BEFORE rendering: the sheet measures its active page to set its own height, and
+  // a display:none overlay measures 0, which would collapse it to an empty strip.
+  $('#editOverlay').classList.add('show');
+  renderEditSheet();
+  // Focus the page that's actually showing — with every tier page in the DOM, a plain
+  // '#editSheet .name-in' would grab an off-screen one.
+  setTimeout(() => (activeEditPane() || $('#editSheet'))?.querySelector('.name-in')?.focus(), 260);
+}
+function closeEditor() {
+  $('#editOverlay').classList.remove('show');
+  editingHabitId = editingOneoffId = editingRewardId = null;
+  editTierPage = null; editMoreOpen = false;
+  renderHabits(); renderOneoffs(); renderPrizes();
+}
+function editorIsOpen() { return !!(editingHabitId || editingOneoffId || editingRewardId); }
+// Called from every list re-render. The existing Done/Delete handlers just null the
+// editing id and re-render — this is what turns that into the sheet actually closing,
+// so none of them needed to learn about the overlay.
+function syncEditorSheet() {
+  const ov = $('#editOverlay'); if (!ov) return;
+  if (editorIsOpen()) renderEditSheet();
+  else ov.classList.remove('show');
+}
+
+function renderEditSheet() {
+  const body = $('#editSheetBody'); if (!body) return;
+  let html = '';
+  if (editingHabitId) {
+    const h = state.habits.find(x => x.id === editingHabitId);
+    html = h ? habitEditPagesHTML(h) : '';   // every tier page in one swipeable track
+  } else if (editingOneoffId) {
+    const t = state.oneoffs.find(x => x.id === editingOneoffId);
+    html = t ? oneoffEditHTML(t) : '';
+  } else if (editingRewardId) {
+    const r = state.rewards.find(x => x.id === editingRewardId);
+    html = r ? rewardEditCardHTML(r) : '';
+  }
+  if (!html) { closeEditor(); return; }
+  body.innerHTML = html;
+  syncEditSheetHeight();
+}
+// The editor page currently on screen (the sheet holds all of a habit's tier pages).
+function activeEditPane() {
+  const track = $('#editSheetBody .hedit-track'); if (!track) return null;
+  return track.children[clamp(parseInt(track.dataset.idx) || 0, 0, track.children.length - 1)] || null;
+}
+// A flex track takes the height of its TALLEST page, which would leave dead space under
+// short ones. Pin the viewport to whichever page is showing instead, and let it animate
+// so the sheet grows and shrinks in step with the slide.
+function syncEditSheetHeight() {
+  const wrap = $('#editSheetBody .hedit-swipe'); if (!wrap) return;
+  const pane = activeEditPane();
+  const hgt = pane ? pane.offsetHeight : 0;
+  // A zero measurement means we're hidden (or not laid out yet). Pinning to 0 would
+  // clip the sheet to nothing, so leave it auto and let the next sync set a real value.
+  wrap.style.height = hgt ? hgt + 'px' : '';
+}
+
+// One dispatch point: route to whichever container handler owns the open editor, so a
+// quest editor never runs the habit branches (or reads a .qrow that isn't there).
+$('#editOverlay').addEventListener('click', e => {
+  if (e.target.id === 'editOverlay' || e.target.closest('[data-act="closeEditor"]')) { SFX.click(); closeEditor(); return; }
+  if (e.target.closest('[data-act="editMore"]')) { editMoreOpen = !editMoreOpen; SFX.click(); renderEditSheet(); return; }
+  if (editingHabitId) onHabitsClick(e);
+  else if (editingOneoffId) onTasksClick(e);
+  else if (editingRewardId) onPrizePoolClick(e);
+});
+const editSheetField = e => {
+  if (editingHabitId) onInlineHabitField(e);
+  else if (editingOneoffId) onInlineOneoffField(e);
+  else if (editingRewardId) onRewardInlineField(e);
+};
+$('#editOverlay').addEventListener('input', editSheetField);
+$('#editOverlay').addEventListener('change', editSheetField);
+$('#editOverlay').addEventListener('pointerdown', onHabitPointerDown);   // tier swiping
+$('#editOverlay').addEventListener('pointermove', onHabitPointerMove);
+$('#editOverlay').addEventListener('pointerup', onHabitPointerUp);
+$('#editOverlay').addEventListener('pointercancel', onHabitPointerUp);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (tierLadderId) closeTierLadder();          // ladder sits on top — it closes first
+  else if (editorIsOpen()) closeEditor();
+});
+
+/* =================================================================
+   DIFFICULTY LADDER — the whole tier system of one habit on one line.
+
+   The save shape doesn't change: `h.tiers` still holds only the EXTRA tiers
+   (easiest → hardest) and `h.baseIdx` still says where the habit itself sits among
+   them. Reordering just rebuilds both from the strip's visual order, so ladders
+   written by older versions load and edit with no migration.
+   ================================================================= */
+function openTierLadder(id) {
+  tierLadderId = id;
+  renderTierLadder();
+  $('#tierOverlay').classList.add('show');
+}
+function closeTierLadder() {
+  tierLadderId = null;
+  $('#tierOverlay').classList.remove('show');
+}
+// One box per level, in ladder order. The base box is the habit itself, so it can be
+// dragged but never deleted — removing it would mean deleting the habit.
+function renderTierLadder() {
+  const body = $('#tierSheetBody'); if (!body) return;
+  const h = state.habits.find(x => x.id === tierLadderId);
+  if (!h) { closeTierLadder(); return; }
+  const lvls = habitLevels(h);
+  const boxes = lvls
+    ? lvls.map(l => `
+      <div class="ladder-box${l.base ? ' base' : ''}" data-page="${l.idx}">
+        <div class="lb-tier" style="color:${l.color}">${l.label}</div>
+        <div class="lb-name">${escapeHtml(l.name || h.name || 'Untitled')}</div>
+        <div class="lb-reward">+${l.reward} 🪙</div>
+        ${l.base ? `<span class="lb-star" title="The habit itself">★</span>`
+                 : `<button class="lb-del" data-act="ladderDel" data-page="${l.idx}" title="Remove this tier">🗑</button>`}
+      </div>`).join('')
+    : `<div class="ladder-box base" data-page="0">
+         <div class="lb-tier" style="color:var(--ink-dim)">no tiers</div>
+         <div class="lb-name">${escapeHtml(h.name || 'Untitled')}</div>
+         <div class="lb-reward">+${h.reward} 🪙</div>
+         <span class="lb-star" title="The habit itself">★</span>
+       </div>`;
+  body.innerHTML = `
+    <div class="pass-title">🪜 DIFFICULTY TIERS</div>
+    <div class="subtle">Same habit, different sizes. Completing any tier counts as one completion — only the payout changes. Drag to reorder; tap a tier to edit it.</div>
+    <div class="ladder-wrap">
+      <div class="ladder-end">
+        <button class="ladder-add" data-act="ladderAdd" data-side="easier" title="Add an easier tier">✚</button>
+        <button class="ladder-ai" data-act="ladderAI" data-side="easier" title="Let the AI write an easier tier">✨</button>
+        <span class="ladder-endlab">easier</span>
+      </div>
+      <div class="ladder-strip" id="ladderStrip">${boxes}</div>
+      <div class="ladder-end">
+        <button class="ladder-add" data-act="ladderAdd" data-side="harder" title="Add a harder tier">✚</button>
+        <button class="ladder-ai" data-act="ladderAI" data-side="harder" title="Let the AI write a harder tier">✨</button>
+        <span class="ladder-endlab">harder</span>
+      </div>
+    </div>
+    <div class="hedit-r hedit-actions"><button class="btn green sm" data-act="closeTierLadder">✓ Done</button></div>`;
+}
+// Grow the ladder at one end. The base habit keeps its slot when the new tier goes on
+// top of it, and shifts up one when the new tier slides in underneath.
+function addTierSide(h, side) {
+  h.tiers = Array.isArray(h.tiers) ? h.tiers : [];
+  const n = h.tiers.length + 1;                                                  // level count BEFORE adding
+  const curBase = clamp(Number.isFinite(h.baseIdx) ? h.baseIdx : n - 1, 0, n - 1);
+  const harder = side === 'harder';
+  const nt = { name: '', minutes: 0, reward: harder
+    ? Math.max((h.reward || 1) + 1, Math.round((h.reward || 1) * 1.5))
+    : Math.max(1, Math.round((h.reward || 1) * 0.5)) };
+  if (harder) { h.tiers.push(nt); h.baseIdx = curBase; editTierPage = n; }
+  else { h.tiers.unshift(nt); h.baseIdx = curBase + 1; editTierPage = 0; }
+  h.curTier = null;
+  save();
+}
+function removeTierAt(h, page) {
+  const lvls = habitLevels(h); if (!lvls) return false;
+  if (!(page >= 0 && page < lvls.length)) return false;
+  const lvl = lvls[page];
+  if (lvl.base) return false;                       // that's the habit, not a tier
+  const curBase = lvls.findIndex(l => l.base);
+  h.tiers.splice(lvl.tIdx, 1);
+  h.baseIdx = h.tiers.length ? (page < curBase ? curBase - 1 : curBase) : null;
+  h.curTier = null; editTierPage = null;            // back to the base page / default level
+  SFX.click(); save(); renderHabits(); renderTierLadder();
+  return true;
+}
+// Rewrites h.tiers + h.baseIdx from a visual ordering of ladder positions.
+// `order` is the old page index of each box, in its new left-to-right order.
+function reorderTiers(h, order) {
+  const lvls = habitLevels(h); if (!lvls) return;
+  if (order.length !== lvls.length) return;
+  const items = order.map(i => lvls[i]);
+  h.tiers = items.filter(l => !l.base).map(l => ({ name: l.name, reward: l.reward, minutes: l.minutes || 0 }));
+  h.baseIdx = items.findIndex(l => l.base);
+  // Both "which tier am I on" and "which page is open" point at positions whose meaning
+  // just changed, so neither survives the shuffle.
+  h.curTier = null; editTierPage = null;
+  save(); renderHabits(); syncEditorSheet(); renderTierLadder();
+}
+
+$('#tierOverlay').addEventListener('click', e => {
+  if (e.target.id === 'tierOverlay' || e.target.closest('[data-act="closeTierLadder"]')) { SFX.click(); closeTierLadder(); return; }
+  const h = state.habits.find(x => x.id === tierLadderId); if (!h) return;
+  const btn = e.target.closest('[data-act]');
+  const act = btn && btn.dataset.act;
+  if (act === 'ladderAdd') {
+    addTierSide(h, btn.dataset.side);
+    SFX.click(); renderHabits(); renderTierLadder(); syncEditorSheet();
+    closeTierLadder();                                   // land straight on the new tier's page
+    setTimeout(() => $('#editSheetBody .hedit-track [data-tf="name"]')?.focus(), 320);
+    return;
+  }
+  if (act === 'ladderAI') { SFX.click(); closeTierLadder(); openPlannerSingle(h.id, 'tier', btn.dataset.side); return; }
+  if (act === 'ladderDel') { removeTierAt(h, parseInt(btn.dataset.page)); return; }
+  if (ladderDragged) return;                             // a reorder just ended — not a tap
+  const box = e.target.closest('.ladder-box');
+  if (box && habitLevels(h)) {                           // tap a tier → open its editor page
+    editTierPage = clamp(parseInt(box.dataset.page) || 0, 0, habitLevels(h).length - 1);
+    SFX.click(); closeTierLadder(); syncEditorSheet();
+  }
+});
+
+/* ---- Drag-to-reorder on the ladder strip. Pointer events rather than HTML5 drag &
+   drop, which doesn't work on touch at all. The dragged box follows the finger; the
+   others slide out of its way with a transition so the gap opens where it'll land. ---- */
+let ladderDrag = null, ladderDragged = false;
+$('#tierOverlay').addEventListener('pointerdown', e => {
+  const box = e.target.closest('.ladder-box');
+  const strip = $('#ladderStrip');
+  if (!box || !strip || e.target.closest('.lb-del')) return;
+  const boxes = Array.from(strip.children);
+  if (boxes.length < 2) return;
+  ladderDragged = false;
+  ladderDrag = {
+    strip, boxes, box, from: boxes.indexOf(box), to: boxes.indexOf(box),
+    x0: e.clientX, w: box.offsetWidth + 10,   // width + the strip's gap
+  };
+  box.setPointerCapture(e.pointerId);
+});
+$('#tierOverlay').addEventListener('pointermove', e => {
+  const d = ladderDrag; if (!d) return;
+  const dx = e.clientX - d.x0;
+  if (!ladderDragged && Math.abs(dx) < 6) return;
+  if (!ladderDragged) { ladderDragged = true; d.strip.classList.add('dragging'); d.box.classList.add('lifted'); }
+  d.box.style.transform = `translateX(${dx}px) scale(1.05)`;
+  const to = clamp(d.from + Math.round(dx / d.w), 0, d.boxes.length - 1);
+  if (to !== d.to) {
+    d.to = to;
+    // Everything between the box's home and its target shifts one slot the other way.
+    d.boxes.forEach((b, i) => {
+      if (b === d.box) return;
+      let shift = 0;
+      if (d.from < to && i > d.from && i <= to) shift = -d.w;
+      else if (d.from > to && i >= to && i < d.from) shift = d.w;
+      b.style.transform = shift ? `translateX(${shift}px)` : '';
+    });
+    SFX.click();
+  }
+});
+const endLadderDrag = () => {
+  const d = ladderDrag; if (!d) return;
+  ladderDrag = null;
+  d.strip.classList.remove('dragging');
+  d.box.classList.remove('lifted');
+  d.boxes.forEach(b => { b.style.transform = ''; });
+  if (!ladderDragged || d.to === d.from) { setTimeout(() => { ladderDragged = false; }, 0); return; }
+  const h = state.habits.find(x => x.id === tierLadderId);
+  const order = d.boxes.map(b => parseInt(b.dataset.page));
+  order.splice(d.to, 0, order.splice(d.from, 1)[0]);
+  if (h) reorderTiers(h, order);
+  setTimeout(() => { ladderDragged = false; }, 0);   // let the click that follows fizzle first
+};
+$('#tierOverlay').addEventListener('pointerup', endLadderDrag);
+$('#tierOverlay').addEventListener('pointercancel', endLadderDrag);
 /* ---- Loadout chooser/creator -------------------------------------------------------
    Fully in-app: no native <select> or prompt. Creating a loadout can clone any chosen
    habits, grouped by their source loadout; choosing none creates a clean blank slate. */
@@ -8224,37 +9011,79 @@ $('#loadoutBody').addEventListener('click', e => {
   else if (act === 'loadoutCreate') createLoadoutFromMenu();
 });
 
-// Swipe left/right on a leveled habit row (or its open editor) to move between difficulty
-// tiers — left = easier, right = harder. Vertical scrolling stays untouched (touch-action: pan-y).
+/* ---- Tier swiping, on a checklist row or on the editor sheet's tier pages.
+   Both surfaces render EVERY tier up front in a track offset by -index×100%, so the
+   gesture is pure transform maths: nothing is built or re-rendered while the finger is
+   down, which is what makes it track smoothly instead of stepping.
+
+   Direction: swipe LEFT for harder. Since the track sits at -index×100%, dragging left
+   already uncovers the next index along, so the harder tier physically comes in from
+   the right edge and the maths needs no inversion.
+
+   Vertical scrolling is untouched — the row keeps touch-action: pan-y, and we only
+   claim the gesture once it's clearly more horizontal than vertical. ---- */
 let swipeStart = null, lastSwipeAt = 0;
-$('#view-habits').addEventListener('pointerdown', e => {
+const SWIPE_SLOP = 10;          // px of movement before we decide the gesture is horizontal
+function onHabitPointerDown(e) {
   swipeStart = null;
   if (e.target.closest('input, select, button, .day-picker')) return;  // don't hijack controls
   const row = e.target.closest('.hrow[data-id], .hedit[data-id]');
   if (!row) return;
-  swipeStart = { x: e.clientX, y: e.clientY, id: row.dataset.id, isEdit: row.classList.contains('hedit') };
-});
-$('#view-habits').addEventListener('pointerup', e => {
-  const s = swipeStart; swipeStart = null;
-  if (!s) return;
+  const isEdit = row.classList.contains('hedit');
+  const track = isEdit ? row.closest('.hedit-swipe')?.querySelector('.hedit-track')
+                       : row.querySelector('.hrow-track');
+  if (!track) return;                                    // habit has no tiers — nothing to page
+  const h = state.habits.find(x => x.id === row.dataset.id);
+  const lvls = h && habitLevels(h); if (!lvls || lvls.length < 2) return;
+  swipeStart = {
+    x: e.clientX, y: e.clientY, id: row.dataset.id, isEdit, track, n: lvls.length,
+    idx: clamp(parseInt(track.dataset.idx) || 0, 0, lvls.length - 1),
+    w: track.getBoundingClientRect().width || 1,
+    active: false,
+  };
+}
+function onHabitPointerMove(e) {
+  const s = swipeStart; if (!s) return;
   const dx = e.clientX - s.x, dy = e.clientY - s.y;
-  if (Math.abs(dx) < 44 || Math.abs(dy) > 60) return;   // not a deliberate horizontal swipe
-  const h = state.habits.find(x => x.id === s.id); if (!h) return;
-  const lvls = habitLevels(h); if (!lvls) return;
-  const dir = dx < 0 ? -1 : 1;                          // swipe left → easier, right → harder
-  lastSwipeAt = Date.now();                             // suppress the click this gesture fires
-  if (s.isEdit) {
-    const cur = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.findIndex(l => l.base), 0, lvls.length - 1);
-    editTierPage = clamp(cur + dir, 0, lvls.length - 1);
-  } else {
-    h.curTier = clamp(curLevelIndex(h) + dir, 0, lvls.length - 1);
-    save();
+  if (!s.active) {
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_SLOP) { swipeStart = null; return; }  // it's a scroll
+    if (Math.abs(dx) < SWIPE_SLOP) return;
+    s.active = true;
+    s.track.classList.add('dragging');
   }
-  SFX.click(); renderHabits();
-});
+  // Past either end there's nothing to reveal, so resistance tells the finger so.
+  let off = dx;
+  if ((s.idx === 0 && dx > 0) || (s.idx === s.n - 1 && dx < 0)) off = dx * 0.35;
+  s.track.style.transform = `translateX(calc(${-s.idx * 100}% + ${off}px))`;
+}
+function onHabitPointerUp(e) {
+  const s = swipeStart; swipeStart = null;
+  if (!s || !s.active) return;
+  const dx = e.clientX - s.x;
+  const threshold = Math.min(64, s.w * 0.28);
+  // Swipe left (dx < 0) → next index → the harder tier.
+  const dir = Math.abs(dx) >= threshold ? (dx < 0 ? 1 : -1) : 0;
+  const to = clamp(s.idx + dir, 0, s.n - 1);
+  lastSwipeAt = Date.now();                              // suppress the click this gesture fires
+  s.track.classList.remove('dragging');                  // transition back on — it animates the settle
+  s.track.style.transform = `translateX(${-to * 100}%)`;
+  s.track.dataset.idx = String(to);
+  if (to === s.idx) return;                              // sprang back; nothing changed
+  SFX.click();
+  const h = state.habits.find(x => x.id === s.id); if (!h) return;
+  if (s.isEdit) { editTierPage = to; syncEditSheetHeight(); }
+  else { h.curTier = to; save(); }
+  // Re-render only once the slide has finished, so the DOM swap is invisible. The row is
+  // already sitting at the destination offset, so nothing jumps when it's replaced.
+  const settle = () => { if (s.isEdit) renderEditSheet(); else renderHabits(); };
+  let done = false;
+  const once = () => { if (done) return; done = true; s.track.removeEventListener('transitionend', once); settle(); };
+  s.track.addEventListener('transitionend', once);
+  setTimeout(once, 360);                                 // fallback if the transition never fires
+}
 
 // Tasks view: quick-add bar + to-do list + quest wheel (delegated)
-$('#view-tasks').addEventListener('click', e => {
+function onTasksClick(e) {
   if (e.target.closest('#spinHabitWheel')) { spinHabitWheel(); return; }
   if (e.target.closest('#questAddBtn')) { addQuickQuest(); return; }
   const tierChip = e.target.closest('#questTierChips .chip');
@@ -8274,7 +9103,10 @@ $('#view-tasks').addEventListener('click', e => {
   if (spinDone) { completeOneoff(spinDone.dataset.id, true); return; } // viaSpin → spin bonus
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'doneOneoff') { completeOneoff(e.target.closest('.qrow').dataset.id, false); return; }
-  if (act === 'editOneoff') { editingOneoffId = e.target.closest('.qrow').dataset.id; SFX.click(); renderOneoffs(); return; }
+  if (act === 'startOneoffTimer') { startOneoffTimer(e.target.closest('.qrow').dataset.id); return; }
+  if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(e.target.closest('.qrow').dataset.id); return; }
+  if (act === 'finishOneoffTimer') { finishTimedOneoff(e.target.closest('.qrow').dataset.id); return; }
+  if (act === 'editOneoff') { SFX.click(); openEditor('oneoff', e.target.closest('.qrow').dataset.id); return; }
   if (act === 'closeOneoffEdit') { editingOneoffId = null; SFX.click(); renderOneoffs(); buildHabitWheel(); return; }
   if (act === 'delOneoffEdit') {
     const id = e.target.closest('.qedit').dataset.id;
@@ -8292,7 +9124,7 @@ $('#view-tasks').addEventListener('click', e => {
     }
     return;
   }
-});
+}
 $('#questAddName').addEventListener('keydown', e => { if (e.key === 'Enter') addQuickQuest(); });
 // Inline one-off editor field edits (text/number on input, selects on change)
 function onInlineOneoffField(e) {
@@ -8305,9 +9137,14 @@ function onInlineOneoffField(e) {
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
   else if (f === 'category') t.category = e.target.value;
-  else t[f] = e.target.value;
+  else if (f === 'emoji') { t.emoji = e.target.value; t.emojiAuto = false; }   // a deliberate icon — stop guessing
+  else {
+    t[f] = e.target.value;
+    if (f === 'name') autoEmoji(t, box);
+  }
   save();
 }
+$('#view-tasks').addEventListener('click', onTasksClick);
 $('#view-tasks').addEventListener('input', onInlineOneoffField);
 $('#view-tasks').addEventListener('change', onInlineOneoffField);
 
@@ -8362,7 +9199,7 @@ $('#stage-roulette').addEventListener('click', e => {
 });
 
 // Winnings screen: inline reward editing in the Prize Pool (tap a card to edit)
-$('#prizePool').addEventListener('click', e => {
+function onPrizePoolClick(e) {
   if (e.target.closest('[data-act="closeRewardEdit"]')) { editingRewardId = null; SFX.click(); renderPrizes(); return; }
   if (e.target.closest('[data-act="delRewardInline"]')) {
     const id = e.target.closest('.prize-edit').dataset.id;
@@ -8392,8 +9229,7 @@ $('#prizePool').addEventListener('click', e => {
   if (!card) return;
   const rid = card.dataset.rid;
   const openSettings = () => {
-    editingRewardId = rid; claimOpenId = null; SFX.click(); renderPrizes();
-    setTimeout(() => $('#prizePool .prize-edit .name-in')?.focus(), 30);
+    claimOpenId = null; SFX.click(); openEditor('reward', rid);
   };
   // ⋯ top-right — reward settings, on every tile whether it's claimable or not.
   if (e.target.closest('[data-act="prizeSettings"]')) {
@@ -8408,7 +9244,7 @@ $('#prizePool').addEventListener('click', e => {
   // Body tap: quick-claim one, no dialog. Nothing to claim → settings.
   if (card.classList.contains('owned')) claimFromPool(rid, 1);
   else openSettings();
-});
+}
 function onRewardInlineField(e) {
   const f = e.target.dataset.rf; if (!f) return;
   const isSelect = e.target.tagName === 'SELECT';
@@ -8421,6 +9257,7 @@ function onRewardInlineField(e) {
   else r[f] = e.target.value;
   save();
 }
+$('#prizePool').addEventListener('click', onPrizePoolClick);
 $('#prizePool').addEventListener('input', onRewardInlineField);
 $('#prizePool').addEventListener('change', onRewardInlineField);
 $('#addRewardInline').addEventListener('click', () => {
@@ -8651,16 +9488,20 @@ $('#importFile').addEventListener('change', e => {
     try {
       const data = JSON.parse(reader.result);
       if (!data.habits || !data.games) throw new Error('bad file');
-      state = { ...defaultState(), ...data };
-      save(); fullRender(); toast('Save imported ⬆', 'var(--green)');
+      // Through load(), not a raw spread: an imported file gets the same migration and
+      // validation as any other save, and adoptState backs up what it replaces.
+      if (!adoptState(JSON.stringify(data), 'imported')) return;
+      save(); fullRender(); renderBackupList(); toast('Save imported ⬆', 'var(--green)');
     } catch (err) { toast('Could not read that file', 'var(--pink)'); }
   };
   reader.readAsText(file);
   e.target.value = '';
 });
 $('#resetBtn').addEventListener('click', () => {
-  if (confirm('Reset EVERYTHING — tokens, habits, rewards, winnings? This cannot be undone.')) {
-    state = defaultState(); save(); fullRender(); toast('Fresh start! 🌱', 'var(--gold)');
+  if (confirm('Reset EVERYTHING — tokens, habits, rewards, winnings?\n\nA backup is kept, so you can undo this from Settings → 💾 Data → 🛟 Backups.')) {
+    const prev = readLocal();
+    if (prev) writeBackup(prev, 'pre-reset');   // the one destructive button in the app — never unrecoverable
+    state = defaultState(); save(); fullRender(); toast('Fresh start! 🌱 (backup kept)', 'var(--gold)');
   }
 });
 
@@ -8728,13 +9569,20 @@ window.HCCloudState = async function (user) {
     // safe to restore silently. This commonly happens on reload because Firestore's
     // server/write timestamp is a little newer than the timestamp inside the JSON save.
     if (remote.deviceId && remote.deviceId === DEVICE_ID) {
-      state = load(remote.state);
+      // Silent adoption is only safe if the copy actually reads. If it doesn't,
+      // adoptState leaves this device's save alone and we fall through to pushing it up.
+      if (!adoptState(remote.state, 'cloud')) {
+        cloudOn = true; cloudStatus = 'ready';
+        save();
+        renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
+        return;
+      }
       cloudOn = true;
       cloudStatus = 'ready';
       cloudSyncedAt = remote.updatedAt || Date.now();
       save();
       fullRender();
-      renderCloudUI(); renderCloudBadge();
+      renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
       return;
     }
     cloudPending = remote;
@@ -8745,7 +9593,7 @@ window.HCCloudState = async function (user) {
   cloudOn = true;
   cloudStatus = 'ready';
   save();                      // nothing newer up there — push this device
-  renderCloudUI(); renderCloudBadge();
+  renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
 };
 
 // Resolve the parked cloud save: adopt it, or keep this device and overwrite it.
@@ -8756,14 +9604,13 @@ function resolveCloudPending(useCloud) {
   cloudStatus = 'ready';
   cloudOn = true;                            // safe now — the decision is made
   if (useCloud) {
-    state = load(remote.state);
+    if (adoptState(remote.state, 'cloud')) toast('Loaded from the cloud ☁️', 'var(--cyan)');
     fullRender();                            // repaints Settings + badge via renderCloudUI
-    toast('Loaded from the cloud ☁️', 'var(--cyan)');
   } else {
     toast('Kept this device\'s save', 'var(--cyan)');
   }
   save();                                    // push whichever side won
-  renderCloudUI(); renderCloudBadge();
+  renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
 }
 
 // Red dot on the nav for anything in Settings needing attention. Settings lives behind
@@ -8782,6 +9629,97 @@ function renderCloudBadge() {
 
 // Called by the cloud layer after each successful write.
 window.HCCloudSynced = function () { cloudSyncedAt = Date.now(); renderCloudUI(); };
+
+/* =================================================================
+   CLOUD BACKUPS — the backup shelf, mirrored to its own subcollection.
+
+   Kept apart from the autosave on purpose. The autosave is a single document that
+   every device overwrites constantly; backups are immutable copies that only ever
+   appear or disappear on request. Mixing them would mean one bad sync could take the
+   safety net with it, which is the entire thing we're insuring against.
+
+   Slots always go up. Autos go up too, but only the newest few — enough to survive
+   losing the device, without a write per launch turning into a storage bill.
+   ================================================================= */
+const CLOUD_BACKUP_AUTOS = 3;   // newest autos mirrored; slots are always kept
+let cloudBackupItems = [];      // metadata of what's up there (may include other devices')
+let cloudBackupBusy = false;
+let cloudBackupErr = '';
+
+// What the cloud index SHOULD say, given this device's shelf. Slots first, then the
+// newest autos. Anything from another device stays in the list untouched — it isn't
+// ours to prune.
+function cloudBackupTargetItems(extra) {
+  const mine = listBackups();
+  const keep = mine.filter(b => b.kind === 'slot')
+    .concat(mine.filter(b => b.kind === 'auto').slice(0, CLOUD_BACKUP_AUTOS));
+  const meta = b => ({ id: b.id, ts: b.ts, kind: b.kind, slot: b.slot || null, label: b.label || '',
+                       reason: b.reason || '', bytes: b.bytes || 0, ver: b.ver || '',
+                       deviceId: DEVICE_ID, tokens: b.tokens ?? null, habits: b.habits ?? null,
+                       quests: b.quests ?? null, history: b.history ?? null });
+  const items = keep.map(meta);
+  if (extra && !items.some(i => i.id === extra.id)) items.unshift(meta(extra));
+  const foreign = cloudBackupItems.filter(i => i.deviceId && i.deviceId !== DEVICE_ID);
+  return items.concat(foreign).sort((a, b) => b.ts - a.ts);
+}
+// Mirror one backup upward. Called from writeBackup, so it must be safe before the
+// cloud module has loaded and while signed out — in both cases it simply does nothing.
+function cloudBackupPush(entry, raw) {
+  if (!entry || !cloudOn || !window.HCCloud || !window.HCCloud.backups) return;
+  // Slots are always worth a write. Autos only when they'd be inside the mirrored window.
+  // Compared by id, not identity: listBackups() re-parses the index, so the entry we were
+  // handed is never the same object as the one in that array.
+  if (entry.kind === 'auto') {
+    const rank = listBackups().filter(b => b.kind === 'auto').findIndex(b => b.id === entry.id);
+    if (rank >= CLOUD_BACKUP_AUTOS) return;
+  }
+  if (raw.length > CLOUD_LIMIT) { console.warn('[cloud] backup too large to mirror', raw.length); return; }
+  const items = cloudBackupTargetItems(entry);
+  window.HCCloud.backups.put(entry, raw, items)
+    .then(() => { cloudBackupItems = items; cloudBackupErr = ''; renderBackupList(); })
+    .catch(e => { cloudBackupErr = e.message || String(e); console.warn('[cloud] backup push failed', e); renderBackupList(); });
+}
+function cloudBackupDelete(id) {
+  if (!id || !cloudOn || !window.HCCloud || !window.HCCloud.backups) return;
+  const items = cloudBackupItems.filter(i => i.id !== id);
+  window.HCCloud.backups.remove(id, items)
+    .then(() => { cloudBackupItems = items; renderBackupList(); })
+    .catch(e => console.warn('[cloud] backup delete failed', e));
+}
+// Pull the cloud's backup index so the list can show copies made on other devices.
+async function refreshCloudBackups() {
+  if (!cloudOn || !window.HCCloud || !window.HCCloud.backups) { cloudBackupItems = []; return; }
+  cloudBackupBusy = true; renderBackupList();
+  try { cloudBackupItems = await window.HCCloud.backups.list(); cloudBackupErr = ''; }
+  catch (e) { cloudBackupErr = e.message || String(e); }
+  cloudBackupBusy = false;
+  renderBackupList();
+}
+// Every backup the user can act on: this device's, plus cloud-only ones (made elsewhere,
+// or left over after this device's copy aged out) marked so the UI can fetch on demand.
+function mergedBackups() {
+  const local = listBackups();
+  const haveIds = new Set(local.map(b => b.id));
+  const remoteOnly = cloudBackupItems
+    .filter(i => i && i.id && !haveIds.has(i.id))
+    .map(i => ({ ...i, key: null, remoteOnly: true }));
+  return local.map(b => ({ ...b, inCloud: cloudBackupItems.some(i => i.id === b.id) }))
+    .concat(remoteOnly)
+    .sort((a, b) => b.ts - a.ts);
+}
+// Bring a cloud-only backup down and adopt it. Local ones go through restoreBackup().
+async function restoreCloudBackup(id) {
+  if (!window.HCCloud || !window.HCCloud.backups) return false;
+  let raw = null;
+  try { raw = await window.HCCloud.backups.get(id); }
+  catch (e) { toast(e.message || 'Could not reach the cloud', 'var(--pink)'); return false; }
+  if (!raw) { toast('That backup is not in the cloud', 'var(--pink)'); return false; }
+  if (!adoptState(raw, 'backup')) return false;
+  lastLoadFailed = null; saveLocked = false;
+  save(); fullRender();
+  toast('Restored from the cloud ☁️', 'var(--green)');
+  return true;
+}
 
 // ---- Settings → ☁️ CLOUD SAVE ----
 function renderCloudUI() {
@@ -8870,15 +9808,14 @@ $('#authOverlay').addEventListener('click', async e => {
 $('#view-schedule').addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'schedPrev') { schedOffset -= 1; SFX.click(); renderBlockSchedule(); return; }
-  if (act === 'schedNext' && schedOffset < 0) { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
+  if (act === 'schedNext') { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
   if (act === 'zoomIn')  { schedZoomIdx += 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'zoomOut') { schedZoomIdx -= 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'unpin') {
     const el = e.target.closest('.sched-block'); if (!el) return;
-    const h = state.habits.find(x => x.id === el.dataset.habit); if (!h) return;
-    h.scheduledMin = null;
-    SFX.click(); toast(`${h.name} back to its usual time`, 'var(--cyan)');
-    save(); renderBlockSchedule(); renderHabits();
+    removePlannedBlock(todayStr(schedOffset), el.dataset.ref);
+    SFX.click(); toast('Removed from this day', 'var(--cyan)');
+    renderBlockSchedule(); renderHabits();
   }
 });
 
@@ -8921,7 +9858,8 @@ $('#view-schedule').addEventListener('pointerdown', e => {
   if (!el || e.target.closest('[data-act]')) return;
   const grid = $('.sched-grid'); if (!grid) return;
   schedDrag = {
-    el, id: el.dataset.habit, start: parseInt(el.dataset.start, 10),
+    el, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
+    durMin: parseInt(el.dataset.dur, 10) || 15, start: parseInt(el.dataset.start, 10),
     lo: parseInt(grid.dataset.lo, 10) * 60, y0: e.clientY, min: parseInt(el.dataset.start, 10), moved: false,
   };
   // Capture keeps the gesture alive if the finger leaves the block; not fatal if refused.
@@ -8945,16 +9883,84 @@ function endSchedDrag() {
   const d = schedDrag; schedDrag = null;
   d.el.classList.remove('dragging');
   if (!d.moved || d.min === d.start) { renderBlockSchedule(); return; }
-  const h = state.habits.find(x => x.id === d.id);
-  if (h) {
-    h.scheduledMin = d.min;
-    SFX.coin(); toast(`${h.name} → ${fmtMinOfDay(d.min)}`, 'var(--cyan)');
-    save(); renderHabits();
-  }
-  renderBlockSchedule();
+  // Writes the DAY being viewed, not the habit's global usual time — that's what makes
+  // "Thursday at 3pm, just this once" possible and leaves every other day alone.
+  const name = upsertPlannedBlock(todayStr(schedOffset), d.refKind, d.refId, d.min, d.durMin);
+  if (name) { SFX.coin(); toast(`${name} → ${fmtMinOfDay(d.min)}`, 'var(--cyan)'); }
+  renderBlockSchedule(); renderHabits();
+}
+
+// Insert or move one planned block on a date. Returns the entity's name, or null if the
+// habit/quest has since been deleted.
+function upsertPlannedBlock(dateStr, kind, refId, startMin, durMin) {
+  const src = kind === 'task'
+    ? (state.oneoffs || []).find(t => t.id === refId)
+    : (state.habits || []).find(h => h.id === refId);
+  if (!src) return null;
+  state.plannedBlocks = state.plannedBlocks || {};
+  const list = state.plannedBlocks[dateStr] = state.plannedBlocks[dateStr] || [];
+  const existing = list.find(b => b.refId === refId && b.kind === kind);
+  if (existing) { existing.startMin = clamp(startMin, 0, 1439); existing.durMin = clamp(durMin || existing.durMin, 1, 1440); }
+  else list.push({ id: uid(), kind, refId, startMin: clamp(startMin, 0, 1439), durMin: clamp(durMin || 15, 1, 1440) });
+  save();
+  return src.name;
+}
+function removePlannedBlock(dateStr, refId) {
+  const list = (state.plannedBlocks || {})[dateStr]; if (!list) return;
+  state.plannedBlocks[dateStr] = list.filter(b => b.refId !== refId);
+  if (!state.plannedBlocks[dateStr].length) delete state.plannedBlocks[dateStr];
+  save();
 }
 $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
+
+/* ---- + button: put a habit or quest onto the day you're looking at ---------------- */
+function schedPickOpen() {
+  const dateStr = todayStr(schedOffset);
+  const shown = new Set(computeDayBlocks(dateStr).map(b => b.refId).filter(Boolean));
+  const habits = state.habits.filter(h => !h.archived && !shown.has(h.id));
+  const quests = state.oneoffs.filter(t => !shown.has(t.id));
+  const row = (o, kind) => `
+    <button class="pick-row" data-pick="${o.id}" data-pickkind="${kind}">
+      <span class="pick-e">${escapeHtml(o.emoji || (kind === 'task' ? '🎯' : '⭐'))}</span>
+      <span class="pick-n">${escapeHtml(o.name)}</span>
+      <span class="subtle">${kind === 'task' ? 'quest' : (o.section === 'extra' ? 'extra' : 'daily')}</span>
+    </button>`;
+  const sec = (title, list, kind) => list.length
+    ? `<div class="pick-sec">${title}</div>${list.map(o => row(o, kind)).join('')}` : '';
+  const label = schedOffset === 0 ? 'today' : schedOffset === 1 ? 'tomorrow'
+    : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  $('#schedPickTitle').textContent = `Add to ${label}`;
+  $('#schedPickBody').innerHTML = (sec('Habits', habits, 'habit') + sec('Quests', quests, 'task'))
+    || `<div class="subtle" style="padding:14px 0">Everything is already on this day.</div>`;
+  $('#schedPickSheet').classList.add('show');
+  $('#schedPickSheet').setAttribute('aria-hidden', 'false');
+}
+function schedPickClose() {
+  $('#schedPickSheet').classList.remove('show');
+  $('#schedPickSheet').setAttribute('aria-hidden', 'true');
+}
+// Drop new blocks after whatever's already planned so they don't land on top of it.
+function nextFreeMinute(dateStr) {
+  const blocks = computeDayBlocks(dateStr);
+  if (!blocks.length) return 9 * 60;
+  const end = Math.max(...blocks.map(b => b.startMin + Math.max(b.durMin, 15)));
+  return clamp(Math.ceil(end / SNAP_MIN) * SNAP_MIN, 0, 23 * 60);
+}
+$('#schedAddBtn').addEventListener('click', () => { SFX.click(); schedPickOpen(); });
+$('#schedPickSheet').addEventListener('click', e => {
+  if (e.target.closest('[data-act="schedPickClose"]')) { SFX.click(); schedPickClose(); return; }
+  const pick = e.target.closest('[data-pick]'); if (!pick) return;
+  const dateStr = todayStr(schedOffset);
+  const kind = pick.dataset.pickkind;
+  const src = kind === 'task'
+    ? state.oneoffs.find(t => t.id === pick.dataset.pick)
+    : state.habits.find(h => h.id === pick.dataset.pick);
+  const dur = src ? (kind === 'task' ? 30 : (habitMedianActualMinutes(src) || habitCurrentMinutes(src) || 15)) : 15;
+  const name = upsertPlannedBlock(dateStr, kind, pick.dataset.pick, nextFreeMinute(dateStr), dur);
+  if (name) { SFX.coin(); toast(`${name} added — drag to place it`, 'var(--cyan)'); }
+  schedPickClose(); renderBlockSchedule();
+});
 
 $('#view-settings').addEventListener('click', async e => {
   if (e.target.closest('#cloudSignIn')) {
@@ -8976,11 +9982,226 @@ $('#view-settings').addEventListener('click', async e => {
     catch (err) { toast('Could not reach the cloud', 'var(--pink)'); return; }
     if (!remote || !remote.state) { toast('No cloud save yet', 'var(--pink)'); return; }
     const when = new Date(remote.updatedAt || 0).toLocaleString();
-    if (confirm(`Replace this device's save with the cloud copy from ${when}?`)) {
-      state = load(remote.state);
+    if (confirm(`Replace this device's save with the cloud copy from ${when}?\n\nThis device's current save is backed up first.`)) {
+      if (!adoptState(remote.state, 'cloud')) return;
       save(); fullRender();
       toast('Loaded from the cloud ☁️', 'var(--cyan)');
     }
+  }
+});
+
+/* =================================================================
+   SAVE RECOVERY — what happens when the save can't be read.
+
+   Restoring, downloading and starting fresh all live here, plus the boot-time screen
+   that offers them. The rule the whole section exists to enforce: a save we failed to
+   read is never overwritten by anything the app decided on its own.
+   ================================================================= */
+function fmtBackupWhen(ts) {
+  const d = new Date(ts), now = new Date();
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString()) return `Today ${time}`;
+  if (d.toDateString() === new Date(now - 86400000).toDateString()) return `Yesterday ${time}`;
+  return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
+}
+function fmtBytes(n) { return n > 999999 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB'; }
+function backupLine(b) {
+  if (b.unreadable) return 'unreadable copy';
+  const bits = [];
+  if (b.habits != null) bits.push(`${b.habits} habit${b.habits === 1 ? '' : 's'}`);
+  if (b.tokens != null) bits.push(`${b.tokens} 🪙`);
+  if (b.history != null) bits.push(`${b.history} logged`);
+  bits.push(fmtBytes(b.bytes || 0));
+  return bits.join(' · ');
+}
+function downloadJSON(text, filename) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+// Adopt a backup as the live save. The CURRENT save is itself backed up first, so a
+// restore is never a one-way door.
+function restoreBackup(key) {
+  const raw = readBackup(key); if (!raw) { toast('That backup is gone', 'var(--pink)'); return false; }
+  const cur = readLocal();
+  if (cur && !saveLocked) writeBackup(cur, 'pre-restore');
+  else if (cur) writeBackup(cur, 'unreadable');   // locked: the broken copy is worth keeping too
+  const restored = load(raw);
+  if (lastLoadFailed && !lastLoadFailed.salvaged) { toast('That backup is damaged too', 'var(--pink)'); return false; }
+  state = restored;
+  lastLoadFailed = null; saveLocked = false;      // we have a good state again
+  save(); fullRender();
+  toast('Save restored 💾', 'var(--green)');
+  return true;
+}
+// Replace the live state with one loaded from somewhere else (a cloud copy, an import).
+// Backs the current save up first and refuses outright if the incoming copy is unreadable
+// — otherwise a corrupt cloud document would overwrite a perfectly good local save, and
+// then get pushed back up, destroying both sides.
+function adoptState(raw, label) {
+  const before = lastLoadFailed;                      // the local save's status, if it failed
+  const next = load(raw);
+  if (lastLoadFailed && !lastLoadFailed.salvaged) {
+    const why = lastLoadFailed.error;
+    lastLoadFailed = before;                          // that failure was the incoming copy's, not ours
+    toast(`Couldn't read the ${label} save — keeping this device's`, 'var(--pink)');
+    console.error(`Rejected unreadable ${label} save:`, why);
+    return false;
+  }
+  const cur = readLocal();
+  if (cur) writeBackup(cur, 'pre-' + label);
+  state = next;
+  saveLocked = false;                                 // we hold a readable state again
+  return true;
+}
+function closeRecover() { $('#recoverOverlay').classList.remove('show'); }
+// Save the CURRENT state into one of the user's three slots.
+function saveToSlot(slot) {
+  const existing = listSlots()[slot - 1];
+  if (existing && !confirm(`Slot ${slot} already holds a backup from ${fmtBackupWhen(existing.ts)}.\n\nReplace it?`)) return;
+  save();                                   // make sure the slot captures the very latest
+  const raw = readLocal();
+  if (!raw) { toast('Nothing to back up yet', 'var(--pink)'); return; }
+  const label = (prompt(`Name this backup (optional) — slot ${slot}:`, existing ? (existing.label || '') : '') || '').trim();
+  const entry = writeBackup(raw, 'manual', { kind: 'slot', slot, label: label.slice(0, 40) });
+  if (!entry) { toast('No room to save that backup', 'var(--pink)'); return; }
+  SFX.coin();
+  toast(`Saved to slot ${slot} 🛟${cloudOn ? ' · syncing' : ''}`, 'var(--green)');
+  renderBackupList();
+}
+function clearSlot(slot) {
+  const b = listSlots()[slot - 1]; if (!b) return;
+  if (!confirm(`Delete the backup in slot ${slot} (${fmtBackupWhen(b.ts)})?`)) return;
+  deleteBackup(b.key);
+  SFX.click(); renderBackupList();
+}
+// One row, used by both the Settings list and the recovery screen. `b` may be a local
+// backup, a cloud-only one, or both.
+function backupRowHTML(b, opts) {
+  const o = opts || {};
+  const id = escapeHtml(String(b.id || ''));
+  const cloudTag = b.remoteOnly ? '<span class="bak-tag cloud">☁️ cloud only</span>'
+                 : b.inCloud    ? '<span class="bak-tag cloud">☁️</span>' : '';
+  const otherDevice = b.remoteOnly && b.deviceId && b.deviceId !== DEVICE_ID ? '<span class="bak-tag">other device</span>' : '';
+  const title = b.kind === 'slot'
+    ? `${b.label ? escapeHtml(b.label) : `Slot ${b.slot}`} <span class="subtle">· slot ${b.slot}</span>`
+    : `${fmtBackupWhen(b.ts)} <span class="subtle">· ${escapeHtml(b.reason || 'auto')}</span>`;
+  const sub = b.kind === 'slot' ? `${fmtBackupWhen(b.ts)} · ${escapeHtml(backupLine(b))}` : escapeHtml(backupLine(b));
+  return `
+    <div class="editrow bak-row${b.kind === 'slot' ? ' slot' : ''}">
+      <div class="bak-main">
+        <div class="bak-when">${title} ${cloudTag}${otherDevice}</div>
+        <div class="bak-sub">${sub}</div>
+      </div>
+      <button class="btn ${o.primary ? '' : 'ghost '}sm" data-act="bakRestore" data-id="${id}">Restore</button>
+      <button class="btn ghost sm" data-act="bakDownload" data-id="${id}" title="Download this copy">⬇</button>
+      ${b.kind === 'slot' && !b.remoteOnly ? `<button class="btn ghost sm" data-act="bakClear" data-slot="${b.slot}" title="Empty this slot">🗑</button>` : ''}
+    </div>`;
+}
+// Settings → 💾 Data → 🛟 Backups: the user's three slots, then the automatic rotation.
+function renderBackupList() {
+  const host = $('#backupList'); if (!host) return;
+  const merged = mergedBackups();
+  const slotRows = Array.from({ length: BACKUP_SLOTS }, (_, i) => {
+    const b = merged.find(x => x.kind === 'slot' && x.slot === i + 1);
+    return b ? backupRowHTML(b, { primary: true }) : `
+      <div class="editrow bak-row slot empty">
+        <div class="bak-main"><div class="bak-when">Slot ${i + 1} <span class="subtle">· empty</span></div>
+        <div class="bak-sub">Save a copy you can always come back to</div></div>
+        <button class="btn sm" data-act="bakSave" data-slot="${i + 1}">Save here</button>
+      </div>`;
+  }).join('');
+  const autos = merged.filter(b => b.kind !== 'slot');
+  const autoRows = autos.length
+    ? autos.map(b => backupRowHTML(b)).join('')
+    : `<div class="subtle">None yet — the first is taken next time the app starts.</div>`;
+  const cloudNote = !cloudOn
+    ? `<div class="hint">Sign in under ☁️ Cloud Save to copy these off this device.</div>`
+    : cloudBackupBusy ? `<div class="hint">Checking the cloud…</div>`
+    : cloudBackupErr ? `<div class="hint" style="color:var(--pink)">Cloud backups: ${escapeHtml(cloudBackupErr)}</div>`
+    : `<div class="hint">Slots and the ${CLOUD_BACKUP_AUTOS} newest automatic copies are mirrored to the cloud, in their own place — separate from the save that syncs continuously.</div>`;
+  host.innerHTML = `
+    <div class="bak-head">YOUR BACKUPS <span class="subtle">· ${BACKUP_SLOTS} slots, kept until you replace them</span></div>
+    ${slotRows}
+    <div class="bak-head">AUTOMATIC <span class="subtle">· newest ${BACKUP_MAX}, oldest drop off</span></div>
+    ${autoRows}
+    ${cloudNote}`;
+}
+// Shared by the Settings list and the recovery screen.
+async function onBackupAction(e) {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const act = btn.dataset.act;
+  if (act === 'bakSave')  { saveToSlot(parseInt(btn.dataset.slot)); return; }
+  if (act === 'bakClear') { clearSlot(parseInt(btn.dataset.slot)); return; }
+  const b = mergedBackups().find(x => String(x.id) === btn.dataset.id);
+  if (!b) return;
+  if (act === 'bakDownload') {
+    const raw = b.remoteOnly
+      ? await window.HCCloud.backups.get(b.id).catch(() => null)
+      : readBackup(b.key);
+    if (raw) downloadJSON(raw, `habitcasino-backup-${b.id}.json`);
+    else toast('Could not fetch that copy', 'var(--pink)');
+    return;
+  }
+  if (act === 'bakRestore') {
+    const what = b.kind === 'slot' ? (b.label || `slot ${b.slot}`) : fmtBackupWhen(b.ts);
+    if (!confirm(`Restore "${what}" (${backupLine(b)})?\n\nYour current save is backed up first, so this can be undone.`)) return;
+    const ok = b.remoteOnly ? await restoreCloudBackup(b.id) : restoreBackup(b.key);
+    if (ok) closeRecover();
+    renderBackupList();
+  }
+}
+$('#backupList').addEventListener('click', onBackupAction);
+// Shown at boot when load() failed. Deliberately not dismissible by tapping away: every
+// route out of it is an explicit decision about the unreadable save.
+function renderRecover() {
+  const modal = $('#recoverModal'); if (!modal) return;
+  const backups = mergedBackups();   // includes cloud-only copies once sync is up
+  const salvaged = !!(lastLoadFailed && lastLoadFailed.salvaged);
+  // The user's own slots come first — if they deliberately saved one, that's almost
+  // certainly the copy they want back.
+  const slots = backups.filter(b => b.kind === 'slot').sort((a, b) => (a.slot || 0) - (b.slot || 0));
+  const autos = backups.filter(b => b.kind !== 'slot');
+  const rows = backups.length
+    ? (slots.length ? `<div class="bak-head">YOUR BACKUPS</div>${slots.map(b => backupRowHTML(b, { primary: true })).join('')}` : '')
+      + (autos.length ? `<div class="bak-head">AUTOMATIC</div>${autos.map(b => backupRowHTML(b, { primary: !slots.length })).join('')}` : '')
+    : `<div class="subtle">No backups were found on this device${cloudOn ? ' or in the cloud' : ''}.</div>`;
+  modal.innerHTML = `
+    <div class="pass-title" style="color:var(--pink)">⚠️ SAVE PROBLEM</div>
+    <div class="subtle" style="margin-bottom:10px">
+      ${salvaged
+        ? `This version couldn't finish reading your save, so it was loaded in recovery mode. Your habits and tokens are here, but something in it didn't survive — restoring a backup is the safer option.`
+        : `This version couldn't read your save. <b>Nothing has been overwritten</b> — your old save is still on this device, untouched, and the app won't write over it until you choose below.`}
+    </div>
+    <div class="subtle" style="margin-bottom:10px">Reason: <code>${escapeHtml((lastLoadFailed && lastLoadFailed.error) || 'unknown')}</code></div>
+    <div class="bak-list">${rows}</div>
+    <hr class="set-sep">
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      <button class="btn ghost sm" data-act="bakDownloadBroken">⬇ Download the unreadable save</button>
+      ${salvaged
+        ? `<button class="btn green sm" data-act="bakKeepGoing">Continue in recovery mode</button>`
+        : `<button class="btn ghost sm" data-act="bakStartFresh" style="border-color:var(--pink);color:var(--pink)">Start fresh (erases it)</button>`}
+    </div>`;
+  $('#recoverOverlay').classList.add('show');
+}
+$('#recoverOverlay').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const act = btn.dataset.act;
+  // Restore/download/slot buttons behave identically here and in Settings.
+  if (act === 'bakRestore' || act === 'bakDownload' || act === 'bakSave' || act === 'bakClear') { onBackupAction(e); return; }
+  if (act === 'bakDownloadBroken') {
+    downloadJSON(readLocal() || '', 'habitcasino-unreadable-save.json');
+    toast('Downloaded — keep this file', 'var(--cyan)');
+    return;
+  }
+  if (act === 'bakKeepGoing') { lastLoadFailed = null; closeRecover(); return; }
+  if (act === 'bakStartFresh') {
+    if (!confirm('Erase the unreadable save and start over? Download it first if you want any chance of getting it back.')) return;
+    writeBackup(readLocal(), 'unreadable');   // even now, keep a copy
+    saveLocked = false; lastLoadFailed = null;
+    save(); fullRender(); closeRecover();
+    return;
   }
 });
 
@@ -9005,6 +10226,7 @@ function fullRender() {
   passEnsureWeek();      // roll the pass week / seed goals if needed
   updatePassFab();
   renderVersionUI();     // alpha/beta badge + switcher
+  renderBackupList();    // Settings → 💾 Data → 🛟 Backups
   renderCloudUI();       // Settings → ☁️ Cloud Save (shows "sign in to sync" when off)
   renderCloudBadge();    // red dot on More/Settings when a cloud save needs a decision
 }
@@ -9013,6 +10235,9 @@ function fullRender() {
 // network or on an account. The cloud layer attaches later, if and when it loads.
 processClosedDayOutcomes();
 fullRender();
+// If load() couldn't read the save, this is the first thing the user sees — before any
+// interaction can trigger a save() that would write over what's still down there.
+if (lastLoadFailed) renderRecover();
 
 // Collapsible settings: tap a section title to expand/collapse. Start collapsed for a clean menu.
 $('#view-settings').addEventListener('click', e => {
@@ -9050,7 +10275,7 @@ setInterval(() => {
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    doc, getDoc, setDoc
+    doc, getDoc, setDoc, deleteDoc
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -9072,6 +10297,16 @@ setInterval(() => {
   });
 
   const userDoc = uid => doc(db, 'users', uid);
+  /* ---- Backups live in their OWN subcollection, deliberately apart from the autosave
+     document. Nothing that writes users/{uid} can touch them, so a bad sync can't take
+     the backups down with the save it corrupted.
+
+       users/{uid}/backups/index   → { items: [ …metadata only… ] }
+       users/{uid}/backups/{id}    → { raw, ts }
+
+     The metadata lives in its own small document so listing backups is ONE read, rather
+     than pulling every full save down just to draw a list. ---- */
+  const backupDoc = (uid, id) => doc(db, 'users', uid, 'backups', id);
 
   // Firebase error codes → something a human can act on.
   function friendly(e) {
@@ -9148,6 +10383,50 @@ setInterval(() => {
         const snap = await getDoc(userDoc(auth.currentUser.uid));
         return snap.exists() ? snap.data() : null;
       } catch (e) { throw new Error(friendly(e)); }
+    },
+
+    /* ---- Backups. Separate documents, separate subcollection, never debounced:
+       a backup is an explicit act (or a once-per-launch snapshot), so each one is
+       written immediately rather than batched like the autosave. ---- */
+    backups: {
+      // One small read — metadata only, no save payloads come down with it.
+      async list() {
+        if (!auth.currentUser) return [];
+        try {
+          const snap = await getDoc(backupDoc(auth.currentUser.uid, 'index'));
+          const items = snap.exists() ? snap.data().items : null;
+          return Array.isArray(items) ? items : [];
+        } catch (e) { throw new Error(friendly(e)); }
+      },
+      async get(id) {
+        if (!auth.currentUser) return null;
+        try {
+          const snap = await getDoc(backupDoc(auth.currentUser.uid, String(id)));
+          return snap.exists() ? (snap.data().raw || null) : null;
+        } catch (e) { throw new Error(friendly(e)); }
+      },
+      // Payload first, then the index: if the second write fails the orphan is invisible
+      // and harmless, whereas the reverse would advertise a backup that isn't there.
+      async put(meta, raw, items) {
+        if (!auth.currentUser) return false;
+        const uid = auth.currentUser.uid;
+        try {
+          await setDoc(backupDoc(uid, String(meta.id)), { raw, ts: meta.ts || Date.now() });
+          await setDoc(backupDoc(uid, 'index'), { items, updatedAt: Date.now() });
+          return true;
+        } catch (e) { throw new Error(friendly(e)); }
+      },
+      // Index first here, for the same reason in reverse: drop the advertisement before
+      // the payload, so a half-finished delete never points at a missing document.
+      async remove(id, items) {
+        if (!auth.currentUser) return false;
+        const uid = auth.currentUser.uid;
+        try {
+          await setDoc(backupDoc(uid, 'index'), { items, updatedAt: Date.now() });
+          await deleteDoc(backupDoc(uid, String(id)));
+          return true;
+        } catch (e) { throw new Error(friendly(e)); }
+      }
     }
   };
 
