@@ -562,6 +562,31 @@
       background: transparent; border: 0; color: var(--ink-dim);
     }
     .lb-del:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+    /* --- Backup / recovery rows ------------------------------------------------- */
+    /* The recovery card is short — it shouldn't inherit the Habit Pass's full-height sheet. */
+    #recoverModal { height: auto; top: 50%; transform: translate(-50%, -50%); max-height: min(880px, calc(100vh - 24px)); overflow-y: auto; }
+    .bak-list { max-height: 46vh; overflow-y: auto; margin: 4px 0; }
+    .bak-row { display: flex; align-items: center; gap: 8px; padding: 9px 10px; margin-bottom: 6px; }
+    .bak-main { flex: 1 1 auto; min-width: 0; }
+    .bak-when { font-weight: 700; font-size: 13px; }
+    .bak-sub { font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 1px; }
+    .bak-head {
+      font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+      color: var(--ink-dim); text-transform: uppercase; margin: 12px 0 6px;
+    }
+    .bak-head:first-child { margin-top: 4px; }
+    /* A user slot is a deliberate act — give it a visible edge so it reads as different
+       from the rotation it sits above. */
+    .bak-row.slot { border-color: var(--gs-edge-hi) !important; }
+    .bak-row.slot.empty { border-style: dashed !important; }
+    .bak-row.slot.empty .bak-when { color: var(--ink-dim); }
+    .bak-tag {
+      display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+      font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: .4px;
+      background: rgba(255,255,255,.08); color: var(--ink-dim); vertical-align: middle;
+    }
+    #recoverModal code { font-size: 11px; word-break: break-word; }
     /* Two class names so this beats .edit-overlay's own z-index regardless of source
        order — the ladder has to sit above the editor sheet it was opened from. */
     .edit-overlay.tier-overlay { z-index: 79; }
@@ -1688,6 +1713,12 @@
     </div>
   </div>
 
+  <!-- Save recovery. Shown only when load() couldn't read habitCasino.v1. Nothing is
+       written over the unreadable save until one of these buttons is pressed. -->
+  <div class="pass-overlay" id="recoverOverlay" aria-hidden="true">
+    <div class="pass-modal" id="recoverModal" role="dialog" aria-modal="true"></div>
+  </div>
+
   <!-- Difficulty ladder: the whole tier system of one habit on a single line, with a ✚
        at each end to grow it easier or harder, and drag-to-reorder between. Sits above
        the editor sheet, which stays open behind it. -->
@@ -2164,6 +2195,10 @@
         <input type="file" id="importFile" accept="application/json" style="display:none">
         <div class="hint">Your save lives in the cloud and follows you between devices. Export still gives you an offline copy.</div>
         <hr class="set-sep">
+        <div class="ver-label">🛟 BACKUPS</div>
+        <div id="backupList"></div>
+        <div class="hint">Kept automatically on this device: one every time the app starts, plus one a day. Restoring backs up the current save first, so you can always undo it.</div>
+        <hr class="set-sep">
         <div class="ver-label">☁️ CLOUD SAVE</div>
         <div id="cloudRow"></div>
         <hr class="set-sep">
@@ -2511,9 +2546,153 @@ function ensureIdentityPurposes(st = state) {
 }
 
 function readLocal() { try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; } }
+
+/* =================================================================
+   BACKUPS — rolling copies of the save under their OWN keys.
+
+   The single save slot has no undo. If a new build's migration throws, or a bad
+   restore lands, or the app writes a bad state for any reason, the previous copy is
+   gone. These snapshots are the safety net, and they live under separate localStorage
+   keys so nothing that touches habitCasino.v1 can take them with it.
+
+   The important one is taken at BOOT, before the freshly-loaded build has had any
+   chance to write: that snapshot is exactly "my data as the previous version left it".
+   ================================================================= */
+const BACKUP_PREFIX = 'habitCasino.bak.';
+const BACKUP_INDEX_KEY = 'habitCasino.bakIndex';
+const BACKUP_MAX = 8;              // most recent AUTO copies kept (slots are never pruned)
+const BACKUP_SLOTS = 3;            // manual save slots the user controls
+const BACKUP_BUDGET = 2000000;     // chars across ALL backups — localStorage gives ~5M total
+
+// Two kinds share one index, one storage layout and one restore path:
+//   'auto' — taken by the app (boot, daily, before a restore/import/reset). Rotates.
+//   'slot' — pressed by the user into slot 1-3. Only ever replaced by the user.
+// Pruning only ever touches 'auto', so a manual backup can't be aged out from under
+// someone who deliberately made it.
+function readBackupIndex() {
+  try {
+    const idx = JSON.parse(localStorage.getItem(BACKUP_INDEX_KEY) || '[]');
+    // Drop entries whose payload is gone (quota eviction, manual clearing, …).
+    return (Array.isArray(idx) ? idx : [])
+      .filter(b => b && b.key && localStorage.getItem(b.key) != null)
+      .map(b => ({ ...b, kind: b.kind === 'slot' ? 'slot' : 'auto', id: b.id || b.key.slice(BACKUP_PREFIX.length) }));
+  } catch (e) { return []; }
+}
+function writeBackupIndex(idx) {
+  try { localStorage.setItem(BACKUP_INDEX_KEY, JSON.stringify(idx)); } catch (e) {}
+}
+// Newest first, with the numbers the restore list shows so a user can tell copies apart.
+function listBackups() { return readBackupIndex().sort((a, b) => b.ts - a.ts); }
+function listAutoBackups() { return listBackups().filter(b => b.kind === 'auto'); }
+// Always length BACKUP_SLOTS, with a null for each empty slot, so the UI can render
+// "Slot 2 — empty" without special-casing.
+function listSlots() {
+  const byslot = listBackups().filter(b => b.kind === 'slot');
+  return Array.from({ length: BACKUP_SLOTS }, (_, i) => byslot.find(b => b.slot === i + 1) || null);
+}
+function dropBackup(key, idx) {
+  try { localStorage.removeItem(key); } catch (e) {}
+  return idx.filter(b => b.key !== key);
+}
+// Keep the newest BACKUP_MAX autos, and stay inside the byte budget by dropping oldest
+// first. Never drops the newest auto however big it is — some net is better than none —
+// and never drops a user slot at all.
+function pruneBackups(idx) {
+  let out = idx.slice().sort((a, b) => b.ts - a.ts);
+  const autos = () => out.filter(b => b.kind !== 'slot');
+  while (autos().length > BACKUP_MAX) {
+    const list = autos();
+    out = dropBackup(list[list.length - 1].key, out);
+  }
+  let total = out.reduce((n, b) => n + (b.bytes || 0), 0);
+  while (autos().length > 1 && total > BACKUP_BUDGET) {
+    const list = autos();
+    const victim = list[list.length - 1];
+    total -= victim.bytes || 0;
+    out = dropBackup(victim.key, out);
+  }
+  return out;
+}
+// A one-line description of what's inside, so the restore list is readable without
+// parsing anything at display time.
+function backupSummary(raw) {
+  try {
+    const s = JSON.parse(raw);
+    return {
+      tokens: Number.isFinite(s.tokens) ? s.tokens : null,
+      habits: Array.isArray(s.habits) ? s.habits.length : null,
+      quests: Array.isArray(s.oneoffs) ? s.oneoffs.length : null,
+      history: Array.isArray(s.history) ? s.history.length : null,
+      updatedAt: Number.isFinite(s.updatedAt) ? s.updatedAt : null,
+    };
+  } catch (e) { return { unreadable: true }; }
+}
+// Store `raw` verbatim — a backup that reformats what it saved isn't a backup. Returns
+// the index entry, or null when nothing was written.
+// opts: { kind:'auto'|'slot', slot:1-3, label:'…' }
+function writeBackup(raw, reason, opts) {
+  if (!raw || typeof raw !== 'string') return null;
+  const o = opts || {};
+  const kind = o.kind === 'slot' ? 'slot' : 'auto';
+  let idx = readBackupIndex().sort((a, b) => b.ts - a.ts);
+  // Don't stack identical AUTO copies — boot-after-boot with no changes would otherwise
+  // push every real backup out of the window. A slot press is always honoured: the user
+  // asked for it, and it has to land in the slot they chose.
+  if (kind === 'auto') {
+    const newest = idx.find(b => b.kind === 'auto');
+    if (newest && newest.bytes === raw.length && localStorage.getItem(newest.key) === raw) return newest;
+  } else {
+    idx = idx.filter(b => { if (b.kind === 'slot' && b.slot === o.slot) { try { localStorage.removeItem(b.key); } catch (e) {} return false; } return true; });
+  }
+  const ts = Date.now();
+  // Two backups in the same millisecond must not share a key. They would point at one
+  // localStorage slot, so pruning either one would delete the payload out from under
+  // BOTH — and restoreBackup writes two in a row (pre-restore + unreadable), so this is
+  // reachable in ordinary use, not just in a tight loop.
+  let id = String(ts);
+  for (let n = 1; localStorage.getItem(BACKUP_PREFIX + id) != null || idx.some(b => b.id === id); n++) id = `${ts}-${n}`;
+  const entry = { id, key: BACKUP_PREFIX + id, ts, kind, reason: reason || 'auto', bytes: raw.length,
+                  ver: APP_VERSION, ...(kind === 'slot' ? { slot: o.slot, label: o.label || '' } : {}),
+                  ...backupSummary(raw) };
+  idx = pruneBackups([entry, ...idx]);
+  // Under quota pressure, keep dropping the oldest AUTO and retrying rather than giving up.
+  for (;;) {
+    try { localStorage.setItem(entry.key, raw); break; }
+    catch (e) {
+      const autos = idx.filter(b => b.kind !== 'slot' && b.id !== entry.id);
+      if (!autos.length) { console.warn('No room for a backup', e); return null; }
+      idx = dropBackup(autos[autos.length - 1].key, idx);
+    }
+  }
+  writeBackupIndex(idx);
+  cloudBackupPush(entry, raw);        // mirror upward when signed in (no-op otherwise)
+  return entry;
+}
+function readBackup(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+// Delete one backup outright (a user emptying a slot). Autos age out on their own.
+function deleteBackup(key) {
+  const entry = listBackups().find(b => b.key === key);
+  writeBackupIndex(dropBackup(key, readBackupIndex()));
+  if (entry) cloudBackupDelete(entry.id);
+}
+
+// Set by load()'s catch. Read at boot to decide whether saving is safe.
+let lastLoadFailed = null;
+// While true, save() will not touch habitCasino.v1. This is what stops a failed load
+// from overwriting a save we could still rescue.
+let saveLocked = false;
+
 // localStorage is the source of truth and boots synchronously — the app is fully usable
 // with no account and no network. Signing in adds Firestore as a mirror (see CLOUD SAVE).
-let state = load(readLocal());
+const bootRaw = readLocal();
+let state = load(bootRaw);
+// Snapshot what was on disk BEFORE this build gets a chance to write anything. If this
+// build's migration is broken, this is the copy that saves the user.
+if (bootRaw) writeBackup(bootRaw, 'boot');
+// A save we couldn't read is never overwritten automatically — the recovery screen at
+// INIT asks what to do with it. A SALVAGED load keeps writing: the data is all there,
+// and locking would throw away everything done in the session instead.
+if (lastLoadFailed && !lastLoadFailed.salvaged) saveLocked = true;
 let activeGame = 'wheel';
 let wheelSegments = [];
 let wheelAngle = 0;
@@ -2619,6 +2798,10 @@ function normalizeHabit(h) {
 // localStorage — this function deliberately doesn't know or care which, so the
 // backward-compat merge below is untouched by the move to the cloud.
 function load(raw) {
+  // Always reports THIS call's outcome. Without the reset a stale failure from an earlier
+  // call makes the next successful load look broken — which made restoring a perfectly
+  // good backup impossible. Callers that need the previous value save it themselves.
+  lastLoadFailed = null;
   try {
     if (!raw) { const s = defaultState(); ensureHappyHours(s); ensureCategoryColors(s); return s; }
     const parsed = JSON.parse(raw);
@@ -2768,7 +2951,29 @@ function load(raw) {
     }
     return merged;
   } catch (e) {
-    console.warn('Load failed, using defaults', e);
+    // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
+    // migration above used to land here and hand back a pristine defaultState() with
+    // nothing but a console.warn — and the very next save() then wrote that empty state
+    // over the user's real one. One migration bug in a new build = every save on every
+    // device silently destroyed the first time it ran. This has actually happened.
+    //
+    // So: fail loudly, salvage what we can, and record what went wrong. Whoever calls
+    // load() at boot is responsible for checking lastLoadFailed and locking save().
+    console.error('Load failed', e);
+    lastLoadFailed = { error: String((e && e.message) || e), salvaged: false, at: Date.now() };
+    // Stage 2 — the JSON itself may be perfectly fine and only a migration choked on it.
+    // Rebuilding from the parsed object keeps the user's real habits, tokens and history
+    // instead of pretending they're a brand-new user.
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.habits)) {
+        const s = { ...defaultState(), ...parsed };
+        s.habits = parsed.habits.map(normalizeHabit);
+        ensureHappyHours(s); ensureCategoryColors(s); ensureIdentityPurposes(s);
+        lastLoadFailed.salvaged = true;
+        return s;
+      }
+    } catch (e2) { /* not even parseable — fall through to a clean slate */ }
     const s = defaultState(); ensureHappyHours(s); ensureCategoryColors(s); return s;
   }
 }
@@ -2781,14 +2986,41 @@ const CLOUD_LIMIT = 700000;   // chars of JSON — comfortably under Firestore's
 // throw if this lived beside the rest of the cloud state.
 let cloudOn = false;          // signed in AND reconciled — only then do we mirror upward
 function save() {
+  // A save we couldn't read is still sitting in habitCasino.v1 and may be the only good
+  // copy left. Nothing gets written over it until the recovery screen resolves it.
+  if (saveLocked) return;
   state.updatedAt = Date.now();
   let json = JSON.stringify(state);
   // Only trim while syncing: localStorage alone has room to spare, and silently
   // dropping a signed-out user's chat history would be gratuitous.
   if (cloudOn && json.length > CLOUD_LIMIT) json = trimForCloud(json);
+  // First save of a new day: keep the copy we're about to replace. Boot backups only
+  // span launches, so without this a week of daily use in one long-lived tab would leave
+  // exactly one restore point.
+  maybeDailyBackup();
   try { localStorage.setItem(STORAGE_KEY, json); }
-  catch (e) { toast('Browser storage is full — export your save', 'var(--pink)'); }
+  catch (e) {
+    // Out of room. Backups are the likeliest bulk, and a save that can't be written is a
+    // worse outcome than a shorter backup history — drop the oldest and try once more.
+    let idx = listBackups();
+    while (idx.length > 1) {
+      idx = dropBackup(idx[idx.length - 1].key, idx);
+      writeBackupIndex(idx);
+      try { localStorage.setItem(STORAGE_KEY, json); return; } catch (e2) { /* keep going */ }
+    }
+    toast('Browser storage is full — export your save', 'var(--pink)');
+  }
   if (cloudOn && window.HCCloud) window.HCCloud.save(json);
+}
+let lastDailyBackupDay = null;
+function maybeDailyBackup() {
+  const day = todayStr();
+  if (lastDailyBackupDay === day) return;         // already handled this session
+  lastDailyBackupDay = day;
+  const newest = listBackups()[0];
+  if (newest && new Date(newest.ts).toDateString() === new Date().toDateString()) return;
+  const prev = readLocal();                        // the copy about to be overwritten
+  if (prev) writeBackup(prev, 'daily');
 }
 // `history` is already capped at 2000 entries, but chat threads grow without bound and
 // are the one thing that could push the document past Firestore's hard 1 MiB limit —
@@ -9256,16 +9488,20 @@ $('#importFile').addEventListener('change', e => {
     try {
       const data = JSON.parse(reader.result);
       if (!data.habits || !data.games) throw new Error('bad file');
-      state = { ...defaultState(), ...data };
-      save(); fullRender(); toast('Save imported ⬆', 'var(--green)');
+      // Through load(), not a raw spread: an imported file gets the same migration and
+      // validation as any other save, and adoptState backs up what it replaces.
+      if (!adoptState(JSON.stringify(data), 'imported')) return;
+      save(); fullRender(); renderBackupList(); toast('Save imported ⬆', 'var(--green)');
     } catch (err) { toast('Could not read that file', 'var(--pink)'); }
   };
   reader.readAsText(file);
   e.target.value = '';
 });
 $('#resetBtn').addEventListener('click', () => {
-  if (confirm('Reset EVERYTHING — tokens, habits, rewards, winnings? This cannot be undone.')) {
-    state = defaultState(); save(); fullRender(); toast('Fresh start! 🌱', 'var(--gold)');
+  if (confirm('Reset EVERYTHING — tokens, habits, rewards, winnings?\n\nA backup is kept, so you can undo this from Settings → 💾 Data → 🛟 Backups.')) {
+    const prev = readLocal();
+    if (prev) writeBackup(prev, 'pre-reset');   // the one destructive button in the app — never unrecoverable
+    state = defaultState(); save(); fullRender(); toast('Fresh start! 🌱 (backup kept)', 'var(--gold)');
   }
 });
 
@@ -9333,13 +9569,20 @@ window.HCCloudState = async function (user) {
     // safe to restore silently. This commonly happens on reload because Firestore's
     // server/write timestamp is a little newer than the timestamp inside the JSON save.
     if (remote.deviceId && remote.deviceId === DEVICE_ID) {
-      state = load(remote.state);
+      // Silent adoption is only safe if the copy actually reads. If it doesn't,
+      // adoptState leaves this device's save alone and we fall through to pushing it up.
+      if (!adoptState(remote.state, 'cloud')) {
+        cloudOn = true; cloudStatus = 'ready';
+        save();
+        renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
+        return;
+      }
       cloudOn = true;
       cloudStatus = 'ready';
       cloudSyncedAt = remote.updatedAt || Date.now();
       save();
       fullRender();
-      renderCloudUI(); renderCloudBadge();
+      renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
       return;
     }
     cloudPending = remote;
@@ -9350,7 +9593,7 @@ window.HCCloudState = async function (user) {
   cloudOn = true;
   cloudStatus = 'ready';
   save();                      // nothing newer up there — push this device
-  renderCloudUI(); renderCloudBadge();
+  renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
 };
 
 // Resolve the parked cloud save: adopt it, or keep this device and overwrite it.
@@ -9361,14 +9604,13 @@ function resolveCloudPending(useCloud) {
   cloudStatus = 'ready';
   cloudOn = true;                            // safe now — the decision is made
   if (useCloud) {
-    state = load(remote.state);
+    if (adoptState(remote.state, 'cloud')) toast('Loaded from the cloud ☁️', 'var(--cyan)');
     fullRender();                            // repaints Settings + badge via renderCloudUI
-    toast('Loaded from the cloud ☁️', 'var(--cyan)');
   } else {
     toast('Kept this device\'s save', 'var(--cyan)');
   }
   save();                                    // push whichever side won
-  renderCloudUI(); renderCloudBadge();
+  renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
 }
 
 // Red dot on the nav for anything in Settings needing attention. Settings lives behind
@@ -9387,6 +9629,97 @@ function renderCloudBadge() {
 
 // Called by the cloud layer after each successful write.
 window.HCCloudSynced = function () { cloudSyncedAt = Date.now(); renderCloudUI(); };
+
+/* =================================================================
+   CLOUD BACKUPS — the backup shelf, mirrored to its own subcollection.
+
+   Kept apart from the autosave on purpose. The autosave is a single document that
+   every device overwrites constantly; backups are immutable copies that only ever
+   appear or disappear on request. Mixing them would mean one bad sync could take the
+   safety net with it, which is the entire thing we're insuring against.
+
+   Slots always go up. Autos go up too, but only the newest few — enough to survive
+   losing the device, without a write per launch turning into a storage bill.
+   ================================================================= */
+const CLOUD_BACKUP_AUTOS = 3;   // newest autos mirrored; slots are always kept
+let cloudBackupItems = [];      // metadata of what's up there (may include other devices')
+let cloudBackupBusy = false;
+let cloudBackupErr = '';
+
+// What the cloud index SHOULD say, given this device's shelf. Slots first, then the
+// newest autos. Anything from another device stays in the list untouched — it isn't
+// ours to prune.
+function cloudBackupTargetItems(extra) {
+  const mine = listBackups();
+  const keep = mine.filter(b => b.kind === 'slot')
+    .concat(mine.filter(b => b.kind === 'auto').slice(0, CLOUD_BACKUP_AUTOS));
+  const meta = b => ({ id: b.id, ts: b.ts, kind: b.kind, slot: b.slot || null, label: b.label || '',
+                       reason: b.reason || '', bytes: b.bytes || 0, ver: b.ver || '',
+                       deviceId: DEVICE_ID, tokens: b.tokens ?? null, habits: b.habits ?? null,
+                       quests: b.quests ?? null, history: b.history ?? null });
+  const items = keep.map(meta);
+  if (extra && !items.some(i => i.id === extra.id)) items.unshift(meta(extra));
+  const foreign = cloudBackupItems.filter(i => i.deviceId && i.deviceId !== DEVICE_ID);
+  return items.concat(foreign).sort((a, b) => b.ts - a.ts);
+}
+// Mirror one backup upward. Called from writeBackup, so it must be safe before the
+// cloud module has loaded and while signed out — in both cases it simply does nothing.
+function cloudBackupPush(entry, raw) {
+  if (!entry || !cloudOn || !window.HCCloud || !window.HCCloud.backups) return;
+  // Slots are always worth a write. Autos only when they'd be inside the mirrored window.
+  // Compared by id, not identity: listBackups() re-parses the index, so the entry we were
+  // handed is never the same object as the one in that array.
+  if (entry.kind === 'auto') {
+    const rank = listBackups().filter(b => b.kind === 'auto').findIndex(b => b.id === entry.id);
+    if (rank >= CLOUD_BACKUP_AUTOS) return;
+  }
+  if (raw.length > CLOUD_LIMIT) { console.warn('[cloud] backup too large to mirror', raw.length); return; }
+  const items = cloudBackupTargetItems(entry);
+  window.HCCloud.backups.put(entry, raw, items)
+    .then(() => { cloudBackupItems = items; cloudBackupErr = ''; renderBackupList(); })
+    .catch(e => { cloudBackupErr = e.message || String(e); console.warn('[cloud] backup push failed', e); renderBackupList(); });
+}
+function cloudBackupDelete(id) {
+  if (!id || !cloudOn || !window.HCCloud || !window.HCCloud.backups) return;
+  const items = cloudBackupItems.filter(i => i.id !== id);
+  window.HCCloud.backups.remove(id, items)
+    .then(() => { cloudBackupItems = items; renderBackupList(); })
+    .catch(e => console.warn('[cloud] backup delete failed', e));
+}
+// Pull the cloud's backup index so the list can show copies made on other devices.
+async function refreshCloudBackups() {
+  if (!cloudOn || !window.HCCloud || !window.HCCloud.backups) { cloudBackupItems = []; return; }
+  cloudBackupBusy = true; renderBackupList();
+  try { cloudBackupItems = await window.HCCloud.backups.list(); cloudBackupErr = ''; }
+  catch (e) { cloudBackupErr = e.message || String(e); }
+  cloudBackupBusy = false;
+  renderBackupList();
+}
+// Every backup the user can act on: this device's, plus cloud-only ones (made elsewhere,
+// or left over after this device's copy aged out) marked so the UI can fetch on demand.
+function mergedBackups() {
+  const local = listBackups();
+  const haveIds = new Set(local.map(b => b.id));
+  const remoteOnly = cloudBackupItems
+    .filter(i => i && i.id && !haveIds.has(i.id))
+    .map(i => ({ ...i, key: null, remoteOnly: true }));
+  return local.map(b => ({ ...b, inCloud: cloudBackupItems.some(i => i.id === b.id) }))
+    .concat(remoteOnly)
+    .sort((a, b) => b.ts - a.ts);
+}
+// Bring a cloud-only backup down and adopt it. Local ones go through restoreBackup().
+async function restoreCloudBackup(id) {
+  if (!window.HCCloud || !window.HCCloud.backups) return false;
+  let raw = null;
+  try { raw = await window.HCCloud.backups.get(id); }
+  catch (e) { toast(e.message || 'Could not reach the cloud', 'var(--pink)'); return false; }
+  if (!raw) { toast('That backup is not in the cloud', 'var(--pink)'); return false; }
+  if (!adoptState(raw, 'backup')) return false;
+  lastLoadFailed = null; saveLocked = false;
+  save(); fullRender();
+  toast('Restored from the cloud ☁️', 'var(--green)');
+  return true;
+}
 
 // ---- Settings → ☁️ CLOUD SAVE ----
 function renderCloudUI() {
@@ -9649,11 +9982,226 @@ $('#view-settings').addEventListener('click', async e => {
     catch (err) { toast('Could not reach the cloud', 'var(--pink)'); return; }
     if (!remote || !remote.state) { toast('No cloud save yet', 'var(--pink)'); return; }
     const when = new Date(remote.updatedAt || 0).toLocaleString();
-    if (confirm(`Replace this device's save with the cloud copy from ${when}?`)) {
-      state = load(remote.state);
+    if (confirm(`Replace this device's save with the cloud copy from ${when}?\n\nThis device's current save is backed up first.`)) {
+      if (!adoptState(remote.state, 'cloud')) return;
       save(); fullRender();
       toast('Loaded from the cloud ☁️', 'var(--cyan)');
     }
+  }
+});
+
+/* =================================================================
+   SAVE RECOVERY — what happens when the save can't be read.
+
+   Restoring, downloading and starting fresh all live here, plus the boot-time screen
+   that offers them. The rule the whole section exists to enforce: a save we failed to
+   read is never overwritten by anything the app decided on its own.
+   ================================================================= */
+function fmtBackupWhen(ts) {
+  const d = new Date(ts), now = new Date();
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString()) return `Today ${time}`;
+  if (d.toDateString() === new Date(now - 86400000).toDateString()) return `Yesterday ${time}`;
+  return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
+}
+function fmtBytes(n) { return n > 999999 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB'; }
+function backupLine(b) {
+  if (b.unreadable) return 'unreadable copy';
+  const bits = [];
+  if (b.habits != null) bits.push(`${b.habits} habit${b.habits === 1 ? '' : 's'}`);
+  if (b.tokens != null) bits.push(`${b.tokens} 🪙`);
+  if (b.history != null) bits.push(`${b.history} logged`);
+  bits.push(fmtBytes(b.bytes || 0));
+  return bits.join(' · ');
+}
+function downloadJSON(text, filename) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+// Adopt a backup as the live save. The CURRENT save is itself backed up first, so a
+// restore is never a one-way door.
+function restoreBackup(key) {
+  const raw = readBackup(key); if (!raw) { toast('That backup is gone', 'var(--pink)'); return false; }
+  const cur = readLocal();
+  if (cur && !saveLocked) writeBackup(cur, 'pre-restore');
+  else if (cur) writeBackup(cur, 'unreadable');   // locked: the broken copy is worth keeping too
+  const restored = load(raw);
+  if (lastLoadFailed && !lastLoadFailed.salvaged) { toast('That backup is damaged too', 'var(--pink)'); return false; }
+  state = restored;
+  lastLoadFailed = null; saveLocked = false;      // we have a good state again
+  save(); fullRender();
+  toast('Save restored 💾', 'var(--green)');
+  return true;
+}
+// Replace the live state with one loaded from somewhere else (a cloud copy, an import).
+// Backs the current save up first and refuses outright if the incoming copy is unreadable
+// — otherwise a corrupt cloud document would overwrite a perfectly good local save, and
+// then get pushed back up, destroying both sides.
+function adoptState(raw, label) {
+  const before = lastLoadFailed;                      // the local save's status, if it failed
+  const next = load(raw);
+  if (lastLoadFailed && !lastLoadFailed.salvaged) {
+    const why = lastLoadFailed.error;
+    lastLoadFailed = before;                          // that failure was the incoming copy's, not ours
+    toast(`Couldn't read the ${label} save — keeping this device's`, 'var(--pink)');
+    console.error(`Rejected unreadable ${label} save:`, why);
+    return false;
+  }
+  const cur = readLocal();
+  if (cur) writeBackup(cur, 'pre-' + label);
+  state = next;
+  saveLocked = false;                                 // we hold a readable state again
+  return true;
+}
+function closeRecover() { $('#recoverOverlay').classList.remove('show'); }
+// Save the CURRENT state into one of the user's three slots.
+function saveToSlot(slot) {
+  const existing = listSlots()[slot - 1];
+  if (existing && !confirm(`Slot ${slot} already holds a backup from ${fmtBackupWhen(existing.ts)}.\n\nReplace it?`)) return;
+  save();                                   // make sure the slot captures the very latest
+  const raw = readLocal();
+  if (!raw) { toast('Nothing to back up yet', 'var(--pink)'); return; }
+  const label = (prompt(`Name this backup (optional) — slot ${slot}:`, existing ? (existing.label || '') : '') || '').trim();
+  const entry = writeBackup(raw, 'manual', { kind: 'slot', slot, label: label.slice(0, 40) });
+  if (!entry) { toast('No room to save that backup', 'var(--pink)'); return; }
+  SFX.coin();
+  toast(`Saved to slot ${slot} 🛟${cloudOn ? ' · syncing' : ''}`, 'var(--green)');
+  renderBackupList();
+}
+function clearSlot(slot) {
+  const b = listSlots()[slot - 1]; if (!b) return;
+  if (!confirm(`Delete the backup in slot ${slot} (${fmtBackupWhen(b.ts)})?`)) return;
+  deleteBackup(b.key);
+  SFX.click(); renderBackupList();
+}
+// One row, used by both the Settings list and the recovery screen. `b` may be a local
+// backup, a cloud-only one, or both.
+function backupRowHTML(b, opts) {
+  const o = opts || {};
+  const id = escapeHtml(String(b.id || ''));
+  const cloudTag = b.remoteOnly ? '<span class="bak-tag cloud">☁️ cloud only</span>'
+                 : b.inCloud    ? '<span class="bak-tag cloud">☁️</span>' : '';
+  const otherDevice = b.remoteOnly && b.deviceId && b.deviceId !== DEVICE_ID ? '<span class="bak-tag">other device</span>' : '';
+  const title = b.kind === 'slot'
+    ? `${b.label ? escapeHtml(b.label) : `Slot ${b.slot}`} <span class="subtle">· slot ${b.slot}</span>`
+    : `${fmtBackupWhen(b.ts)} <span class="subtle">· ${escapeHtml(b.reason || 'auto')}</span>`;
+  const sub = b.kind === 'slot' ? `${fmtBackupWhen(b.ts)} · ${escapeHtml(backupLine(b))}` : escapeHtml(backupLine(b));
+  return `
+    <div class="editrow bak-row${b.kind === 'slot' ? ' slot' : ''}">
+      <div class="bak-main">
+        <div class="bak-when">${title} ${cloudTag}${otherDevice}</div>
+        <div class="bak-sub">${sub}</div>
+      </div>
+      <button class="btn ${o.primary ? '' : 'ghost '}sm" data-act="bakRestore" data-id="${id}">Restore</button>
+      <button class="btn ghost sm" data-act="bakDownload" data-id="${id}" title="Download this copy">⬇</button>
+      ${b.kind === 'slot' && !b.remoteOnly ? `<button class="btn ghost sm" data-act="bakClear" data-slot="${b.slot}" title="Empty this slot">🗑</button>` : ''}
+    </div>`;
+}
+// Settings → 💾 Data → 🛟 Backups: the user's three slots, then the automatic rotation.
+function renderBackupList() {
+  const host = $('#backupList'); if (!host) return;
+  const merged = mergedBackups();
+  const slotRows = Array.from({ length: BACKUP_SLOTS }, (_, i) => {
+    const b = merged.find(x => x.kind === 'slot' && x.slot === i + 1);
+    return b ? backupRowHTML(b, { primary: true }) : `
+      <div class="editrow bak-row slot empty">
+        <div class="bak-main"><div class="bak-when">Slot ${i + 1} <span class="subtle">· empty</span></div>
+        <div class="bak-sub">Save a copy you can always come back to</div></div>
+        <button class="btn sm" data-act="bakSave" data-slot="${i + 1}">Save here</button>
+      </div>`;
+  }).join('');
+  const autos = merged.filter(b => b.kind !== 'slot');
+  const autoRows = autos.length
+    ? autos.map(b => backupRowHTML(b)).join('')
+    : `<div class="subtle">None yet — the first is taken next time the app starts.</div>`;
+  const cloudNote = !cloudOn
+    ? `<div class="hint">Sign in under ☁️ Cloud Save to copy these off this device.</div>`
+    : cloudBackupBusy ? `<div class="hint">Checking the cloud…</div>`
+    : cloudBackupErr ? `<div class="hint" style="color:var(--pink)">Cloud backups: ${escapeHtml(cloudBackupErr)}</div>`
+    : `<div class="hint">Slots and the ${CLOUD_BACKUP_AUTOS} newest automatic copies are mirrored to the cloud, in their own place — separate from the save that syncs continuously.</div>`;
+  host.innerHTML = `
+    <div class="bak-head">YOUR BACKUPS <span class="subtle">· ${BACKUP_SLOTS} slots, kept until you replace them</span></div>
+    ${slotRows}
+    <div class="bak-head">AUTOMATIC <span class="subtle">· newest ${BACKUP_MAX}, oldest drop off</span></div>
+    ${autoRows}
+    ${cloudNote}`;
+}
+// Shared by the Settings list and the recovery screen.
+async function onBackupAction(e) {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const act = btn.dataset.act;
+  if (act === 'bakSave')  { saveToSlot(parseInt(btn.dataset.slot)); return; }
+  if (act === 'bakClear') { clearSlot(parseInt(btn.dataset.slot)); return; }
+  const b = mergedBackups().find(x => String(x.id) === btn.dataset.id);
+  if (!b) return;
+  if (act === 'bakDownload') {
+    const raw = b.remoteOnly
+      ? await window.HCCloud.backups.get(b.id).catch(() => null)
+      : readBackup(b.key);
+    if (raw) downloadJSON(raw, `habitcasino-backup-${b.id}.json`);
+    else toast('Could not fetch that copy', 'var(--pink)');
+    return;
+  }
+  if (act === 'bakRestore') {
+    const what = b.kind === 'slot' ? (b.label || `slot ${b.slot}`) : fmtBackupWhen(b.ts);
+    if (!confirm(`Restore "${what}" (${backupLine(b)})?\n\nYour current save is backed up first, so this can be undone.`)) return;
+    const ok = b.remoteOnly ? await restoreCloudBackup(b.id) : restoreBackup(b.key);
+    if (ok) closeRecover();
+    renderBackupList();
+  }
+}
+$('#backupList').addEventListener('click', onBackupAction);
+// Shown at boot when load() failed. Deliberately not dismissible by tapping away: every
+// route out of it is an explicit decision about the unreadable save.
+function renderRecover() {
+  const modal = $('#recoverModal'); if (!modal) return;
+  const backups = mergedBackups();   // includes cloud-only copies once sync is up
+  const salvaged = !!(lastLoadFailed && lastLoadFailed.salvaged);
+  // The user's own slots come first — if they deliberately saved one, that's almost
+  // certainly the copy they want back.
+  const slots = backups.filter(b => b.kind === 'slot').sort((a, b) => (a.slot || 0) - (b.slot || 0));
+  const autos = backups.filter(b => b.kind !== 'slot');
+  const rows = backups.length
+    ? (slots.length ? `<div class="bak-head">YOUR BACKUPS</div>${slots.map(b => backupRowHTML(b, { primary: true })).join('')}` : '')
+      + (autos.length ? `<div class="bak-head">AUTOMATIC</div>${autos.map(b => backupRowHTML(b, { primary: !slots.length })).join('')}` : '')
+    : `<div class="subtle">No backups were found on this device${cloudOn ? ' or in the cloud' : ''}.</div>`;
+  modal.innerHTML = `
+    <div class="pass-title" style="color:var(--pink)">⚠️ SAVE PROBLEM</div>
+    <div class="subtle" style="margin-bottom:10px">
+      ${salvaged
+        ? `This version couldn't finish reading your save, so it was loaded in recovery mode. Your habits and tokens are here, but something in it didn't survive — restoring a backup is the safer option.`
+        : `This version couldn't read your save. <b>Nothing has been overwritten</b> — your old save is still on this device, untouched, and the app won't write over it until you choose below.`}
+    </div>
+    <div class="subtle" style="margin-bottom:10px">Reason: <code>${escapeHtml((lastLoadFailed && lastLoadFailed.error) || 'unknown')}</code></div>
+    <div class="bak-list">${rows}</div>
+    <hr class="set-sep">
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      <button class="btn ghost sm" data-act="bakDownloadBroken">⬇ Download the unreadable save</button>
+      ${salvaged
+        ? `<button class="btn green sm" data-act="bakKeepGoing">Continue in recovery mode</button>`
+        : `<button class="btn ghost sm" data-act="bakStartFresh" style="border-color:var(--pink);color:var(--pink)">Start fresh (erases it)</button>`}
+    </div>`;
+  $('#recoverOverlay').classList.add('show');
+}
+$('#recoverOverlay').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const act = btn.dataset.act;
+  // Restore/download/slot buttons behave identically here and in Settings.
+  if (act === 'bakRestore' || act === 'bakDownload' || act === 'bakSave' || act === 'bakClear') { onBackupAction(e); return; }
+  if (act === 'bakDownloadBroken') {
+    downloadJSON(readLocal() || '', 'habitcasino-unreadable-save.json');
+    toast('Downloaded — keep this file', 'var(--cyan)');
+    return;
+  }
+  if (act === 'bakKeepGoing') { lastLoadFailed = null; closeRecover(); return; }
+  if (act === 'bakStartFresh') {
+    if (!confirm('Erase the unreadable save and start over? Download it first if you want any chance of getting it back.')) return;
+    writeBackup(readLocal(), 'unreadable');   // even now, keep a copy
+    saveLocked = false; lastLoadFailed = null;
+    save(); fullRender(); closeRecover();
+    return;
   }
 });
 
@@ -9678,6 +10226,7 @@ function fullRender() {
   passEnsureWeek();      // roll the pass week / seed goals if needed
   updatePassFab();
   renderVersionUI();     // alpha/beta badge + switcher
+  renderBackupList();    // Settings → 💾 Data → 🛟 Backups
   renderCloudUI();       // Settings → ☁️ Cloud Save (shows "sign in to sync" when off)
   renderCloudBadge();    // red dot on More/Settings when a cloud save needs a decision
 }
@@ -9686,6 +10235,9 @@ function fullRender() {
 // network or on an account. The cloud layer attaches later, if and when it loads.
 processClosedDayOutcomes();
 fullRender();
+// If load() couldn't read the save, this is the first thing the user sees — before any
+// interaction can trigger a save() that would write over what's still down there.
+if (lastLoadFailed) renderRecover();
 
 // Collapsible settings: tap a section title to expand/collapse. Start collapsed for a clean menu.
 $('#view-settings').addEventListener('click', e => {
@@ -9723,7 +10275,7 @@ setInterval(() => {
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    doc, getDoc, setDoc
+    doc, getDoc, setDoc, deleteDoc
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -9745,6 +10297,16 @@ setInterval(() => {
   });
 
   const userDoc = uid => doc(db, 'users', uid);
+  /* ---- Backups live in their OWN subcollection, deliberately apart from the autosave
+     document. Nothing that writes users/{uid} can touch them, so a bad sync can't take
+     the backups down with the save it corrupted.
+
+       users/{uid}/backups/index   → { items: [ …metadata only… ] }
+       users/{uid}/backups/{id}    → { raw, ts }
+
+     The metadata lives in its own small document so listing backups is ONE read, rather
+     than pulling every full save down just to draw a list. ---- */
+  const backupDoc = (uid, id) => doc(db, 'users', uid, 'backups', id);
 
   // Firebase error codes → something a human can act on.
   function friendly(e) {
@@ -9821,6 +10383,50 @@ setInterval(() => {
         const snap = await getDoc(userDoc(auth.currentUser.uid));
         return snap.exists() ? snap.data() : null;
       } catch (e) { throw new Error(friendly(e)); }
+    },
+
+    /* ---- Backups. Separate documents, separate subcollection, never debounced:
+       a backup is an explicit act (or a once-per-launch snapshot), so each one is
+       written immediately rather than batched like the autosave. ---- */
+    backups: {
+      // One small read — metadata only, no save payloads come down with it.
+      async list() {
+        if (!auth.currentUser) return [];
+        try {
+          const snap = await getDoc(backupDoc(auth.currentUser.uid, 'index'));
+          const items = snap.exists() ? snap.data().items : null;
+          return Array.isArray(items) ? items : [];
+        } catch (e) { throw new Error(friendly(e)); }
+      },
+      async get(id) {
+        if (!auth.currentUser) return null;
+        try {
+          const snap = await getDoc(backupDoc(auth.currentUser.uid, String(id)));
+          return snap.exists() ? (snap.data().raw || null) : null;
+        } catch (e) { throw new Error(friendly(e)); }
+      },
+      // Payload first, then the index: if the second write fails the orphan is invisible
+      // and harmless, whereas the reverse would advertise a backup that isn't there.
+      async put(meta, raw, items) {
+        if (!auth.currentUser) return false;
+        const uid = auth.currentUser.uid;
+        try {
+          await setDoc(backupDoc(uid, String(meta.id)), { raw, ts: meta.ts || Date.now() });
+          await setDoc(backupDoc(uid, 'index'), { items, updatedAt: Date.now() });
+          return true;
+        } catch (e) { throw new Error(friendly(e)); }
+      },
+      // Index first here, for the same reason in reverse: drop the advertisement before
+      // the payload, so a half-finished delete never points at a missing document.
+      async remove(id, items) {
+        if (!auth.currentUser) return false;
+        const uid = auth.currentUser.uid;
+        try {
+          await setDoc(backupDoc(uid, 'index'), { items, updatedAt: Date.now() });
+          await deleteDoc(backupDoc(uid, String(id)));
+          return true;
+        } catch (e) { throw new Error(friendly(e)); }
+      }
     }
   };
 
