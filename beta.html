@@ -250,10 +250,12 @@
       box-shadow: 0 0 12px rgba(0,0,0,.75), 0 0 9px color-mix(in srgb, var(--pz) 35%, transparent);
       font-size: 16px;
     }
-    /* Count rides on the emoji's top-right corner, not the tile's. */
+    /* Count sits in the tile's top-right, tucked just LEFT of the ⋯ button rather than
+       under it — the two share that corner. ⋯ keeps its position because it's a control
+       users learn, and it shows on dim tiles too, which never have a count. */
     .pe-wrap { position: relative; display: inline-block; }
     .prize-count {
-      position: absolute; top: -4px; right: -14px; min-width: 21px; height: 21px; padding: 0 5px;
+      position: absolute; top: 6px; right: 38px; min-width: 21px; height: 21px; padding: 0 5px;
       display: grid; place-items: center; border-radius: 11px;
       background: var(--pz); color: #0a0012; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px;
       box-shadow: 0 0 10px var(--pz); border: 2px solid rgba(4,0,10,.85);
@@ -502,7 +504,13 @@
     .hrow, .hedit { touch-action: pan-y; }
     .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1; padding: 4px 9px 3px; }
     .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
-    .lvl-chev { flex: 0 0 auto; color: var(--ink-dim); opacity: .55; font-size: 15px; font-weight: 900; user-select: none; }
+    /* Swipe hints, parked in the gap between the habit name and its reward pill — space
+       the row was wasting anyway. Keeping them out of .hrow's own flex row is what lets
+       leveled and plain rows line their emoji and check buttons up with each other. */
+    .lvl-chevs { flex: 0 0 auto; display: flex; gap: 1px; }
+    .lvl-chev { color: var(--ink-dim); opacity: .55; font-size: 15px; font-weight: 900; user-select: none; }
+    /* Too narrow to spare the space: drop the hint, keep the gesture. */
+    @media (max-width: 380px) { .lvl-chevs { display: none; } }
     .tier-head { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; }
     .tier-dots { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; }
     .tdot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.18); }
@@ -1351,12 +1359,66 @@
     /* ============================================================
        HABITCASINOAI ADDITIONS — inline AI chat tab
        ============================================================ */
-    /* The Chat tab is a full-height flex column: intro + scrolling log + pinned input. */
+    /* The Chat tab is a row: [history drawer][conversation]. The conversation column is
+       the full-height flex column it always was — intro + scrolling log + pinned input —
+       it just moved down one level into .chat-main. */
     #view-chat.view.active { display: flex; }
     .chat-page {
-      display: flex; flex-direction: column; gap: 10px;
+      display: flex; flex-direction: row; gap: 10px; position: relative;
       /* fill the space between the header and the bottom nav */
       height: calc(100vh - 190px); min-height: 360px;
+    }
+    .chat-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+    .chat-titlerow { display: flex; align-items: center; gap: 10px; }
+    .chat-titlerow .section-title { margin-bottom: 0; }
+    .chat-menu { flex: 0 0 auto; font-size: 17px; }
+    /* --- history drawer: overlay on a phone, real column when there's room --- */
+    .chat-drawer {
+      position: absolute; inset: 0 auto 0 0; z-index: 6;
+      width: min(280px, 78vw); display: flex; flex-direction: column; gap: 8px;
+      padding: 10px; border-radius: 14px;
+      background: var(--gs-panel); border: 1px solid var(--gs-edge);
+      box-shadow: 12px 0 30px rgba(0,0,0,.55);
+      /* Past its own width AND the page's left padding: a bare -100% (or -104%) leaves a
+         1px hairline of the border showing at the screen edge, since the drawer's
+         resting left is inset from the viewport, not flush with it. */
+      transform: translateX(calc(-100% - 24px));
+      transition: transform .28s cubic-bezier(.22,.9,.3,1);
+    }
+    .chat-drawer.show { transform: none; }
+    .cd-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; }
+    .cd-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px; letter-spacing: 1.5px; color: var(--ink-dim); }
+    .cd-list { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .cd-row {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      padding: 9px 10px; border-radius: 11px;
+      background: var(--gs-card); border: 1px solid var(--gs-edge); transition: .15s;
+    }
+    .cd-row:hover { border-color: var(--gs-edge-hi); }
+    .cd-row.active { border-color: var(--cyan); background: rgba(0,240,255,.08); }
+    .cd-main { flex: 1 1 auto; min-width: 0; }
+    .cd-name { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cd-when { font-size: 10px; font-weight: 700; color: var(--ink-dim); margin-top: 1px; }
+    .cd-del {
+      flex: 0 0 auto; width: 24px; height: 24px; padding: 0; cursor: pointer;
+      display: grid; place-items: center; border-radius: 7px; font-size: 11px; font-family: inherit;
+      background: transparent; border: 0; color: var(--ink-dim);
+    }
+    .cd-del:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .cd-empty { font-size: 12px; color: var(--ink-dim); padding: 6px 2px; }
+    .chat-scrim {
+      position: absolute; inset: 0; z-index: 5; background: rgba(0,0,0,.55);
+      opacity: 0; pointer-events: none; transition: opacity .22s ease;
+    }
+    .chat-scrim.show { opacity: 1; pointer-events: auto; }
+    /* Wide enough for both at once: the same drawer becomes a pinned column, and the
+       controls that only exist to reveal an overlay stop existing. */
+    @media (min-width: 900px) {
+      .chat-drawer {
+        position: static; transform: none; width: 240px; flex: 0 0 240px;
+        box-shadow: none; border-radius: 14px;
+      }
+      .chat-menu, .chat-scrim { display: none; }
     }
     .chat-intro { flex: 0 0 auto; }
     .ai-log {
@@ -1937,19 +1999,33 @@
     <!-- ===================== PRIZES ===================== -->
     <!-- ASPIRATIONS (HabitCasinoAI) -->
     <section class="view" id="view-chat">
+      <!-- Conversation history is a drawer, the way chat apps do it: an overlay you pull
+           in with ☰ on a phone, and a permanent left column once there's room for one. -->
       <div class="chat-page">
-        <div class="chat-intro" style="position:relative">
-          <button class="btn ghost sm" id="pastQuestionnairesBtn" style="position:absolute;top:0;right:0" title="Past check-ins">🧭 Past</button>
-          <div class="section-title neon-cyan">💬 AI Chat</div>
-          <div class="subtle">Your coach already sees every habit, quest, reward and setting plus how you've actually been doing. Ask it to tune payouts or odds, rename or re-tier a reward, change a schedule, or just explain what your data shows.</div>
-          <div class="hint" id="aiKeyHint" style="display:none">⚠️ No API key set — add one in <b>Settings → 🤖 AI Coach</b> to start chatting.</div>
-        </div>
-        <div id="questionnaireBanner"></div>
-        <div class="chip-row" id="aiThreadChips" style="margin:0 0 8px;flex-shrink:0"></div>
-        <div class="ai-log" id="aiLog"></div>
-        <div class="ai-inputrow">
-          <input class="name-in" id="aiChatInput" placeholder="Talk to your coach…">
-          <button class="btn purple sm" id="aiChatSend">Send</button>
+        <aside class="chat-drawer" id="chatDrawer" aria-label="Conversations">
+          <div class="cd-head">
+            <span class="cd-title">CHATS</span>
+            <button class="btn ghost sm" data-act="newThread" title="Start a new chat">＋ New</button>
+          </div>
+          <div class="cd-list" id="chatDrawerList"></div>
+        </aside>
+        <div class="chat-scrim" id="chatScrim"></div>
+        <div class="chat-main">
+          <div class="chat-intro" style="position:relative">
+            <button class="btn ghost sm" id="pastQuestionnairesBtn" style="position:absolute;top:0;right:0" title="Past check-ins">🧭 Past</button>
+            <div class="chat-titlerow">
+              <button class="iconbtn chat-menu" id="chatMenuBtn" title="Conversations" aria-label="Conversations">☰</button>
+              <div class="section-title neon-cyan">💬 AI Chat</div>
+            </div>
+            <div class="subtle">Your coach already sees every habit, quest, reward and setting plus how you've actually been doing. Ask it to tune payouts or odds, rename or re-tier a reward, change a schedule, or just explain what your data shows.</div>
+            <div class="hint" id="aiKeyHint" style="display:none">⚠️ No API key set — add one in <b>Settings → 🤖 AI Coach</b> to start chatting.</div>
+          </div>
+          <div id="questionnaireBanner"></div>
+          <div class="ai-log" id="aiLog"></div>
+          <div class="ai-inputrow">
+            <input class="name-in" id="aiChatInput" placeholder="Talk to your coach…">
+            <button class="btn purple sm" id="aiChatSend">Send</button>
+          </div>
         </div>
       </div>
     </section>
@@ -3524,8 +3600,6 @@ function habitCardHTML(h, usualMin) {
   // section. Categories still drive Pass goals & happy hours, just invisibly.
   // No tier rim either — the tier only shows up as the coloured word in the pill.
   const td = habitToday(h);
-  const chevL = (lvl && li > 0) ? `<span class="lvl-chev">‹</span>` : '';
-  const chevR = (lvl && li < lvls.length - 1) ? `<span class="lvl-chev">›</span>` : '';
   // In-progress tracking: ▶ starts an open stopwatch (no pre-set duration needed) so the
   // AI learns actual time-on-task for every habit, not just ones explicitly marked "timed".
   // ✓ Quick Complete stays available alongside it for anything not worth timing.
@@ -3544,17 +3618,27 @@ function habitCardHTML(h, usualMin) {
   } else {
     rightBits = `<button class="hrow-check" data-act="done" aria-label="Complete">✓</button>`;
   }
-  // The name + sub + reward pill for ONE level. Everything else on the row (emoji,
-  // chevrons, the ✓/▶ buttons) is tier-independent and stays outside the carousel.
+  // The name + sub + reward pill for ONE level. Everything else on the row (emoji and the
+  // ✓/▶ buttons) is tier-independent and stays outside the carousel.
+  //
+  // The swipe chevrons live in HERE, in the dead space between the name and the pill.
+  // They used to be outer children of .hrow — one before the emoji, one after the
+  // buttons — which pushed both ends inward and left leveled rows visibly out of line
+  // with plain ones. Inside the pane they cost no layout the row wasn't already wasting,
+  // and they page themselves: each pane knows its own position in the ladder.
   const paneHTML = (name, reward, minutes, word) => {
     let subLine = timerSub != null ? timerSub : sub;
     if (timerSub == null && !complete && minutes > 0) subLine += ` · ~${fmtMins(minutes)} usual`;
+    const chevs = word
+      ? `<span class="lvl-chevs">${word.idx > 0 ? '<span class="lvl-chev">‹</span>' : ''}${word.idx < word.n - 1 ? '<span class="lvl-chev">›</span>' : ''}</span>`
+      : '';
     return `
       <div class="hrow-pane">
         <div class="hrow-main">
           <div class="hrow-name">${escapeHtml(name)}</div>
           <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
         </div>
+        ${chevs}
         ${word
           ? `<span class="hrow-reward lvl">+${reward} 🪙<i class="lvl-word" style="color:${word.color}">${word.label}</i></span>`
           : `<span class="hrow-reward">+${reward} 🪙</span>`}
@@ -3571,11 +3655,9 @@ function habitCardHTML(h, usualMin) {
   return `
     <div class="hrow ${complete ? 'done' : ''}${lvls ? ' leveled' : ''}" data-id="${h.id}" data-act="editHabit">
       ${hhTag}
-      ${chevL}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
       ${body}
       ${rightBits}
-      ${chevR}
     </div>`;
 }
 
@@ -5880,9 +5962,9 @@ function prizeTileHTML(r, ti) {
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
     <button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>
     ${locked ? `<span class="prize-lock" title="${escapeHtml(redemption.reason)}" aria-label="Reward locked">🔒</span>` : ''}
+    ${lit ? `<span class="prize-count">${n}</span>` : ''}
     <div class="pe-wrap">
       <div class="pe">${escapeHtml(r.emoji || ti.emoji)}</div>
-      ${lit ? `<span class="prize-count">${n}</span>` : ''}
     </div>
     <div class="pn">${escapeHtml(r.name)}</div>
     ${r.special ? '<div class="special-tag">SPECIAL</div>' : ''}
@@ -7258,17 +7340,33 @@ function deleteChatThread(id) {
   if (state.activeChatThreadId === id) state.activeChatThreadId = state.aiChatThreads[0] ? state.aiChatThreads[0].id : null;
   SFX.click(); save(); renderChat();
 }
+// Conversation history for the drawer. Rows carry the SAME data-thread / data-delthread
+// attributes the old chip row used, so the click handler moved over untouched.
+function renderChatDrawer() {
+  const host = $('#chatDrawerList'); if (!host) return;
+  const threads = state.aiChatThreads || [];
+  if (!threads.length) { host.innerHTML = `<div class="cd-empty">No conversations yet.</div>`; return; }
+  host.innerHTML = threads.map(t => {
+    const sel = t.id === state.activeChatThreadId;
+    const last = t.messages && t.messages.length ? t.messages[t.messages.length - 1].ts : t.createdAt;
+    return `
+      <div class="cd-row ${sel ? 'active' : ''}" data-thread="${t.id}">
+        <div class="cd-main">
+          <div class="cd-name">${escapeHtml(t.title || 'Chat')}</div>
+          <div class="cd-when">${fmtBackupWhen(last || Date.now())}${t.messages ? ` · ${t.messages.length} msg` : ''}</div>
+        </div>
+        <button class="cd-del" data-delthread="${t.id}" title="Delete this chat">✕</button>
+      </div>`;
+  }).join('');
+}
+function openChatDrawer() { $('#chatDrawer').classList.add('show'); $('#chatScrim').classList.add('show'); }
+function closeChatDrawer() { $('#chatDrawer').classList.remove('show'); $('#chatScrim').classList.remove('show'); }
+
 function renderChat() {
   const log = $('#aiLog'); if (!log) return;
   ensureQuestionnaireQueue(); renderQuestionnaireNav(); renderQuestionnaireBanner();
   const hint = $('#aiKeyHint'); if (hint) hint.style.display = activeKey() ? 'none' : '';
-  const chips = $('#aiThreadChips');
-  if (chips) {
-    chips.innerHTML = (state.aiChatThreads || []).map(t => {
-      const sel = t.id === state.activeChatThreadId;
-      return `<button class="chip ${sel ? 'sel' : ''}" data-thread="${t.id}" style="${sel ? 'background:var(--purple);border-color:var(--purple);color:#fff;' : 'border-color:var(--purple);color:var(--purple);'}">${escapeHtml(t.title)}${sel ? ` <span data-delthread="${t.id}" title="Delete this chat" style="margin-left:4px;opacity:.8">✕</span>` : ''}</button>`;
-    }).join('') + `<button class="chip" data-act="newThread" style="border-style:dashed">＋ New chat</button>`;
-  }
+  renderChatDrawer();
   const thread = activeChatThread();
   const chat = thread ? thread.messages : [];
   const intro = chat.length ? '' :
@@ -8242,18 +8340,22 @@ function sendFromInput() {
 }
 $('#aiChatSend').addEventListener('click', sendFromInput);
 $('#aiChatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendFromInput(); });
-$('#aiThreadChips').addEventListener('click', e => {
+// Bound to the drawer, not the old #aiThreadChips row that used to host these controls.
+// The body is unchanged — the drawer rows deliberately reuse the same data attributes.
+$('#chatDrawer').addEventListener('click', e => {
   const del = e.target.closest('[data-delthread]');
   if (del) { deleteChatThread(del.dataset.delthread); return; }
   if (e.target.closest('[data-act="newThread"]')) {
     if (aiBusy) return;
     const cur = activeChatThread();
-    if (cur && !cur.messages.length) { renderChat(); return; }  // already on an empty thread
-    newChatThread(); SFX.click(); renderChat(); return;
+    if (cur && !cur.messages.length) { renderChat(); closeChatDrawer(); return; }  // already on an empty thread
+    newChatThread(); SFX.click(); renderChat(); closeChatDrawer(); return;
   }
   const chip = e.target.closest('[data-thread]');
-  if (chip && !aiBusy) { state.activeChatThreadId = chip.dataset.thread; SFX.click(); save(); renderChat(); }
+  if (chip && !aiBusy) { state.activeChatThreadId = chip.dataset.thread; SFX.click(); save(); renderChat(); closeChatDrawer(); }
 });
+$('#chatMenuBtn').addEventListener('click', () => { SFX.click(); openChatDrawer(); });
+$('#chatScrim').addEventListener('click', closeChatDrawer);
 $('#aiLog').addEventListener('click', e => {
   const cardEl = e.target.closest('.prop-card'); if (!cardEl) return;
   const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
