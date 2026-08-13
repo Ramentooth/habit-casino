@@ -2676,6 +2676,20 @@ function deleteBackup(key) {
   if (entry) cloudBackupDelete(entry.id);
 }
 
+/* ---- Cloud + backup state, declared HERE rather than beside the code that uses it.
+   The boot sequence below calls writeBackup(), which calls cloudBackupPush(), which
+   reads cloudOn. `let` and `const` are in their temporal dead zone until their own line
+   runs, so leaving these down in the CLOUD SAVE section made that read throw at boot —
+   killing the script before the app rendered, which showed up as a blank frozen page.
+   Anything the boot path can reach has to be initialized before the boot path runs. ---- */
+const CLOUD_LIMIT = 700000;     // chars of JSON — comfortably under Firestore's 1 MiB doc cap
+let cloudOn = false;            // signed in AND reconciled — only then do we mirror upward
+let lastDailyBackupDay = null;  // guards the once-a-day snapshot in save()
+const CLOUD_BACKUP_AUTOS = 3;   // newest autos mirrored; slots are always kept
+let cloudBackupItems = [];      // metadata of what's up there (may include other devices')
+let cloudBackupBusy = false;
+let cloudBackupErr = '';
+
 // Set by load()'s catch. Read at boot to decide whether saving is safe.
 let lastLoadFailed = null;
 // While true, save() will not touch habitCasino.v1. This is what stops a failed load
@@ -2980,11 +2994,6 @@ function load(raw) {
 // localStorage always. The cloud is a mirror written only while signed in, so the app
 // behaves identically with no account: same synchronous write, same call sites (all 110
 // of them unchanged), and the network write is debounced by the cloud layer.
-const CLOUD_LIMIT = 700000;   // chars of JSON — comfortably under Firestore's 1 MiB doc cap
-// Declared here rather than down in the CLOUD SAVE section: save() reads it, and a `let`
-// is in its temporal dead zone until its own line runs, so a save() during startup would
-// throw if this lived beside the rest of the cloud state.
-let cloudOn = false;          // signed in AND reconciled — only then do we mirror upward
 function save() {
   // A save we couldn't read is still sitting in habitCasino.v1 and may be the only good
   // copy left. Nothing gets written over it until the recovery screen resolves it.
@@ -3012,7 +3021,6 @@ function save() {
   }
   if (cloudOn && window.HCCloud) window.HCCloud.save(json);
 }
-let lastDailyBackupDay = null;
 function maybeDailyBackup() {
   const day = todayStr();
   if (lastDailyBackupDay === day) return;         // already handled this session
@@ -3081,9 +3089,16 @@ function processClosedDayOutcomes() {
    ================================================================= */
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+// ⚠️ Declared as a hoisted `function`, not `const`. load() runs at boot, hundreds of
+// lines above this point, and normalizeHabit() calls clamp() for any habit that has a
+// scheduledMin. As a `const` that read hit the temporal dead zone and threw
+// "Cannot access 'clamp' before initialization" — which load()'s catch turned into a
+// clean defaultState(), which the next save() wrote over the real save. That is the bug
+// that wiped saves twice. It only fired once a habit had been given a time, which is why
+// it looked random. Keep these hoisted.
+function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
 const randInt = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }   // hoisted — see clamp above
 
 function todayStr(offset = 0) {
   const d = new Date(); d.setDate(d.getDate() + offset);
@@ -9641,10 +9656,6 @@ window.HCCloudSynced = function () { cloudSyncedAt = Date.now(); renderCloudUI()
    Slots always go up. Autos go up too, but only the newest few — enough to survive
    losing the device, without a write per launch turning into a storage bill.
    ================================================================= */
-const CLOUD_BACKUP_AUTOS = 3;   // newest autos mirrored; slots are always kept
-let cloudBackupItems = [];      // metadata of what's up there (may include other devices')
-let cloudBackupBusy = false;
-let cloudBackupErr = '';
 
 // What the cloud index SHOULD say, given this device's shelf. Slots first, then the
 // newest autos. Anything from another device stays in the list untouched — it isn't
