@@ -1722,6 +1722,20 @@
       transition: transform .26s cubic-bezier(.22,.9,.3,1), opacity .18s ease;
     }
     .pick-sheet.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    /* The copy picker opens FROM the editor sheet (z-index 78), so it has to outrank it. */
+    .pick-sheet.copy-sheet { z-index: 80; }
+    /* Collapsible groups inside a picker: the header is the toggle. */
+    .pick-group > .pick-sec { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .pick-group > .pick-sec::after { content: '▾'; margin-left: auto; transition: transform .18s ease; }
+    .pick-group.collapsed > .pick-sec::after { transform: rotate(-90deg); }
+    .pick-group.collapsed > .pick-body { display: none; }
+    .pick-count { font-size: 10px; opacity: .75; }
+    /* Loadout divider inside a group — habits from different loadouts never blur together. */
+    .pick-sub {
+      padding: 8px 16px 4px; font-size: 10px; letter-spacing: .8px; color: var(--ink-dim);
+      text-transform: uppercase; border-top: 1px solid var(--gs-edge);
+    }
+    .pick-sub:first-child { border-top: 0; }
     .pick-head {
       position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px; background: var(--gs-panel); border-bottom: 1px solid var(--gs-edge);
@@ -1792,6 +1806,16 @@
     </div>
   </div>
 
+  <!-- Pick an existing habit to copy into the one being edited. Same sheet shape as the
+       Schedule's ＋ picker, layered above the editor sheet it was opened from. -->
+  <div class="pick-sheet copy-sheet" id="copyPickSheet" aria-hidden="true">
+    <div class="pick-head">
+      <span>Copy from an existing habit</span>
+      <button class="pass-close" data-act="copyPickClose" title="Close">✕</button>
+    </div>
+    <div id="copyPickBody"></div>
+  </div>
+
   <div class="more-scrim" id="moreScrim"></div>
 
   <nav id="nav" class="bottomnav">
@@ -1800,15 +1824,16 @@
          no matter how tall the bar ends up (safe-area inset, font scaling, …). -->
     <div class="more-sheet" id="moreSheet" role="menu" aria-hidden="true">
       <div class="more-row" data-view="stats" role="menuitem"><span class="mr-ico">📊</span><span class="mr-label">Stats</span></div>
-      <div class="more-row" data-view="schedule" role="menuitem"><span class="mr-ico">📅</span><span class="mr-label">Schedule</span></div>
+      <div class="more-row" data-view="chat" role="menuitem"><span class="mr-ico">💬</span><span class="mr-label">Chat</span></div>
       <div class="more-row" data-view="settings" role="menuitem"><span class="mr-ico">⚙️</span><span class="mr-label">Settings</span></div>
     </div>
     <div class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Casino</span></div>
     <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
     <div class="tab active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
     <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
-    <div class="tab" data-view="chat" style="position:relative"><span class="ti">💬</span><span class="tl">Chat</span><span id="qNavBadge" style="display:none;position:absolute;top:2px;right:10px;background:var(--purple,#b026ff);color:#fff;font-size:10px;font-weight:800;line-height:1;border-radius:8px;padding:2px 5px;min-width:14px;text-align:center"></span></div>
-    <div class="tab more-tab" id="moreTab" role="button" aria-expanded="false"><span class="ti">⋯</span><span class="tl">More</span></div>
+    <div class="tab" data-view="schedule"><span class="ti">📅</span><span class="tl">Schedule</span></div>
+    <!-- Chat lives behind More now, so its pending check-in count rides the More tab. -->
+    <div class="tab more-tab" id="moreTab" role="button" aria-expanded="false" style="position:relative"><span class="ti">⋯</span><span class="tl">More</span><span id="qNavBadge" style="display:none;position:absolute;top:2px;right:10px;background:var(--purple,#b026ff);color:#fff;font-size:10px;font-weight:800;line-height:1;border-radius:8px;padding:2px 5px;min-width:14px;text-align:center"></span></div>
   </nav>
 
   <main>
@@ -3720,6 +3745,9 @@ function habitEditHTML(h, pageIdx) {
           <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0)}</span>
         </div>
         <div class="hedit-r">${addTierBtn}</div>
+        <div class="hedit-r">
+          <button class="btn ghost sm" data-act="copyHabit" title="Fill this habit in from one you already have — including habits in your other loadouts">⧉ Copy from…</button>
+        </div>
         <div class="hedit-r">
           <button class="btn ghost sm" data-act="graduate" title="Archive this habit — it leaves the rotation but keeps its history">🎓 Graduate</button>
           <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
@@ -8381,7 +8409,7 @@ $('#aiClearBtn').addEventListener('click', clearAIData);
    EVENTS / WIRING
    ================================================================= */
 // Nav. Five tabs live in the bar; the rest live behind "More" (see MORE_VIEWS).
-const MORE_VIEWS = ['stats', 'schedule', 'settings'];
+const MORE_VIEWS = ['stats', 'chat', 'settings'];
 $$('#nav .tab[data-view]').forEach(t => t.addEventListener('click', () => { SFX.click(); closeMore(); switchView(t.dataset.view); }));
 
 function openMore() {
@@ -8412,6 +8440,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && moreIsOpen
 
 function switchView(name) {
   flushUltra(); // bank any unrevealed pack cards before navigating away
+  // Leaving Settings folds every section back up, so it always opens as a short menu
+  // instead of wherever the last visit left it scrolled to.
+  if (name !== 'settings' && $('#view-settings').classList.contains('active')) {
+    $$('#view-settings .panel.set-section').forEach(p => p.classList.add('collapsed'));
+  }
   $$('#nav .tab[data-view]').forEach(t => t.classList.toggle('active', t.dataset.view === name));
   // An overflow view has no tab of its own, so "More" carries the active state for it.
   $('#moreTab').classList.toggle('active', MORE_VIEWS.includes(name));
@@ -8688,6 +8721,10 @@ function onHabitsClick(e) {
     const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
     SFX.click(); openTierLadder(id); return;
   }
+  if (act === 'copyHabit') {
+    const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
+    SFX.click(); openCopyPicker(id); return;
+  }
   if (act === 'removeTier') {
     const box = e.target.closest('.hedit'); if (!box) return;
     const h = state.habits.find(x => x.id === box.dataset.id);
@@ -8873,6 +8910,79 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (tierLadderId) closeTierLadder();          // ladder sits on top — it closes first
   else if (editorIsOpen()) closeEditor();
+});
+
+/* =================================================================
+   COPY FROM AN EXISTING HABIT
+
+   Duplicating across loadouts is the point: each loadout has its own complete set of
+   habits, so re-typing the same routine for a second loadout is the tedious case this
+   removes. The copy fills the habit you're ALREADY editing rather than creating a new
+   one — so it works the same whether you just pressed "+ Add habit" or opened an old
+   habit you want to re-base on another.
+   ================================================================= */
+let copyPickForId = null;
+// Everything copyable: the habit's definition, not its record. Streak, history, timers
+// and the day's progress deliberately stay with the original.
+function copyHabitDefinition(from, into) {
+  into.emoji = from.emoji;
+  into.emojiAuto = false;                       // an explicit choice now — stop guessing
+  into.name = from.name;
+  into.category = from.category || 'Unsorted';
+  into.reward = from.reward;
+  into.repeatable = !!from.repeatable;
+  into.cap = Math.max(1, parseInt(from.cap) || 1);
+  into.days = Array.isArray(from.days) && from.days.length === 7 ? from.days.slice() : [true, true, true, true, true, true, true];
+  into.why = from.why || '';
+  into.timedMinutes = from.timedMinutes || 0;
+  into.section = from.section === 'extra' ? 'extra' : 'daily';
+  into.scheduledMin = Number.isFinite(from.scheduledMin) ? from.scheduledMin : null;
+  // Deep-copied so editing a tier on the copy never reaches back into the original.
+  into.tiers = Array.isArray(from.tiers) ? from.tiers.map(t => ({ name: t.name, reward: t.reward, minutes: t.minutes || 0 })) : [];
+  into.baseIdx = Number.isFinite(from.baseIdx) ? from.baseIdx : null;
+  into.curTier = null;
+}
+function openCopyPicker(id) {
+  copyPickForId = id;
+  renderCopyPicker();
+  $('#copyPickSheet').classList.add('show');
+  $('#copyPickSheet').setAttribute('aria-hidden', 'false');
+}
+function closeCopyPicker() {
+  copyPickForId = null;
+  $('#copyPickSheet').classList.remove('show');
+  $('#copyPickSheet').setAttribute('aria-hidden', 'true');
+}
+function renderCopyPicker() {
+  const body = $('#copyPickBody'); if (!body) return;
+  // Every habit except the one being edited — archived ones included, since graduating a
+  // habit and then rebuilding it in another loadout is a real reason to reach for this.
+  const all = state.habits.filter(h => h.id !== copyPickForId && (h.name || '').trim());
+  if (!all.length) { body.innerHTML = `<div class="subtle" style="padding:14px 16px">No other habits to copy from yet.</div>`; return; }
+  const cur = currentLoadout();
+  const loadouts = [...new Set(all.map(h => h.loadout || 'Default'))]
+    .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));   // current loadout first
+  body.innerHTML = loadouts.map(lo => {
+    const list = all.filter(h => (h.loadout || 'Default') === lo);
+    return `<div class="pick-sec">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}</div>` + list.map(h => `
+      <button class="pick-row" data-copyfrom="${h.id}">
+        <span class="pick-e">${escapeHtml(h.emoji || '⭐')}</span>
+        <span class="pick-n">${escapeHtml(h.name)}</span>
+        <span class="subtle">${h.archived ? 'graduated' : (h.section === 'extra' ? 'extra' : 'daily')} · +${h.reward}🪙</span>
+      </button>`).join('');
+  }).join('');
+}
+$('#copyPickSheet').addEventListener('click', e => {
+  if (e.target.closest('[data-act="copyPickClose"]')) { SFX.click(); closeCopyPicker(); return; }
+  const btn = e.target.closest('[data-copyfrom]'); if (!btn) return;
+  const into = state.habits.find(x => x.id === copyPickForId);
+  const from = state.habits.find(x => x.id === btn.dataset.copyfrom);
+  if (!into || !from) { closeCopyPicker(); return; }
+  copyHabitDefinition(from, into);
+  SFX.coin(); save();
+  closeCopyPicker();
+  renderHabits(); syncEditorSheet();             // the open editor repaints with the copied values
+  toast(`Copied “${from.name}”`, 'var(--green)');
 });
 
 /* =================================================================
@@ -10028,6 +10138,9 @@ $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
 
 /* ---- + button: put a habit or quest onto the day you're looking at ---------------- */
+// Which picker groups are open. Kept across opens so the sections you actually use stay
+// expanded; Daily starts open because it's the common case.
+const schedPickOpenGroups = { daily: true, extra: false, task: false };
 function schedPickOpen() {
   const dateStr = todayStr(schedOffset);
   const shown = new Set(computeDayBlocks(dateStr).map(b => b.refId).filter(Boolean));
@@ -10037,15 +10150,33 @@ function schedPickOpen() {
     <button class="pick-row" data-pick="${o.id}" data-pickkind="${kind}">
       <span class="pick-e">${escapeHtml(o.emoji || (kind === 'task' ? '🎯' : '⭐'))}</span>
       <span class="pick-n">${escapeHtml(o.name)}</span>
-      <span class="subtle">${kind === 'task' ? 'quest' : (o.section === 'extra' ? 'extra' : 'daily')}</span>
+      <span class="subtle">${kind === 'task' ? 'quest' : `+${o.reward}🪙`}</span>
     </button>`;
-  const sec = (title, list, kind) => list.length
-    ? `<div class="pick-sec">${title}</div>${list.map(o => row(o, kind)).join('')}` : '';
+  // Habits are split by loadout under a divider — each loadout is its own set of habits,
+  // and without the split a name appearing in two loadouts is indistinguishable.
+  const byLoadout = list => {
+    const cur = currentLoadout();
+    const names = [...new Set(list.map(h => h.loadout || 'Default'))]
+      .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));
+    return names.map(lo =>
+      `<div class="pick-sub">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}</div>`
+      + list.filter(h => (h.loadout || 'Default') === lo).map(h => row(h, 'habit')).join('')
+    ).join('');
+  };
+  const group = (key, title, count, inner) => `
+    <div class="pick-group ${schedPickOpenGroups[key] ? '' : 'collapsed'}" data-group="${key}">
+      <div class="pick-sec" data-act="pickToggle">${title} <span class="pick-count">${count}</span></div>
+      <div class="pick-body">${count ? inner : `<div class="subtle" style="padding:10px 16px">Nothing left to add.</div>`}</div>
+    </div>`;
+  const daily = habits.filter(h => h.section !== 'extra');
+  const extra = habits.filter(h => h.section === 'extra');
   const label = schedOffset === 0 ? 'today' : schedOffset === 1 ? 'tomorrow'
     : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   $('#schedPickTitle').textContent = `Add to ${label}`;
-  $('#schedPickBody').innerHTML = (sec('Habits', habits, 'habit') + sec('Quests', quests, 'task'))
-    || `<div class="subtle" style="padding:14px 0">Everything is already on this day.</div>`;
+  $('#schedPickBody').innerHTML =
+      group('daily', '🗓️ Daily habits', daily.length, byLoadout(daily))
+    + group('extra', '✨ Extra habits', extra.length, byLoadout(extra))
+    + group('task',  '📋 Tasks',        quests.length, quests.map(t => row(t, 'task')).join(''));
   $('#schedPickSheet').classList.add('show');
   $('#schedPickSheet').setAttribute('aria-hidden', 'false');
 }
@@ -10063,6 +10194,13 @@ function nextFreeMinute(dateStr) {
 $('#schedAddBtn').addEventListener('click', () => { SFX.click(); schedPickOpen(); });
 $('#schedPickSheet').addEventListener('click', e => {
   if (e.target.closest('[data-act="schedPickClose"]')) { SFX.click(); schedPickClose(); return; }
+  const head = e.target.closest('[data-act="pickToggle"]');
+  if (head) {
+    const g = head.closest('.pick-group');
+    const open = g.classList.toggle('collapsed') === false;
+    schedPickOpenGroups[g.dataset.group] = open;
+    SFX.click(); return;
+  }
   const pick = e.target.closest('[data-pick]'); if (!pick) return;
   const dateStr = todayStr(schedOffset);
   const kind = pick.dataset.pickkind;
