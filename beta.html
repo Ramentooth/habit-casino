@@ -354,8 +354,12 @@
       transition: top .28s cubic-bezier(.4,0,.2,1), opacity .2s ease;
     }
     .sched-sub span { position: absolute; left: -38px; top: -7px; font-size: 9.5px; color: var(--ink-dim); opacity: .8; }
-    .sched-grid.zoom-4 .sched-sub.half, .sched-grid.zoom-5 .sched-sub.half { opacity: .5; }
-    .sched-grid.zoom-6 .sched-sub, .sched-grid.zoom-7 .sched-sub { opacity: .5; }
+    /* Detail appears as you zoom in: half-hours from ~96px/hour, quarters from ~168px.
+       Index ranges doubled along with SCHED_ZOOMS — old 4-5 → 8-11, old 6-7 → 12-14. */
+    .sched-grid.zoom-8 .sched-sub.half, .sched-grid.zoom-9 .sched-sub.half,
+    .sched-grid.zoom-10 .sched-sub.half, .sched-grid.zoom-11 .sched-sub.half { opacity: .5; }
+    .sched-grid.zoom-12 .sched-sub, .sched-grid.zoom-13 .sched-sub,
+    .sched-grid.zoom-14 .sched-sub { opacity: .5; }
     /* Draggable predictions: grab cursor, and touch-action:none so a vertical drag moves
        the block instead of scrolling the page out from under it. */
     .sched-block.draggable { cursor: grab; touch-action: none; }
@@ -420,6 +424,13 @@
     .view { display: none; animation: fadeUp .35s ease; }
     .view.active { display: block; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    /* A transform on an element makes it the containing block for its position:fixed
+       descendants. These two views hold a bar docked to the bottom of the SCREEN, so for
+       the 0.35s the entry animation held a translateY the bar was positioned against the
+       (page-tall) view instead — it appeared mid-screen and snapped down when the
+       animation ended. Fade them in without the slide; every other view keeps fadeUp. */
+    #view-tasks, #view-casino { animation-name: fadeIn; }
 
     .panel {
       background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 18px;
@@ -492,18 +503,18 @@
     .habit.done .check { opacity: 1; filter: drop-shadow(0 0 8px var(--green)); }
 
     /* ---------- Compact habit checklist (Habits tab) ---------- */
-    .habit-list { display: flex; flex-direction: column; gap: 8px; }
+    .habit-list { display: flex; flex-direction: column; gap: 6px; }
     .hrow {
-      display: flex; align-items: center; gap: 12px; cursor: pointer;
-      padding: 11px 14px; border-radius: 14px; transition: .15s; position: relative;
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      padding: 5px 10px; border-radius: 11px; transition: .15s; position: relative;
       background: linear-gradient(160deg, rgba(176,38,255,0.10), rgba(20,6,42,0.55));
       border: 1px solid var(--panel-edge);
     }
     /* Habit difficulty levels. The ONLY coloured thing is the "tier N" word in the pill —
        no rim, no tinted pill, no coloured dots. Swipe the row to change tier. */
     .hrow, .hedit { touch-action: pan-y; }
-    .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1; padding: 4px 9px 3px; }
-    .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
+    .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 0; line-height: 1.05; padding: 2px 7px; }
+    .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
     /* Swipe hints, parked in the gap between the habit name and its reward pill — space
        the row was wasting anyway. Keeping them out of .hrow's own flex row is what lets
        leveled and plain rows line their emoji and check buttons up with each other. */
@@ -618,19 +629,38 @@
     .cat-swatch.none { width: 42px; height: 30px; border-radius: 8px; border: 1px dashed var(--panel-edge); flex: 0 0 auto; }
     .cat-name { flex: 1 1 auto; font-weight: 700; }
     .hrow:active { transform: scale(0.985); }
-    .hrow-emoji { flex: 0 0 auto; font-size: 24px; line-height: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,.25)); }
-    .hrow-main { flex: 1 1 auto; min-width: 0; }
-    .hrow-name { font-weight: 700; font-size: 16px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Rows are ONE line and roughly half their old height, so more of the list fits on a
+       phone. Everything that used to sit on a second line is now a chip beside the name. */
+    .hrow-emoji { flex: 0 0 auto; font-size: 18px; line-height: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,.25)); }
+    .hrow-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; }
+    .hrow-name { font-weight: 700; font-size: 14px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hrow-sub { font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 1px; }
     .hrow-sub.hot { color: var(--orange); }
+    /* Streak leads the name; it's the one number worth reading before the label itself. */
+    .row-streak {
+      flex: 0 0 auto; font-size: 11px; font-weight: 800; color: var(--orange);
+      white-space: nowrap; letter-spacing: -.3px;
+    }
+    /* Everything else the second line used to hold. Shrink-to-nothing before the name
+       does, so a long name never pushes chips off the row. */
+    .row-chip {
+      flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap;
+      font-size: 10px; font-weight: 800; color: var(--ink-dim);
+      background: rgba(255,255,255,.07); border-radius: 999px; padding: 1px 6px;
+    }
+    .row-chip b { font-weight: 800; }
+    .row-chip.live { color: var(--cyan); background: rgba(0,240,255,.12); }
+    .row-chip.spin { color: var(--gold); background: rgba(255,215,0,.14); }
+    .row-chip.due.today { color: var(--gold); background: rgba(255,215,0,.14); }
+    .row-chip.due.late { color: var(--pink); background: rgba(255,27,141,.16); }
     .hrow-reward {
-      flex: 0 0 auto; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; white-space: nowrap;
+      flex: 0 0 auto; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px; white-space: nowrap;
       color: var(--yellow); background: rgba(255,230,0,0.10); border: 1px solid rgba(255,230,0,0.4);
-      padding: 3px 9px; border-radius: 999px;
+      padding: 2px 7px; border-radius: 999px;
     }
     .hrow-check {
-      flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border-radius: 9px; cursor: pointer; font-family: inherit;
-      display: grid; place-items: center; font-size: 18px; font-weight: 900; color: transparent;
+      flex: 0 0 auto; width: 26px; height: 26px; padding: 0; border-radius: 8px; cursor: pointer; font-family: inherit;
+      display: grid; place-items: center; font-size: 14px; font-weight: 900; color: transparent;
       background: rgba(255,255,255,0.05); border: 2px solid var(--panel-edge); transition: .15s;
     }
     .hrow-check:active { transform: scale(.9); }
@@ -672,6 +702,64 @@
     .bonus-chip { flex: 0 0 auto; text-align: center; }
     .bonus-chip .subtle { font-size: 10px; }
     .bonus-chip .bonus-amt { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 17px; }
+
+    /* ---------- Home ----------------------------------------------------------------
+       Deliberately quieter than the rest of the app: hairline borders, no glow, one
+       accent per element. This screen is read at a glance, so nothing on it competes. */
+    .home-sec-title {
+      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim);
+      margin: 22px 0 10px;
+    }
+    .home-rule { height: 1px; background: var(--gs-edge, rgba(255,255,255,.12)); margin: 26px 0 0; }
+
+    /* NOW — the current block, its span, and what follows it. */
+    .now-card { border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); border-radius: 14px; padding: 16px 18px; }
+    .now-kicker {
+      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px;
+    }
+    .now-title { font-size: 19px; font-weight: 700; display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .now-title .nt-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* The span rail: start and end pinned to the ends, the line between them, and a dot
+       sitting at the current time's fraction of the block. */
+    .now-rail { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-variant-numeric: tabular-nums; }
+    .now-rail .nr-t { font-size: 15px; color: var(--ink); flex: 0 0 auto; }
+    .now-line { position: relative; flex: 1 1 auto; height: 1px; background: var(--gs-edge-hi, rgba(255,255,255,.28)); }
+    .now-dot {
+      position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 10px var(--cyan); transform: translate(-50%, -50%);
+    }
+    .now-atlabel { margin-top: 7px; text-align: center; font-size: 14px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+    .now-next { margin-top: 14px; font-size: 15px; color: var(--ink-dim); }
+    .now-next b { color: var(--ink); font-weight: 700; }
+    .now-empty { font-size: 15px; color: var(--ink-dim); }
+
+    /* Habits gives Due Now a full banner and can afford the big empty state; on Home the
+       board is one band among three, so an idle one shrinks to a single line. */
+    #homeDue .empty { padding: 14px 0; margin-bottom: 6px !important; }
+    #homeDue .empty .big { font-size: 22px; margin-bottom: 2px; }
+
+    /* TODAY — the one-line "N of M done" tally under the board. */
+    .home-tally { text-align: center; font-size: 14px; color: var(--ink-dim); margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+    /* PACE — filled portion solid, the remainder a dotted ghost of what's left. */
+    .pace-row { display: flex; align-items: center; gap: 14px; }
+    .pace-bar {
+      flex: 1 1 auto; height: 22px; border-radius: 4px; overflow: hidden; display: flex;
+      border: 1px solid var(--gs-edge-hi, rgba(255,255,255,.28));
+    }
+    .pace-fill { background: var(--ink); transition: width .5s cubic-bezier(.2,.8,.2,1); }
+    .pace-rest {
+      flex: 1 1 auto;
+      background-image: radial-gradient(currentColor .8px, transparent .9px);
+      background-size: 4px 4px; color: var(--ink-dim); opacity: .6;
+    }
+    .pace-pct { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; flex: 0 0 auto; min-width: 52px; }
+    .pace-hist { margin-top: 20px; display: grid; grid-template-columns: auto auto; gap: 6px 26px; justify-content: start; }
+    .pace-hist .ph-k { color: var(--ink-dim); font-size: 15px; }
+    .pace-hist .ph-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pace-hist .ph-v.none { font-weight: 400; color: var(--ink-dim); }
 
     /* ---------- Casino ---------- */
     #view-casino { padding-bottom: 88px; }
@@ -791,8 +879,92 @@
     @keyframes pickPulse { 50% { transform: scale(1.04); } }
 
     /* Quest to-do list + quick-add bar (Tasks tab) */
-    .quest-list { display: flex; flex-direction: column; gap: 8px; flex: 1 1 300px; }
+    .quest-list { display: flex; flex-direction: column; gap: 6px; flex: 1 1 300px; }
     .qrow .hrow-check { border-radius: 50%; }
+
+    /* --- Tasks: Add / List / Matrix, one row of equal thirds, docked to the bottom ---
+       Same geometry and chrome as the casino's .game-tabs bar: position:fixed above the
+       tab bar, not sticky inside the scroller, so the row sits in exactly one place no
+       matter how long the list gets. The view reserves the height below it. */
+    /* The baseline for the closed dock. syncTaskDockRoom() reads this value back and adds
+       the quick-add form's measured height on top when it's open, so this rule stays the
+       single source of truth for the number. */
+    #view-tasks { padding-bottom: 88px; }
+    .task-dock {
+      position: fixed; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right));
+      bottom: calc(67px + env(safe-area-inset-bottom)); z-index: 38;
+      max-width: 720px; margin: 0 auto; padding: 6px;
+      border: 1px solid var(--panel-edge); border-radius: 17px;
+      background: rgba(11,2,23,.94); box-shadow: 0 -7px 26px rgba(0,0,0,.58);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+    /* Inside the dock the form is a plain stack — the dock already carries the panel
+       chrome, and a tall category list scrolls rather than growing off-screen. */
+    .task-dock .quest-add { margin: 0 0 6px; max-height: 46vh; overflow-y: auto; }
+    .task-actionbar { display: flex; gap: 6px; }
+    /* Vanishes from layout so its two buttons become thirds of .task-actionbar itself. */
+    .task-viewbar { display: contents; }
+    .task-actionbar > button, .task-viewbar > button { flex: 1 1 0; min-width: 0; white-space: nowrap; padding-left: 4px; padding-right: 4px; }
+    .view-seg { flex: 1 1 0; }
+    .view-seg.sel { background: var(--gs-lite) !important; color: var(--gs-on-lite) !important; border-color: transparent !important; }
+
+    /* --- Eisenhower matrix -------------------------------------------------------- */
+    .matrix-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .quad-axis {
+      display: flex; justify-content: space-between; padding: 0 2px;
+      font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase; color: var(--ink-dim);
+    }
+    .quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .quad {
+      display: flex; flex-direction: column; min-width: 0;
+      border-radius: 12px; padding: 8px; transition: border-color .15s, background .15s;
+      background: var(--gs-panel); border: 1px dashed var(--gs-edge);
+    }
+    /* Each quadrant is rimmed in its own colour (--qc, set per box) so the four read
+       apart instantly. Unsorted has no --qc and stays neutral grey on purpose. */
+    .quad[style*="--qc"] { border-style: solid; border-color: color-mix(in srgb, var(--qc) 55%, transparent); }
+    .quad[style*="--qc"] .quad-head { color: var(--qc); }
+    .quad[style*="--qc"] .quad-n { color: color-mix(in srgb, var(--qc) 75%, #fff 25%); }
+    /* The box the finger is currently over. */
+    .quad.over { border-color: var(--cyan) !important; background: rgba(0,240,255,.07); border-style: solid; }
+    .quad-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px;
+      font-size: 11px; font-weight: 800; letter-spacing: .3px;
+    }
+    .quad.unsorted .quad-head { cursor: pointer; margin-bottom: 0; padding: 2px 0; }
+    .quad.unsorted:not(.folded) .quad-head { margin-bottom: 6px; }
+    .quad.unsorted.folded .quad-body { display: none; }
+    .quad-n { font-family: 'Orbitron', sans-serif; font-size: 10px; color: var(--ink-dim); }
+    .quad-body { display: flex; flex-direction: column; gap: 5px; min-height: 46px; max-height: 30vh; overflow-y: auto; }
+    .quad.unsorted .quad-body { max-height: 26vh; }
+    .quad-empty { font-size: 10px; color: var(--ink-dim); padding: 12px 4px; text-align: center; }
+    /* Rows in a box are already compact; drop the left category stripe so four
+       narrow columns don't lose more width to it. */
+    .quad .qrow { border-left-width: 1px !important; padding: 4px 6px; gap: 5px; }
+    /* A quadrant column is ~170px wide. Inside the 2×2 boxes a row is stripped to the
+       four things you actually act on — emoji, name, ▶ and ✓. Reward, due date, progress
+       and timer all stay readable in List view and in the editor. */
+    .quad-grid .qrow .hrow-reward, .quad-grid .qrow .row-chip { display: none; }
+    .quad-grid .qrow .hrow-check { width: 22px; height: 22px; font-size: 12px; border-width: 1px; }
+    .quad-grid .qrow .hrow-emoji { font-size: 15px; }
+    .quad-grid .qrow .hrow-name { font-size: 13px; }
+    .qrow.quad-lifted {
+      position: fixed; z-index: 60; pointer-events: none;
+      box-shadow: 0 12px 26px rgba(0,0,0,.6); opacity: .95; transform: scale(1.03);
+    }
+    body.quad-dragging { user-select: none; }
+    body.quad-dragging .quad-body { overflow: hidden; }   /* no scroll-fighting mid-drag */
+    #taskMatrix .qrow { touch-action: none; }             /* the drag owns the gesture */
+
+    /* Editor: due date + quadrant picker */
+    .date-in {
+      background: var(--gs-ctl); border: 1px solid var(--gs-edge); color: var(--ink);
+      border-radius: 8px; padding: 3px 6px; font-family: inherit; font-size: 13px;
+    }
+    .qgrid-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .qgrid-pick .quad-btn { flex: 1 1 44%; }
+    .quad-btn.sel { background: var(--gs-lite) !important; color: var(--gs-on-lite) !important; border-color: transparent !important; }
     .qrow.spin-pick { border-color: var(--yellow); box-shadow: 0 0 26px var(--yellow); animation: pickPulse .55s ease 3; }
     .spin-tag { color: var(--yellow); font-weight: 800; }
     .qcat { font-size: 11px; padding: 3px 8px; color: var(--ink-dim); }
@@ -1522,11 +1694,11 @@
     #view-tasks .oneoff-layout { display: block; overflow-x: hidden; }
     #view-tasks .quest-list { overflow: visible; }
     #view-tasks .qrow { grid-template-columns: auto minmax(0,1fr) auto; }
-    #view-tasks .qrow .hrow-main, #view-tasks .qrow .hrow-name { min-width: 0; overflow-wrap: anywhere; }
+    #view-tasks .qrow .hrow-main, #view-tasks .qrow .hrow-name { min-width: 0; }
     @media (max-width: 560px) {
       #view-tasks .oneoff-section { padding: 0; }
       #view-tasks .quest-add { padding: 10px; }
-      #view-tasks .qrow { padding: 10px 8px; gap: 8px; }
+      #view-tasks .qrow { padding: 5px 8px; gap: 8px; }
       #view-tasks .qcat { display: none; }
       #view-tasks .qedit .hedit-r { flex-wrap: wrap; min-width: 0; }
       #view-tasks .qedit .name-in, #view-tasks .qedit .sect-in { flex: 1 1 140px; min-width: 0; max-width: 100%; }
@@ -1646,7 +1818,11 @@
     }
     .btn:hover { transform: translateY(-1px); box-shadow: none; filter: brightness(1.06); }
     .btn:active { transform: translateY(1px); box-shadow: none; }
-    .chip.sel, .tier-chip.sel, .day-dot.active {
+    /* .view-seg / .quad-btn are `.btn ghost sm`, so the secondary-control rule above
+       catches them — and being later in the file it beat their own `.sel` rules, which
+       left List/Matrix and the quadrant picker with no visible selected state at all.
+       They belong here with the other checked states, after that rule. */
+    .chip.sel, .tier-chip.sel, .day-dot.active, .view-seg.sel, .quad-btn.sel {
       background: var(--gs-lite) !important; border-color: transparent !important; color: var(--gs-on-lite) !important;
     }
     .hrow-check { background: var(--gs-ctl); border: 1px solid var(--gs-edge-hi); }
@@ -1823,28 +1999,44 @@
          and is anchored with bottom:100%, so it always sits exactly on top of the bar
          no matter how tall the bar ends up (safe-area inset, font scaling, …). -->
     <div class="more-sheet" id="moreSheet" role="menu" aria-hidden="true">
+      <div class="more-row" data-view="schedule" role="menuitem"><span class="mr-ico">📅</span><span class="mr-label">Schedule</span></div>
       <div class="more-row" data-view="stats" role="menuitem"><span class="mr-ico">📊</span><span class="mr-label">Stats</span></div>
       <div class="more-row" data-view="chat" role="menuitem"><span class="mr-ico">💬</span><span class="mr-label">Chat</span></div>
       <div class="more-row" data-view="settings" role="menuitem"><span class="mr-ico">⚙️</span><span class="mr-label">Settings</span></div>
     </div>
+    <div class="tab active" data-view="home"><span class="ti">🏠</span><span class="tl">Home</span></div>
     <div class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Casino</span></div>
     <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
-    <div class="tab active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
+    <div class="tab" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
     <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
-    <div class="tab" data-view="schedule"><span class="ti">📅</span><span class="tl">Schedule</span></div>
     <!-- Chat lives behind More now, so its pending check-in count rides the More tab. -->
     <div class="tab more-tab" id="moreTab" role="button" aria-expanded="false" style="position:relative"><span class="ti">⋯</span><span class="tl">More</span><span id="qNavBadge" style="display:none;position:absolute;top:2px;right:10px;background:var(--purple,#b026ff);color:#fff;font-size:10px;font-weight:800;line-height:1;border-radius:8px;padding:2px 5px;min-width:14px;text-align:center"></span></div>
   </nav>
 
   <main>
+    <!-- ===================== HOME =====================
+         The landing screen: where am I right now, what's next, and how's today going.
+         It owns no data of its own — the NOW rail reads the same blocks the Schedule tab
+         draws, and the board below is literally Due Now rendered a second time (see
+         .duenow-mount), so the two can't drift apart. -->
+    <section class="view active" id="view-home">
+      <div class="now-card" id="homeNow"></div>
+      <div class="home-sec-title">DUE NOW</div>
+      <div class="duenow-mount" id="homeDue" data-bare="1"></div>
+      <div id="homeToday"></div>
+      <div class="home-rule"></div>
+      <div class="home-sec-title">TODAY'S PACE</div>
+      <div id="homePace"></div>
+    </section>
+
     <!-- ===================== HABITS ===================== -->
-    <section class="view active" id="view-habits">
+    <section class="view" id="view-habits">
       <div class="plan-cta">
         <button class="btn ghost sm" data-act="openPlanner">📅 Plan My Week</button>
         <span id="todayCtxBadge"></span>
         <button class="loadout-button" id="loadoutSwitch" type="button" title="Choose or create a habit loadout"></button>
       </div>
-      <div id="dueSoonSection"></div>
+      <div class="duenow-mount" id="dueSoonSection"></div>
       <div class="habit-group collapsed" id="dailyGroup">
         <div class="daily-banner slim" data-act="toggleGroup" aria-expanded="false">
           <div class="dtext">
@@ -1892,15 +2084,29 @@
         <div class="section-title neon-purple">🎯 One-Off Quests</div>
         <div class="subtle" style="margin-bottom:12px">Add one-off tasks below and check them off when finished. They are shared across every loadout.</div>
         <div class="hh-banner" id="hhBannerTasks"></div>
-        <div class="quest-add" id="questAdd">
-          <div class="row" style="gap:8px;flex-wrap:nowrap">
-            <input class="name-in" id="questAddName" placeholder="Add a quest…">
-            <button class="btn green sm" id="questAddBtn">+ Add</button>
-          </div>
-          <div class="chip-row" id="questTierChips"></div>
-          <div class="chip-row" id="questCatChips"></div>
-        </div>
         <div class="oneoff-layout"><div class="quest-list" id="oneoffGrid"></div></div>
+        <div class="matrix-wrap" id="taskMatrix" style="display:none"></div>
+        <!-- Add / List / Matrix, one third each, DOCKED to the bottom of the screen the
+             same way the casino's game bar is: fixed above the tab bar rather than sticky
+             inside the scroller, so the row never drifts with the list. The quick-add form
+             lives in the same dock and unfolds directly above its own button. #taskViewBar
+             is display:contents, so its two buttons are flex children of the action bar.
+             The dock stays inside #view-tasks — every control in it is reached by the
+             handlers delegated to that view. -->
+        <div class="task-dock" id="taskDock">
+          <div class="quest-add" id="questAdd" style="display:none">
+            <div class="row" style="gap:8px;flex-wrap:nowrap">
+              <input class="name-in" id="questAddName" placeholder="Add a quest…">
+              <button class="btn green sm" id="questAddBtn">+ Add</button>
+            </div>
+            <div class="chip-row" id="questTierChips"></div>
+            <div class="chip-row" id="questCatChips"></div>
+          </div>
+          <div class="task-actionbar">
+            <button class="btn ghost sm" id="questAddToggle">＋ Add</button>
+            <span class="task-viewbar" id="taskViewBar"></span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -2522,6 +2728,7 @@ function defaultState() {
                 happyHours: {},
                 // Token payout per one-off task tier (editable in Settings → One-Off Quests).
                 tierRewards: { easy: 5, medium: 10, hard: 20 },
+                taskView: 'list',        // Tasks tab: 'list' | 'matrix' (Eisenhower)
                 // Reflection check-in: which input mode was last used — 'text' | 'browser' | 'realtime'.
                 voiceMode: 'text' },
     streakFreezes: 0, // how many Streak Freezes the player currently owns
@@ -2541,6 +2748,10 @@ function defaultState() {
     // so it can't express "Thursday at 3pm, just this once" and can't hold a quest at all.
     // These entries are what the Schedule's drag and its + button write to.
     plannedBlocks: {},    // 'YYYY-MM-DD' → [{ id, kind:'habit'|'task', refId, startMin, durMin }]
+    // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
+    // finished quests are deleted and the habit list changes — so each day's pair is
+    // recorded as it happens and never recomputed. See recordPaceToday().
+    paceLog: {},          // 'YYYY-MM-DD' → { done, total }
     // Reflection system: quick tap-chip reasons for misses, plus deeper end-of-day
     // conversation transcripts. Both land in `reflections`; `reasonChips` grows over
     // time the same way `contexts` does (starter set + AI can propose new ones).
@@ -2961,6 +3172,11 @@ function load(raw) {
         emojiAuto: !!t.emojiAuto,   // see normalizeHabit — auto-pick until the user edits the icon
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
+        // When this should be done, as a local 'YYYY-MM-DD' string (null = no date), and
+        // which Eisenhower box it's been triaged into (null = not sorted yet). Both are
+        // validated here rather than trusted at every read site.
+        due: (typeof t.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due)) ? t.due : null,
+        quadrant: ['q1', 'q2', 'q3', 'q4'].includes(t.quadrant) ? t.quadrant : null,
         createdAt: Number.isFinite(t.createdAt) ? t.createdAt : null,
         createdBy: t.createdBy === 'ai' ? 'ai' : undefined,
         // Same running-stopwatch shape habits use, so a quest can be timed and land on
@@ -3003,6 +3219,18 @@ function load(raw) {
                      refId: String(b.refId), startMin: clamp(parseInt(b.startMin), 0, 1439),
                      durMin: clamp(parseInt(b.durMin) || 15, 1, 24 * 60) }));
       if (rows.length) merged.plannedBlocks[d] = rows;
+    });
+    // Home's pace log, same treatment: date-keyed, and a row is only kept if it carries a
+    // real denominator — a { total: 0 } row would render as a confident 0% for a day that
+    // simply had nothing set.
+    merged.paceLog = {};
+    const rawPace = (parsed.paceLog && typeof parsed.paceLog === 'object' && !Array.isArray(parsed.paceLog)) ? parsed.paceLog : {};
+    Object.keys(rawPace).forEach(d => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+      const done = parseInt((rawPace[d] || {}).done), total = parseInt((rawPace[d] || {}).total);
+      if (Number.isFinite(done) && Number.isFinite(total) && total > 0) {
+        merged.paceLog[d] = { done: clamp(done, 0, total), total };
+      }
     });
     // Chat threads — migrate the old single flat aiChatLog into one thread so no conversation is lost.
     let threads = Array.isArray(parsed.aiChatThreads) ? parsed.aiChatThreads : [];
@@ -3613,10 +3841,11 @@ function dailyLoadoutHabits() { return sectionStats('daily').list; }
 // tap anywhere else (data-act="editHabit") to "blow up" the inline editor.
 function habitCardHTML(h, usualMin) {
   const cap = capOf(h), dc = doneCount(h), complete = dc >= cap, s = currentStreak(h);
-  let sub = h.repeatable
-    ? `${dc}/${cap} today` + (s > 0 ? ` · 🔥 ${s}` : '')
-    : (complete ? 'Done today' : (s > 0 ? `🔥 ${s} day${s > 1 ? 's' : ''} streak` : 'No streak yet'));
-  if (Number.isFinite(usualMin)) sub += ` · ⏰ usually ~${fmtMinOfDay(usualMin)}`;
+  // ONE LINE. The old second line carried streak / progress / "usually ~8:00" and made
+  // every row ~58px; the streak now leads the name as a chip and the rest are micro-chips
+  // that follow it. The "usually" and "~Xm" hints are dropped from the row on purpose —
+  // they still drive Due Now and the Block Schedule, which is where they're actionable.
+  const streakChip = s > 0 ? `<span class="row-streak">🔥${s}</span>` : '';
   const lvls = habitLevels(h);
   const li = lvls ? curLevelIndex(h) : -1;
   const lvl = lvls ? lvls[li] : null;
@@ -3628,11 +3857,11 @@ function habitCardHTML(h, usualMin) {
   // In-progress tracking: ▶ starts an open stopwatch (no pre-set duration needed) so the
   // AI learns actual time-on-task for every habit, not just ones explicitly marked "timed".
   // ✓ Quick Complete stays available alongside it for anything not worth timing.
-  let rightBits, timerSub = null;
+  let rightBits, timerChip = null;
   if (h.timer) {
     const paused = !!h.timer.pausedAt;
     // One readout per pane; the 1s ticker updates every match, so duplicates are fine.
-    timerSub = `⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`;
+    timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
     rightBits = `
       <button class="hrow-check timer-btn" data-act="pauseTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
       <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
@@ -3652,16 +3881,17 @@ function habitCardHTML(h, usualMin) {
   // with plain ones. Inside the pane they cost no layout the row wasn't already wasting,
   // and they page themselves: each pane knows its own position in the ladder.
   const paneHTML = (name, reward, minutes, word) => {
-    let subLine = timerSub != null ? timerSub : sub;
-    if (timerSub == null && !complete && minutes > 0) subLine += ` · ~${fmtMins(minutes)} usual`;
+    // Chips ride alongside the name, inside .hrow-main, so the row never wraps.
+    const chips = (timerChip || '')
+      + (h.repeatable && !timerChip ? `<span class="row-chip">${dc}/${cap}</span>` : '');
     const chevs = word
       ? `<span class="lvl-chevs">${word.idx > 0 ? '<span class="lvl-chev">‹</span>' : ''}${word.idx < word.n - 1 ? '<span class="lvl-chev">›</span>' : ''}</span>`
       : '';
     return `
       <div class="hrow-pane">
         <div class="hrow-main">
-          <div class="hrow-name">${escapeHtml(name)}</div>
-          <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
+          <span class="hrow-name">${escapeHtml(name)}</span>
+          ${chips}
         </div>
         ${chevs}
         ${word
@@ -3681,6 +3911,7 @@ function habitCardHTML(h, usualMin) {
     <div class="hrow ${complete ? 'done' : ''}${lvls ? ' leveled' : ''}" data-id="${h.id}" data-act="editHabit">
       ${hhTag}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
+      ${streakChip}
       ${body}
       ${rightBits}
     </div>`;
@@ -3864,6 +4095,7 @@ function renderHabits() {
   updateDailyStreakInfo();
   renderArchived();
   renderHappyBanners();
+  renderHomeExtras();   // Home shares this view's Due Now board — keep its rail and pace in step
 }
 
 // Graduated habits: resting out of rotation with their history intact, one tap to restore.
@@ -3880,8 +4112,8 @@ function renderArchived() {
       <div class="hrow arch" data-id="${h.id}">
         <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
         <div class="hrow-main">
-          <div class="hrow-name">${escapeHtml(h.name)}</div>
-          <div class="hrow-sub">🏆 best streak ${best} day${best !== 1 ? 's' : ''}</div>
+          <span class="hrow-name">${escapeHtml(h.name)}</span>
+          <span class="row-chip">🏆${best}d best</span>
         </div>
         <button class="btn ghost sm" data-act="unGraduate">↩ Restore</button>
       </div>`;
@@ -3909,8 +4141,13 @@ function renderTasks() {
    ONE-OFF QUESTS  (to-do list + a spinnable "wheel of quests")
    ================================================================= */
 // Quick-add bar: tier chips (filled when selected) + category chips + "+ New".
+let questAddOpen = false;   // transient — the Tasks tab always opens with the form folded
 function renderQuestAdd() {
   const tc = $('#questTierChips'); if (!tc) return;
+  const box = $('#questAdd'), tog = $('#questAddToggle');
+  if (box) box.style.display = questAddOpen ? '' : 'none';
+  if (tog) tog.textContent = questAddOpen ? '⌃ Close' : '＋ Add';
+  if (!questAddOpen) { syncTaskDockRoom(); return; }   // nothing below is visible — skip the work
   if (!TASK_TIERS[quickTier]) quickTier = 'medium';
   tc.innerHTML = Object.entries(TASK_TIERS).map(([k, ti]) => {
     const sel = k === quickTier;
@@ -3924,6 +4161,21 @@ function renderQuestAdd() {
   $('#questCatChips').innerHTML = cats.map(c =>
     `<button class="chip cat-chip ${c === quickCat ? 'sel' : ''}" data-cat="${escapeHtml(c)}">🏷️ ${escapeHtml(c)}</button>`).join('')
     + `<button class="chip cat-chip new" data-act="newCat">＋ New</button>`;
+  syncTaskDockRoom();                        // chips are in — the dock's height is final
+}
+// The dock is position:fixed, so the view has to reserve its footprint itself; otherwise
+// the open quick-add form floats over the last rows of the list. Measured rather than
+// guessed, because the category chips wrap — the dock's height depends on how many
+// categories exist. Reading the baseline back from the stylesheet keeps the closed-state
+// number in exactly one place (the `#view-tasks` rule), and the form's own height is
+// immune to the view-entry animation's transform in a way its position is not.
+function syncTaskDockRoom() {
+  const view = $('#view-tasks'), form = $('#questAdd');
+  if (!view || !form) return;
+  view.style.paddingBottom = '';                                   // back to the stylesheet's baseline
+  if (!questAddOpen) return;
+  const base = parseFloat(getComputedStyle(view).paddingBottom) || 0;
+  view.style.paddingBottom = Math.ceil(base + form.getBoundingClientRect().height + 6) + 'px';
 }
 function addQuickQuest() {
   const inp = $('#questAddName'); const name = (inp.value || '').trim();
@@ -3938,23 +4190,35 @@ function addQuickQuest() {
   toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} 🪙`, TASK_TIERS[tier].color);
 }
 // One quest row. Shared by the Tasks list and the Due Now board so the two can't drift.
+/* ---- Due dates. A quest may carry `due` as 'YYYY-MM-DD' (or null). Everything is
+   computed against todayStr()/daysBetween() so it follows the same local-date rules as
+   streaks and the Schedule, rather than raw Date maths that drifts across midnight. ---- */
+function dueInfo(t) {
+  if (!t || !t.due || !/^\d{4}-\d{2}-\d{2}$/.test(t.due)) return null;
+  const d = daysBetween(todayStr(), t.due);      // negative = in the past
+  if (!Number.isFinite(d)) return null;
+  const label = d < 0 ? `${-d}d late` : d === 0 ? 'Today' : d === 1 ? 'Tomorrow'
+    : d < 7 ? new Date(t.due + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' })
+    : new Date(t.due + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return { days: d, label, cls: d < 0 ? 'late' : d === 0 ? 'today' : '' };
+}
+function dueChipHTML(t) {
+  const info = dueInfo(t);
+  return info ? `<span class="row-chip due ${info.cls}">📅${info.label}</span>` : '';
+}
+
 function oneoffCardHTML(t) {
   const ti = TASK_TIERS[t.tier] || TASK_TIERS.medium;
   const iter = Math.max(1, t.iterations || 1), prog = t.progress || 0;
   const picked = t.id === wheelPickId;
-  const subBits = [];
-  if (iter > 1) subBits.push(`${prog}/${iter} done`);
-  if (picked) subBits.push(`<span class="spin-tag">🎡 wheel pick +50%</span>`);
   const cc = categoryColor(t.category);
-  const catPill = (t.category && t.category !== 'Unsorted')
-    ? `<span class="pill qcat"${cc ? ` style="color:${cc};border-color:${cc}"` : ''}>🏷️ ${escapeHtml(t.category)}</span>` : '';
   const hhTag = happyTagHTML(t.category);
   // Same ▶ / ✓ pair habits have: ▶ runs an open stopwatch so the quest lands on the
   // Block Schedule as a real span, ✓ stays available for anything not worth timing.
-  let leftBits;
+  let leftBits, timerChip = null;
   if (t.timer) {
     const paused = !!t.timer.pausedAt;
-    subBits.unshift(`⏱ <b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`);
+    timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
     leftBits = `
         <button class="hrow-check timer-btn" data-act="pauseOneoffTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
         <button class="hrow-check timer-btn" data-act="finishOneoffTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
@@ -3963,29 +4227,104 @@ function oneoffCardHTML(t) {
         <button class="hrow-check timer-btn qcheck" data-act="startOneoffTimer" aria-label="Start" style="color:var(--purple)">▶</button>
         <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Quick complete">✓</button>`;
   }
+  // One line, same as habits: chips trail the name instead of a second row. The category
+  // still reads off the left border stripe, so its pill is redundant here.
+  const chips = (timerChip || '')
+    + dueChipHTML(t)
+    + (iter > 1 ? `<span class="row-chip">${prog}/${iter}</span>` : '')
+    + (picked ? `<span class="row-chip spin">🎡+50%</span>` : '');
   return `
       <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}" data-act="editOneoff"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
         ${hhTag}
         ${leftBits}
         <span class="hrow-emoji">${escapeHtml(t.emoji || '🎯')}</span>
         <div class="hrow-main">
-          <div class="hrow-name">${escapeHtml(t.name)}</div>
-          ${subBits.length ? `<div class="hrow-sub">${subBits.join(' · ')}</div>` : ''}
+          <span class="hrow-name">${escapeHtml(t.name)}</span>
+          ${chips}
         </div>
-        ${catPill}
         <span class="hrow-reward" style="color:${ti.color};border-color:${ti.color};background:rgba(0,0,0,0.25)">+${tierReward(t.tier)} 🪙</span>
       </div>`;
 }
+/* =================================================================
+   EISENHOWER MATRIX — urgency × importance, for quests only.
+
+   Deliberately independent of due dates: a date says WHEN something is due, a quadrant
+   says whether it deserves your attention at all. A quest can have either, both or
+   neither.
+   ================================================================= */
+// `color` rims each box so the four are told apart at a glance, before any label is read:
+// red = act now, amber = plan it, blue = hand it off, green = let it go.
+const EISENHOWER = [
+  { key: 'q1', icon: '🔥', label: 'Do first', hint: 'Urgent and important',         color: '#ff3b30' },
+  { key: 'q2', icon: '🗓️', label: 'Schedule', hint: 'Important, not urgent',        color: '#ff9f0a' },
+  { key: 'q3', icon: '📤', label: 'Delegate', hint: 'Urgent, but not important',    color: '#3b82f6' },
+  { key: 'q4', icon: '🗑️', label: 'Drop',     hint: 'Neither urgent nor important', color: '#14c9a4' },
+];
+function quadrantOf(t) { return EISENHOWER.find(q => q.key === t.quadrant) || null; }
+function taskViewMode() { return state.settings.taskView === 'matrix' ? 'matrix' : 'list'; }
+
+// Soonest-due first, undated last in their existing order. Sorting is the whole point of
+// having dates — an unordered list wouldn't organise anything.
+function sortedOneoffs(list) {
+  return list.map((t, i) => ({ t, i })).sort((a, b) => {
+    const da = dueInfo(a.t), db = dueInfo(b.t);
+    if (da && db) return da.days - db.days || a.i - b.i;
+    if (da) return -1;
+    if (db) return 1;
+    return a.i - b.i;
+  }).map(x => x.t);
+}
+
 function renderOneoffs() {
   syncEditorSheet();
-  const grid = $('#oneoffGrid'); if (!grid) return;
-  if (!state.oneoffs.length) {
+  renderTaskViewBar();
+  const grid = $('#oneoffGrid'), matrix = $('#taskMatrix'); if (!grid) return;
+  const isMatrix = taskViewMode() === 'matrix';
+  const layout = grid.closest('.oneoff-layout');
+  if (layout) layout.style.display = isMatrix ? 'none' : '';
+  if (matrix) matrix.style.display = isMatrix ? '' : 'none';
+  if (isMatrix) renderTaskMatrix();
+  else if (!state.oneoffs.length) {
     grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
   } else {
-    grid.innerHTML = state.oneoffs.map(t =>
-      oneoffCardHTML(t)).join('');
+    grid.innerHTML = sortedOneoffs(state.oneoffs).map(t => oneoffCardHTML(t)).join('');
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
+  renderHomeExtras();   // quests count toward Home's tally and pace
+}
+function renderTaskViewBar() {
+  const bar = $('#taskViewBar'); if (!bar) return;
+  const m = taskViewMode();
+  bar.innerHTML = `
+    <button class="btn ghost sm view-seg ${m === 'list' ? 'sel' : ''}" data-taskview="list">📋 List</button>
+    <button class="btn ghost sm view-seg ${m === 'matrix' ? 'sel' : ''}" data-taskview="matrix">▦ Matrix</button>`;
+}
+// Four boxes plus an Unsorted strip. Rows come from oneoffCardHTML, the same function the
+// list uses, so the two views can never drift apart.
+// Unsorted starts folded so the four triaged boxes own the screen. Collapsed it still
+// says how many are waiting, and it stays a drop target — its header is the hit area.
+let unsortedOpen = false;
+function renderTaskMatrix() {
+  const host = $('#taskMatrix'); if (!host) return;
+  const box = q => {
+    const list = sortedOneoffs(state.oneoffs.filter(t => t.quadrant === q.key));
+    return `
+      <div class="quad" data-quad="${q.key}" style="--qc:${q.color}">
+        <div class="quad-head"><span>${q.icon} ${escapeHtml(q.label)}</span><span class="quad-n">${list.length}</span></div>
+        <div class="quad-body">${list.map(oneoffCardHTML).join('') || `<div class="quad-empty">Drop a quest here</div>`}</div>
+      </div>`;
+  };
+  const un = sortedOneoffs(state.oneoffs.filter(t => !t.quadrant));
+  host.innerHTML = `
+    <div class="quad-axis"><span>urgent →</span><span>← not urgent</span></div>
+    <div class="quad-grid">${EISENHOWER.map(box).join('')}</div>
+    <div class="quad unsorted ${unsortedOpen ? '' : 'folded'}" data-quad="">
+      <div class="quad-head" data-act="toggleUnsorted">
+        <span>📥 ${unsortedOpen ? 'Unsorted' : `${un.length} unsorted`}</span>
+        <span class="quad-n">${unsortedOpen ? un.length : '▾'}</span>
+      </div>
+      <div class="quad-body">${un.map(oneoffCardHTML).join('') || `<div class="quad-empty">Everything is triaged.</div>`}</div>
+    </div>`;
 }
 
 // Inline "blown-up" one-off editor on the Tasks screen (tap a row to open, like habits)
@@ -4004,6 +4343,16 @@ function oneoffEditHTML(t) {
           ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${(t.category || 'Unsorted') === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
         </select>
         <span class="pill">×<input class="num-in" data-of="iterations" type="number" min="1" max="99" value="${t.iterations}"> to finish</span>
+      </div>
+      <div class="hedit-r">
+        <span class="pill">📅 <input class="date-in" data-of="due" type="date" value="${t.due || ''}"></span>
+        ${t.due ? `<button class="btn ghost sm" data-act="clearDue" title="Remove the due date">✕ date</button>` : ''}
+      </div>
+      <div class="hedit-r qgrid-pick">
+        <div class="subtle" style="flex-basis:100%">Urgency &amp; importance</div>
+        ${EISENHOWER.map(q => `
+          <button class="btn ghost sm quad-btn ${t.quadrant === q.key ? 'sel' : ''}" data-quad="${q.key}" title="${escapeHtml(q.hint)}">${q.icon} ${escapeHtml(q.label)}</button>`).join('')}
+        <button class="btn ghost sm quad-btn ${!t.quadrant ? 'sel' : ''}" data-quad="">— None</button>
       </div>
       <div class="hedit-r hedit-actions">
         <button class="btn ghost sm" data-act="delOneoffEdit">🗑 Delete</button>
@@ -4564,8 +4913,12 @@ let schedOffset = 0;        // 0 = today, negative = past, positive = planning a
 // Zoom: pixels per hour. Higher zoom also splits the hour into finer gridlines so short
 // gaps between habits become visible instead of collapsing into one band.
 // Small steps so each press is a glide rather than a jump.
-const SCHED_ZOOMS = [32, 44, 56, 72, 96, 128, 168, 220];
-let schedZoomIdx = 2;
+// Fifteen stops rather than eight — a midpoint interleaved between each of the original
+// eight, so every press moves about half as far and the day glides instead of jumping.
+// The originals are still exactly on even indices (32 44 56 72 96 128 168 220), which is
+// what the .zoom-N rules below are keyed to.
+const SCHED_ZOOMS = [32, 38, 44, 50, 56, 64, 72, 84, 96, 112, 128, 148, 168, 194, 220];
+let schedZoomIdx = 4;       // = 56px, the old default (index 2 of the old eight)
 const SNAP_MIN = 15;        // drags snap to quarter-hours
 function schedPx() { return SCHED_ZOOMS[clamp(schedZoomIdx, 0, SCHED_ZOOMS.length - 1)]; }
 // Zoom without re-rendering: only --ph changes, and CSS transitions carry every block,
@@ -4693,23 +5046,10 @@ function renderBlockSchedule() {
 }
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
 // Once the usual time passes it drops back into the regular list — no "overdue" flag.
-// Stable shuffle key: a quest's position is random, but fixed for the whole day. Due Now
-// repaints every 30s, so a live Math.random() would reshuffle the pick under your finger.
-// FNV-1a + a murmur3 finalizer. The finalizer is the point: with a plain `n*31 + c`
-// rolling hash, changing only the trailing date character shifts every key by the same
-// constant, so the sort order comes out identical every single day. Mixing the high bits
-// back down makes a one-character change reshuffle the whole ordering.
-function dailyShuffleKey(id) {
-  const s = todayStr() + '|' + String(id);
-  let n = 2166136261;
-  for (let i = 0; i < s.length; i++) { n ^= s.charCodeAt(i); n = Math.imul(n, 16777619); }
-  n ^= n >>> 15; n = Math.imul(n, 2246822507);
-  n ^= n >>> 13; n = Math.imul(n, 3266489909);
-  n ^= n >>> 16;
-  return n >>> 0;
-}
+// Painted into EVERY .duenow-mount — Habits has one and Home has another. One function,
+// one piece of markup, so the two boards can never disagree about what's due.
 function renderDueSoon() {
-  const box = $('#dueSoonSection'); if (!box) return;
+  const mounts = $$('.duenow-mount'); if (!mounts.length) return;
   const nowMin = nowMinutes();
   const until = m => (m - nowMin + 1440) % 1440;          // minutes until, midnight-safe
   // Extra habits are side-quests: they stay out of Due Now until every daily quest is
@@ -4717,10 +5057,20 @@ function renderDueSoon() {
   const dailyClear = sectionStats('daily').allComplete;
   const eligible = h => !h.archived && h.loadout === currentLoadout() && isScheduledToday(h) && !isComplete(h)
     && (dailyClear || h.section !== 'extra');
-  const due = state.habits
+  const dueHabits = state.habits
     .filter(eligible)
     .map(h => ({ h, m: habitBlockMinute(h) }))   // same blocks the Schedule tab draws — Due Now always agrees with it
-    .filter(x => x.m != null && until(x.m) <= 60)
+    .filter(x => x.m != null && until(x.m) <= 60);
+  // Quests reach this board ONLY through the Schedule. Unlike a habit, a quest has no
+  // "usual time" to infer from history — nothing about it says when it's due — so an
+  // unscheduled quest here would just be a to-do dumped onto a board that means NOW.
+  // Give it a planned block for today and it behaves exactly like a habit: it surfaces in
+  // the hour before that block and drops off once the time passes. No block, no appearance.
+  const dueTasks = ((state.plannedBlocks || {})[todayStr()] || [])
+    .filter(b => b && b.kind === 'task' && Number.isFinite(b.startMin))
+    .map(b => ({ t: (state.oneoffs || []).find(t => t.id === b.refId), m: b.startMin }))
+    .filter(x => x.t && (x.t.progress || 0) < Math.max(1, x.t.iterations || 1) && until(x.m) <= 60);
+  const due = dueHabits.concat(dueTasks)
     .sort((a, b) => until(a.m) - until(b.m))
     .slice(0, 3);                                         // fewer visible choices, not more
   // Fallback when nothing is due in the next hour: surface up to 2 habits whose
@@ -4728,7 +5078,7 @@ function renderDueSoon() {
   let rows = '', sub = '';
   if (due.length) {
     sub = 'Coming up in your usual routine — knock these out first.';
-    rows = due.map(x => habitCardHTML(x.h, x.m)).join('');
+    rows = due.map(x => (x.h ? habitCardHTML(x.h, x.m) : oneoffCardHTML(x.t))).join('');
   } else {
     const active = new Set(activeHappyHours().map(a => a.cat));
     const hh = active.size
@@ -4737,35 +5087,176 @@ function renderDueSoon() {
     if (hh.length) {
       sub = 'Happy hour is live — do these now to grab the token bonus.';
       rows = hh.map(h => habitCardHTML(h)).join('');
-    } else {
-      // Last fallback: nothing is due and nothing is boosted (or the habits are simply
-      // finished), so the board would sit empty — fill it with a couple of one-off
-      // quests instead, picked at random but held steady for the day.
-      const quests = state.oneoffs
-        .filter(t => t.id !== editingOneoffId && (t.progress || 0) < Math.max(1, t.iterations || 1))
-        .sort((a, b) => dailyShuffleKey(a.id) - dailyShuffleKey(b.id))
-        .slice(0, 2);
-      if (quests.length) {
-        sub = dailyClear
-          ? 'Habits are clear — here are a couple of quests to pick from.'
-          : 'Nothing scheduled right now — grab a quest instead.';
-        rows = quests.map(t => oneoffCardHTML(t)).join('');
-      }
     }
+    // There is no third fallback. Random quests used to fill the board whenever nothing
+    // was due, which made "Due Now" mean "here's something, anything" — the opposite of
+    // what the heading promises. An empty board is the honest answer.
   }
   const hasRows = rows.trim().length > 0;
   // The board is ALWAYS visible — even with nothing to show, it renders an empty state.
-  box.innerHTML = `
+  // Home supplies its own "DUE NOW" heading, so the gold banner is Habits-only; both get
+  // the identical row markup underneath.
+  const banner = `
     <div class="daily-banner slim" style="border-color:rgba(255,215,0,.5)">
       <div class="dtext">
         <div class="section-title neon-gold">⏰ Due Now</div>
         <div class="subtle">${hasRows ? sub : 'Nothing due right now.'}</div>
       </div>
-    </div>
-    ${hasRows
-      ? `<div class="habit-list" style="margin-bottom:16px">${rows}</div>`
-      : `<div class="empty" style="margin-bottom:16px"><div class="big">☕</div>empty</div>`}`;
+    </div>`;
+  const body = hasRows
+    ? `<div class="habit-list" style="margin-bottom:16px">${rows}</div>`
+    : `<div class="empty" style="margin-bottom:16px"><div class="big">☕</div>empty</div>`;
+  mounts.forEach(m => { m.innerHTML = (m.dataset.bare === '1' ? '' : banner) + body; });
 }
+
+/* =================================================================
+   HOME — the landing screen. Three reads, top to bottom: where am I right now,
+   what should I do next, and how is today going compared with the days before it.
+
+   It stores nothing of its own except the pace log. The NOW rail reads the same
+   blocks the Schedule tab draws, and the middle band is Due Now painted a second
+   time (see renderDueSoon's .duenow-mount loop), so nothing here can drift.
+   ================================================================= */
+
+// Today's timeline, as one merged list: what actually happened plus what's still
+// expected. Same two builders the Schedule tab uses, so the two always agree.
+function homeTimeline() {
+  const dateStr = todayStr();
+  const actual = computeActualBlocks(dateStr);
+  const doneNames = new Set(actual.map(b => b.name));
+  return actual
+    .concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
+    .map(b => ({ ...b, endMin: Number.isFinite(b.endMin) ? b.endMin : b.startMin + (b.durMin || 0) }))
+    .sort((a, b) => a.startMin - b.startMin);
+}
+
+function renderHomeNow() {
+  const box = $('#homeNow'); if (!box) return;
+  const now = nowMinutes();
+  const blocks = homeTimeline();
+  // "Current" means a block with real length that now falls inside. Zero-length moment
+  // marks (a habit ticked off without the stopwatch) record an instant, not a span, so
+  // they can never be what you're "in" — they'd claim the card for a whole minute.
+  const cur = blocks.find(b => b.durMin > 0 && now >= b.startMin && now < b.endMin);
+  const next = blocks.find(b => b.startMin > now);
+  const nextLine = next
+    ? `<div class="now-next">Up next: <b>${escapeHtml(next.emoji || '')} ${escapeHtml(next.name)}</b> · ${escapeHtml(fmtMinOfDay(next.startMin))}</div>`
+    : `<div class="now-next">Nothing else scheduled today.</div>`;
+
+  if (!cur) {
+    // Between blocks (or before the first one) — say so plainly rather than inventing a
+    // "current" block out of whatever happens to be nearest.
+    box.innerHTML = `
+      <div class="now-kicker">Now</div>
+      <div class="now-empty">${blocks.length ? 'Nothing scheduled right now.' : 'Nothing on the schedule today.'}</div>
+      ${nextLine}`;
+    return;
+  }
+  const span = Math.max(1, cur.endMin - cur.startMin);
+  const pct = clamp((now - cur.startMin) / span * 100, 0, 100);
+  box.innerHTML = `
+    <div class="now-kicker">Now</div>
+    <div class="now-title"><span>${escapeHtml(cur.emoji || '📌')}</span><span class="nt-name">${escapeHtml(cur.name)}</span></div>
+    <div class="now-rail">
+      <span class="nr-t">${escapeHtml(fmtMinOfDay(cur.startMin))}</span>
+      <span class="now-line"><i class="now-dot" style="left:${pct.toFixed(2)}%"></i></span>
+      <span class="nr-t">${escapeHtml(fmtMinOfDay(cur.endMin % 1440))}</span>
+    </div>
+    <div class="now-atlabel">${escapeHtml(fmtMinOfDay(now))}</div>
+    ${nextLine}`;
+}
+
+/* ---- Pace ---------------------------------------------------------------------------
+   "How close am I to finishing everything I set for today", as one number.
+
+   Denominator = today's scheduled daily-habit capacity (a repeatable 0/8 counts 8, the
+   same unit the Daily Quests bar uses) + every quest assigned to today. A quest counts as
+   assigned when it's due today or has a block on today's schedule — an untouched backlog
+   quest isn't part of today's plan and would make the number meaningless.
+
+   Past days can't be recomputed: a finished quest is deleted outright, and a habit added
+   since would be counted as if it had always existed. So each day's pair is RECORDED as
+   it happens (state.paceLog) and the history below only ever reads what was actually
+   written. Days before this feature shipped, or days the app wasn't opened, simply have
+   no entry and are left out rather than guessed at.                                    */
+function paceToday() {
+  const today = todayStr();
+  const d = sectionStats('daily');
+  const planned = new Set(((state.plannedBlocks || {})[today] || [])
+    .filter(b => b && b.kind === 'task').map(b => b.refId));
+  const assigned = (state.oneoffs || []).filter(t => t && (t.due === today || planned.has(t.id)));
+  const taskTotal = assigned.reduce((s, t) => s + Math.max(1, t.iterations || 1), 0);
+  const taskDone = assigned.reduce((s, t) => s + Math.min(t.progress || 0, Math.max(1, t.iterations || 1)), 0);
+  // Quests finished today are deleted from state.oneoffs, so they've vanished from both
+  // sides of the fraction above. Add them back from the log — otherwise finishing one
+  // would make the bar go DOWN.
+  const finishedToday = (state.history || [])
+    .filter(e => e && e.kind === 'task' && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === today
+                 && !assigned.some(t => t.id === e.id)).length;
+  const done = d.done + taskDone + finishedToday;
+  const total = d.cap + taskTotal + finishedToday;
+  return { done, total, pct: total ? Math.round(done / total * 100) : 0 };
+}
+// Write today's pair into the log. Called from every render of the Home tab and after
+// each completion, so the number on disk always matches what was on screen.
+function recordPaceToday() {
+  const p = paceToday();
+  if (!p.total) return;                       // nothing was set for today — don't log a 0%
+  state.paceLog = state.paceLog || {};
+  const today = todayStr(), prev = state.paceLog[today];
+  if (prev && prev.done === p.done && prev.total === p.total) return;   // unchanged
+  state.paceLog[today] = { done: p.done, total: p.total };
+  // Keep roughly two months. The 7-day window only ever reads the tail.
+  const keys = Object.keys(state.paceLog).sort();
+  if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete state.paceLog[k]);
+  save();
+}
+function pacePctFor(dateStr) {
+  const e = (state.paceLog || {})[dateStr];
+  return e && e.total ? Math.round(e.done / e.total * 100) : null;
+}
+function renderHomePace() {
+  const box = $('#homePace'); if (!box) return;
+  const p = paceToday();
+  const yest = pacePctFor(todayStr(-1));
+  // The last 7 CLOSED days — today is still in progress, so averaging it in would drag
+  // the comparison down all morning by design.
+  const week = [];
+  for (let i = 1; i <= 7; i++) { const v = pacePctFor(todayStr(-i)); if (v != null) week.push(v); }
+  const avg = week.length ? Math.round(week.reduce((s, v) => s + v, 0) / week.length) : null;
+  const val = (v, suffix = '') => v == null
+    ? `<span class="ph-v none">no data yet</span>`
+    : `<span class="ph-v">${v}%${suffix}</span>`;
+  box.innerHTML = `
+    <div class="pace-row">
+      <span class="pace-bar">
+        <span class="pace-fill" style="width:${p.pct}%"></span>
+        <span class="pace-rest"></span>
+      </span>
+      <span class="pace-pct">${p.pct}%</span>
+    </div>
+    <div class="pace-hist">
+      <span class="ph-k">Yesterday</span>${val(yest)}
+      <span class="ph-k">7-day average</span>${val(avg, week.length < 7 ? ` <span class="ph-v none">(${week.length}d)</span>` : '')}
+    </div>`;
+}
+function renderHomeTally() {
+  const box = $('#homeToday'); if (!box) return;
+  const p = paceToday();
+  box.innerHTML = p.total ? `<div class="home-tally">${p.done} of ${p.total} done</div>` : '';
+}
+// Everything on Home EXCEPT the shared Due Now board — renderDueSoon already paints that
+// into both mounts on its own. Split out so renderHabits/renderOneoffs can keep Home
+// current after a completion without re-running a whole other view. recordPaceToday()
+// calls save(), which is safe here: save() is a no-op while saveLocked, so a degraded
+// load can't be written over by a render.
+function renderHomeExtras() {
+  renderHomeNow();
+  renderHomeTally();
+  recordPaceToday();     // log before painting the bar so today's row is the fresh one
+  renderHomePace();
+}
+function renderHome() { renderDueSoon(); renderHomeExtras(); }
 
 // Fire the "all done" bonus for each section independently (once per day each).
 function checkBonuses() {
@@ -5079,7 +5570,14 @@ function spinSlots() {
   const finals = finalSymbolsFor(p);
   const reels = $$('#reels .reel');
   reels.forEach(r => r.classList.remove('win', 'near'));
-  const cellH = reels[0].clientHeight || 80;
+  // Measure a CELL, not the reel. `.reel` is border-box with a 2px border, so its
+  // clientHeight is 4px shorter than a `.cell` — and the strip is stopped by multiplying
+  // that height by a length that differs per reel (24 / 30 / 36 cells). The 4px error
+  // therefore compounded into a different overshoot on each reel (96 / 120 / 144px),
+  // which is why three of a kind never landed in a straight line. `centre` then takes up
+  // the 4px the window is short so the symbol sits on the payline rather than 2px high.
+  const cellH = reels[0].querySelector('.cell')?.getBoundingClientRect().height || 80;
+  const centre = (cellH - (reels[0].clientHeight || cellH)) / 2;
   let done = 0;
   reels.forEach((reel, i) => {
     const strip = reel.querySelector('.strip');
@@ -5092,7 +5590,7 @@ function spinSlots() {
     strip.style.transition = 'none';
     strip.style.transform = 'translateY(0)';
     void strip.offsetWidth; // reflow
-    const dist = (cells.length - 1) * cellH;
+    const dist = (cells.length - 1) * cellH + centre;
     const dur = 1.6 + i * 0.5;
     strip.style.transition = `transform ${dur}s cubic-bezier(.15,.8,.2,1)`;
     strip.style.transform = `translateY(${-dist}px)`;
@@ -8409,7 +8907,7 @@ $('#aiClearBtn').addEventListener('click', clearAIData);
    EVENTS / WIRING
    ================================================================= */
 // Nav. Five tabs live in the bar; the rest live behind "More" (see MORE_VIEWS).
-const MORE_VIEWS = ['stats', 'chat', 'settings'];
+const MORE_VIEWS = ['schedule', 'stats', 'chat', 'settings'];
 $$('#nav .tab[data-view]').forEach(t => t.addEventListener('click', () => { SFX.click(); closeMore(); switchView(t.dataset.view); }));
 
 function openMore() {
@@ -8450,6 +8948,7 @@ function switchView(name) {
   $('#moreTab').classList.toggle('active', MORE_VIEWS.includes(name));
   $$('#moreSheet .more-row').forEach(r => r.classList.toggle('active', r.dataset.view === name));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  if (name === 'home') renderHome();
   if (name === 'habits') renderHabits();
   if (name === 'tasks') renderTasks();
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
@@ -8802,13 +9301,19 @@ function onInlineHabitField(e) {
   }
   save();
 }
-$('#view-habits').addEventListener('click', onHabitsClick);
-$('#view-habits').addEventListener('pointerdown', onHabitPointerDown);
-$('#view-habits').addEventListener('pointermove', onHabitPointerMove);
-$('#view-habits').addEventListener('pointerup', onHabitPointerUp);
-$('#view-habits').addEventListener('pointercancel', onHabitPointerUp);
-$('#view-habits').addEventListener('input', onInlineHabitField);
-$('#view-habits').addEventListener('change', onInlineHabitField);
+// Home carries a second Due Now board, so the SAME named handlers are bound there too —
+// the rows are identical markup and must behave identically. The pointer four are what
+// make a tiered habit's carousel swipe; without them a leveled row would be dead on Home.
+['#view-habits', '#view-home'].forEach(sel => {
+  const v = $(sel); if (!v) return;
+  v.addEventListener('click', onHabitsClick);
+  v.addEventListener('pointerdown', onHabitPointerDown);
+  v.addEventListener('pointermove', onHabitPointerMove);
+  v.addEventListener('pointerup', onHabitPointerUp);
+  v.addEventListener('pointercancel', onHabitPointerUp);
+  v.addEventListener('input', onInlineHabitField);
+  v.addEventListener('change', onInlineHabitField);
+});
 
 /* =================================================================
    EDITOR SHEET — habits, quests and rewards all edit in one sheet that
@@ -9333,6 +9838,21 @@ function onTasksClick(e) {
   if (act === 'startOneoffTimer') { startOneoffTimer(e.target.closest('.qrow').dataset.id); return; }
   if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(e.target.closest('.qrow').dataset.id); return; }
   if (act === 'finishOneoffTimer') { finishTimedOneoff(e.target.closest('.qrow').dataset.id); return; }
+  if (e.target.closest('[data-act="toggleUnsorted"]')) { unsortedOpen = !unsortedOpen; SFX.click(); renderTaskMatrix(); return; }
+  const seg = e.target.closest('[data-taskview]');
+  if (seg) { state.settings.taskView = seg.dataset.taskview === 'matrix' ? 'matrix' : 'list'; SFX.click(); save(); renderOneoffs(); return; }
+  const quad = e.target.closest('[data-quad]');
+  if (quad && e.target.closest('.qedit')) {                 // quadrant picker in the editor
+    const t = state.oneoffs.find(x => x.id === e.target.closest('.qedit').dataset.id);
+    if (t) { t.quadrant = quad.dataset.quad || null; SFX.click(); save(); renderOneoffs(); syncEditorSheet(); }
+    return;
+  }
+  if (act === 'clearDue') {
+    const t = state.oneoffs.find(x => x.id === e.target.closest('.qedit').dataset.id);
+    if (t) { t.due = null; SFX.click(); save(); renderOneoffs(); syncEditorSheet(); }
+    return;
+  }
+  if (quadDragged) return;                                  // a drop just ended — not a tap
   if (act === 'editOneoff') { SFX.click(); openEditor('oneoff', e.target.closest('.qrow').dataset.id); return; }
   if (act === 'closeOneoffEdit') { editingOneoffId = null; SFX.click(); renderOneoffs(); buildHabitWheel(); return; }
   if (act === 'delOneoffEdit') {
@@ -9353,18 +9873,32 @@ function onTasksClick(e) {
   }
 }
 $('#questAddName').addEventListener('keydown', e => { if (e.key === 'Enter') addQuickQuest(); });
-// Inline one-off editor field edits (text/number on input, selects on change)
+// Quick-add starts folded away. It stays open after an add so several quests can be
+// typed in a row — the toggle is the only thing that closes it.
+$('#questAddToggle').addEventListener('click', () => {
+  questAddOpen = !questAddOpen;
+  SFX.click(); renderQuestAdd();
+  if (questAddOpen) $('#questAddName').focus();
+});
+// Inline one-off editor field edits (text/number on input, selects + dates on change)
 function onInlineOneoffField(e) {
   const f = e.target.dataset.of; if (!f) return;
-  const isSelect = e.target.tagName === 'SELECT';
-  if (e.type === 'input' && isSelect) return;   // avoid double-handling
-  if (e.type === 'change' && !isSelect) return;
+  // A <input type="date"> is not a SELECT but must still be read on `change` — pickers
+  // fire input inconsistently across browsers, and change is the one that always lands.
+  const onChange = e.target.tagName === 'SELECT' || e.target.type === 'date';
+  if (e.type === 'input' && onChange) return;   // avoid double-handling
+  if (e.type === 'change' && !onChange) return;
   const box = e.target.closest('.qedit'); if (!box) return;
   const t = state.oneoffs.find(x => x.id === box.dataset.id); if (!t) return;
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
   else if (f === 'category') t.category = e.target.value;
   else if (f === 'emoji') { t.emoji = e.target.value; t.emojiAuto = false; }   // a deliberate icon — stop guessing
+  else if (f === 'due') {
+    const v = e.target.value;
+    t.due = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+    save(); renderOneoffs(); syncEditorSheet(); return;      // re-sorts the list around the new date
+  }
   else {
     t[f] = e.target.value;
     if (f === 'name') autoEmoji(t, box);
@@ -9374,6 +9908,71 @@ function onInlineOneoffField(e) {
 $('#view-tasks').addEventListener('click', onTasksClick);
 $('#view-tasks').addEventListener('input', onInlineOneoffField);
 $('#view-tasks').addEventListener('change', onInlineOneoffField);
+
+/* ---- Drag a quest between matrix boxes. Pointer events, same shape as the tier
+   ladder's reorder: HTML5 drag-and-drop doesn't work on touch at all.
+
+   Two guards this shares with the ladder and the tier swipe:
+     · a press that starts on a button is left alone, or ▶/✓ stop working;
+     · the click that fires after a drop is swallowed, or every drop also opens the
+       editor for whatever quest was dropped. ---- */
+let quadDrag = null, quadDragged = false;
+$('#taskMatrix').addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  const row = e.target.closest('.qrow'); if (!row) return;
+  quadDragged = false;
+  const r = row.getBoundingClientRect();
+  quadDrag = { row, id: row.dataset.id, x0: e.clientX, y0: e.clientY, dx: r.left - e.clientX, dy: r.top - e.clientY, w: r.width };
+  row.setPointerCapture(e.pointerId);
+});
+$('#taskMatrix').addEventListener('pointermove', e => {
+  const d = quadDrag; if (!d) return;
+  const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+  if (!quadDragged) {
+    if (Math.hypot(dx, dy) < 8) return;
+    quadDragged = true;
+    // Lift out of flow so it can travel over the other boxes.
+    d.row.classList.add('quad-lifted');
+    d.row.style.width = d.w + 'px';
+    document.body.classList.add('quad-dragging');
+  }
+  d.row.style.left = (e.clientX + d.dx) + 'px';
+  d.row.style.top  = (e.clientY + d.dy) + 'px';
+  const over = quadUnder(e.clientX, e.clientY);
+  $$('#taskMatrix .quad').forEach(q => q.classList.toggle('over', q === over));
+});
+// Which box is under the pointer. elementFromPoint would only ever return the lifted row,
+// so hit-test the boxes' rectangles directly instead.
+function quadUnder(x, y) {
+  return [...$$('#taskMatrix .quad')].find(q => {
+    const r = q.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }) || null;
+}
+const endQuadDrag = e => {
+  const d = quadDrag; if (!d) return;
+  quadDrag = null;
+  d.row.classList.remove('quad-lifted');
+  d.row.style.width = d.row.style.left = d.row.style.top = '';
+  document.body.classList.remove('quad-dragging');
+  $$('#taskMatrix .quad').forEach(q => q.classList.remove('over'));
+  if (!quadDragged) return;
+  const target = quadUnder(e.clientX, e.clientY);
+  const t = state.oneoffs.find(x => x.id === d.id);
+  if (target && t) {
+    const to = target.dataset.quad || null;
+    if (to !== t.quadrant) {
+      t.quadrant = to;
+      SFX.coin(); save();
+      const q = quadrantOf(t);
+      toast(q ? `${q.icon} ${t.name} → ${q.label}` : `${t.name} → Unsorted`, 'var(--cyan)');
+    }
+  }
+  renderOneoffs();
+  setTimeout(() => { quadDragged = false; }, 0);   // let the trailing click fizzle first
+};
+$('#taskMatrix').addEventListener('pointerup', endQuadDrag);
+$('#taskMatrix').addEventListener('pointercancel', endQuadDrag);
 
 // Game tabs
 $$('#gameTabs .game-tab').forEach(t => t.addEventListener('click', () => {
@@ -10464,6 +11063,7 @@ function fullRender() {
   displayTokens = state.tokens;
   renderTopbar();
   renderHabits();
+  renderHome();     // after renderHabits: both paint Due Now, and Home also logs the pace
   renderTasks();
   updateGameButtons();
   buildWheelSegments();
@@ -10502,6 +11102,9 @@ setInterval(() => {
   renderTopbar();
   renderHappyBanners();
   if ($('#view-habits').classList.contains('active') && editingHabitId === null) renderHabits(); // ×N tags come/go
+  // Home is the most time-sensitive view in the app: the NOW dot creeps along its block,
+  // the block itself hands over to the next one, and Due Now's one-hour window moves.
+  if ($('#view-home').classList.contains('active') && editingHabitId === null) renderHome();
   if ($('#view-tasks').classList.contains('active') && editingOneoffId === null) renderOneoffs();
   if ($('#view-prizes').classList.contains('active') && editingRewardId === null) renderPrizes();
 }, 30000);
