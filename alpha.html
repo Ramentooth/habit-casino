@@ -323,17 +323,28 @@
        tagged so a glance tells you "that's when I cashed in", not "that's work I did". */
     .sched-block.reward {
       border-style: solid; border-left-width: 3px;
-      background: color-mix(in srgb, var(--sb) 22%, transparent);
+      background: color-mix(in srgb, var(--sb) 26%, var(--gs-card, #1b1b1f));   /* opaque, like every other block */
       box-shadow: inset 0 0 12px color-mix(in srgb, var(--sb) 14%, transparent);
     }
     .sched-block.reward b::before { content: '🎁 '; }
     .sched-block.reward.moment { background: transparent; box-shadow: none; border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); }
-    .sched-zoom { margin-left: auto; display: inline-flex; gap: 4px; }
-    .zbtn {
-      width: 26px; height: 22px; border-radius: 7px; cursor: pointer; line-height: 1;
-      background: rgba(0,0,0,.35); border: 1px solid var(--panel-edge); color: var(--ink);
-      font-size: 14px; font-weight: 800;
+    /* Fixed to the screen, stacked directly above the ＋ FAB. A day can be thousands of
+       pixels tall, and these used to scroll off with the legend after one flick. */
+    .sched-zoom {
+      position: fixed; z-index: 44; right: 14px;
+      bottom: calc(80px + 54px + 10px + env(safe-area-inset-bottom));   /* clear of the FAB */
+      display: flex; flex-direction: column; gap: 6px;
     }
+    body.more-open .sched-zoom { opacity: 0; pointer-events: none; }    /* same as the FAB */
+    /* Inside the Home widget these stay inline in its header — that card doesn't scroll. */
+    #homeNow .sched-zoom { position: static; flex-direction: row; margin-left: auto; gap: 4px; }
+    .zbtn {
+      width: 38px; height: 34px; border-radius: 11px; cursor: pointer; line-height: 1;
+      background: var(--gs-ctl, rgba(0,0,0,.35)); border: 1px solid var(--gs-edge, var(--panel-edge));
+      color: var(--ink); font-size: 17px; font-weight: 800;
+      box-shadow: 0 6px 14px rgba(0,0,0,.45);
+    }
+    #homeNow .zbtn { width: 26px; height: 22px; border-radius: 7px; font-size: 14px; box-shadow: none; }
     .zbtn:disabled { opacity: .35; cursor: default; }
     /* Zoom = one CSS variable. Everything positioned off --ph eases to the new scale
        together, so the day glides between zoom levels rather than snapping. */
@@ -354,8 +365,12 @@
       transition: top .28s cubic-bezier(.4,0,.2,1), opacity .2s ease;
     }
     .sched-sub span { position: absolute; left: -38px; top: -7px; font-size: 9.5px; color: var(--ink-dim); opacity: .8; }
-    .sched-grid.zoom-4 .sched-sub.half, .sched-grid.zoom-5 .sched-sub.half { opacity: .5; }
-    .sched-grid.zoom-6 .sched-sub, .sched-grid.zoom-7 .sched-sub { opacity: .5; }
+    /* Detail appears as you zoom in: half-hours from ~96px/hour, quarters from ~168px.
+       Index ranges doubled along with SCHED_ZOOMS — old 4-5 → 8-11, old 6-7 → 12-14. */
+    .sched-grid.zoom-8 .sched-sub.half, .sched-grid.zoom-9 .sched-sub.half,
+    .sched-grid.zoom-10 .sched-sub.half, .sched-grid.zoom-11 .sched-sub.half { opacity: .5; }
+    .sched-grid.zoom-12 .sched-sub, .sched-grid.zoom-13 .sched-sub,
+    .sched-grid.zoom-14 .sched-sub { opacity: .5; }
     /* Draggable predictions: grab cursor, and touch-action:none so a vertical drag moves
        the block instead of scrolling the page out from under it. */
     .sched-block.draggable { cursor: grab; touch-action: none; }
@@ -373,28 +388,51 @@
     .sched-now { position: absolute; left: 48px; right: 0; border-top: 2px solid var(--pink); box-shadow: 0 0 8px var(--pink); z-index: 3; }
     .sched-now::before { content: ''; position: absolute; left: 0; top: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--pink); }
     .sched-block {
-      position: absolute; overflow: hidden; border-radius: 7px; padding: 3px 7px; font-size: 12px;
-      background: color-mix(in srgb, var(--sb) 16%, transparent);
-      border: 1px solid color-mix(in srgb, var(--sb) 55%, transparent);
+      position: absolute; overflow: hidden; border-radius: 6px; padding: 1px 6px; font-size: 11px;
+      /* OPAQUE, not a 16%-of-transparent wash. Two blocks that graze each other used to
+         blend into a muddy third colour and you couldn't tell where either one ended;
+         now the one in front simply covers the one behind, the way the solid outline
+         around it always did. Mixed toward the card colour so it stays a dark tint. */
+      background: color-mix(in srgb, var(--sb) 20%, var(--gs-card, #1b1b1f));
+      border: 1px solid color-mix(in srgb, var(--sb) 55%, var(--gs-card, #1b1b1f));
       border-left: 3px solid var(--sb);
     }
-    .sched-block b { display: block; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sched-block .sb-time { display: block; opacity: .7; font-size: 11px; white-space: nowrap; }
-    /* Predicted = dashed and see-through; actually-done = solid. */
-    .sched-block.predicted { border-style: dashed; border-left-style: dashed; background: transparent; opacity: .8; }
+    .sched-block b { display: block; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sched-block .sb-time { display: block; opacity: .7; font-size: 10px; line-height: 1.2; white-space: nowrap; }
+    /* Predicted = dashed; actually-done = solid. Its fill is opaque too, just darker, so a
+       prediction sitting over a real block still reads as one thing at a time. `opacity`
+       on the element would make the whole thing translucent again — the border included. */
+    .sched-block.predicted {
+      border-style: dashed; border-left-style: dashed;
+      background: color-mix(in srgb, var(--sb) 9%, var(--gs-card, #1b1b1f));
+      color: var(--ink-dim);
+    }
+    .sched-block.predicted b { color: var(--ink); }
     /* Untimed completions are SOLID: they really happened, they just have no measurable
        length. Dashed is reserved for predictions, so the two can never be confused. */
     .sched-block.moment {
       background: transparent; border: 0; border-left: 0; padding-left: 0;
       border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); border-radius: 0;
     }
-    .sched-block.moment b { font-size: 11px; opacity: .85; }
+    /* Left deliberately transparent: a moment is a tick on the timeline, not a span, and
+       boxing it would claim a duration it doesn't have. It no longer collides with its
+       neighbours because layoutLanes now reserves its real drawn height. */
+    .sched-block.moment b { font-size: 10px; opacity: .85; line-height: 1.2; }
 
     /* Red "needs attention" dot — on the More tab and on the row it belongs to. */
     .nav-dot {
       position: absolute; top: 5px; left: 50%; margin-left: 8px;
       width: 9px; height: 9px; border-radius: 50%; background: #ff3b30;
       box-shadow: 0 0 8px rgba(255,59,48,.95); pointer-events: none;
+    }
+    /* Pending check-in count. Was inline-styled on the More tab; it's a class now because
+       renderNav() moves it onto whichever tab currently owns Chat. Positioned against
+       `.tab { position: relative }`. */
+    .nav-badge {
+      position: absolute; top: 2px; right: 10px;
+      background: var(--purple, #b026ff); color: #fff;
+      font-size: 10px; font-weight: 800; line-height: 1;
+      border-radius: 8px; padding: 2px 5px; min-width: 14px; text-align: center;
     }
     .more-row .mr-dot {
       margin-left: auto; flex: 0 0 auto;
@@ -420,6 +458,14 @@
     .view { display: none; animation: fadeUp .35s ease; }
     .view.active { display: block; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    /* A transform on an element makes it the containing block for its position:fixed
+       descendants. These three views hold controls pinned to the SCREEN — the Tasks dock,
+       the casino game bar, the Schedule's zoom buttons and ＋ — so for the 0.35s the entry
+       animation held a translateY they were positioned against the (page-tall) view
+       instead, appearing mid-screen and snapping down when the animation ended. Fade them
+       in without the slide; every other view keeps fadeUp. */
+    #view-tasks, #view-casino, #view-schedule { animation-name: fadeIn; }
 
     .panel {
       background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 18px;
@@ -492,18 +538,18 @@
     .habit.done .check { opacity: 1; filter: drop-shadow(0 0 8px var(--green)); }
 
     /* ---------- Compact habit checklist (Habits tab) ---------- */
-    .habit-list { display: flex; flex-direction: column; gap: 8px; }
+    .habit-list { display: flex; flex-direction: column; gap: 6px; }
     .hrow {
-      display: flex; align-items: center; gap: 12px; cursor: pointer;
-      padding: 11px 14px; border-radius: 14px; transition: .15s; position: relative;
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      padding: 5px 10px; border-radius: 11px; transition: .15s; position: relative;
       background: linear-gradient(160deg, rgba(176,38,255,0.10), rgba(20,6,42,0.55));
       border: 1px solid var(--panel-edge);
     }
     /* Habit difficulty levels. The ONLY coloured thing is the "tier N" word in the pill —
        no rim, no tinted pill, no coloured dots. Swipe the row to change tier. */
     .hrow, .hedit { touch-action: pan-y; }
-    .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1; padding: 4px 9px 3px; }
-    .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; }
+    .hrow-reward.lvl { display: inline-flex; flex-direction: column; align-items: center; gap: 0; line-height: 1.05; padding: 2px 7px; }
+    .hrow-reward.lvl .lvl-word { font-family: 'Rajdhani', sans-serif; font-style: normal; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
     /* Swipe hints, parked in the gap between the habit name and its reward pill — space
        the row was wasting anyway. Keeping them out of .hrow's own flex row is what lets
        leveled and plain rows line their emoji and check buttons up with each other. */
@@ -618,19 +664,38 @@
     .cat-swatch.none { width: 42px; height: 30px; border-radius: 8px; border: 1px dashed var(--panel-edge); flex: 0 0 auto; }
     .cat-name { flex: 1 1 auto; font-weight: 700; }
     .hrow:active { transform: scale(0.985); }
-    .hrow-emoji { flex: 0 0 auto; font-size: 24px; line-height: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,.25)); }
-    .hrow-main { flex: 1 1 auto; min-width: 0; }
-    .hrow-name { font-weight: 700; font-size: 16px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Rows are ONE line and roughly half their old height, so more of the list fits on a
+       phone. Everything that used to sit on a second line is now a chip beside the name. */
+    .hrow-emoji { flex: 0 0 auto; font-size: 18px; line-height: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,.25)); }
+    .hrow-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; }
+    .hrow-name { font-weight: 700; font-size: 14px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hrow-sub { font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 1px; }
     .hrow-sub.hot { color: var(--orange); }
+    /* Streak leads the name; it's the one number worth reading before the label itself. */
+    .row-streak {
+      flex: 0 0 auto; font-size: 11px; font-weight: 800; color: var(--orange);
+      white-space: nowrap; letter-spacing: -.3px;
+    }
+    /* Everything else the second line used to hold. Shrink-to-nothing before the name
+       does, so a long name never pushes chips off the row. */
+    .row-chip {
+      flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap;
+      font-size: 10px; font-weight: 800; color: var(--ink-dim);
+      background: rgba(255,255,255,.07); border-radius: 999px; padding: 1px 6px;
+    }
+    .row-chip b { font-weight: 800; }
+    .row-chip.live { color: var(--cyan); background: rgba(0,240,255,.12); }
+    .row-chip.spin { color: var(--gold); background: rgba(255,215,0,.14); }
+    .row-chip.due.today { color: var(--gold); background: rgba(255,215,0,.14); }
+    .row-chip.due.late { color: var(--pink); background: rgba(255,27,141,.16); }
     .hrow-reward {
-      flex: 0 0 auto; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; white-space: nowrap;
+      flex: 0 0 auto; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px; white-space: nowrap;
       color: var(--yellow); background: rgba(255,230,0,0.10); border: 1px solid rgba(255,230,0,0.4);
-      padding: 3px 9px; border-radius: 999px;
+      padding: 2px 7px; border-radius: 999px;
     }
     .hrow-check {
-      flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border-radius: 9px; cursor: pointer; font-family: inherit;
-      display: grid; place-items: center; font-size: 18px; font-weight: 900; color: transparent;
+      flex: 0 0 auto; width: 26px; height: 26px; padding: 0; border-radius: 8px; cursor: pointer; font-family: inherit;
+      display: grid; place-items: center; font-size: 14px; font-weight: 900; color: transparent;
       background: rgba(255,255,255,0.05); border: 2px solid var(--panel-edge); transition: .15s;
     }
     .hrow-check:active { transform: scale(.9); }
@@ -672,6 +737,71 @@
     .bonus-chip { flex: 0 0 auto; text-align: center; }
     .bonus-chip .subtle { font-size: 10px; }
     .bonus-chip .bonus-amt { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 17px; }
+
+    /* ---------- Home ----------------------------------------------------------------
+       Deliberately quieter than the rest of the app: hairline borders, no glow, one
+       accent per element. This screen is read at a glance, so nothing on it competes. */
+    .home-sec-title {
+      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim);
+      margin: 22px 0 10px;
+    }
+    .home-rule { height: 1px; background: var(--gs-edge, rgba(255,255,255,.12)); margin: 26px 0 0; }
+
+    /* NOW — today's Schedule grid, in a fixed window that scrolls and zooms in place. */
+    .now-card { border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); border-radius: 14px; padding: 12px 14px; }
+    .now-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .now-kicker {
+      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim);
+    }
+    .now-clock { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
+    /* The window. Fixed height is the whole point — the grid inside grows with the zoom
+       and scrolls, but the card never changes size, so nothing below it ever moves. */
+    .now-scroll {
+      height: 230px; overflow-y: auto; overflow-x: hidden; position: relative;
+      overscroll-behavior: contain;                /* don't hand the scroll to the page at the ends */
+      -webkit-overflow-scrolling: touch;
+    }
+    .now-scroll::-webkit-scrollbar { width: 0; height: 0; }
+    .now-scroll { scrollbar-width: none; }
+    /* The grid's own height animates on the full tab; inside the window that animation
+       would fight the scroll maths, which reads the height to clamp scrollTop. The blocks
+       and gridlines still ease to their new positions, so the zoom still glides. */
+    .now-scroll .sched-grid { transition: none; }
+    /* A 230px window can't carry the tab's full type scale. */
+    .now-scroll .sched-hour { font-size: 10px; }
+    .now-scroll .sched-block { font-size: 10px; padding: 1px 5px; }
+    .now-scroll .sched-block .sb-time { font-size: 9px; }
+    .now-scroll .sched-block.moment b { font-size: 9px; }
+    .now-next { margin-top: 10px; font-size: 14px; color: var(--ink-dim); }
+    .now-next b { color: var(--ink); font-weight: 700; }
+
+    /* Habits gives Due Now a full banner and can afford the big empty state; on Home the
+       board is one band among three, so an idle one shrinks to a single line. */
+    #homeDue .empty { padding: 14px 0; margin-bottom: 6px !important; }
+    #homeDue .empty .big { font-size: 22px; margin-bottom: 2px; }
+
+    /* TODAY — the one-line "N of M done" tally under the board. */
+    .home-tally { text-align: center; font-size: 14px; color: var(--ink-dim); margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+    /* PACE — filled portion solid, the remainder a dotted ghost of what's left. */
+    .pace-row { display: flex; align-items: center; gap: 14px; }
+    .pace-bar {
+      flex: 1 1 auto; height: 22px; border-radius: 4px; overflow: hidden; display: flex;
+      border: 1px solid var(--gs-edge-hi, rgba(255,255,255,.28));
+    }
+    .pace-fill { background: var(--ink); transition: width .5s cubic-bezier(.2,.8,.2,1); }
+    .pace-rest {
+      flex: 1 1 auto;
+      background-image: radial-gradient(currentColor .8px, transparent .9px);
+      background-size: 4px 4px; color: var(--ink-dim); opacity: .6;
+    }
+    .pace-pct { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; flex: 0 0 auto; min-width: 52px; }
+    .pace-hist { margin-top: 20px; display: grid; grid-template-columns: auto auto; gap: 6px 26px; justify-content: start; }
+    .pace-hist .ph-k { color: var(--ink-dim); font-size: 15px; }
+    .pace-hist .ph-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pace-hist .ph-v.none { font-weight: 400; color: var(--ink-dim); }
 
     /* ---------- Casino ---------- */
     #view-casino { padding-bottom: 88px; }
@@ -791,8 +921,92 @@
     @keyframes pickPulse { 50% { transform: scale(1.04); } }
 
     /* Quest to-do list + quick-add bar (Tasks tab) */
-    .quest-list { display: flex; flex-direction: column; gap: 8px; flex: 1 1 300px; }
+    .quest-list { display: flex; flex-direction: column; gap: 6px; flex: 1 1 300px; }
     .qrow .hrow-check { border-radius: 50%; }
+
+    /* --- Tasks: Add / List / Matrix, one row of equal thirds, docked to the bottom ---
+       Same geometry and chrome as the casino's .game-tabs bar: position:fixed above the
+       tab bar, not sticky inside the scroller, so the row sits in exactly one place no
+       matter how long the list gets. The view reserves the height below it. */
+    /* The baseline for the closed dock. syncTaskDockRoom() reads this value back and adds
+       the quick-add form's measured height on top when it's open, so this rule stays the
+       single source of truth for the number. */
+    #view-tasks { padding-bottom: 88px; }
+    .task-dock {
+      position: fixed; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right));
+      bottom: calc(67px + env(safe-area-inset-bottom)); z-index: 38;
+      max-width: 720px; margin: 0 auto; padding: 6px;
+      border: 1px solid var(--panel-edge); border-radius: 17px;
+      background: rgba(11,2,23,.94); box-shadow: 0 -7px 26px rgba(0,0,0,.58);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+    /* Inside the dock the form is a plain stack — the dock already carries the panel
+       chrome, and a tall category list scrolls rather than growing off-screen. */
+    .task-dock .quest-add { margin: 0 0 6px; max-height: 46vh; overflow-y: auto; }
+    .task-actionbar { display: flex; gap: 6px; }
+    /* Vanishes from layout so its two buttons become thirds of .task-actionbar itself. */
+    .task-viewbar { display: contents; }
+    .task-actionbar > button, .task-viewbar > button { flex: 1 1 0; min-width: 0; white-space: nowrap; padding-left: 4px; padding-right: 4px; }
+    .view-seg { flex: 1 1 0; }
+    .view-seg.sel { background: var(--gs-lite) !important; color: var(--gs-on-lite) !important; border-color: transparent !important; }
+
+    /* --- Eisenhower matrix -------------------------------------------------------- */
+    .matrix-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .quad-axis {
+      display: flex; justify-content: space-between; padding: 0 2px;
+      font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase; color: var(--ink-dim);
+    }
+    .quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .quad {
+      display: flex; flex-direction: column; min-width: 0;
+      border-radius: 12px; padding: 8px; transition: border-color .15s, background .15s;
+      background: var(--gs-panel); border: 1px dashed var(--gs-edge);
+    }
+    /* Each quadrant is rimmed in its own colour (--qc, set per box) so the four read
+       apart instantly. Unsorted has no --qc and stays neutral grey on purpose. */
+    .quad[style*="--qc"] { border-style: solid; border-color: color-mix(in srgb, var(--qc) 55%, transparent); }
+    .quad[style*="--qc"] .quad-head { color: var(--qc); }
+    .quad[style*="--qc"] .quad-n { color: color-mix(in srgb, var(--qc) 75%, #fff 25%); }
+    /* The box the finger is currently over. */
+    .quad.over { border-color: var(--cyan) !important; background: rgba(0,240,255,.07); border-style: solid; }
+    .quad-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px;
+      font-size: 11px; font-weight: 800; letter-spacing: .3px;
+    }
+    .quad.unsorted .quad-head { cursor: pointer; margin-bottom: 0; padding: 2px 0; }
+    .quad.unsorted:not(.folded) .quad-head { margin-bottom: 6px; }
+    .quad.unsorted.folded .quad-body { display: none; }
+    .quad-n { font-family: 'Orbitron', sans-serif; font-size: 10px; color: var(--ink-dim); }
+    .quad-body { display: flex; flex-direction: column; gap: 5px; min-height: 46px; max-height: 30vh; overflow-y: auto; }
+    .quad.unsorted .quad-body { max-height: 26vh; }
+    .quad-empty { font-size: 10px; color: var(--ink-dim); padding: 12px 4px; text-align: center; }
+    /* Rows in a box are already compact; drop the left category stripe so four
+       narrow columns don't lose more width to it. */
+    .quad .qrow { border-left-width: 1px !important; padding: 4px 6px; gap: 5px; }
+    /* A quadrant column is ~170px wide. Inside the 2×2 boxes a row is stripped to the
+       four things you actually act on — emoji, name, ▶ and ✓. Reward, due date, progress
+       and timer all stay readable in List view and in the editor. */
+    .quad-grid .qrow .hrow-reward, .quad-grid .qrow .row-chip { display: none; }
+    .quad-grid .qrow .hrow-check { width: 22px; height: 22px; font-size: 12px; border-width: 1px; }
+    .quad-grid .qrow .hrow-emoji { font-size: 15px; }
+    .quad-grid .qrow .hrow-name { font-size: 13px; }
+    .qrow.quad-lifted {
+      position: fixed; z-index: 60; pointer-events: none;
+      box-shadow: 0 12px 26px rgba(0,0,0,.6); opacity: .95; transform: scale(1.03);
+    }
+    body.quad-dragging { user-select: none; }
+    body.quad-dragging .quad-body { overflow: hidden; }   /* no scroll-fighting mid-drag */
+    #taskMatrix .qrow { touch-action: none; }             /* the drag owns the gesture */
+
+    /* Editor: due date + quadrant picker */
+    .date-in {
+      background: var(--gs-ctl); border: 1px solid var(--gs-edge); color: var(--ink);
+      border-radius: 8px; padding: 3px 6px; font-family: inherit; font-size: 13px;
+    }
+    .qgrid-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .qgrid-pick .quad-btn { flex: 1 1 44%; }
+    .quad-btn.sel { background: var(--gs-lite) !important; color: var(--gs-on-lite) !important; border-color: transparent !important; }
     .qrow.spin-pick { border-color: var(--yellow); box-shadow: 0 0 26px var(--yellow); animation: pickPulse .55s ease 3; }
     .spin-tag { color: var(--yellow); font-weight: 800; }
     .qcat { font-size: 11px; padding: 3px 8px; color: var(--ink-dim); }
@@ -1115,6 +1329,38 @@
 
     /* ---------- Settings ---------- */
     .set-section { margin-bottom: 22px; }
+
+    /* --- Settings → 🧭 Tab bar: one ordered list of every view, split by a line ------
+       Vertical sibling of the tier ladder's horizontal strip; same drag mechanics. */
+    .tabedit { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; position: relative; }
+    .tabedit-row {
+      display: flex; align-items: center; gap: 12px; padding: 10px 4px 10px 12px;
+      border-radius: 12px; background: var(--gs-ctl, rgba(0,0,0,.3));
+      border: 1px solid var(--gs-edge, var(--panel-edge));
+      user-select: none;
+      transition: transform .16s cubic-bezier(.4,0,.2,1), opacity .16s;
+    }
+    .tabedit-row .te-ico { font-size: 20px; line-height: 1; width: 26px; text-align: center; flex: 0 0 auto; }
+    .tabedit-row .te-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; flex: 1 1 auto; min-width: 0; }
+    /* Only the grip starts a drag. `touch-action: none` has to sit on something, and
+       putting it on the whole row would kill vertical scrolling of a long Settings page
+       whenever a finger happened to land on a row. */
+    .tabedit-row .te-grip {
+      color: var(--ink-dim); font-size: 16px; letter-spacing: 1px; flex: 0 0 auto;
+      padding: 6px 12px; margin: -6px 0; cursor: grab; touch-action: none;
+    }
+    .tabedit-row.lifted { transition: none; z-index: 3; box-shadow: 0 10px 22px rgba(0,0,0,.6); }
+    .tabedit.dragging .te-grip { cursor: grabbing; }
+    /* The cutoff. Everything above it is a tab; everything below is behind More. */
+    .tabedit-split {
+      display: flex; align-items: center; gap: 10px; margin: 4px 0;
+      font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 800;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim);
+      transition: transform .16s cubic-bezier(.4,0,.2,1);
+    }
+    .tabedit-split::before, .tabedit-split::after {
+      content: ''; flex: 1 1 auto; height: 1px; background: var(--gs-edge-hi, var(--panel-edge));
+    }
     /* Collapsible settings panels (tap a title to expand/collapse) */
     #view-settings .section-title { cursor: pointer; user-select: none; }
     #view-settings .section-title::after { content: '▾'; display: inline-block; margin-left: 8px; opacity: .55; transition: transform .2s; }
@@ -1522,11 +1768,11 @@
     #view-tasks .oneoff-layout { display: block; overflow-x: hidden; }
     #view-tasks .quest-list { overflow: visible; }
     #view-tasks .qrow { grid-template-columns: auto minmax(0,1fr) auto; }
-    #view-tasks .qrow .hrow-main, #view-tasks .qrow .hrow-name { min-width: 0; overflow-wrap: anywhere; }
+    #view-tasks .qrow .hrow-main, #view-tasks .qrow .hrow-name { min-width: 0; }
     @media (max-width: 560px) {
       #view-tasks .oneoff-section { padding: 0; }
       #view-tasks .quest-add { padding: 10px; }
-      #view-tasks .qrow { padding: 10px 8px; gap: 8px; }
+      #view-tasks .qrow { padding: 5px 8px; gap: 8px; }
       #view-tasks .qcat { display: none; }
       #view-tasks .qedit .hedit-r { flex-wrap: wrap; min-width: 0; }
       #view-tasks .qedit .name-in, #view-tasks .qedit .sect-in { flex: 1 1 140px; min-width: 0; max-width: 100%; }
@@ -1646,7 +1892,11 @@
     }
     .btn:hover { transform: translateY(-1px); box-shadow: none; filter: brightness(1.06); }
     .btn:active { transform: translateY(1px); box-shadow: none; }
-    .chip.sel, .tier-chip.sel, .day-dot.active {
+    /* .view-seg / .quad-btn are `.btn ghost sm`, so the secondary-control rule above
+       catches them — and being later in the file it beat their own `.sel` rules, which
+       left List/Matrix and the quadrant picker with no visible selected state at all.
+       They belong here with the other checked states, after that rule. */
+    .chip.sel, .tier-chip.sel, .day-dot.active, .view-seg.sel, .quad-btn.sel {
       background: var(--gs-lite) !important; border-color: transparent !important; color: var(--gs-on-lite) !important;
     }
     .hrow-check { background: var(--gs-ctl); border: 1px solid var(--gs-edge-hi); }
@@ -1818,33 +2068,36 @@
 
   <div class="more-scrim" id="moreScrim"></div>
 
-  <nav id="nav" class="bottomnav">
-    <!-- Overflow sheet for the tabs that don't fit in the bar. It lives INSIDE the nav
-         and is anchored with bottom:100%, so it always sits exactly on top of the bar
-         no matter how tall the bar ends up (safe-area inset, font scaling, …). -->
-    <div class="more-sheet" id="moreSheet" role="menu" aria-hidden="true">
-      <div class="more-row" data-view="stats" role="menuitem"><span class="mr-ico">📊</span><span class="mr-label">Stats</span></div>
-      <div class="more-row" data-view="chat" role="menuitem"><span class="mr-ico">💬</span><span class="mr-label">Chat</span></div>
-      <div class="more-row" data-view="settings" role="menuitem"><span class="mr-ico">⚙️</span><span class="mr-label">Settings</span></div>
-    </div>
-    <div class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Casino</span></div>
-    <div class="tab" data-view="tasks"><span class="ti">📋</span><span class="tl">Tasks</span></div>
-    <div class="tab active" data-view="habits"><span class="ti">⚡</span><span class="tl">Habits</span></div>
-    <div class="tab" data-view="prizes"><span class="ti">🏆</span><span class="tl">Winnings</span></div>
-    <div class="tab" data-view="schedule"><span class="ti">📅</span><span class="tl">Schedule</span></div>
-    <!-- Chat lives behind More now, so its pending check-in count rides the More tab. -->
-    <div class="tab more-tab" id="moreTab" role="button" aria-expanded="false" style="position:relative"><span class="ti">⋯</span><span class="tl">More</span><span id="qNavBadge" style="display:none;position:absolute;top:2px;right:10px;background:var(--purple,#b026ff);color:#fff;font-size:10px;font-weight:800;line-height:1;border-radius:8px;padding:2px 5px;min-width:14px;text-align:center"></span></div>
-  </nav>
+  <!-- Empty on purpose: renderNav() fills this from state.settings.barViews, because
+       which five views sit in the bar is the user's choice (Settings → 🧭 Tab bar). The
+       #moreSheet it builds is a CHILD of the nav — it's anchored bottom:100% against it,
+       so it always sits exactly on top of the bar however tall the bar ends up. -->
+  <nav id="nav" class="bottomnav"></nav>
 
   <main>
+    <!-- ===================== HOME =====================
+         The landing screen: where am I right now, what's next, and how's today going.
+         It owns no data of its own — the NOW rail reads the same blocks the Schedule tab
+         draws, and the board below is literally Due Now rendered a second time (see
+         .duenow-mount), so the two can't drift apart. -->
+    <section class="view active" id="view-home">
+      <div class="now-card" id="homeNow"></div>
+      <div class="home-sec-title">DUE NOW</div>
+      <div class="duenow-mount" id="homeDue" data-bare="1"></div>
+      <div id="homeToday"></div>
+      <div class="home-rule"></div>
+      <div class="home-sec-title">TODAY'S PACE</div>
+      <div id="homePace"></div>
+    </section>
+
     <!-- ===================== HABITS ===================== -->
-    <section class="view active" id="view-habits">
+    <section class="view" id="view-habits">
       <div class="plan-cta">
         <button class="btn ghost sm" data-act="openPlanner">📅 Plan My Week</button>
         <span id="todayCtxBadge"></span>
         <button class="loadout-button" id="loadoutSwitch" type="button" title="Choose or create a habit loadout"></button>
       </div>
-      <div id="dueSoonSection"></div>
+      <div class="duenow-mount" id="dueSoonSection"></div>
       <div class="habit-group collapsed" id="dailyGroup">
         <div class="daily-banner slim" data-act="toggleGroup" aria-expanded="false">
           <div class="dtext">
@@ -1892,15 +2145,29 @@
         <div class="section-title neon-purple">🎯 One-Off Quests</div>
         <div class="subtle" style="margin-bottom:12px">Add one-off tasks below and check them off when finished. They are shared across every loadout.</div>
         <div class="hh-banner" id="hhBannerTasks"></div>
-        <div class="quest-add" id="questAdd">
-          <div class="row" style="gap:8px;flex-wrap:nowrap">
-            <input class="name-in" id="questAddName" placeholder="Add a quest…">
-            <button class="btn green sm" id="questAddBtn">+ Add</button>
-          </div>
-          <div class="chip-row" id="questTierChips"></div>
-          <div class="chip-row" id="questCatChips"></div>
-        </div>
         <div class="oneoff-layout"><div class="quest-list" id="oneoffGrid"></div></div>
+        <div class="matrix-wrap" id="taskMatrix" style="display:none"></div>
+        <!-- Add / List / Matrix, one third each, DOCKED to the bottom of the screen the
+             same way the casino's game bar is: fixed above the tab bar rather than sticky
+             inside the scroller, so the row never drifts with the list. The quick-add form
+             lives in the same dock and unfolds directly above its own button. #taskViewBar
+             is display:contents, so its two buttons are flex children of the action bar.
+             The dock stays inside #view-tasks — every control in it is reached by the
+             handlers delegated to that view. -->
+        <div class="task-dock" id="taskDock">
+          <div class="quest-add" id="questAdd" style="display:none">
+            <div class="row" style="gap:8px;flex-wrap:nowrap">
+              <input class="name-in" id="questAddName" placeholder="Add a quest…">
+              <button class="btn green sm" id="questAddBtn">+ Add</button>
+            </div>
+            <div class="chip-row" id="questTierChips"></div>
+            <div class="chip-row" id="questCatChips"></div>
+          </div>
+          <div class="task-actionbar">
+            <button class="btn ghost sm" id="questAddToggle">＋ Add</button>
+            <span class="task-viewbar" id="taskViewBar"></span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -2221,6 +2488,13 @@
       </div>
 
       <div class="panel set-section">
+        <div class="section-title neon-cyan">🧭 Tab bar</div>
+        <div class="subtle">Drag to reorder. The top five get a tab of their own; everything below the line lives behind ⋯ More.</div>
+        <div class="tabedit" id="tabEditList"></div>
+        <div class="row" style="margin-top:12px"><button class="btn ghost sm" id="tabEditReset">↺ Reset to default</button></div>
+      </div>
+
+      <div class="panel set-section">
         <div class="section-title neon-cyan">🔧 General</div>
         <div class="row between" style="margin-top:12px">
           <div>
@@ -2522,6 +2796,11 @@ function defaultState() {
                 happyHours: {},
                 // Token payout per one-off task tier (editable in Settings → One-Off Quests).
                 tierRewards: { easy: 5, medium: 10, hard: 20 },
+                taskView: 'list',        // Tasks tab: 'list' | 'matrix' (Eisenhower)
+                // Which five views sit in the bottom bar; everything else falls into
+                // "More". Editable in Settings → 🧭 Tab bar. Kept in settings (not a
+                // device-local key) so the layout follows you across devices.
+                barViews: ['home', 'casino', 'tasks', 'habits', 'prizes'],
                 // Reflection check-in: which input mode was last used — 'text' | 'browser' | 'realtime'.
                 voiceMode: 'text' },
     streakFreezes: 0, // how many Streak Freezes the player currently owns
@@ -2541,6 +2820,10 @@ function defaultState() {
     // so it can't express "Thursday at 3pm, just this once" and can't hold a quest at all.
     // These entries are what the Schedule's drag and its + button write to.
     plannedBlocks: {},    // 'YYYY-MM-DD' → [{ id, kind:'habit'|'task', refId, startMin, durMin }]
+    // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
+    // finished quests are deleted and the habit list changes — so each day's pair is
+    // recorded as it happens and never recomputed. See recordPaceToday().
+    paceLog: {},          // 'YYYY-MM-DD' → { done, total }
     // Reflection system: quick tap-chip reasons for misses, plus deeper end-of-day
     // conversation transcripts. Both land in `reflections`; `reasonChips` grows over
     // time the same way `contexts` does (starter set + AI can propose new ones).
@@ -2783,6 +3066,46 @@ function deleteBackup(key) {
    runs, so leaving these down in the CLOUD SAVE section made that read throw at boot —
    killing the script before the app rendered, which showed up as a blank frozen page.
    Anything the boot path can reach has to be initialized before the boot path runs. ---- */
+/* ---- The view registry, up here for the SAME reason: load() calls sanitizeBar() to
+   repair settings.barViews, and load() runs at boot — thousands of lines above the NAV
+   section where this naturally belongs. As `const`s declared down there they'd still be
+   in their temporal dead zone when load() read them, and load()'s catch would turn the
+   ReferenceError into a fresh defaultState() that the next save() writes over the real
+   save. That is precisely how data got wiped once before. Keep these above the boot path.
+
+   VIEWS is the single source of truth for every view's id, icon and label — the id/label
+   mismatch on `prizes` ("Winnings") is why a label can't just be derived from an id. The
+   order here is both the default bar order and the order the More sheet lists things in. */
+const VIEWS = [
+  { id: 'home',     icon: '🏠', label: 'Home' },
+  { id: 'casino',   icon: '🎰', label: 'Casino' },
+  { id: 'tasks',    icon: '📋', label: 'Tasks' },
+  { id: 'habits',   icon: '⚡', label: 'Habits' },
+  { id: 'prizes',   icon: '🏆', label: 'Winnings' },
+  { id: 'schedule', icon: '📅', label: 'Schedule' },
+  { id: 'stats',    icon: '📊', label: 'Stats' },
+  { id: 'chat',     icon: '💬', label: 'Chat' },
+  { id: 'settings', icon: '⚙️', label: 'Settings' },
+];
+const VIEW_IDS = VIEWS.map(v => v.id);
+const BAR_SLOTS = 5;                                   // + the More tab = the six-slot bar
+const DEFAULT_BAR = ['home', 'casino', 'tasks', 'habits', 'prizes'];
+function viewMeta(id) { return VIEWS.find(v => v.id === id); }
+// Always exactly BAR_SLOTS known ids, whatever it's handed. An unknown id, a duplicate or
+// a short list would otherwise leave a hole in the bar and a view reachable from nowhere.
+function sanitizeBar(list) {
+  const out = [];
+  (Array.isArray(list) ? list : []).forEach(id => {
+    if (VIEW_IDS.includes(id) && !out.includes(id)) out.push(id);
+  });
+  DEFAULT_BAR.concat(VIEW_IDS).forEach(id => { if (out.length < BAR_SLOTS && !out.includes(id)) out.push(id); });
+  return out.slice(0, BAR_SLOTS);
+}
+function barViews() { return sanitizeBar((state.settings || {}).barViews); }
+// Everything not in the bar, in VIEWS order. This replaced a `const MORE_VIEWS` array —
+// it has to be derived now, and switchView still asks it whether "More" owns the active state.
+function moreViews() { const bar = barViews(); return VIEW_IDS.filter(id => !bar.includes(id)); }
+
 const CLOUD_LIMIT = 700000;     // chars of JSON — comfortably under Firestore's 1 MiB doc cap
 let cloudOn = false;            // signed in AND reconciled — only then do we mirror upward
 let lastDailyBackupDay = null;  // guards the once-a-day snapshot in save()
@@ -2953,6 +3276,10 @@ function load(raw) {
       : (merged.loadouts.includes(((parsed.dayPlans || {})[todayStr()] || {}).context) ? parsed.dayPlans[todayStr()].context : 'Default');
     merged.habits.forEach(h => { if (!h.loadout || !merged.loadouts.includes(h.loadout)) h.loadout = 'Default'; });
     const trw = merged.settings.tierRewards = { easy: 5, medium: 10, hard: 20, ...(merged.settings.tierRewards || {}) };
+    // Tab bar layout. Repaired rather than trusted: an unknown id, a duplicate or a short
+    // list would leave the bar with a hole and a view reachable from nowhere. sanitizeBar
+    // is the same function the renderer uses, so what's saved and what's drawn can't disagree.
+    merged.settings.barViews = sanitizeBar(merged.settings.barViews);
     merged.oneoffs = (Array.isArray(parsed.oneoffs) ? parsed.oneoffs : base.oneoffs).map(t => {
       const reward = Number.isFinite(t.reward) ? t.reward : 5;
       const tier = TASK_TIERS[t.tier] ? t.tier : (reward <= 7 ? 'easy' : reward <= 14 ? 'medium' : 'hard');
@@ -2961,6 +3288,11 @@ function load(raw) {
         emojiAuto: !!t.emojiAuto,   // see normalizeHabit — auto-pick until the user edits the icon
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
+        // When this should be done, as a local 'YYYY-MM-DD' string (null = no date), and
+        // which Eisenhower box it's been triaged into (null = not sorted yet). Both are
+        // validated here rather than trusted at every read site.
+        due: (typeof t.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due)) ? t.due : null,
+        quadrant: ['q1', 'q2', 'q3', 'q4'].includes(t.quadrant) ? t.quadrant : null,
         createdAt: Number.isFinite(t.createdAt) ? t.createdAt : null,
         createdBy: t.createdBy === 'ai' ? 'ai' : undefined,
         // Same running-stopwatch shape habits use, so a quest can be timed and land on
@@ -3003,6 +3335,18 @@ function load(raw) {
                      refId: String(b.refId), startMin: clamp(parseInt(b.startMin), 0, 1439),
                      durMin: clamp(parseInt(b.durMin) || 15, 1, 24 * 60) }));
       if (rows.length) merged.plannedBlocks[d] = rows;
+    });
+    // Home's pace log, same treatment: date-keyed, and a row is only kept if it carries a
+    // real denominator — a { total: 0 } row would render as a confident 0% for a day that
+    // simply had nothing set.
+    merged.paceLog = {};
+    const rawPace = (parsed.paceLog && typeof parsed.paceLog === 'object' && !Array.isArray(parsed.paceLog)) ? parsed.paceLog : {};
+    Object.keys(rawPace).forEach(d => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+      const done = parseInt((rawPace[d] || {}).done), total = parseInt((rawPace[d] || {}).total);
+      if (Number.isFinite(done) && Number.isFinite(total) && total > 0) {
+        merged.paceLog[d] = { done: clamp(done, 0, total), total };
+      }
     });
     // Chat threads — migrate the old single flat aiChatLog into one thread so no conversation is lost.
     let threads = Array.isArray(parsed.aiChatThreads) ? parsed.aiChatThreads : [];
@@ -3613,10 +3957,11 @@ function dailyLoadoutHabits() { return sectionStats('daily').list; }
 // tap anywhere else (data-act="editHabit") to "blow up" the inline editor.
 function habitCardHTML(h, usualMin) {
   const cap = capOf(h), dc = doneCount(h), complete = dc >= cap, s = currentStreak(h);
-  let sub = h.repeatable
-    ? `${dc}/${cap} today` + (s > 0 ? ` · 🔥 ${s}` : '')
-    : (complete ? 'Done today' : (s > 0 ? `🔥 ${s} day${s > 1 ? 's' : ''} streak` : 'No streak yet'));
-  if (Number.isFinite(usualMin)) sub += ` · ⏰ usually ~${fmtMinOfDay(usualMin)}`;
+  // ONE LINE. The old second line carried streak / progress / "usually ~8:00" and made
+  // every row ~58px; the streak now leads the name as a chip and the rest are micro-chips
+  // that follow it. The "usually" and "~Xm" hints are dropped from the row on purpose —
+  // they still drive Due Now and the Block Schedule, which is where they're actionable.
+  const streakChip = s > 0 ? `<span class="row-streak">🔥${s}</span>` : '';
   const lvls = habitLevels(h);
   const li = lvls ? curLevelIndex(h) : -1;
   const lvl = lvls ? lvls[li] : null;
@@ -3628,11 +3973,11 @@ function habitCardHTML(h, usualMin) {
   // In-progress tracking: ▶ starts an open stopwatch (no pre-set duration needed) so the
   // AI learns actual time-on-task for every habit, not just ones explicitly marked "timed".
   // ✓ Quick Complete stays available alongside it for anything not worth timing.
-  let rightBits, timerSub = null;
+  let rightBits, timerChip = null;
   if (h.timer) {
     const paused = !!h.timer.pausedAt;
     // One readout per pane; the 1s ticker updates every match, so duplicates are fine.
-    timerSub = `⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`;
+    timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
     rightBits = `
       <button class="hrow-check timer-btn" data-act="pauseTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
       <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
@@ -3652,16 +3997,17 @@ function habitCardHTML(h, usualMin) {
   // with plain ones. Inside the pane they cost no layout the row wasn't already wasting,
   // and they page themselves: each pane knows its own position in the ladder.
   const paneHTML = (name, reward, minutes, word) => {
-    let subLine = timerSub != null ? timerSub : sub;
-    if (timerSub == null && !complete && minutes > 0) subLine += ` · ~${fmtMins(minutes)} usual`;
+    // Chips ride alongside the name, inside .hrow-main, so the row never wraps.
+    const chips = (timerChip || '')
+      + (h.repeatable && !timerChip ? `<span class="row-chip">${dc}/${cap}</span>` : '');
     const chevs = word
       ? `<span class="lvl-chevs">${word.idx > 0 ? '<span class="lvl-chev">‹</span>' : ''}${word.idx < word.n - 1 ? '<span class="lvl-chev">›</span>' : ''}</span>`
       : '';
     return `
       <div class="hrow-pane">
         <div class="hrow-main">
-          <div class="hrow-name">${escapeHtml(name)}</div>
-          <div class="hrow-sub ${s > 0 ? 'hot' : ''}">${subLine}</div>
+          <span class="hrow-name">${escapeHtml(name)}</span>
+          ${chips}
         </div>
         ${chevs}
         ${word
@@ -3681,6 +4027,7 @@ function habitCardHTML(h, usualMin) {
     <div class="hrow ${complete ? 'done' : ''}${lvls ? ' leveled' : ''}" data-id="${h.id}" data-act="editHabit">
       ${hhTag}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
+      ${streakChip}
       ${body}
       ${rightBits}
     </div>`;
@@ -3864,6 +4211,7 @@ function renderHabits() {
   updateDailyStreakInfo();
   renderArchived();
   renderHappyBanners();
+  renderHomeExtras();   // Home shares this view's Due Now board — keep its rail and pace in step
 }
 
 // Graduated habits: resting out of rotation with their history intact, one tap to restore.
@@ -3880,8 +4228,8 @@ function renderArchived() {
       <div class="hrow arch" data-id="${h.id}">
         <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
         <div class="hrow-main">
-          <div class="hrow-name">${escapeHtml(h.name)}</div>
-          <div class="hrow-sub">🏆 best streak ${best} day${best !== 1 ? 's' : ''}</div>
+          <span class="hrow-name">${escapeHtml(h.name)}</span>
+          <span class="row-chip">🏆${best}d best</span>
         </div>
         <button class="btn ghost sm" data-act="unGraduate">↩ Restore</button>
       </div>`;
@@ -3909,8 +4257,13 @@ function renderTasks() {
    ONE-OFF QUESTS  (to-do list + a spinnable "wheel of quests")
    ================================================================= */
 // Quick-add bar: tier chips (filled when selected) + category chips + "+ New".
+let questAddOpen = false;   // transient — the Tasks tab always opens with the form folded
 function renderQuestAdd() {
   const tc = $('#questTierChips'); if (!tc) return;
+  const box = $('#questAdd'), tog = $('#questAddToggle');
+  if (box) box.style.display = questAddOpen ? '' : 'none';
+  if (tog) tog.textContent = questAddOpen ? '⌃ Close' : '＋ Add';
+  if (!questAddOpen) { syncTaskDockRoom(); return; }   // nothing below is visible — skip the work
   if (!TASK_TIERS[quickTier]) quickTier = 'medium';
   tc.innerHTML = Object.entries(TASK_TIERS).map(([k, ti]) => {
     const sel = k === quickTier;
@@ -3924,6 +4277,21 @@ function renderQuestAdd() {
   $('#questCatChips').innerHTML = cats.map(c =>
     `<button class="chip cat-chip ${c === quickCat ? 'sel' : ''}" data-cat="${escapeHtml(c)}">🏷️ ${escapeHtml(c)}</button>`).join('')
     + `<button class="chip cat-chip new" data-act="newCat">＋ New</button>`;
+  syncTaskDockRoom();                        // chips are in — the dock's height is final
+}
+// The dock is position:fixed, so the view has to reserve its footprint itself; otherwise
+// the open quick-add form floats over the last rows of the list. Measured rather than
+// guessed, because the category chips wrap — the dock's height depends on how many
+// categories exist. Reading the baseline back from the stylesheet keeps the closed-state
+// number in exactly one place (the `#view-tasks` rule), and the form's own height is
+// immune to the view-entry animation's transform in a way its position is not.
+function syncTaskDockRoom() {
+  const view = $('#view-tasks'), form = $('#questAdd');
+  if (!view || !form) return;
+  view.style.paddingBottom = '';                                   // back to the stylesheet's baseline
+  if (!questAddOpen) return;
+  const base = parseFloat(getComputedStyle(view).paddingBottom) || 0;
+  view.style.paddingBottom = Math.ceil(base + form.getBoundingClientRect().height + 6) + 'px';
 }
 function addQuickQuest() {
   const inp = $('#questAddName'); const name = (inp.value || '').trim();
@@ -3938,23 +4306,35 @@ function addQuickQuest() {
   toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} 🪙`, TASK_TIERS[tier].color);
 }
 // One quest row. Shared by the Tasks list and the Due Now board so the two can't drift.
+/* ---- Due dates. A quest may carry `due` as 'YYYY-MM-DD' (or null). Everything is
+   computed against todayStr()/daysBetween() so it follows the same local-date rules as
+   streaks and the Schedule, rather than raw Date maths that drifts across midnight. ---- */
+function dueInfo(t) {
+  if (!t || !t.due || !/^\d{4}-\d{2}-\d{2}$/.test(t.due)) return null;
+  const d = daysBetween(todayStr(), t.due);      // negative = in the past
+  if (!Number.isFinite(d)) return null;
+  const label = d < 0 ? `${-d}d late` : d === 0 ? 'Today' : d === 1 ? 'Tomorrow'
+    : d < 7 ? new Date(t.due + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' })
+    : new Date(t.due + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return { days: d, label, cls: d < 0 ? 'late' : d === 0 ? 'today' : '' };
+}
+function dueChipHTML(t) {
+  const info = dueInfo(t);
+  return info ? `<span class="row-chip due ${info.cls}">📅${info.label}</span>` : '';
+}
+
 function oneoffCardHTML(t) {
   const ti = TASK_TIERS[t.tier] || TASK_TIERS.medium;
   const iter = Math.max(1, t.iterations || 1), prog = t.progress || 0;
   const picked = t.id === wheelPickId;
-  const subBits = [];
-  if (iter > 1) subBits.push(`${prog}/${iter} done`);
-  if (picked) subBits.push(`<span class="spin-tag">🎡 wheel pick +50%</span>`);
   const cc = categoryColor(t.category);
-  const catPill = (t.category && t.category !== 'Unsorted')
-    ? `<span class="pill qcat"${cc ? ` style="color:${cc};border-color:${cc}"` : ''}>🏷️ ${escapeHtml(t.category)}</span>` : '';
   const hhTag = happyTagHTML(t.category);
   // Same ▶ / ✓ pair habits have: ▶ runs an open stopwatch so the quest lands on the
   // Block Schedule as a real span, ✓ stays available for anything not worth timing.
-  let leftBits;
+  let leftBits, timerChip = null;
   if (t.timer) {
     const paused = !!t.timer.pausedAt;
-    subBits.unshift(`⏱ <b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b> so far${paused ? ' · ⏸ paused' : ''}`);
+    timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
     leftBits = `
         <button class="hrow-check timer-btn" data-act="pauseOneoffTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
         <button class="hrow-check timer-btn" data-act="finishOneoffTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
@@ -3963,29 +4343,104 @@ function oneoffCardHTML(t) {
         <button class="hrow-check timer-btn qcheck" data-act="startOneoffTimer" aria-label="Start" style="color:var(--purple)">▶</button>
         <button class="hrow-check qcheck" data-act="doneOneoff" aria-label="Quick complete">✓</button>`;
   }
+  // One line, same as habits: chips trail the name instead of a second row. The category
+  // still reads off the left border stripe, so its pill is redundant here.
+  const chips = (timerChip || '')
+    + dueChipHTML(t)
+    + (iter > 1 ? `<span class="row-chip">${prog}/${iter}</span>` : '')
+    + (picked ? `<span class="row-chip spin">🎡+50%</span>` : '');
   return `
       <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}" data-act="editOneoff"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
         ${hhTag}
         ${leftBits}
         <span class="hrow-emoji">${escapeHtml(t.emoji || '🎯')}</span>
         <div class="hrow-main">
-          <div class="hrow-name">${escapeHtml(t.name)}</div>
-          ${subBits.length ? `<div class="hrow-sub">${subBits.join(' · ')}</div>` : ''}
+          <span class="hrow-name">${escapeHtml(t.name)}</span>
+          ${chips}
         </div>
-        ${catPill}
         <span class="hrow-reward" style="color:${ti.color};border-color:${ti.color};background:rgba(0,0,0,0.25)">+${tierReward(t.tier)} 🪙</span>
       </div>`;
 }
+/* =================================================================
+   EISENHOWER MATRIX — urgency × importance, for quests only.
+
+   Deliberately independent of due dates: a date says WHEN something is due, a quadrant
+   says whether it deserves your attention at all. A quest can have either, both or
+   neither.
+   ================================================================= */
+// `color` rims each box so the four are told apart at a glance, before any label is read:
+// red = act now, amber = plan it, blue = hand it off, green = let it go.
+const EISENHOWER = [
+  { key: 'q1', icon: '🔥', label: 'Do first', hint: 'Urgent and important',         color: '#ff3b30' },
+  { key: 'q2', icon: '🗓️', label: 'Schedule', hint: 'Important, not urgent',        color: '#ff9f0a' },
+  { key: 'q3', icon: '📤', label: 'Delegate', hint: 'Urgent, but not important',    color: '#3b82f6' },
+  { key: 'q4', icon: '🗑️', label: 'Drop',     hint: 'Neither urgent nor important', color: '#14c9a4' },
+];
+function quadrantOf(t) { return EISENHOWER.find(q => q.key === t.quadrant) || null; }
+function taskViewMode() { return state.settings.taskView === 'matrix' ? 'matrix' : 'list'; }
+
+// Soonest-due first, undated last in their existing order. Sorting is the whole point of
+// having dates — an unordered list wouldn't organise anything.
+function sortedOneoffs(list) {
+  return list.map((t, i) => ({ t, i })).sort((a, b) => {
+    const da = dueInfo(a.t), db = dueInfo(b.t);
+    if (da && db) return da.days - db.days || a.i - b.i;
+    if (da) return -1;
+    if (db) return 1;
+    return a.i - b.i;
+  }).map(x => x.t);
+}
+
 function renderOneoffs() {
   syncEditorSheet();
-  const grid = $('#oneoffGrid'); if (!grid) return;
-  if (!state.oneoffs.length) {
+  renderTaskViewBar();
+  const grid = $('#oneoffGrid'), matrix = $('#taskMatrix'); if (!grid) return;
+  const isMatrix = taskViewMode() === 'matrix';
+  const layout = grid.closest('.oneoff-layout');
+  if (layout) layout.style.display = isMatrix ? 'none' : '';
+  if (matrix) matrix.style.display = isMatrix ? '' : 'none';
+  if (isMatrix) renderTaskMatrix();
+  else if (!state.oneoffs.length) {
     grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
   } else {
-    grid.innerHTML = state.oneoffs.map(t =>
-      oneoffCardHTML(t)).join('');
+    grid.innerHTML = sortedOneoffs(state.oneoffs).map(t => oneoffCardHTML(t)).join('');
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
+  renderHomeExtras();   // quests count toward Home's tally and pace
+}
+function renderTaskViewBar() {
+  const bar = $('#taskViewBar'); if (!bar) return;
+  const m = taskViewMode();
+  bar.innerHTML = `
+    <button class="btn ghost sm view-seg ${m === 'list' ? 'sel' : ''}" data-taskview="list">📋 List</button>
+    <button class="btn ghost sm view-seg ${m === 'matrix' ? 'sel' : ''}" data-taskview="matrix">▦ Matrix</button>`;
+}
+// Four boxes plus an Unsorted strip. Rows come from oneoffCardHTML, the same function the
+// list uses, so the two views can never drift apart.
+// Unsorted starts folded so the four triaged boxes own the screen. Collapsed it still
+// says how many are waiting, and it stays a drop target — its header is the hit area.
+let unsortedOpen = false;
+function renderTaskMatrix() {
+  const host = $('#taskMatrix'); if (!host) return;
+  const box = q => {
+    const list = sortedOneoffs(state.oneoffs.filter(t => t.quadrant === q.key));
+    return `
+      <div class="quad" data-quad="${q.key}" style="--qc:${q.color}">
+        <div class="quad-head"><span>${q.icon} ${escapeHtml(q.label)}</span><span class="quad-n">${list.length}</span></div>
+        <div class="quad-body">${list.map(oneoffCardHTML).join('') || `<div class="quad-empty">Drop a quest here</div>`}</div>
+      </div>`;
+  };
+  const un = sortedOneoffs(state.oneoffs.filter(t => !t.quadrant));
+  host.innerHTML = `
+    <div class="quad-axis"><span>urgent →</span><span>← not urgent</span></div>
+    <div class="quad-grid">${EISENHOWER.map(box).join('')}</div>
+    <div class="quad unsorted ${unsortedOpen ? '' : 'folded'}" data-quad="">
+      <div class="quad-head" data-act="toggleUnsorted">
+        <span>📥 ${unsortedOpen ? 'Unsorted' : `${un.length} unsorted`}</span>
+        <span class="quad-n">${unsortedOpen ? un.length : '▾'}</span>
+      </div>
+      <div class="quad-body">${un.map(oneoffCardHTML).join('') || `<div class="quad-empty">Everything is triaged.</div>`}</div>
+    </div>`;
 }
 
 // Inline "blown-up" one-off editor on the Tasks screen (tap a row to open, like habits)
@@ -4004,6 +4459,16 @@ function oneoffEditHTML(t) {
           ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${(t.category || 'Unsorted') === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
         </select>
         <span class="pill">×<input class="num-in" data-of="iterations" type="number" min="1" max="99" value="${t.iterations}"> to finish</span>
+      </div>
+      <div class="hedit-r">
+        <span class="pill">📅 <input class="date-in" data-of="due" type="date" value="${t.due || ''}"></span>
+        ${t.due ? `<button class="btn ghost sm" data-act="clearDue" title="Remove the due date">✕ date</button>` : ''}
+      </div>
+      <div class="hedit-r qgrid-pick">
+        <div class="subtle" style="flex-basis:100%">Urgency &amp; importance</div>
+        ${EISENHOWER.map(q => `
+          <button class="btn ghost sm quad-btn ${t.quadrant === q.key ? 'sel' : ''}" data-quad="${q.key}" title="${escapeHtml(q.hint)}">${q.icon} ${escapeHtml(q.label)}</button>`).join('')}
+        <button class="btn ghost sm quad-btn ${!t.quadrant ? 'sel' : ''}" data-quad="">— None</button>
       </div>
       <div class="hedit-r hedit-actions">
         <button class="btn ghost sm" data-act="delOneoffEdit">🗑 Delete</button>
@@ -4544,11 +5009,26 @@ function computeRewardBlocks(dateStr) {
 // other. Without this a busy hour renders as one illegible pile of text.
 // Walk in start order, close a cluster whenever a block starts after everything so far has
 // ended, then within the cluster drop each block into the first lane that's free.
-function layoutLanes(blocks) {
+/* A block is never drawn shorter than these, however brief it actually was — a 4-minute
+   task still has to fit its own name. Lane layout has to reserve the same space, in
+   MINUTES, or two blocks it considers clear get painted on top of each other. */
+const MIN_BLOCK_PX = 18;      // .sched-block floor
+const MIN_MOMENT_PX = 16;     // .sched-block.moment is a fixed height
+function blockFloorPx(b) { return b.kind === 'moment' ? MIN_MOMENT_PX : MIN_BLOCK_PX; }
+
+function layoutLanes(blocks, px) {
+  // How many minutes the shortest drawable block occupies AT THIS ZOOM. This used to be a
+  // flat 12 minutes while blocks rendered with a 24px floor — at 56px/hour that floor is
+  // 25.7 minutes, so anything starting within ~26 minutes of a short block was declared
+  // non-overlapping, given the same lane, and drawn straight through it. The reservation
+  // has to be the rendered size, and the rendered size depends on the scale.
+  const pxPerHour = px || schedPx();
   let cluster = [], lanes = [], clusterEnd = -1;
   const closeCluster = () => { cluster.forEach(b => { b.laneCount = lanes.length; }); cluster = []; lanes = []; clusterEnd = -1; };
   blocks.forEach(b => {
-    const end = b.startMin + Math.max(b.durMin, 12);   // 12min floor so marks still claim a lane
+    // +2px so neighbours never graze: reserving the exact drawn height leaves them
+    // touching, and sub-pixel rounding then reads as a 1px overlap at some scales.
+    const end = b.startMin + Math.max(b.durMin, (blockFloorPx(b) + 2) / pxPerHour * 60);
     if (b.startMin >= clusterEnd && cluster.length) closeCluster();
     let lane = lanes.findIndex(laneEnd => laneEnd <= b.startMin);
     if (lane === -1) { lane = lanes.length; lanes.push(end); } else { lanes[lane] = end; }
@@ -4564,30 +5044,81 @@ let schedOffset = 0;        // 0 = today, negative = past, positive = planning a
 // Zoom: pixels per hour. Higher zoom also splits the hour into finer gridlines so short
 // gaps between habits become visible instead of collapsing into one band.
 // Small steps so each press is a glide rather than a jump.
-const SCHED_ZOOMS = [32, 44, 56, 72, 96, 128, 168, 220];
-let schedZoomIdx = 2;
+// Fifteen stops rather than eight — a midpoint interleaved between each of the original
+// eight, so every press moves about half as far and the day glides instead of jumping.
+// The originals are still exactly on even indices (32 44 56 72 96 128 168 220), which is
+// what the .zoom-N rules below are keyed to.
+const SCHED_ZOOMS = [32, 38, 44, 50, 56, 64, 72, 84, 96, 112, 128, 148, 168, 194, 220];
+let schedZoomIdx = 4;       // Schedule tab — 56px, the old default (index 2 of the old eight)
+// The Home widget draws the SAME grid through a ~230px window, so it keeps its own index
+// on the same scale: a level that reads well across a full page is far too loose in a
+// window a fifth the height. Independent, so zooming one never disturbs the other.
+let homeZoomIdx = 2;        // = 44px
 const SNAP_MIN = 15;        // drags snap to quarter-hours
-function schedPx() { return SCHED_ZOOMS[clamp(schedZoomIdx, 0, SCHED_ZOOMS.length - 1)]; }
+function schedPx(idx = schedZoomIdx) { return SCHED_ZOOMS[clamp(idx, 0, SCHED_ZOOMS.length - 1)]; }
 // Zoom without re-rendering: only --ph changes, and CSS transitions carry every block,
 // gridline and the now-marker to their new positions together.
+// EVERY lookup is scoped to a root element. There are two .sched-grid nodes in the
+// document now, and a bare $('.sched-grid') would always return Home's — it comes first
+// in the markup — silently zooming the widget when you pressed + on the Schedule tab.
+function applyZoomWithin(rootSel, idx) {
+  const root = $(rootSel); if (!root) return;
+  const grid = root.querySelector('.sched-grid'); if (!grid) return;
+  grid.style.setProperty('--ph', schedPx(idx) + 'px');
+  grid.className = 'sched-grid zoom-' + idx;
+  const zi = root.querySelector('[data-act="zoomIn"]'), zo = root.querySelector('[data-act="zoomOut"]');
+  if (zi) zi.disabled = idx >= SCHED_ZOOMS.length - 1;
+  if (zo) zo.disabled = idx <= 0;
+}
+/* Lane assignment depends on the scale (see layoutLanes), so it has to be redone whenever
+   the scale changes — at 32px/hour two blocks need to sit side by side that at 220px/hour
+   have room to stack. Rather than re-rendering, which would throw away the DOM the zoom
+   transition is currently animating and turn the glide into a snap, this recomputes from
+   the timings each block already carries and rewrites only its horizontal geometry. The
+   vertical glide keeps running underneath, untouched. */
+function relayoutLanes(rootSel, px) {
+  const root = $(rootSel); if (!root) return;
+  const items = [...root.querySelectorAll('.sched-block')].map(el => ({
+    el,
+    startMin: parseInt(el.dataset.start, 10) || 0,
+    durMin: parseInt(el.dataset.dur, 10) || 0,
+    kind: el.classList.contains('moment') ? 'moment' : 'block',
+  })).sort((a, b) => a.startMin - b.startMin);
+  if (!items.length) return;
+  layoutLanes(items, px);
+  items.forEach(b => {
+    const lanes = Math.max(1, b.laneCount || 1), wpct = 100 / lanes;
+    b.el.style.left = (b.lane * wpct) + '%';
+    b.el.style.width = `calc(${wpct}% - 5px)`;
+  });
+}
 function applySchedZoom() {
-  const grid = $('.sched-grid'); if (!grid) return;
   schedZoomIdx = clamp(schedZoomIdx, 0, SCHED_ZOOMS.length - 1);
-  grid.style.setProperty('--ph', schedPx() + 'px');
-  grid.className = 'sched-grid zoom-' + schedZoomIdx;
-  const zi = $('[data-act="zoomIn"]'), zo = $('[data-act="zoomOut"]');
-  if (zi) zi.disabled = schedZoomIdx >= SCHED_ZOOMS.length - 1;
-  if (zo) zo.disabled = schedZoomIdx <= 0;
+  applyZoomWithin('#view-schedule', schedZoomIdx);
+  relayoutLanes('#view-schedule', schedPx(schedZoomIdx));
+}
+function applyHomeZoom() {
+  homeZoomIdx = clamp(homeZoomIdx, 0, SCHED_ZOOMS.length - 1);
+  applyZoomWithin('#homeNow', homeZoomIdx);
+  relayoutLanes('#homeNow', schedPx(homeZoomIdx));
 }
 const SCHED_GUTTER = 56;
-function renderBlockSchedule() {
-  const box = $('#scheduleBody'); if (!box) return;
-  const dateStr = todayStr(schedOffset);
-  const isToday = schedOffset === 0;
+/* One grid builder, two callers: the Schedule tab and the Home widget. Everything that
+   makes the grid a grid — the framing hours, the lines, the now-marker, the laid-out
+   blocks — is computed here exactly once, so the widget is the same drawing at a
+   different scale rather than a second implementation that can drift.
 
-  // Today = what already happened (solid) + what's still expected (dashed). A prediction
-  // for something you've already done would just be a duplicate of the real block.
-  const isFuture = schedOffset > 0;
+   `opts.draggable === false` strips the drag affordances (the .draggable class, the data-
+   attributes the drag reads, and the ✕ unpin button). The widget is read-only: dragging a
+   block inside a 230px scroller would fight the scroll, and a control that looks live but
+   isn't is worse than no control.
+
+   Returns the pieces rather than a finished string so each caller can wrap them in its
+   own chrome. */
+function schedGridParts(dateStr, opts = {}) {
+  const draggable = opts.draggable !== false;
+  const isToday = dateStr === todayStr();
+  const isFuture = daysBetween(todayStr(), dateStr) > 0;
   // Future days have no history — they're pure plan. Past days are pure record. Today is
   // both: what already happened, plus what's still expected.
   const actual = isFuture ? [] : computeActualBlocks(dateStr);
@@ -4597,7 +5128,8 @@ function renderBlockSchedule() {
     ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
     : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
-  layoutLanes(blocks);
+  const px = opts.px || schedPx();
+  layoutLanes(blocks, px);
 
   // Frame the grid around the day's real span rather than a fixed 5am–11pm window.
   let lo = 7, hi = 21;
@@ -4629,7 +5161,7 @@ function renderBlockSchedule() {
   const blockEls = blocks.map(b => {
     const topH = (b.startMin - lo * 60) / 60;
     const top = at(topH);
-    const height = b.kind === 'moment' ? '22px' : `max(24px, ${at(b.durMin / 60)})`;
+    const height = b.kind === 'moment' ? MIN_MOMENT_PX + 'px' : `max(${MIN_BLOCK_PX}px, ${at(b.durMin / 60)})`;
     const col = b.type === 'reward'
       ? (b.tierHex || 'var(--gold)')                 // rewards wear their rarity colour
       : (categoryColor(b.category) || 'var(--cyan)');
@@ -4641,20 +5173,33 @@ function renderBlockSchedule() {
     const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted (drag to move)' : ''}${timeLabel}`;
     // Predictions are always draggable — no mode to enter. Anything that already happened
     // stays put: it's a record, not a plan, so moving it would be rewriting history.
-    const drag = b.kind === 'predicted' && b.refId;
+    const drag = draggable && b.kind === 'predicted' && b.refId;
     const pin = b.pinned ? ' 📌' : '';
     // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
     // these percentages are of the block area alone and the gutter never enters the math.
     // Tall enough to show a time? Show it — during a drag it doubles as the readout.
-    const showTime = b.kind !== 'moment' && (b.durMin / 60 * 96 >= 40) && lanes <= 2;
+    // Measured at the ACTUAL scale, not a hardcoded 96px/hour: a second line needs ~30px,
+    // and at 32px/hour almost nothing has that, so the label was being clipped rather
+    // than omitted. Draggable blocks always keep it — that's their live drag readout.
+    const showTime = b.kind !== 'moment' && (b.durMin / 60 * px >= 30) && lanes <= 2;
+    // start/dur ride on EVERY block, not just the draggable ones: relayoutLanes() rebuilds
+    // the lane assignment from the DOM when the zoom changes, and it needs their timing.
     return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}"
-      title="${escapeHtml(title)}"${drag ? ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"` : ''}
+      title="${escapeHtml(title)}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"${drag ? ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"` : ''}
       style="top:${top};height:${height};left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
       <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
       ${showTime || drag ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
       ${drag && b.pinned ? `<button class="sb-unpin" data-act="unpin" title="Back to my usual time">✕</button>` : ''}
     </div>`;
   }).join('');
+
+  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture, inner: `${hourLines.join('')}${nowLine}<div class="sched-lanes">${blockEls}</div>` };
+}
+
+function renderBlockSchedule() {
+  const box = $('#scheduleBody'); if (!box) return;
+  const dateStr = todayStr(schedOffset);
+  const { blocks, lo, hi, isToday, isFuture, inner } = schedGridParts(dateStr);
 
   const label = isToday ? 'Today'
     : schedOffset === -1 ? 'Yesterday'
@@ -4679,37 +5224,25 @@ function renderBlockSchedule() {
       ${isToday ? `<span><i class="k-pred"></i> predicted</span>` : ''}
       <span><i class="k-moment"></i> no timer</span>
       <span><i class="k-reward"></i> 🎁 reward</span>
-      <span class="sched-zoom">
-        <button class="zbtn" data-act="zoomOut" title="Zoom out">−</button>
-        <button class="zbtn" data-act="zoomIn" title="Zoom in">+</button>
-      </span>
     </div>
-    <div class="sched-grid zoom-${schedZoomIdx}" data-lo="${lo}"
-         style="--ph:${schedPx()}px;height:calc(var(--ph) * ${hi - lo})">${hourLines.join('')}${nowLine}
-      <div class="sched-lanes">${blockEls}</div>
+    <!-- Zoom rides ABOVE the day rather than scrolling away with the legend: on a day
+         that runs to 3,000px you were scrolling back to the top to change scale. Fixed,
+         stacked over the ＋ button so the two live controls share one corner. -->
+    <div class="sched-zoom">
+      <button class="zbtn" data-act="zoomIn" title="Zoom in">+</button>
+      <button class="zbtn" data-act="zoomOut" title="Zoom out">−</button>
     </div>
+    <div class="sched-grid zoom-${schedZoomIdx}" data-lo="${lo}" data-hours="${hi - lo}"
+         style="--ph:${schedPx()}px;height:calc(var(--ph) * ${hi - lo})">${inner}</div>
     ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a dashed block to say when you'll actually do it — it snaps to 15 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your usual.' : ''}</div>` : ''}
     ${!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>${escapeHtml(emptyMsg)}</div>` : ''}`;
 }
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
 // Once the usual time passes it drops back into the regular list — no "overdue" flag.
-// Stable shuffle key: a quest's position is random, but fixed for the whole day. Due Now
-// repaints every 30s, so a live Math.random() would reshuffle the pick under your finger.
-// FNV-1a + a murmur3 finalizer. The finalizer is the point: with a plain `n*31 + c`
-// rolling hash, changing only the trailing date character shifts every key by the same
-// constant, so the sort order comes out identical every single day. Mixing the high bits
-// back down makes a one-character change reshuffle the whole ordering.
-function dailyShuffleKey(id) {
-  const s = todayStr() + '|' + String(id);
-  let n = 2166136261;
-  for (let i = 0; i < s.length; i++) { n ^= s.charCodeAt(i); n = Math.imul(n, 16777619); }
-  n ^= n >>> 15; n = Math.imul(n, 2246822507);
-  n ^= n >>> 13; n = Math.imul(n, 3266489909);
-  n ^= n >>> 16;
-  return n >>> 0;
-}
+// Painted into EVERY .duenow-mount — Habits has one and Home has another. One function,
+// one piece of markup, so the two boards can never disagree about what's due.
 function renderDueSoon() {
-  const box = $('#dueSoonSection'); if (!box) return;
+  const mounts = $$('.duenow-mount'); if (!mounts.length) return;
   const nowMin = nowMinutes();
   const until = m => (m - nowMin + 1440) % 1440;          // minutes until, midnight-safe
   // Extra habits are side-quests: they stay out of Due Now until every daily quest is
@@ -4717,10 +5250,20 @@ function renderDueSoon() {
   const dailyClear = sectionStats('daily').allComplete;
   const eligible = h => !h.archived && h.loadout === currentLoadout() && isScheduledToday(h) && !isComplete(h)
     && (dailyClear || h.section !== 'extra');
-  const due = state.habits
+  const dueHabits = state.habits
     .filter(eligible)
     .map(h => ({ h, m: habitBlockMinute(h) }))   // same blocks the Schedule tab draws — Due Now always agrees with it
-    .filter(x => x.m != null && until(x.m) <= 60)
+    .filter(x => x.m != null && until(x.m) <= 60);
+  // Quests reach this board ONLY through the Schedule. Unlike a habit, a quest has no
+  // "usual time" to infer from history — nothing about it says when it's due — so an
+  // unscheduled quest here would just be a to-do dumped onto a board that means NOW.
+  // Give it a planned block for today and it behaves exactly like a habit: it surfaces in
+  // the hour before that block and drops off once the time passes. No block, no appearance.
+  const dueTasks = ((state.plannedBlocks || {})[todayStr()] || [])
+    .filter(b => b && b.kind === 'task' && Number.isFinite(b.startMin))
+    .map(b => ({ t: (state.oneoffs || []).find(t => t.id === b.refId), m: b.startMin }))
+    .filter(x => x.t && (x.t.progress || 0) < Math.max(1, x.t.iterations || 1) && until(x.m) <= 60);
+  const due = dueHabits.concat(dueTasks)
     .sort((a, b) => until(a.m) - until(b.m))
     .slice(0, 3);                                         // fewer visible choices, not more
   // Fallback when nothing is due in the next hour: surface up to 2 habits whose
@@ -4728,7 +5271,7 @@ function renderDueSoon() {
   let rows = '', sub = '';
   if (due.length) {
     sub = 'Coming up in your usual routine — knock these out first.';
-    rows = due.map(x => habitCardHTML(x.h, x.m)).join('');
+    rows = due.map(x => (x.h ? habitCardHTML(x.h, x.m) : oneoffCardHTML(x.t))).join('');
   } else {
     const active = new Set(activeHappyHours().map(a => a.cat));
     const hh = active.size
@@ -4737,35 +5280,246 @@ function renderDueSoon() {
     if (hh.length) {
       sub = 'Happy hour is live — do these now to grab the token bonus.';
       rows = hh.map(h => habitCardHTML(h)).join('');
-    } else {
-      // Last fallback: nothing is due and nothing is boosted (or the habits are simply
-      // finished), so the board would sit empty — fill it with a couple of one-off
-      // quests instead, picked at random but held steady for the day.
-      const quests = state.oneoffs
-        .filter(t => t.id !== editingOneoffId && (t.progress || 0) < Math.max(1, t.iterations || 1))
-        .sort((a, b) => dailyShuffleKey(a.id) - dailyShuffleKey(b.id))
-        .slice(0, 2);
-      if (quests.length) {
-        sub = dailyClear
-          ? 'Habits are clear — here are a couple of quests to pick from.'
-          : 'Nothing scheduled right now — grab a quest instead.';
-        rows = quests.map(t => oneoffCardHTML(t)).join('');
-      }
     }
+    // There is no third fallback. Random quests used to fill the board whenever nothing
+    // was due, which made "Due Now" mean "here's something, anything" — the opposite of
+    // what the heading promises. An empty board is the honest answer.
   }
   const hasRows = rows.trim().length > 0;
   // The board is ALWAYS visible — even with nothing to show, it renders an empty state.
-  box.innerHTML = `
+  // Home supplies its own "DUE NOW" heading, so the gold banner is Habits-only; both get
+  // the identical row markup underneath.
+  const banner = `
     <div class="daily-banner slim" style="border-color:rgba(255,215,0,.5)">
       <div class="dtext">
         <div class="section-title neon-gold">⏰ Due Now</div>
         <div class="subtle">${hasRows ? sub : 'Nothing due right now.'}</div>
       </div>
-    </div>
-    ${hasRows
-      ? `<div class="habit-list" style="margin-bottom:16px">${rows}</div>`
-      : `<div class="empty" style="margin-bottom:16px"><div class="big">☕</div>empty</div>`}`;
+    </div>`;
+  const body = hasRows
+    ? `<div class="habit-list" style="margin-bottom:16px">${rows}</div>`
+    : `<div class="empty" style="margin-bottom:16px"><div class="big">☕</div>empty</div>`;
+  mounts.forEach(m => { m.innerHTML = (m.dataset.bare === '1' ? '' : banner) + body; });
 }
+
+/* =================================================================
+   HOME — the landing screen. Three reads, top to bottom: where am I right now,
+   what should I do next, and how is today going compared with the days before it.
+
+   It stores nothing of its own except the pace log. The NOW rail reads the same
+   blocks the Schedule tab draws, and the middle band is Due Now painted a second
+   time (see renderDueSoon's .duenow-mount loop), so nothing here can drift.
+   ================================================================= */
+
+// Today's timeline, as one merged list: what actually happened plus what's still
+// expected. Same two builders the Schedule tab uses, so the two always agree.
+function homeTimeline() {
+  const dateStr = todayStr();
+  const actual = computeActualBlocks(dateStr);
+  const doneNames = new Set(actual.map(b => b.name));
+  return actual
+    .concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
+    .map(b => ({ ...b, endMin: Number.isFinite(b.endMin) ? b.endMin : b.startMin + (b.durMin || 0) }))
+    .sort((a, b) => a.startMin - b.startMin);
+}
+
+/* The widget is a live window onto today's Schedule grid — the same drawing the Schedule
+   tab makes, scrolled and zoomed inside a fixed-height box instead of down the page.
+
+   Scroll position is deliberately sticky: the widget repaints every 30 seconds and on
+   every completion, and a re-render that jumped back to "now" each time would yank the
+   view out from under a finger. So the last position is remembered and restored, and the
+   only things that re-centre on the current time are opening the app and arriving on the
+   Home tab — which is exactly what was asked for. */
+let homeSchedTop = null;    // last scrollTop; null = "not positioned yet, centre on now"
+function homeSchedCentreOnNow() {
+  const sc = $('#homeSchedScroll'); if (!sc) return;
+  const grid = sc.querySelector('.sched-grid'); if (!grid) return;
+  const lo = parseInt(grid.dataset.lo, 10) || 0;
+  const hours = parseInt(grid.dataset.hours, 10) || 1;
+  const px = schedPx(homeZoomIdx);
+  // Height is computed from the scale rather than measured: .sched-grid transitions its
+  // height, so reading offsetHeight straight after a zoom returns the OLD value.
+  const max = Math.max(0, hours * px - sc.clientHeight);
+  sc.scrollTop = clamp((nowMinutes() - lo * 60) / 60 * px - sc.clientHeight / 2, 0, max);
+  homeSchedTop = sc.scrollTop;
+}
+// Called when the Home tab is entered (and at boot) so the widget always opens on now.
+function homeSchedResetScroll() { homeSchedTop = null; }
+
+function renderHomeNow() {
+  const box = $('#homeNow'); if (!box) return;
+  const now = nowMinutes();
+  const blocks = homeTimeline();
+  const next = blocks.find(b => b.startMin > now);
+  const nextLine = next
+    ? `Up next: <b>${escapeHtml(next.emoji || '')} ${escapeHtml(next.name)}</b> · ${escapeHtml(fmtMinOfDay(next.startMin))}`
+    : 'Nothing else scheduled today.';
+  // `px` matters: lane assignment is scale-dependent, and the widget runs its own zoom.
+  const { hours, lo, inner } = schedGridParts(todayStr(), { draggable: false, px: schedPx(homeZoomIdx) });
+
+  // Keep the reader's place across the repaint. Captured before innerHTML wipes the node.
+  const prev = $('#homeSchedScroll');
+  if (prev && homeSchedTop !== null) homeSchedTop = prev.scrollTop;
+
+  box.innerHTML = `
+    <div class="now-head">
+      <span class="now-kicker">Now</span>
+      <span class="now-clock">${escapeHtml(fmtMinOfDay(now))}</span>
+      <span class="sched-zoom">
+        <button class="zbtn" data-act="zoomOut" title="Zoom out">−</button>
+        <button class="zbtn" data-act="zoomIn" title="Zoom in">+</button>
+      </span>
+    </div>
+    <div class="now-scroll" id="homeSchedScroll">
+      <div class="sched-grid zoom-${homeZoomIdx}" data-lo="${lo}" data-hours="${hours}"
+           style="--ph:${schedPx(homeZoomIdx)}px;height:calc(var(--ph) * ${hours})">${inner}</div>
+    </div>
+    <div class="now-next">${nextLine}</div>`;
+
+  applyHomeZoom();                                  // sets the +/- disabled states
+  const sc = $('#homeSchedScroll');
+  if (homeSchedTop === null) homeSchedCentreOnNow();
+  else sc.scrollTop = homeSchedTop;
+  sc.addEventListener('scroll', () => { homeSchedTop = sc.scrollTop; }, { passive: true });
+}
+
+/* ---- Pace ---------------------------------------------------------------------------
+   "How close am I to finishing everything I set for today", as one number.
+
+   Denominator = today's scheduled daily-habit capacity (a repeatable 0/8 counts 8, the
+   same unit the Daily Quests bar uses) + every quest assigned to today. A quest counts as
+   assigned when it's due today or has a block on today's schedule — an untouched backlog
+   quest isn't part of today's plan and would make the number meaningless.
+
+   Past days can't be recomputed: a finished quest is deleted outright, and a habit added
+   since would be counted as if it had always existed. So each day's pair is RECORDED as
+   it happens (state.paceLog) and the history below only ever reads what was actually
+   written. Days before this feature shipped, or days the app wasn't opened, simply have
+   no entry and are left out rather than guessed at.                                    */
+function paceToday() {
+  const today = todayStr();
+  const d = sectionStats('daily');
+  const planned = new Set(((state.plannedBlocks || {})[today] || [])
+    .filter(b => b && b.kind === 'task').map(b => b.refId));
+  const assigned = (state.oneoffs || []).filter(t => t && (t.due === today || planned.has(t.id)));
+  const taskTotal = assigned.reduce((s, t) => s + Math.max(1, t.iterations || 1), 0);
+  const taskDone = assigned.reduce((s, t) => s + Math.min(t.progress || 0, Math.max(1, t.iterations || 1)), 0);
+  // Quests finished today are deleted from state.oneoffs, so they've vanished from both
+  // sides of the fraction above. Add them back from the log — otherwise finishing one
+  // would make the bar go DOWN.
+  const finishedToday = (state.history || [])
+    .filter(e => e && e.kind === 'task' && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === today
+                 && !assigned.some(t => t.id === e.id)).length;
+  const done = d.done + taskDone + finishedToday;
+  const total = d.cap + taskTotal + finishedToday;
+  return { done, total, pct: total ? Math.round(done / total * 100) : 0 };
+}
+// Write today's pair into the log. Called from every render of the Home tab and after
+// each completion, so the number on disk always matches what was on screen.
+function recordPaceToday() {
+  const p = paceToday();
+  if (!p.total) return;                       // nothing was set for today — don't log a 0%
+  state.paceLog = state.paceLog || {};
+  const today = todayStr(), prev = state.paceLog[today];
+  if (prev && prev.done === p.done && prev.total === p.total) return;   // unchanged
+  state.paceLog[today] = { done: p.done, total: p.total };
+  // Keep roughly two months. The 7-day window only ever reads the tail.
+  const keys = Object.keys(state.paceLog).sort();
+  if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete state.paceLog[k]);
+  save();
+}
+function pacePctFor(dateStr) {
+  const e = (state.paceLog || {})[dateStr];
+  return e && e.total ? Math.round(e.done / e.total * 100) : null;
+}
+function renderHomePace() {
+  const box = $('#homePace'); if (!box) return;
+  const p = paceToday();
+  const yest = pacePctFor(todayStr(-1));
+  // The last 7 CLOSED days — today is still in progress, so averaging it in would drag
+  // the comparison down all morning by design.
+  const week = [];
+  for (let i = 1; i <= 7; i++) { const v = pacePctFor(todayStr(-i)); if (v != null) week.push(v); }
+  const avg = week.length ? Math.round(week.reduce((s, v) => s + v, 0) / week.length) : null;
+  const val = (v, suffix = '') => v == null
+    ? `<span class="ph-v none">no data yet</span>`
+    : `<span class="ph-v">${v}%${suffix}</span>`;
+  box.innerHTML = `
+    <div class="pace-row">
+      <span class="pace-bar">
+        <span class="pace-fill" style="width:${p.pct}%"></span>
+        <span class="pace-rest"></span>
+      </span>
+      <span class="pace-pct">${p.pct}%</span>
+    </div>
+    <div class="pace-hist">
+      <span class="ph-k">Yesterday</span>${val(yest)}
+      <span class="ph-k">7-day average</span>${val(avg, week.length < 7 ? ` <span class="ph-v none">(${week.length}d)</span>` : '')}
+    </div>`;
+}
+function renderHomeTally() {
+  const box = $('#homeToday'); if (!box) return;
+  const p = paceToday();
+  box.innerHTML = p.total ? `<div class="home-tally">${p.done} of ${p.total} done</div>` : '';
+}
+// Everything on Home EXCEPT the shared Due Now board — renderDueSoon already paints that
+// into both mounts on its own. Split out so renderHabits/renderOneoffs can keep Home
+// current after a completion without re-running a whole other view. recordPaceToday()
+// calls save(), which is safe here: save() is a no-op while saveLocked, so a degraded
+// load can't be written over by a render.
+function renderHomeExtras() {
+  renderHomeNow();
+  renderHomeTally();
+  recordPaceToday();     // log before painting the bar so today's row is the fresh one
+  renderHomePace();
+}
+function renderHome() { renderDueSoon(); renderHomeExtras(); }
+
+/* ---- Widget zoom -------------------------------------------------------------------
+   Same calibrated scale and the same two controls the Schedule tab has, but the scroller
+   is a div rather than the window, so every offset is against sc.scrollTop.
+
+   Zooming holds the MIDDLE of the visible window still. Anchoring on "now" instead would
+   drag you back to the present every time you pressed +, which defeats zooming in on some
+   other part of the day. Positions are computed from SCHED_ZOOMS rather than measured:
+   .sched-grid transitions its height, so a getBoundingClientRect straight after the class
+   change reports the scale we just left.                                              */
+function homeZoomBy(delta) {
+  const sc = $('#homeSchedScroll'); if (!sc) return;
+  const grid = sc.querySelector('.sched-grid'); if (!grid) return;
+  const target = clamp(homeZoomIdx + delta, 0, SCHED_ZOOMS.length - 1);
+  if (target === homeZoomIdx) return;
+  const oldPx = schedPx(homeZoomIdx);
+  const anchorHours = (sc.scrollTop + sc.clientHeight / 2) / oldPx;
+  homeZoomIdx = target;
+  applyHomeZoom();
+  const newPx = schedPx(homeZoomIdx);
+  const hours = parseInt(grid.dataset.hours, 10) || 1;
+  const max = Math.max(0, hours * newPx - sc.clientHeight);
+  sc.scrollTop = clamp(anchorHours * newPx - sc.clientHeight / 2, 0, max);
+  homeSchedTop = sc.scrollTop;
+}
+$('#homeNow').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'zoomIn')  { SFX.click(); homeZoomBy(1); }
+  if (act === 'zoomOut') { SFX.click(); homeZoomBy(-1); }
+});
+// Two-finger pinch, mirroring the Schedule tab's gesture. One finger still scrolls.
+let homePinch = null;
+$('#homeNow').addEventListener('touchstart', e => {
+  if (e.touches.length !== 2 || !e.target.closest('.sched-grid')) return;
+  homePinch = { distance: touchDistance(e.touches[0], e.touches[1]) };
+}, { passive: true });
+$('#homeNow').addEventListener('touchmove', e => {
+  if (!homePinch || e.touches.length !== 2) return;
+  e.preventDefault();
+  const distance = touchDistance(e.touches[0], e.touches[1]);
+  const ratio = distance / Math.max(1, homePinch.distance);
+  if (ratio > 1.12 || ratio < 0.89) { homeZoomBy(ratio > 1 ? 1 : -1); homePinch.distance = distance; }
+}, { passive: false });
+$('#homeNow').addEventListener('touchend', e => { if (e.touches.length < 2) homePinch = null; }, { passive: true });
+$('#homeNow').addEventListener('touchcancel', () => { homePinch = null; }, { passive: true });
 
 // Fire the "all done" bonus for each section independently (once per day each).
 function checkBonuses() {
@@ -5079,7 +5833,14 @@ function spinSlots() {
   const finals = finalSymbolsFor(p);
   const reels = $$('#reels .reel');
   reels.forEach(r => r.classList.remove('win', 'near'));
-  const cellH = reels[0].clientHeight || 80;
+  // Measure a CELL, not the reel. `.reel` is border-box with a 2px border, so its
+  // clientHeight is 4px shorter than a `.cell` — and the strip is stopped by multiplying
+  // that height by a length that differs per reel (24 / 30 / 36 cells). The 4px error
+  // therefore compounded into a different overshoot on each reel (96 / 120 / 144px),
+  // which is why three of a kind never landed in a straight line. `centre` then takes up
+  // the 4px the window is short so the symbol sits on the payline rather than 2px high.
+  const cellH = reels[0].querySelector('.cell')?.getBoundingClientRect().height || 80;
+  const centre = (cellH - (reels[0].clientHeight || cellH)) / 2;
   let done = 0;
   reels.forEach((reel, i) => {
     const strip = reel.querySelector('.strip');
@@ -5092,7 +5853,7 @@ function spinSlots() {
     strip.style.transition = 'none';
     strip.style.transform = 'translateY(0)';
     void strip.offsetWidth; // reflow
-    const dist = (cells.length - 1) * cellH;
+    const dist = (cells.length - 1) * cellH + centre;
     const dur = 1.6 + i * 0.5;
     strip.style.transition = `transform ${dur}s cubic-bezier(.15,.8,.2,1)`;
     strip.style.transform = `translateY(${-dist}px)`;
@@ -6505,6 +7266,7 @@ function renderPassPools() {
 
 function renderSettings() {
   renderHabitEditor();
+  renderTabEditor();
   renderTierRewards();
   renderRewardEditor();
   renderStreakFreezeEditor();
@@ -7898,8 +8660,13 @@ function ensureQuestionnaireQueue() {
   save();
 }
 function pendingQuestionnaires() { return (state.questionnaires || []).filter(q => q.status === 'pending'); }
+// The pending check-in count belongs to Chat. renderNav() parks the badge on the More tab
+// by default, so if the user promotes Chat into the bar it has to move with it — a count
+// sitting on "More" while Chat is right there in the bar points at the wrong place.
 function renderQuestionnaireNav() {
   const badge = $('#qNavBadge'); if (!badge) return;
+  const host = navHostFor('chat');
+  if (host && badge.parentElement !== host) host.appendChild(badge);
   const n = pendingQuestionnaires().length;
   badge.style.display = n ? '' : 'none';
   badge.textContent = n ? String(n) : '';
@@ -8408,9 +9175,160 @@ $('#aiClearBtn').addEventListener('click', clearAIData);
 /* =================================================================
    EVENTS / WIRING
    ================================================================= */
-// Nav. Five tabs live in the bar; the rest live behind "More" (see MORE_VIEWS).
-const MORE_VIEWS = ['stats', 'chat', 'settings'];
-$$('#nav .tab[data-view]').forEach(t => t.addEventListener('click', () => { SFX.click(); closeMore(); switchView(t.dataset.view); }));
+/* =================================================================
+   NAV — the bottom bar and its "More" overflow sheet.
+
+   Both are RENDERED FROM STATE, not written in the markup: which five views sit in the
+   bar is the user's choice (Settings → 🧭 Tab bar). The VIEWS registry and sanitizeBar()
+   live up in the pre-boot block instead of here, because load() calls sanitizeBar while
+   repairing the save — see the comment there.
+   ================================================================= */
+// Which view is showing. switchView used to record this nowhere, so a nav re-render had
+// no way to know which tab to light up again.
+let currentView = 'home';
+
+// The element in the bar that stands for `id` right now: its own tab if the user has it
+// in the bar, otherwise the More tab it's hiding behind. Badges hang off this, so a
+// notification always points at something the user can actually see.
+function navHostFor(id) { return $(`#nav .tab[data-view="${id}"]`) || $('#moreTab'); }
+
+/* Rebuild the bar and the sheet. Safe to call at any time: every nav listener is
+   delegated to #nav (which this never replaces), so nothing is left bound to a node that
+   has since been thrown away. */
+function renderNav() {
+  const nav = $('#nav'); if (!nav) return;
+  const bar = barViews(), more = moreViews();
+  const tab = id => {
+    const v = viewMeta(id); if (!v) return '';
+    return `<div class="tab${id === currentView ? ' active' : ''}" data-view="${v.id}">
+      <span class="ti">${v.icon}</span><span class="tl">${escapeHtml(v.label)}</span></div>`;
+  };
+  nav.innerHTML = `
+    <!-- Anchored bottom:100% against the nav, so it always sits exactly on top of the
+         bar however tall the bar ends up (safe-area inset, font scaling, …). -->
+    <div class="more-sheet${moreIsOpen() ? ' show' : ''}" id="moreSheet" role="menu" aria-hidden="${moreIsOpen() ? 'false' : 'true'}">
+      ${more.map(id => { const v = viewMeta(id); return `
+      <div class="more-row${id === currentView ? ' active' : ''}" data-view="${v.id}" role="menuitem">
+        <span class="mr-ico">${v.icon}</span><span class="mr-label">${escapeHtml(v.label)}</span>
+      </div>`; }).join('')}
+    </div>
+    ${bar.map(tab).join('')}
+    <div class="tab more-tab${more.includes(currentView) ? ' active' : ''}" id="moreTab" role="button" aria-expanded="false">
+      <span class="ti">⋯</span><span class="tl">More</span>
+      <span class="nav-badge" id="qNavBadge" style="display:none"></span>
+    </div>`;
+  // Both of these APPEND children into the nav, so an innerHTML rebuild wipes them.
+  // They also decide *which* tab to hang off, which just changed.
+  renderQuestionnaireNav();
+  renderCloudBadge();
+}
+/* =================================================================
+   Settings → 🧭 Tab bar. Every view in one ordered list; the first BAR_SLOTS of them are
+   the bar and the rest fall behind More, with a line drawn at the cutoff. Reordering and
+   moving between the two groups are therefore the same gesture — there is nothing to
+   toggle, you just drag something above or below the line.
+   ================================================================= */
+function tabEditOrder() { const bar = barViews(); return bar.concat(VIEW_IDS.filter(id => !bar.includes(id))); }
+function renderTabEditor() {
+  const host = $('#tabEditList'); if (!host) return;
+  host.innerHTML = tabEditOrder().map((id, i) => {
+    const v = viewMeta(id);
+    return (i === BAR_SLOTS ? `<div class="tabedit-split">More</div>` : '')
+      + `<div class="tabedit-row" data-view="${v.id}">
+           <span class="te-ico">${v.icon}</span>
+           <span class="te-label">${escapeHtml(v.label)}</span>
+           <span class="te-grip">⠿</span>
+         </div>`;
+  }).join('');
+}
+/* Drag-to-reorder, vertical twin of the tier ladder's strip (see endLadderDrag). Pointer
+   events rather than HTML5 drag & drop, which does not work on touch at all. Rows are a
+   uniform height, so "which slot am I over" is one division rather than a hit test. */
+let tabDrag = null, tabDragged = false;
+$('#tabEditList').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.te-grip'); if (!grip) return;   // the grip is the handle
+  const row = grip.closest('.tabedit-row');
+  const host = $('#tabEditList');
+  if (!row || !host) return;
+  const rows = Array.from(host.querySelectorAll('.tabedit-row'));
+  if (rows.length < 2) return;
+  tabDragged = false;
+  tabDrag = {
+    host, rows, row, from: rows.indexOf(row), to: rows.indexOf(row), y0: e.clientY,
+    // Real slot centres rather than index × height: the divider sits between two rows and
+    // adds its own height to the flow, so a uniform step would drift once you cross it.
+    centers: rows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; }),
+    h: row.offsetHeight + 6,     // row + flex gap — exactly how far the divider moves
+  };
+  try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+});
+$('#tabEditList').addEventListener('pointermove', e => {
+  const d = tabDrag; if (!d) return;
+  const dy = e.clientY - d.y0;
+  if (!tabDragged && Math.abs(dy) < 6) return;            // still just a tap
+  if (!tabDragged) { tabDragged = true; d.host.classList.add('dragging'); d.row.classList.add('lifted'); }
+  d.row.style.transform = `translateY(${dy}px) scale(1.03)`;
+  // Whichever slot the dragged row's centre is now nearest to.
+  const cur = d.centers[d.from] + dy;
+  let to = d.from, best = Infinity;
+  d.centers.forEach((c, i) => { const dist = Math.abs(c - cur); if (dist < best) { best = dist; to = i; } });
+  if (to !== d.to) {
+    d.to = to;
+    // Everything between the row's home and its target slides one slot the other way, so
+    // the gap opens where it will actually land. Distances come from the measured centres,
+    // so this stays exact across the divider.
+    d.rows.forEach((b, i) => {
+      if (b === d.row) return;
+      let shift = 0;
+      if (d.from < to && i > d.from && i <= to) shift = d.centers[i - 1] - d.centers[i];
+      else if (d.from > to && i >= to && i < d.from) shift = d.centers[i + 1] - d.centers[i];
+      b.style.transform = shift ? `translateY(${shift}px)` : '';
+    });
+    // Move the divider with them, so the preview shows the real bar/More split.
+    const split = d.host.querySelector('.tabedit-split');
+    if (split) {
+      const crossedDown = d.from < BAR_SLOTS && to >= BAR_SLOTS;
+      const crossedUp = d.from >= BAR_SLOTS && to < BAR_SLOTS;
+      split.style.transform = crossedDown ? `translateY(${-d.h}px)` : crossedUp ? `translateY(${d.h}px)` : '';
+    }
+    SFX.click();
+  }
+});
+const endTabDrag = () => {
+  const d = tabDrag; if (!d) return;
+  tabDrag = null;
+  d.host.classList.remove('dragging');
+  d.row.classList.remove('lifted');
+  d.rows.forEach(b => { b.style.transform = ''; });
+  const split = d.host.querySelector('.tabedit-split'); if (split) split.style.transform = '';
+  // `tabDragged` stays true until after the click this gesture fires, or the drop would
+  // also read as a tap on the row. Same trick the ladder and the matrix drag both use.
+  if (!tabDragged || d.to === d.from) { setTimeout(() => { tabDragged = false; }, 0); return; }
+  const order = tabEditOrder();
+  order.splice(d.to, 0, order.splice(d.from, 1)[0]);
+  state.settings.barViews = sanitizeBar(order.slice(0, BAR_SLOTS));
+  save();
+  renderTabEditor(); renderNav();
+  SFX.coin();
+  setTimeout(() => { tabDragged = false; }, 0);
+};
+$('#tabEditList').addEventListener('pointerup', endTabDrag);
+$('#tabEditList').addEventListener('pointercancel', endTabDrag);   // a system gesture stole it
+$('#tabEditReset').addEventListener('click', () => {
+  state.settings.barViews = DEFAULT_BAR.slice();
+  save(); renderTabEditor(); renderNav(); SFX.click();
+  toast('🧭 Tab bar reset', 'var(--cyan)');
+});
+
+// Delegated once, on a node that is never replaced. This used to be three separate
+// listeners — one per tab element, one on #moreTab, one on #moreSheet — all bound at boot,
+// which would have left every re-rendered tab silently dead.
+$('#nav').addEventListener('click', e => {
+  if (e.target.closest('#moreTab')) { SFX.click(); moreIsOpen() ? closeMore() : openMore(); return; }
+  const hit = e.target.closest('.more-row[data-view], .tab[data-view]');
+  if (!hit) return;
+  SFX.click(); closeMore(); switchView(hit.dataset.view);
+});
 
 function openMore() {
   $('#moreSheet').classList.add('show');
@@ -8428,28 +9346,43 @@ function closeMore() {
   $('#moreTab').setAttribute('aria-expanded', 'false');
   document.body.classList.remove('more-open');
 }
-function moreIsOpen() { return $('#moreSheet').classList.contains('show'); }
+// Null-safe because renderNav() asks this while deciding what to build — and on the very
+// first render the sheet it's asking about doesn't exist yet. No sheet means not open.
+function moreIsOpen() { const s = $('#moreSheet'); return !!s && s.classList.contains('show'); }
 
-$('#moreTab').addEventListener('click', () => { SFX.click(); moreIsOpen() ? closeMore() : openMore(); });
+// The scrim lives OUTSIDE the nav and is never re-rendered, so a direct listener is fine.
 $('#moreScrim').addEventListener('click', () => closeMore());
-$('#moreSheet').addEventListener('click', e => {
-  const row = e.target.closest('.more-row'); if (!row) return;
-  SFX.click(); closeMore(); switchView(row.dataset.view);
-});
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && moreIsOpen()) closeMore(); });
 
 function switchView(name) {
+  // Scroll to the top BEFORE the view swap, and instantly.
+  //
+  // Swapping in a shorter view shrinks the document under whatever scroll position the
+  // outgoing view was at, and WebKit clamps that overshoot. On iOS that clamp strands the
+  // position:fixed layer — the bottom tab bar and the Tasks dock both end up floating
+  // partway up the screen, displaced by the same amount, which is exactly the reported
+  // symptom. A real touch-scroll re-syncs the layer, which is why it was only ever
+  // visible on Home and Tasks: `body { height: 100% }` makes the document exactly the
+  // viewport height when content is short, so those two can't be scrolled and never get
+  // the correcting flick. Resetting first means the document is still tall when the
+  // scroll happens and there is no overshoot left to clamp.
+  //
+  // Instant rather than smooth: a smooth scroll is still animating when the swap below
+  // pulls the document out from under it, which is the same trap one frame later.
+  window.scrollTo(0, 0);
   flushUltra(); // bank any unrevealed pack cards before navigating away
   // Leaving Settings folds every section back up, so it always opens as a short menu
   // instead of wherever the last visit left it scrolled to.
   if (name !== 'settings' && $('#view-settings').classList.contains('active')) {
     $$('#view-settings .panel.set-section').forEach(p => p.classList.add('collapsed'));
   }
+  currentView = name;              // renderNav reads this to restore the highlight
   $$('#nav .tab[data-view]').forEach(t => t.classList.toggle('active', t.dataset.view === name));
   // An overflow view has no tab of its own, so "More" carries the active state for it.
-  $('#moreTab').classList.toggle('active', MORE_VIEWS.includes(name));
+  $('#moreTab').classList.toggle('active', moreViews().includes(name));
   $$('#moreSheet .more-row').forEach(r => r.classList.toggle('active', r.dataset.view === name));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  if (name === 'home') { homeSchedResetScroll(); renderHome(); }   // arriving re-centres on now
   if (name === 'habits') renderHabits();
   if (name === 'tasks') renderTasks();
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
@@ -8459,7 +9392,6 @@ function switchView(name) {
   if (name === 'schedule') renderBlockSchedule();
   if (name === 'settings') renderSettings();
   updatePassFab();                 // Habit Pass button shows only on the Habits tab
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Habit Pass open/close + actions
@@ -8802,13 +9734,19 @@ function onInlineHabitField(e) {
   }
   save();
 }
-$('#view-habits').addEventListener('click', onHabitsClick);
-$('#view-habits').addEventListener('pointerdown', onHabitPointerDown);
-$('#view-habits').addEventListener('pointermove', onHabitPointerMove);
-$('#view-habits').addEventListener('pointerup', onHabitPointerUp);
-$('#view-habits').addEventListener('pointercancel', onHabitPointerUp);
-$('#view-habits').addEventListener('input', onInlineHabitField);
-$('#view-habits').addEventListener('change', onInlineHabitField);
+// Home carries a second Due Now board, so the SAME named handlers are bound there too —
+// the rows are identical markup and must behave identically. The pointer four are what
+// make a tiered habit's carousel swipe; without them a leveled row would be dead on Home.
+['#view-habits', '#view-home'].forEach(sel => {
+  const v = $(sel); if (!v) return;
+  v.addEventListener('click', onHabitsClick);
+  v.addEventListener('pointerdown', onHabitPointerDown);
+  v.addEventListener('pointermove', onHabitPointerMove);
+  v.addEventListener('pointerup', onHabitPointerUp);
+  v.addEventListener('pointercancel', onHabitPointerUp);
+  v.addEventListener('input', onInlineHabitField);
+  v.addEventListener('change', onInlineHabitField);
+});
 
 /* =================================================================
    EDITOR SHEET — habits, quests and rewards all edit in one sheet that
@@ -8922,8 +9860,25 @@ document.addEventListener('keydown', e => {
    habit you want to re-base on another.
    ================================================================= */
 let copyPickForId = null;
-// Everything copyable: the habit's definition, not its record. Streak, history, timers
-// and the day's progress deliberately stay with the original.
+/* Everything copyable: the habit's definition, not its record. Streak, history, timers
+   and the day's progress deliberately stay with the original.
+
+   Two fields are deliberately NOT copied, and it matters:
+
+   • `days` — the weekly schedule. It used to be copied, and that made copied habits
+     disappear. Copy a Mon–Fri habit out of a "School day" loadout on a Saturday and the
+     new habit lands correctly in the current loadout, correctly in the right section, and
+     is then filtered straight out of the screen by isScheduledToday(). Nothing tells you:
+     the day picker lives behind the editor's "⋯ More" disclosure, which starts collapsed,
+     so there is not even a visual hint that the schedule changed under you. Which days a
+     habit runs is a property of the routine you are building HERE, not of the habit you
+     borrowed the shape of.
+
+   • `section` — daily vs extra. You already answered that by choosing which "＋ Add habit"
+     button to press; copying the source's answer over it silently relocated the habit to
+     the other section.
+
+   Both stay with the target. Everything that describes what the habit IS still copies. */
 function copyHabitDefinition(from, into) {
   into.emoji = from.emoji;
   into.emojiAuto = false;                       // an explicit choice now — stop guessing
@@ -8932,10 +9887,8 @@ function copyHabitDefinition(from, into) {
   into.reward = from.reward;
   into.repeatable = !!from.repeatable;
   into.cap = Math.max(1, parseInt(from.cap) || 1);
-  into.days = Array.isArray(from.days) && from.days.length === 7 ? from.days.slice() : [true, true, true, true, true, true, true];
   into.why = from.why || '';
   into.timedMinutes = from.timedMinutes || 0;
-  into.section = from.section === 'extra' ? 'extra' : 'daily';
   into.scheduledMin = Number.isFinite(from.scheduledMin) ? from.scheduledMin : null;
   // Deep-copied so editing a tier on the copy never reaches back into the original.
   into.tiers = Array.isArray(from.tiers) ? from.tiers.map(t => ({ name: t.name, reward: t.reward, minutes: t.minutes || 0 })) : [];
@@ -9333,6 +10286,21 @@ function onTasksClick(e) {
   if (act === 'startOneoffTimer') { startOneoffTimer(e.target.closest('.qrow').dataset.id); return; }
   if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(e.target.closest('.qrow').dataset.id); return; }
   if (act === 'finishOneoffTimer') { finishTimedOneoff(e.target.closest('.qrow').dataset.id); return; }
+  if (e.target.closest('[data-act="toggleUnsorted"]')) { unsortedOpen = !unsortedOpen; SFX.click(); renderTaskMatrix(); return; }
+  const seg = e.target.closest('[data-taskview]');
+  if (seg) { state.settings.taskView = seg.dataset.taskview === 'matrix' ? 'matrix' : 'list'; SFX.click(); save(); renderOneoffs(); return; }
+  const quad = e.target.closest('[data-quad]');
+  if (quad && e.target.closest('.qedit')) {                 // quadrant picker in the editor
+    const t = state.oneoffs.find(x => x.id === e.target.closest('.qedit').dataset.id);
+    if (t) { t.quadrant = quad.dataset.quad || null; SFX.click(); save(); renderOneoffs(); syncEditorSheet(); }
+    return;
+  }
+  if (act === 'clearDue') {
+    const t = state.oneoffs.find(x => x.id === e.target.closest('.qedit').dataset.id);
+    if (t) { t.due = null; SFX.click(); save(); renderOneoffs(); syncEditorSheet(); }
+    return;
+  }
+  if (quadDragged) return;                                  // a drop just ended — not a tap
   if (act === 'editOneoff') { SFX.click(); openEditor('oneoff', e.target.closest('.qrow').dataset.id); return; }
   if (act === 'closeOneoffEdit') { editingOneoffId = null; SFX.click(); renderOneoffs(); buildHabitWheel(); return; }
   if (act === 'delOneoffEdit') {
@@ -9353,18 +10321,32 @@ function onTasksClick(e) {
   }
 }
 $('#questAddName').addEventListener('keydown', e => { if (e.key === 'Enter') addQuickQuest(); });
-// Inline one-off editor field edits (text/number on input, selects on change)
+// Quick-add starts folded away. It stays open after an add so several quests can be
+// typed in a row — the toggle is the only thing that closes it.
+$('#questAddToggle').addEventListener('click', () => {
+  questAddOpen = !questAddOpen;
+  SFX.click(); renderQuestAdd();
+  if (questAddOpen) $('#questAddName').focus();
+});
+// Inline one-off editor field edits (text/number on input, selects + dates on change)
 function onInlineOneoffField(e) {
   const f = e.target.dataset.of; if (!f) return;
-  const isSelect = e.target.tagName === 'SELECT';
-  if (e.type === 'input' && isSelect) return;   // avoid double-handling
-  if (e.type === 'change' && !isSelect) return;
+  // A <input type="date"> is not a SELECT but must still be read on `change` — pickers
+  // fire input inconsistently across browsers, and change is the one that always lands.
+  const onChange = e.target.tagName === 'SELECT' || e.target.type === 'date';
+  if (e.type === 'input' && onChange) return;   // avoid double-handling
+  if (e.type === 'change' && !onChange) return;
   const box = e.target.closest('.qedit'); if (!box) return;
   const t = state.oneoffs.find(x => x.id === box.dataset.id); if (!t) return;
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
   else if (f === 'category') t.category = e.target.value;
   else if (f === 'emoji') { t.emoji = e.target.value; t.emojiAuto = false; }   // a deliberate icon — stop guessing
+  else if (f === 'due') {
+    const v = e.target.value;
+    t.due = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+    save(); renderOneoffs(); syncEditorSheet(); return;      // re-sorts the list around the new date
+  }
   else {
     t[f] = e.target.value;
     if (f === 'name') autoEmoji(t, box);
@@ -9374,6 +10356,71 @@ function onInlineOneoffField(e) {
 $('#view-tasks').addEventListener('click', onTasksClick);
 $('#view-tasks').addEventListener('input', onInlineOneoffField);
 $('#view-tasks').addEventListener('change', onInlineOneoffField);
+
+/* ---- Drag a quest between matrix boxes. Pointer events, same shape as the tier
+   ladder's reorder: HTML5 drag-and-drop doesn't work on touch at all.
+
+   Two guards this shares with the ladder and the tier swipe:
+     · a press that starts on a button is left alone, or ▶/✓ stop working;
+     · the click that fires after a drop is swallowed, or every drop also opens the
+       editor for whatever quest was dropped. ---- */
+let quadDrag = null, quadDragged = false;
+$('#taskMatrix').addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  const row = e.target.closest('.qrow'); if (!row) return;
+  quadDragged = false;
+  const r = row.getBoundingClientRect();
+  quadDrag = { row, id: row.dataset.id, x0: e.clientX, y0: e.clientY, dx: r.left - e.clientX, dy: r.top - e.clientY, w: r.width };
+  row.setPointerCapture(e.pointerId);
+});
+$('#taskMatrix').addEventListener('pointermove', e => {
+  const d = quadDrag; if (!d) return;
+  const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+  if (!quadDragged) {
+    if (Math.hypot(dx, dy) < 8) return;
+    quadDragged = true;
+    // Lift out of flow so it can travel over the other boxes.
+    d.row.classList.add('quad-lifted');
+    d.row.style.width = d.w + 'px';
+    document.body.classList.add('quad-dragging');
+  }
+  d.row.style.left = (e.clientX + d.dx) + 'px';
+  d.row.style.top  = (e.clientY + d.dy) + 'px';
+  const over = quadUnder(e.clientX, e.clientY);
+  $$('#taskMatrix .quad').forEach(q => q.classList.toggle('over', q === over));
+});
+// Which box is under the pointer. elementFromPoint would only ever return the lifted row,
+// so hit-test the boxes' rectangles directly instead.
+function quadUnder(x, y) {
+  return [...$$('#taskMatrix .quad')].find(q => {
+    const r = q.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }) || null;
+}
+const endQuadDrag = e => {
+  const d = quadDrag; if (!d) return;
+  quadDrag = null;
+  d.row.classList.remove('quad-lifted');
+  d.row.style.width = d.row.style.left = d.row.style.top = '';
+  document.body.classList.remove('quad-dragging');
+  $$('#taskMatrix .quad').forEach(q => q.classList.remove('over'));
+  if (!quadDragged) return;
+  const target = quadUnder(e.clientX, e.clientY);
+  const t = state.oneoffs.find(x => x.id === d.id);
+  if (target && t) {
+    const to = target.dataset.quad || null;
+    if (to !== t.quadrant) {
+      t.quadrant = to;
+      SFX.coin(); save();
+      const q = quadrantOf(t);
+      toast(q ? `${q.icon} ${t.name} → ${q.label}` : `${t.name} → Unsorted`, 'var(--cyan)');
+    }
+  }
+  renderOneoffs();
+  setTimeout(() => { quadDragged = false; }, 0);   // let the trailing click fizzle first
+};
+$('#taskMatrix').addEventListener('pointerup', endQuadDrag);
+$('#taskMatrix').addEventListener('pointercancel', endQuadDrag);
 
 // Game tabs
 $$('#gameTabs .game-tab').forEach(t => t.addEventListener('click', () => {
@@ -9840,8 +10887,9 @@ function resolveCloudPending(useCloud) {
   renderCloudUI(); renderCloudBadge(); refreshCloudBackups();
 }
 
-// Red dot on the nav for anything in Settings needing attention. Settings lives behind
-// "More" now, so the dot has to ride on the More tab as well as the row inside the sheet.
+// Red dot on the nav for anything in Settings needing attention. Where it goes depends on
+// where the user has put Settings: its own tab if it's in the bar, otherwise the More tab
+// (which is all that's visible when it's tucked away) plus the row inside the sheet.
 function renderCloudBadge() {
   const show = !!cloudPending;
   const put = (host, cls) => {
@@ -9850,7 +10898,9 @@ function renderCloudBadge() {
     if (show && !dot) { dot = document.createElement('span'); dot.className = cls; host.appendChild(dot); }
     else if (!show && dot) dot.remove();
   };
-  put($('#moreTab'), 'nav-dot');
+  // Clear any dot left on a tab Settings has since moved away from.
+  $$('#nav .nav-dot, #nav .mr-dot').forEach(d => d.remove());
+  put(navHostFor('settings'), 'nav-dot');
   put($('#moreSheet .more-row[data-view="settings"]'), 'mr-dot');
 }
 
@@ -10058,7 +11108,7 @@ $('#view-schedule').addEventListener('touchmove', e => {
   const ratio = distance / Math.max(1, schedPinch.distance);
   if (ratio > 1.12 || ratio < 0.89) {
     const oldPx = schedPx();
-    const grid = $('.sched-grid'); if (!grid) return;
+    const grid = $('#view-schedule .sched-grid'); if (!grid) return;   // scoped: Home has one too
     const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
     const contentHours = Math.max(0, (midY - grid.getBoundingClientRect().top) / oldPx);
     schedZoomIdx += ratio > 1 ? 1 : -1;
@@ -10079,7 +11129,7 @@ let schedDrag = null;
 $('#view-schedule').addEventListener('pointerdown', e => {
   const el = e.target.closest('.sched-block.draggable');
   if (!el || e.target.closest('[data-act]')) return;
-  const grid = $('.sched-grid'); if (!grid) return;
+  const grid = $('#view-schedule .sched-grid'); if (!grid) return;     // scoped: Home has one too
   schedDrag = {
     el, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
     durMin: parseInt(el.dataset.dur, 10) || 15, start: parseInt(el.dataset.start, 10),
@@ -10463,7 +11513,9 @@ function fullRender() {
   document.body.classList.toggle('reduced', state.settings.reducedMotion);
   displayTokens = state.tokens;
   renderTopbar();
+  renderNav();      // the bar is markup-free — this is what puts tabs on screen at all
   renderHabits();
+  renderHome();     // after renderHabits: both paint Due Now, and Home also logs the pace
   renderTasks();
   updateGameButtons();
   buildWheelSegments();
@@ -10502,6 +11554,9 @@ setInterval(() => {
   renderTopbar();
   renderHappyBanners();
   if ($('#view-habits').classList.contains('active') && editingHabitId === null) renderHabits(); // ×N tags come/go
+  // Home is the most time-sensitive view in the app: the NOW dot creeps along its block,
+  // the block itself hands over to the next one, and Due Now's one-hour window moves.
+  if ($('#view-home').classList.contains('active') && editingHabitId === null) renderHome();
   if ($('#view-tasks').classList.contains('active') && editingOneoffId === null) renderOneoffs();
   if ($('#view-prizes').classList.contains('active') && editingRewardId === null) renderPrizes();
 }, 30000);
