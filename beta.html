@@ -9860,8 +9860,25 @@ document.addEventListener('keydown', e => {
    habit you want to re-base on another.
    ================================================================= */
 let copyPickForId = null;
-// Everything copyable: the habit's definition, not its record. Streak, history, timers
-// and the day's progress deliberately stay with the original.
+/* Everything copyable: the habit's definition, not its record. Streak, history, timers
+   and the day's progress deliberately stay with the original.
+
+   Two fields are deliberately NOT copied, and it matters:
+
+   • `days` — the weekly schedule. It used to be copied, and that made copied habits
+     disappear. Copy a Mon–Fri habit out of a "School day" loadout on a Saturday and the
+     new habit lands correctly in the current loadout, correctly in the right section, and
+     is then filtered straight out of the screen by isScheduledToday(). Nothing tells you:
+     the day picker lives behind the editor's "⋯ More" disclosure, which starts collapsed,
+     so there is not even a visual hint that the schedule changed under you. Which days a
+     habit runs is a property of the routine you are building HERE, not of the habit you
+     borrowed the shape of.
+
+   • `section` — daily vs extra. You already answered that by choosing which "＋ Add habit"
+     button to press; copying the source's answer over it silently relocated the habit to
+     the other section.
+
+   Both stay with the target. Everything that describes what the habit IS still copies. */
 function copyHabitDefinition(from, into) {
   into.emoji = from.emoji;
   into.emojiAuto = false;                       // an explicit choice now — stop guessing
@@ -9870,10 +9887,8 @@ function copyHabitDefinition(from, into) {
   into.reward = from.reward;
   into.repeatable = !!from.repeatable;
   into.cap = Math.max(1, parseInt(from.cap) || 1);
-  into.days = Array.isArray(from.days) && from.days.length === 7 ? from.days.slice() : [true, true, true, true, true, true, true];
   into.why = from.why || '';
   into.timedMinutes = from.timedMinutes || 0;
-  into.section = from.section === 'extra' ? 'extra' : 'daily';
   into.scheduledMin = Number.isFinite(from.scheduledMin) ? from.scheduledMin : null;
   // Deep-copied so editing a tier on the copy never reaches back into the original.
   into.tiers = Array.isArray(from.tiers) ? from.tiers.map(t => ({ name: t.name, reward: t.reward, minutes: t.minutes || 0 })) : [];
