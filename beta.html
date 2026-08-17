@@ -720,11 +720,29 @@
     .hedit-r .sect-in { flex: 1 1 auto; }
     .hedit-days { justify-content: center; }
     .hedit-actions { justify-content: space-between; margin-top: 2px; }
+    .addhabit-row { display: flex; gap: 8px; margin-top: 10px; }
     .addhabit-btn {
-      width: 100%; margin-top: 10px; border-style: dashed !important;
+      flex: 1 1 auto; min-width: 0; border-style: dashed !important;
       font-family: 'Orbitron', sans-serif; letter-spacing: 1px; color: var(--ink-dim);
     }
     .addhabit-btn:hover { color: #fff; }
+    /* Only rendered when there IS something hidden, so it never sits there as dead chrome.
+       Sized to its text so "+ Add habit" keeps the room it had when there is nothing. */
+    .inactive-btn {
+      flex: 0 0 auto; border-style: dashed !important;
+      font-family: 'Orbitron', sans-serif; letter-spacing: .5px; font-size: 11px;
+      color: var(--ink-dim); white-space: nowrap;
+    }
+    .inactive-btn:hover { color: #fff; }
+    /* Weekday strip on a row in the inactive list — the whole point is seeing WHY it's
+       hidden, so the days it does run are spelled out rather than implied. */
+    .pick-days { display: flex; gap: 2px; margin-left: auto; }
+    .pick-days i {
+      font-style: normal; font-size: 9px; width: 13px; height: 13px; border-radius: 4px;
+      display: grid; place-items: center; color: var(--ink-dim);
+      background: rgba(255,255,255,.05); border: 1px solid var(--gs-edge, var(--panel-edge));
+    }
+    .pick-days i.on { background: var(--gs-lite); color: var(--gs-on-lite); border-color: transparent; }
 
     /* slim section banners on the Habits tab */
     .daily-banner.slim { padding: 12px 14px; gap: 12px; margin-bottom: 12px; }
@@ -1900,7 +1918,7 @@
        catches them — and being later in the file it beat their own `.sel` rules, which
        left List/Matrix and the quadrant picker with no visible selected state at all.
        They belong here with the other checked states, after that rule. */
-    .chip.sel, .tier-chip.sel, .day-dot.active, .view-seg.sel, .quad-btn.sel {
+    .chip.sel, .tier-chip.sel, .day-dot.active, .view-seg.sel, .quad-btn.sel, .rec-seg.sel {
       background: var(--gs-lite) !important; border-color: transparent !important; color: var(--gs-on-lite) !important;
     }
     .hrow-check { background: var(--gs-ctl); border: 1px solid var(--gs-edge-hi); }
@@ -2030,6 +2048,24 @@
     .pick-lo > .pick-sub { border-top: 1px solid var(--gs-edge); }
     .pick-lo:first-child > .pick-sub { border-top: 0; }   /* the section header sits right above */
     .pick-lo > .pick-body > .pick-row { padding-left: 26px; }
+    /* Schedule picker only: loadout is the OUTER group, so its header is the top-level
+       one and the Daily/Extra sections nest inside it. (The copy picker keeps the older
+       shape above — it has no sections, only loadouts, so the two rules don't collide.) */
+    .pick-lo > .pick-sec { padding: 12px 16px; border-top: 1px solid var(--gs-edge); }
+    .pick-lo:first-child > .pick-sec { border-top: 0; }
+    .pick-sub-group > .pick-body > .pick-row { padding-left: 26px; }
+
+    /* Schedule: the record day being replayed, and how far back to look for it. */
+    .rec-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin: 8px 0 2px; padding: 8px 10px;
+      border: 1px solid var(--gs-edge, var(--panel-edge)); border-radius: 11px;
+      background: var(--gs-card, rgba(255,255,255,.03));
+    }
+    .rec-line { flex: 1 1 200px; min-width: 0; font-size: 11.5px; line-height: 1.4; color: var(--ink-dim); }
+    .rec-line b { color: var(--ink); }
+    .rec-segs { display: flex; gap: 4px; margin-left: auto; }
+    .rec-seg { padding: 4px 9px !important; font-size: 10px !important; letter-spacing: .5px; }
     .pick-head {
       position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px; background: var(--gs-panel); border-bottom: 1px solid var(--gs-edge);
@@ -2129,6 +2165,16 @@
     <div class="pick-foot"><button class="btn green sm" id="copyPickApply" disabled>Copy</button></div>
   </div>
 
+  <!-- Habits hidden from today's board — wrong weekday, mostly. Without this they are
+       unreachable from the Habits tab entirely: not on the board, not in Graduated. -->
+  <div class="pick-sheet" id="inactivePickSheet" aria-hidden="true">
+    <div class="pick-head">
+      <span id="inactivePickTitle">Not scheduled today</span>
+      <button class="pass-close" data-act="inactivePickClose" title="Close">✕</button>
+    </div>
+    <div id="inactivePickBody"></div>
+  </div>
+
   <div class="more-scrim" id="moreScrim"></div>
 
   <!-- Empty on purpose: renderNav() fills this from state.settings.barViews, because
@@ -2177,7 +2223,10 @@
         </div>
         <div class="habit-group-body">
           <div id="dailyIdentities"></div>
-          <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="daily">＋ Add habit</button>
+          <div class="addhabit-row">
+            <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="daily">＋ Add habit</button>
+            <span id="dailyInactiveMount"></span>
+          </div>
         </div>
       </div>
 
@@ -2196,7 +2245,10 @@
         </div>
         <div class="habit-group-body">
           <div class="habit-list" id="extraGrid"></div>
-          <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="extra">＋ Add habit</button>
+          <div class="addhabit-row">
+            <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="extra">＋ Add habit</button>
+            <span id="extraInactiveMount"></span>
+          </div>
         </div>
       </div>
       <div id="archivedSection"></div>
@@ -2417,7 +2469,7 @@
     <!-- ===================== BLOCK SCHEDULE ===================== -->
     <section class="view" id="view-schedule">
       <div class="section-title neon-purple">📅 Block Schedule</div>
-      <div class="subtle" style="margin-bottom:12px">Past days show what you actually did and how long it took, plus 🎁 when you cashed in a reward. Today adds the AI's prediction for what's still to come, drawn dashed.</div>
+      <div class="subtle" style="margin-bottom:12px">Past days show what you actually did and how long it took, plus 🎁 when you cashed in a reward. Today lays your best day back over the hours ahead, drawn dashed — the target to beat.</div>
       <!-- No inner scroll container: blocks are percentage-width and fit any screen, so a
            nested overflow-x scroller only fought the page's own vertical scroll on mobile. -->
       <div id="scheduleBody"></div>
@@ -2864,6 +2916,9 @@ function defaultState() {
                 // Token payout per one-off task tier (editable in Settings → One-Off Quests).
                 tierRewards: { easy: 5, medium: 10, hard: 20 },
                 taskView: 'list',        // Tasks tab: 'list' | 'matrix' (Eisenhower)
+                // How far back the Schedule looks for the record day it replays as today's
+                // target: 'week' | 'month' | 'year' | 'all'. See RECORD_WINDOWS.
+                recordWindow: 'all',
                 // Which five views sit in the bottom bar; everything else falls into
                 // "More". Editable in Settings → 🧭 Tab bar. Kept in settings (not a
                 // device-local key) so the layout follows you across devices.
@@ -4306,6 +4361,62 @@ function renderDailyIdentities() {
   const b = $('#dailyBonusLabel'); if (b) b.textContent = `+${state.settings.dailyBonus} 🪙`;
 }
 
+/* Habits in this loadout + section that the board is NOT showing today. Computed as a
+   diff against what sectionStats() actually renders rather than by re-testing the weekday
+   rule, so any future filter added there is covered here for free — the failure this
+   guards against is a habit existing but being reachable from nowhere. Archived ones are
+   excluded: they have their own Graduated section. */
+function inactiveHabits(section) {
+  const shown = new Set(sectionStats(section).list.map(h => h.id));
+  return state.habits.filter(h => h.section === section && !h.archived
+    && h.loadout === currentLoadout() && !shown.has(h.id));
+}
+const DOW_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+function renderInactiveButtons() {
+  ['daily', 'extra'].forEach(section => {
+    const mount = $(`#${section}InactiveMount`); if (!mount) return;
+    const n = inactiveHabits(section).length;
+    mount.innerHTML = n
+      ? `<button class="btn ghost sm inactive-btn" data-act="inactivePick" data-section="${section}">\u{1F4A4} ${n} inactive</button>`
+      : '';
+  });
+}
+let inactivePickSection = 'daily';
+function openInactivePicker(section) {
+  inactivePickSection = section === 'extra' ? 'extra' : 'daily';
+  renderInactivePicker();
+  $('#inactivePickSheet').classList.add('show');
+  $('#inactivePickSheet').setAttribute('aria-hidden', 'false');
+}
+function closeInactivePicker() {
+  $('#inactivePickSheet').classList.remove('show');
+  $('#inactivePickSheet').setAttribute('aria-hidden', 'true');
+}
+function renderInactivePicker() {
+  const body = $('#inactivePickBody'); if (!body) return;
+  const list = inactiveHabits(inactivePickSection);
+  const title = $('#inactivePickTitle');
+  if (title) title.textContent = `Not scheduled today \u00b7 ${inactivePickSection === 'extra' ? 'Extra' : 'Daily'}`;
+  if (!list.length) { body.innerHTML = `<div class="subtle" style="padding:14px 16px">Everything in this section is running today.</div>`; return; }
+  body.innerHTML = `<div class="subtle" style="padding:10px 16px">These belong to <b>${escapeHtml(currentLoadout())}</b> but aren't on today's board. Tap one to edit it \u2014 including the days it runs.</div>`
+    + list.map(h => {
+      const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
+      return `
+      <button class="pick-row" data-inactive="${h.id}">
+        <span class="pick-e">${escapeHtml(h.emoji || '\u2B50')}</span>
+        <span class="pick-n">${escapeHtml(h.name)}</span>
+        <span class="pick-days">${DOW_LETTERS.map((d, i) => `<i class="${days[i] ? 'on' : ''}">${d}</i>`).join('')}</span>
+      </button>`;
+    }).join('');
+}
+$('#inactivePickSheet').addEventListener('click', e => {
+  if (e.target.closest('[data-act="inactivePickClose"]')) { SFX.click(); closeInactivePicker(); return; }
+  const row = e.target.closest('[data-inactive]'); if (!row) return;
+  // Close first: the editor sheet outranks this one, and leaving it open behind the
+  // editor means closing the editor drops you back onto a stale list.
+  SFX.click(); closeInactivePicker(); openEditor('habit', row.dataset.inactive);
+});
+
 function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt) {
   const st = sectionStats(section);
   const grid = $(gridId);
@@ -4337,6 +4448,7 @@ function renderHabits() {
   renderDueSoon();
   renderDailyIdentities();
   renderHabitSection('extra', '#extraGrid', '#extraFill', '#extraStatus', '#extraBonusLabel', state.settings.extraBonus);
+  renderInactiveButtons();
   updateDailyStreakInfo();
   renderArchived();
   renderHappyBanners();
@@ -5190,23 +5302,114 @@ function computeDayBlocks(dateStr) {
   const isToday = dateStr === todayStr();
   const planned = plannedFor(dateStr);
   const plannedRefs = new Set(planned.map(p => p.refId));
+  // Times come from your record day for this loadout when it has them. Priority is
+  // pinned > record > median: a time you set by hand or the AI pinned still wins, and a
+  // habit the record day never did falls back to the old median so it doesn't vanish.
+  const rec = recordFor(loadout);
   const inferred = state.habits.filter(h => !h.archived && h.section === 'daily'
       && isScheduledOn(h, dateStr) && h.loadout === loadout && !plannedRefs.has(h.id))
-    .map(h => ({
+    .map(h => {
+      const r = rec.blocks.get(h.id);
+      return {
       habitId: h.id, refId: h.id, planKind: 'habit',
       name: h.name, emoji: h.emoji, category: h.category,
-      startMin: habitBlockMinute(h),
-      durMin: habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
+      startMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : (r ? r.startMin : habitUsualMinute(h)),
+      durMin: (r && r.durMin) || habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
+      fromRecord: !!r && !Number.isFinite(h.scheduledMin),
       pinned: Number.isFinite(h.scheduledMin),
       // "Complete" only means anything for today; a future day hasn't happened yet.
       complete: isToday ? isComplete(h) : false,
       kind: 'predicted', type: 'habit',
-    }))
+    };})
     .filter(b => Number.isFinite(b.startMin));
   return inferred.concat(planned).sort((a, b) => a.startMin - b.startMin);
 }
 // Back-compat alias — Due Soon and the AI context still ask for "today".
 function computeTodayBlocks() { return computeDayBlocks(todayStr()); }
+
+/* =================================================================
+   RECORD DAY — the personal best the Schedule replays as today's target.
+
+   Predictions used to be the MEDIAN of your last 14 runs, which is a description of
+   your average day, not something to beat. Instead we find the single best past day on
+   this loadout and redraw it onto today: the times you actually hit when it went well.
+
+   "Best" = the most distinct habits/quests finished, ties broken by whoever finished
+   EARLIEST. Count comes first on purpose — a 4-of-4 day beats a quick 3-of-4, so the bar
+   only moves when you genuinely did more, and speed is how two equal days are separated.
+
+   Repeats of one habit count ONCE. Drinking water eight times is not eight things done,
+   and without this a single repeatable habit would own the record forever.
+   ================================================================= */
+const RECORD_WINDOWS = [
+  { key: 'week',  label: 'Week',  days: 7 },
+  { key: 'month', label: 'Month', days: 30 },
+  { key: 'year',  label: 'Year',  days: 365 },
+  { key: 'all',   label: 'All',   days: null },
+];
+function recordWindowKey() {
+  const k = (state.settings || {}).recordWindow;
+  return RECORD_WINDOWS.some(w => w.key === k) ? k : 'all';
+}
+/* Which loadout a past day belongs to. paceLog carries the loadout each day ENDED on and
+   is the authority; days recorded before that existed fall back to the loadout stamped on
+   that day's habit completions. Quest entries carry no loadout at all, which is exactly
+   why the day — not the entry — is what gets tagged. */
+function dayLoadout(dateStr) {
+  const row = (state.paceLog || {})[dateStr];
+  if (row && row.loadout) return row.loadout;
+  const e = (state.history || []).find(x => x && x.kind === 'habit' && x.loadout && Number.isFinite(x.ts) && dateStrFromTs(x.ts) === dateStr);
+  return e ? e.loadout : null;
+}
+function recordDay(loadout, windowKey) {
+  const today = todayStr();
+  const win = RECORD_WINDOWS.find(w => w.key === windowKey) || RECORD_WINDOWS[3];
+  const days = new Map();
+  (state.history || []).forEach(e => {
+    if (!e || !Number.isFinite(e.ts)) return;
+    if (e.kind !== 'habit' && e.kind !== 'task') return;
+    const d = dateStrFromTs(e.ts);
+    if (d >= today) return;                       // today is still running — it can't be the target yet
+    if (win.days != null && daysBetween(d, today) > win.days) return;
+    if (dayLoadout(d) !== loadout) return;
+    const dt = new Date(e.ts), min = dt.getHours() * 60 + dt.getMinutes();
+    let row = days.get(d);
+    if (!row) { row = { date: d, count: 0, lastMin: 0, seen: new Set() }; days.set(d, row); }
+    const key = (e.kind === 'task' ? 't:' : 'h:') + (e.id || e.name);
+    if (!row.seen.has(key)) { row.seen.add(key); row.count++; }
+    row.lastMin = Math.max(row.lastMin, min);
+  });
+  return [...days.values()].sort((a, b) => (b.count - a.count) || (a.lastMin - b.lastMin))[0] || null;
+}
+/* That day's habits keyed by id, as real start/end times. A repeatable habit logged
+   several times keeps its FIRST run — the target is when you got started, not when you
+   topped up at 11pm. */
+function recordDayBlocks(rec) {
+  const m = new Map();
+  if (!rec) return m;
+  (state.history || [])
+    .filter(e => e && e.kind === 'habit' && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === rec.date)
+    .forEach(e => {
+      const d = new Date(e.ts);
+      const endMin = d.getHours() * 60 + d.getMinutes();
+      const timed = Number.isFinite(e.actualElapsedSec) && e.actualElapsedSec >= 60;
+      const durMin = timed ? Math.round(e.actualElapsedSec / 60) : 0;
+      const key = e.id || e.name;
+      const prev = m.get(key);
+      if (!prev || endMin < prev.endMin) m.set(key, { startMin: Math.max(0, endMin - durMin), endMin, durMin });
+    });
+  return m;
+}
+// computeDayBlocks runs on every repaint of the Schedule, the Home widget and Due Now, so
+// the history scan is memoised. The key covers everything that can change the answer.
+let recordCache = null;
+function recordFor(loadout) {
+  const key = `${loadout}|${recordWindowKey()}|${(state.history || []).length}|${todayStr()}`;
+  if (recordCache && recordCache.key === key) return recordCache.value;
+  const day = recordDay(loadout, recordWindowKey());
+  recordCache = { key, value: { day, blocks: recordDayBlocks(day) } };
+  return recordCache.value;
+}
 
 // ACTUAL blocks for any date, reconstructed from the completion log. A timed run gives a
 // real span (finished at `ts`, ran `actualElapsedSec`), so start = end − duration. A habit
@@ -5440,6 +5643,26 @@ function schedGridParts(dateStr, opts = {}) {
   return { blocks, lo, hi, hours: hi - lo, isToday, isFuture, inner: `${hourLines.join('')}${nowLine}<div class="sched-lanes">${blockEls}</div>` };
 }
 
+/* The record bar: which day is being replayed, and how far back to look for it.
+   Written as its own function because the empty case matters as much as the full one —
+   with no history yet the toggle would be four dead buttons, so it explains itself
+   instead. */
+function recordBarHTML() {
+  const loadout = currentLoadout();
+  const { day } = recordFor(loadout);
+  const segs = RECORD_WINDOWS.map(w =>
+    `<button class="btn ghost sm rec-seg ${w.key === recordWindowKey() ? 'sel' : ''}" data-act="recWin" data-win="${w.key}">${w.label}</button>`
+  ).join('');
+  const line = day
+    ? `\u{1F3C6} Beating <b>${escapeHtml(new Date(day.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))}</b> \u2014 ${day.count} done by ${escapeHtml(fmtMinOfDay(day.lastMin))}`
+    : `\u{1F3C6} No finished <b>${escapeHtml(loadout)}</b> day to beat yet \u2014 today sets the record.`;
+  return `
+    <div class="rec-bar">
+      <div class="rec-line">${line}</div>
+      <div class="rec-segs">${segs}</div>
+    </div>`;
+}
+
 function renderBlockSchedule() {
   const box = $('#scheduleBody'); if (!box) return;
   const dateStr = todayStr(schedOffset);
@@ -5469,6 +5692,7 @@ function renderBlockSchedule() {
       <span><i class="k-moment"></i> no timer</span>
       <span><i class="k-reward"></i> 🎁 reward</span>
     </div>
+    ${isToday || isFuture ? recordBarHTML() : ''}
     <!-- Zoom rides ABOVE the day rather than scrolling away with the legend: on a day
          that runs to 3,000px you were scrolling back to the top to change scale. Fixed,
          stacked over the ＋ button so the two live controls share one corner. -->
@@ -5478,7 +5702,7 @@ function renderBlockSchedule() {
     </div>
     <div class="sched-grid zoom-${schedZoomIdx}" data-lo="${lo}" data-hours="${hi - lo}"
          style="--ph:${schedPx()}px;height:calc(var(--ph) * ${hi - lo})">${inner}</div>
-    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a dashed block to say when you'll actually do it — it snaps to 15 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your usual.' : ''}</div>` : ''}
+    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a dashed block to say when you'll actually do it — it snaps to 15 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your record time.' : ''}</div>` : ''}
     ${!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>${escapeHtml(emptyMsg)}</div>` : ''}`;
 }
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
@@ -9957,6 +10181,10 @@ function onHabitsClick(e) {
     if (h) removeTierAt(h, parseInt(box.dataset.page));
     return;
   }
+  if (act === 'inactivePick') {
+    SFX.click(); openInactivePicker(e.target.closest('[data-act="inactivePick"]').dataset.section);
+    return;
+  }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
     const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', desc: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, timedMinutes: 0, timedAuto: true, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
@@ -11450,6 +11678,11 @@ $('#view-schedule').addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'schedPrev') { schedOffset -= 1; SFX.click(); renderBlockSchedule(); return; }
   if (act === 'schedNext') { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
+  if (act === 'recWin') {
+    const w = e.target.closest('[data-act="recWin"]').dataset.win;
+    if (RECORD_WINDOWS.some(x => x.key === w)) { state.settings.recordWindow = w; SFX.click(); save(); renderBlockSchedule(); renderHabits(); }
+    return;
+  }
   if (act === 'zoomIn')  { schedZoomIdx += 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'zoomOut') { schedZoomIdx -= 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'unpin') {
@@ -11572,37 +11805,37 @@ function schedPickOpen() {
       <span class="pick-n">${escapeHtml(o.name)}</span>
       <span class="subtle">${kind === 'task' ? 'quest' : `+${o.reward}🪙`}</span>
     </button>`;
-  // Each loadout is its own set of habits, so it gets its own drop-down inside the section
-  // rather than a bare divider — one loadout's worth of rows at a time, with a count so
-  // you can tell what's in there without opening it. Current loadout sorts first.
-  const byLoadout = list => {
-    const cur = currentLoadout();
-    const names = [...new Set(list.map(h => h.loadout || 'Default'))]
-      .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));
-    return names.map(lo => {
-      const rows = list.filter(h => (h.loadout || 'Default') === lo);
-      return `
-      <div class="pick-group pick-lo collapsed">
-        <div class="pick-sub" data-act="pickToggle">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}
-          <span class="pick-count">${rows.length}</span></div>
-        <div class="pick-body">${rows.map(h => row(h, 'habit')).join('')}</div>
-      </div>`;
-    }).join('');
-  };
-  const group = (key, title, count, inner) => `
-    <div class="pick-group collapsed" data-group="${key}">
-      <div class="pick-sec" data-act="pickToggle">${title} <span class="pick-count">${count}</span></div>
+  // Loadout is the OUTER grouping: a habit belongs to a loadout first and a section
+  // second, so "Default → Daily / Extra" is the way the list is actually shaped. The
+  // reverse nesting made you open Daily, then a loadout, then Extra, then the SAME
+  // loadout again to add two habits from one day-setup.
+  const group = (cls, headCls, title, count, inner, open) => `
+    <div class="pick-group ${cls} ${open ? '' : 'collapsed'}">
+      <div class="${headCls}" data-act="pickToggle">${title} <span class="pick-count">${count}</span></div>
       <div class="pick-body">${count ? inner : `<div class="subtle" style="padding:10px 16px">Nothing left to add.</div>`}</div>
     </div>`;
-  const daily = habits.filter(h => h.section !== 'extra');
-  const extra = habits.filter(h => h.section === 'extra');
+  // Sections inside a loadout start OPEN, so opening a loadout puts its habits one tap
+  // away instead of three. They're hidden inside the shut loadout until then anyway.
+  const sections = list => {
+    const daily = list.filter(h => h.section !== 'extra');
+    const extra = list.filter(h => h.section === 'extra');
+    return group('pick-sub-group', 'pick-sub', '🗓️ Daily habits', daily.length, daily.map(h => row(h, 'habit')).join(''), true)
+         + group('pick-sub-group', 'pick-sub', '✨ Extra habits', extra.length, extra.map(h => row(h, 'habit')).join(''), true);
+  };
+  const cur = currentLoadout();
+  const loadouts = [...new Set(habits.map(h => h.loadout || 'Default'))]
+    .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));   // current loadout first
   const label = schedOffset === 0 ? 'today' : schedOffset === 1 ? 'tomorrow'
     : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   $('#schedPickTitle').textContent = `Add to ${label}`;
   $('#schedPickBody').innerHTML =
-      group('daily', '🗓️ Daily habits', daily.length, byLoadout(daily))
-    + group('extra', '✨ Extra habits', extra.length, byLoadout(extra))
-    + group('task',  '📋 Tasks',        quests.length, quests.map(t => row(t, 'task')).join(''));
+      loadouts.map(lo => {
+        const mine = habits.filter(h => (h.loadout || 'Default') === lo);
+        return group('pick-lo', 'pick-sec', `🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}`, mine.length, sections(mine), false);
+      }).join('')
+    // Quests are shared across every loadout, so they stay a sibling of the loadouts
+    // rather than being duplicated inside each one.
+    + group('', 'pick-sec', '📋 Tasks', quests.length, quests.map(t => row(t, 'task')).join(''), false);
   $('#schedPickSheet').classList.add('show');
   $('#schedPickSheet').setAttribute('aria-hidden', 'false');
 }
