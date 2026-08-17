@@ -336,8 +336,12 @@
       display: flex; flex-direction: column; gap: 6px;
     }
     body.more-open .sched-zoom { opacity: 0; pointer-events: none; }    /* same as the FAB */
-    /* Inside the Home widget these stay inline in its header — that card doesn't scroll. */
-    #homeNow .sched-zoom { position: static; flex-direction: row; margin-left: auto; gap: 4px; }
+    /* Inside the Home widget these stay inline in its header — that card doesn't scroll.
+       `z-index: auto` is not redundant: this is a flex item of .now-head, and z-index
+       applies to flex items even at position:static. Inheriting the 44 above left it
+       stacking over the sticky header (z-index 40) and painting on top of the top bar
+       once the card scrolled under it. */
+    #homeNow .sched-zoom { position: static; z-index: auto; flex-direction: row; margin-left: auto; gap: 4px; }
     .zbtn {
       width: 38px; height: 34px; border-radius: 11px; cursor: pointer; line-height: 1;
       background: var(--gs-ctl, rgba(0,0,0,.35)); border: 1px solid var(--gs-edge, var(--panel-edge));
@@ -1950,7 +1954,37 @@
       background: transparent !important; border: 0 !important; padding: 0; margin: 0;
     }
     .edit-more-btn { margin-left: auto; }
-    .hedit-more { display: flex; flex-direction: column; gap: 10px; }
+    .hedit-more { display: flex; flex-direction: column; gap: 6px; }
+    /* Collapsible bars inside More. Same caret language as the picker groups, but its
+       own classes: .pick-sec/.pick-sub carry 10px uppercase type and a 26px indent that
+       belong to a list sheet, not to a form. */
+    .hsec { border: 1px solid var(--gs-edge, var(--panel-edge)); border-radius: 12px; overflow: hidden; }
+    .hsec-head {
+      width: 100%; display: flex; align-items: center; gap: 8px;
+      padding: 11px 12px; border: 0; background: var(--gs-card, rgba(255,255,255,.03));
+      color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+    }
+    .hsec-head::after { content: '▾'; margin-left: auto; opacity: .6; transition: transform .18s ease; }
+    .hsec.collapsed > .hsec-head::after { transform: rotate(-90deg); }
+    .hsec.collapsed > .hsec-body { display: none; }
+    .hsec-t { flex: 0 1 auto; }
+    /* The value at a glance. It has to survive next to a long title on a narrow phone,
+       so it truncates rather than pushing the caret off the row. */
+    .hsec-sum {
+      flex: 0 1 auto; min-width: 0; margin-left: 4px; font-size: 11px; color: var(--ink-dim);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hsec-body { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px; }
+    .hsec-blurb { font-size: 11px; line-height: 1.45; color: var(--ink-dim); }
+    /* A row holding a textarea: the default center alignment would float a 2-line box
+       against a single-line neighbour. */
+    .hedit-r.hedit-tall { align-items: flex-start; }
+    textarea.desc-in {
+      flex: 1 1 100%; min-width: 0; resize: none;   /* fixed height keeps syncEditSheetHeight() honest */
+      /* `input.name-in` is element-qualified, so a textarea inherits none of it and falls
+         back to the UA's monospace default. Both properties have to be restated here. */
+      font-family: inherit; line-height: 1.4; padding: 8px 10px;
+    }
 
     /* --- Schedule: + button and its picker sheet --------------------------- */
     .sched-fab {
@@ -1974,18 +2008,28 @@
     .pick-sheet.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
     /* The copy picker opens FROM the editor sheet (z-index 78), so it has to outrank it. */
     .pick-sheet.copy-sheet { z-index: 80; }
-    /* Collapsible groups inside a picker: the header is the toggle. */
-    .pick-group > .pick-sec { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-    .pick-group > .pick-sec::after { content: '▾'; margin-left: auto; transition: transform .18s ease; }
-    .pick-group.collapsed > .pick-sec::after { transform: rotate(-90deg); }
+    /* Collapsible groups inside a picker: the header is the toggle. Two levels deep —
+       a section (.pick-sec) holds one drop-down per loadout (.pick-sub) — and both
+       headers behave identically, so one set of rules covers them. */
+    .pick-group > .pick-sec, .pick-group > .pick-sub {
+      display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+    }
+    .pick-group > .pick-sec::after, .pick-group > .pick-sub::after {
+      content: '▾'; margin-left: auto; transition: transform .18s ease;
+    }
+    .pick-group.collapsed > .pick-sec::after,
+    .pick-group.collapsed > .pick-sub::after { transform: rotate(-90deg); }
     .pick-group.collapsed > .pick-body { display: none; }
     .pick-count { font-size: 10px; opacity: .75; }
-    /* Loadout divider inside a group — habits from different loadouts never blur together. */
+    /* One loadout's worth of habits. Indented so the nesting reads at a glance, and given
+       a real tap target rather than the 4px of padding a plain divider needed. */
     .pick-sub {
-      padding: 8px 16px 4px; font-size: 10px; letter-spacing: .8px; color: var(--ink-dim);
-      text-transform: uppercase; border-top: 1px solid var(--gs-edge);
+      padding: 11px 16px 11px 26px; font-size: 10px; letter-spacing: .8px;
+      color: var(--ink-dim); text-transform: uppercase;
     }
-    .pick-sub:first-child { border-top: 0; }
+    .pick-lo > .pick-sub { border-top: 1px solid var(--gs-edge); }
+    .pick-lo:first-child > .pick-sub { border-top: 0; }   /* the section header sits right above */
+    .pick-lo > .pick-body > .pick-row { padding-left: 26px; }
     .pick-head {
       position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px; background: var(--gs-panel); border-bottom: 1px solid var(--gs-edge);
@@ -1998,6 +2042,22 @@
       padding: 12px 16px; background: transparent; border: 0; border-bottom: 1px solid var(--gs-edge); color: var(--ink);
     }
     .pick-row:active { background: rgba(255,255,255,.06); }
+    /* Multi-select tick in the copy picker. A span, not an <input>: the whole row is
+       already a button, and a real checkbox inside it would fight for the tap. */
+    .pick-check {
+      flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px;
+      border: 1.5px solid var(--gs-edge-hi, var(--panel-edge));
+      display: grid; place-items: center; font-size: 13px; font-weight: 900;
+      color: transparent; transition: background .14s, border-color .14s, color .14s;
+    }
+    .pick-check.on { background: var(--gs-lite); border-color: transparent; color: var(--gs-on-lite); }
+    /* Sticky so a long list can't scroll the confirm button out of reach. */
+    .pick-foot {
+      position: sticky; bottom: 0; display: flex; justify-content: flex-end;
+      padding: 10px max(16px, env(safe-area-inset-right)) 10px 16px;
+      background: var(--gs-panel); border-top: 1px solid var(--gs-edge);
+    }
+    .pick-foot .btn:disabled { opacity: .4; pointer-events: none; }
     .pick-e { font-size: 22px; line-height: 1; }
     .pick-n { flex: 1 1 auto; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -2060,10 +2120,13 @@
        Schedule's ＋ picker, layered above the editor sheet it was opened from. -->
   <div class="pick-sheet copy-sheet" id="copyPickSheet" aria-hidden="true">
     <div class="pick-head">
-      <span>Copy from an existing habit</span>
+      <span>Copy from existing habits</span>
       <button class="pass-close" data-act="copyPickClose" title="Close">✕</button>
     </div>
     <div id="copyPickBody"></div>
+    <!-- Tick as many as you like, then apply them in one go. Sticky, because the list is
+         long enough to scroll past the button otherwise. -->
+    <div class="pick-foot"><button class="btn green sm" id="copyPickApply" disabled>Copy</button></div>
   </div>
 
   <div class="more-scrim" id="moreScrim"></div>
@@ -2752,7 +2815,11 @@ function defaultState() {
       { id: uid(), emoji: '🧹', name: 'Tidy a space',       section: 'extra', reward: 2, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '🤝', name: 'Reach out to a friend', section: 'extra', reward: 3, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
       { id: uid(), emoji: '💊', name: 'Take vitamins',      section: 'extra', reward: 1, repeatable: true,  cap: 2, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0 },
-    ].map(h => ({ days: [true, true, true, true, true, true, true], modes: {}, loadout: 'Default', why: '', scheduledMin: null, context: [], contextAsked: true, category: ({ 'Exercise': 'Exercise', 'Practice Cello': 'Intellect', 'Japanese Practice': 'Intellect', 'Study / Read': 'Intellect' }[h.name] || 'Unsorted'), ...h })),
+      // Durations are written out rather than run through inferMinutes(): defaultState()
+      // is called during boot, and MINUTE_MATCHERS is a const declared thousands of lines
+      // below — reaching it from here would be a temporal-dead-zone ReferenceError inside
+      // load(), which is how two real saves got wiped before.
+    ].map(h => ({ days: [true, true, true, true, true, true, true], modes: {}, loadout: 'Default', why: '', desc: '', scheduledMin: null, context: [], contextAsked: true, timedAuto: true, timedMinutes: ({ 'Drink Water': 2, 'Exercise': 30, 'Practice Cello': 30, 'Japanese Practice': 20, 'Study / Read': 45, 'Meditate': 10, 'Tidy a space': 5, 'Reach out to a friend': 10, 'Take vitamins': 2 }[h.name] || 0), category: ({ 'Exercise': 'Exercise', 'Practice Cello': 'Intellect', 'Japanese Practice': 'Intellect', 'Study / Read': 'Intellect' }[h.name] || 'Unsorted'), ...h })),
     rewards: [
       // `minutes` > 0 marks a "time" reward (screen/game time) — eligible for the unlock-window bonus.
       { id: uid(), emoji: '🍫', name: 'Favorite snack',       tier: 'common', minutes: 0 },
@@ -2773,7 +2840,7 @@ function defaultState() {
       { id: uid(), emoji: '✈️', name: 'Plan a big trip',            tier: 'hard',   category: 'Unsorted', reward: 20, iterations: 3, progress: 0 },
       { id: uid(), emoji: '💌', name: 'Send a message to someone',  tier: 'easy',   category: 'Unsorted', reward: 5,  iterations: 1, progress: 0 },
       { id: uid(), emoji: '🧽', name: 'Deep-clean one room',        tier: 'medium', category: 'Unsorted', reward: 10, iterations: 1, progress: 0 },
-    ].map(t => ({ createdAt: Date.now(), ...t })),
+    ].map(t => ({ createdAt: Date.now(), desc: '', timedAuto: true, timedMinutes: 0, ...t })),
     archivedOneoffs: [], // completed/deleted quest definitions retained for lifecycle analytics
     games: {
       wheel: { cost: 3, tokenWin: [2, 6],  weights: { blank: 30, tokens: 28, common: 24, rare: 12, epic: 5, legendary: 1 } },
@@ -2823,7 +2890,7 @@ function defaultState() {
     // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
     // finished quests are deleted and the habit list changes — so each day's pair is
     // recorded as it happens and never recomputed. See recordPaceToday().
-    paceLog: {},          // 'YYYY-MM-DD' → { done, total }
+    paceLog: {},          // 'YYYY-MM-DD' → { done, total, loadout } — loadout the day ended on
     // Reflection system: quick tap-chip reasons for misses, plus deeper end-of-day
     // conversation transcripts. Both land in `reflections`; `reasonChips` grows over
     // time the same way `contexts` does (starter set + AI can propose new ones).
@@ -3194,6 +3261,13 @@ function normalizeHabit(h) {
     // can change independently) — here we just preserve whatever string was saved.
     loadout: (h.loadout != null && String(h.loadout).trim()) ? String(h.loadout).trim() : 'Default',
     why: h.why != null ? String(h.why) : '',
+    // What the habit actually involves, in the user's own words — distinct from `why`,
+    // which is the motivation. Both are shown to the AI coach.
+    desc: h.desc != null ? String(h.desc) : '',
+    // Same deal as emojiAuto: true only while `timedMinutes` is still the number we
+    // guessed from the name. Typing a real one clears it for good, and legacy saves
+    // have no flag → false → their durations are never rewritten.
+    timedAuto: !!h.timedAuto,
     // Block Schedule: explicit AI/user-set target start time (minute of day), overriding
     // the inferred habitUsualMinute() median. null = not pinned, use the inferred time.
     // A set start time, from either a drag on the Schedule or an AI scheduleBlock —
@@ -3288,6 +3362,11 @@ function load(raw) {
         emojiAuto: !!t.emojiAuto,   // see normalizeHabit — auto-pick until the user edits the icon
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
+        desc: t.desc != null ? String(t.desc) : '',
+        // How long this is expected to take. Quests never had this; without it the
+        // Schedule gave every one of them a flat 30 minutes.
+        timedMinutes: clamp(parseInt(t.timedMinutes) || 0, 0, 999),
+        timedAuto: !!t.timedAuto,   // see normalizeHabit — guessed until the user types a number
         // When this should be done, as a local 'YYYY-MM-DD' string (null = no date), and
         // which Eisenhower box it's been triaged into (null = not sorted yet). Both are
         // validated here rather than trusted at every read site.
@@ -3343,9 +3422,12 @@ function load(raw) {
     const rawPace = (parsed.paceLog && typeof parsed.paceLog === 'object' && !Array.isArray(parsed.paceLog)) ? parsed.paceLog : {};
     Object.keys(rawPace).forEach(d => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
-      const done = parseInt((rawPace[d] || {}).done), total = parseInt((rawPace[d] || {}).total);
+      const row = rawPace[d] || {};
+      const done = parseInt(row.done), total = parseInt(row.total);
       if (Number.isFinite(done) && Number.isFinite(total) && total > 0) {
-        merged.paceLog[d] = { done: clamp(done, 0, total), total };
+        // Rows written before per-day loadouts existed have none. 'Default' is the only
+        // sane guess and is the loadout the app itself falls back to everywhere else.
+        merged.paceLog[d] = { done: clamp(done, 0, total), total, loadout: String(row.loadout || 'Default') };
       }
     });
     // Chat threads — migrate the old single flat aiChatLog into one thread so no conversation is lost.
@@ -4045,8 +4127,40 @@ function habitEditPagesHTML(h) {
   return `<div class="hedit-swipe"><div class="hedit-track" data-idx="${page}" style="transform:translateX(${-page * 100}%)">${pages}</div></div>`;
 }
 
+/* The identity <select> shared by the habit and quest editors. The trailing sentinel is
+   what lets a new identity be made without leaving for Settings — pickCategoryInto()
+   handles it. Deliberately not used by the Settings list or the goal editor, where an
+   inline "create" would be circular. */
+function categoryOptionsHTML(selected) {
+  return (state.categories || ['Unsorted'])
+    .map(c => `<option value="${escapeHtml(c)}" ${selected === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`)
+    .join('') + `<option value="${NEW_CATEGORY_OPT}">＋ New identity…</option>`;
+}
+/* One collapsible bar in the editor's More region: a title, the current value at a
+   glance, and — once opened — a line explaining what the thing does, then the controls.
+   Only one is ever open (editSecOpen), so the sheet stays short.
+   The header is a <button> on purpose: onHabitPointerDown skips buttons, and anything
+   else here would start a tiered habit's carousel swipe instead of opening the bar. */
+function editSecHTML(key, title, summary, blurb, inner) {
+  const open = editSecOpen === key;
+  return `
+    <div class="hsec ${open ? '' : 'collapsed'}">
+      <button class="hsec-head" data-act="editSec" data-sec="${key}" aria-expanded="${open}">
+        <span class="hsec-t">${title}</span>
+        ${summary ? `<span class="hsec-sum" data-sum="${key}">${escapeHtml(summary)}</span>` : ''}
+      </button>
+      <div class="hsec-body"><div class="hsec-blurb">${escapeHtml(blurb)}</div>${inner}</div>
+    </div>`;
+}
+// Enough of a value to recognise it in a collapsed bar, never enough to wrap the row.
+function clip(str, n) {
+  const s = String(str || '').trim().replace(/\s+/g, ' ');
+  return !s ? '' : (s.length > n ? s.slice(0, n - 1) + '…' : s);
+}
+
 // Inline "blown-up" habit editor (full create/edit on the Habits screen)
 function habitEditHTML(h, pageIdx) {
+  const sec = editSecHTML;
   const lvls = habitLevels(h);
   const basePage = lvls ? lvls.findIndex(l => l.base) : 0;
   const page = Number.isFinite(pageIdx) ? pageIdx : basePage;
@@ -4065,40 +4179,55 @@ function habitEditHTML(h, pageIdx) {
         <input class="name-in" data-f="name" value="${escapeHtml(h.name)}" placeholder="Habit name">
       </div>
       <div class="hedit-r">
-        <select class="sect-in" data-f="category" title="Identity (drives Pass goals)">
-          ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${h.category === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
-        </select>
+        <select class="sect-in" data-f="category" title="Identity (drives Pass goals)">${categoryOptionsHTML(h.category)}</select>
         <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
       </div>
       <div class="hedit-r hedit-days">${dayPicker}</div>
       ${editMoreOpen ? `
       <div class="hedit-more">
-        <div class="hedit-r">
-          <select class="sect-in" data-f="section" title="Section">
-            <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
-            <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
-          </select>
-          <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
-        </div>
-        <div class="hedit-r">
-          <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
-        </div>
-        <div class="hedit-r">
-          <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
-          <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
-        </div>
-        <div class="hedit-r">
-          <span class="pill" title="Optional estimate only — every habit can be played/finished with ▶ regardless of this number. Used for the &quot;usually ~Xm&quot; hint and the AI's planned-vs-actual comparisons.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
-          <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0)}</span>
-        </div>
-        <div class="hedit-r">${addTierBtn}</div>
-        <div class="hedit-r">
-          <button class="btn ghost sm" data-act="copyHabit" title="Fill this habit in from one you already have — including habits in your other loadouts">⧉ Copy from…</button>
-        </div>
-        <div class="hedit-r">
-          <button class="btn ghost sm" data-act="graduate" title="Archive this habit — it leaves the rotation but keeps its history">🎓 Graduate</button>
-          <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
-        </div>
+        ${sec('where', '🗓️ Section & loadout', `${h.section === 'extra' ? 'Extra' : 'Daily'} · ${h.loadout || currentLoadout()}`,
+          'Daily habits are your everyday rotation; Extra ones are optional bonuses that never break a streak. The loadout decides which day-setups this habit shows up in.', `
+          <div class="hedit-r">
+            <select class="sect-in" data-f="section" title="Section">
+              <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
+              <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
+            </select>
+            <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
+          </div>`)}
+        ${sec('details', '📝 Details', clip(h.desc, 24) || 'none',
+          'Spell out what this habit actually involves, and why it matters to you. Your AI coach reads both when it suggests tiers and modes.', `
+          <div class="hedit-r hedit-tall">
+            <textarea class="name-in desc-in" data-f="desc" rows="2" placeholder="What does this habit actually involve?">${escapeHtml(h.desc || '')}</textarea>
+          </div>
+          <div class="hedit-r">
+            <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
+          </div>`)}
+        ${sec('repeats', '↻ Repeats', h.repeatable ? `up to ${h.cap}/day` : 'off',
+          'A repeatable habit can be completed more than once a day and pays out every time, up to the cap.', `
+          <div class="hedit-r">
+            <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
+            <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
+          </div>`)}
+        ${sec('duration', '⏱ Expected duration', durationSummary(h),
+          'Roughly how long this takes, used for its length on the Schedule and the “usually ~Xm” hint. Filled in from the name automatically — type over it and it stays put.', `
+          <div class="hedit-r">
+            <span class="pill" title="Estimate only — every habit can be played/finished with ▶ regardless of this number.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
+            <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0, h.timedAuto)}</span>
+          </div>`)}
+        ${sec('tiers', '🎚️ Difficulty tiers', lvls ? `${lvls.length} tiers` : 'none',
+          'Split one habit into easier and harder versions — then swipe between them on the day, and take the one you can actually do.', `
+          <div class="hedit-r">${addTierBtn}</div>`)}
+        ${sec('copy', '⧉ Copy from another habit', '',
+          'Fill this habit in from one you already have, including habits in your other loadouts. Its schedule and section stay yours.', `
+          <div class="hedit-r">
+            <button class="btn ghost sm" data-act="copyHabit">⧉ Copy from…</button>
+          </div>`)}
+        ${sec('retire', '🗄️ Archive or delete', '',
+          'Graduate retires a habit but keeps its history and streak records. Delete removes it for good.', `
+          <div class="hedit-r">
+            <button class="btn ghost sm" data-act="graduate">🎓 Graduate</button>
+            <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
+          </div>`)}
       </div>` : ''}
       <div class="hedit-r hedit-actions">
         <button class="btn green sm" data-act="closeEdit">✓ Done</button>
@@ -4298,7 +4427,8 @@ function addQuickQuest() {
   if (!name) { inp.focus(); return; }
   const tier = TASK_TIERS[quickTier] ? quickTier : 'medium';
   // The quick-add bar has no editor open, so the icon is guessed once here instead.
-  const task = { id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, createdAt: Date.now() };
+  // The quick-add bar has no editor open, so both guesses are taken once, here.
+  const task = { id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, timedMinutes: inferMinutes(name), timedAuto: true, desc: '', createdAt: Date.now() };
   state.oneoffs.push(task);
   logEvent('task_created', { entityType: 'task', entityId: task.id, name: task.name, category: task.category, level: task.tier, iterations: task.iterations });
   inp.value = ''; SFX.coin(); save();
@@ -4455,14 +4585,16 @@ function oneoffEditHTML(t) {
         <select class="sect-in" data-of="tier" title="Difficulty tier (sets the token reward)">
           ${Object.entries(TASK_TIERS).map(([k, ti]) => `<option value="${k}" ${(t.tier || 'medium') === k ? 'selected' : ''}>${ti.label} +${tierReward(k)} 🪙</option>`).join('')}
         </select>
-        <select class="sect-in" data-of="category" title="Category (drives Pass goals & happy hours)">
-          ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${(t.category || 'Unsorted') === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
-        </select>
+        <select class="sect-in" data-of="category" title="Category (drives Pass goals & happy hours)">${categoryOptionsHTML(t.category || 'Unsorted')}</select>
         <span class="pill">×<input class="num-in" data-of="iterations" type="number" min="1" max="99" value="${t.iterations}"> to finish</span>
+      </div>
+      <div class="hedit-r hedit-tall">
+        <textarea class="name-in desc-in" data-of="desc" rows="2" placeholder="What does this quest actually involve? (optional)">${escapeHtml(t.desc || '')}</textarea>
       </div>
       <div class="hedit-r">
         <span class="pill">📅 <input class="date-in" data-of="due" type="date" value="${t.due || ''}"></span>
         ${t.due ? `<button class="btn ghost sm" data-act="clearDue" title="Remove the due date">✕ date</button>` : ''}
+        <span class="pill" title="Roughly how long this takes — sets its length on the Schedule. Guessed from the name until you type your own.">⏱ <input class="num-in" data-of="timedMinutes" type="number" min="0" max="999" value="${t.timedMinutes || 0}"> min</span>
       </div>
       <div class="hedit-r qgrid-pick">
         <div class="subtle" style="flex-basis:100%">Urgency &amp; importance</div>
@@ -4763,37 +4895,149 @@ const EMOJI_KEYWORDS = [
   ['🎧', ['podcast', 'audiobook', 'listen']],
   ['🧊', ['cold shower', 'ice bath', 'cold plunge']],
 ];
-// Longest keyword wins, not first in the table — otherwise "walk the dog" trips over
-// plain "walk" and comes back 🚶. Word-boundary matched so "runny nose" isn't 🏃.
+// Word-boundary matched so "runny nose" isn't 🏃. Ranking happens in guessEmoji below.
 const EMOJI_MATCHERS = EMOJI_KEYWORDS
   .flatMap(([emoji, words]) => words.map(w => ({
     emoji, len: w.length,
     re: new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i'),
-  })))
-  .sort((a, b) => b.len - a.len);
+  })));
+/* Single-word keywords above that are ACTIONS rather than things. A habit name is
+   usually "<verb> the <noun>", and the noun is what the icon should show — "walk the
+   dog" is about the dog, not the walking. Anything not listed here counts as a noun,
+   which is why every multi-word phrase ('cold shower', 'meal prep') ranks high for
+   free. This is a word list, not part-of-speech tagging: an odd name will still pick
+   the wrong thing, and typing your own emoji clears `emojiAuto` for good. */
+const EMOJI_VERBS = new Set([
+  'avoid', 'breathe', 'breathing', 'brush', 'build', 'call', 'clean', 'cleaning', 'climb', 'climbing',
+  'code', 'coding', 'commit', 'compose', 'cook', 'cooking', 'cycle', 'cycling', 'dance', 'dancing',
+  'debug', 'declutter', 'doodle', 'draft', 'draw', 'drawing', 'eat', 'fix', 'hike', 'hiking',
+  'hydrate', 'invest', 'jog', 'jogging', 'learn', 'learning', 'lift', 'lifting', 'listen', 'memorize',
+  'meditate', 'message', 'moisturize', 'nap', 'paint', 'painting', 'plan', 'planning', 'pray',
+  'program', 'programming', 'read', 'reading', 'reflect', 'repair', 'reply', 'rest', 'revise',
+  'ride', 'run', 'running', 'save', 'schedule', 'scroll', 'shoot', 'shop', 'shopping', 'sing',
+  'singing', 'sketch', 'skate', 'sleep', 'speak', 'speaking', 'sprint', 'squat', 'stretch',
+  'stretching', 'study', 'studying', 'sweep', 'swim', 'swimming', 'text', 'tidy', 'track', 'trek',
+  'vacuum', 'wake', 'walk', 'walking', 'weigh', 'work', 'write', 'writing',
+]);
+/* Every keyword that matches, ranked. In order of tie-break:
+   1. a match sitting entirely inside a longer one is dropped — 'shower' must not
+      outrank 'cold shower', and 'dog' must not split 'walk the dog';
+   2. nouns beat verbs (see EMOJI_VERBS);
+   3. later in the string wins — English puts the object after the verb;
+   4. longer keyword wins, the original rule, kept as the final tie-break. */
 function guessEmoji(name) {
   const s = String(name || '').toLowerCase().trim();
   if (!s) return null;
-  for (const m of EMOJI_MATCHERS) if (m.re.test(s)) return m.emoji;
-  return null;
+  const hits = [];
+  for (const m of EMOJI_MATCHERS) {
+    const r = m.re.exec(s);
+    if (!r) continue;
+    const start = r.index + r[1].length;
+    hits.push({ emoji: m.emoji, len: m.len, start, end: start + m.len, verb: EMOJI_VERBS.has(s.slice(start, start + m.len)) });
+  }
+  if (!hits.length) return null;
+  const kept = hits.filter(h => !hits.some(o => o !== h && o.start <= h.start && o.end >= h.end && o.len > h.len));
+  kept.sort((a, b) => (a.verb - b.verb) || (b.start - a.start) || (b.len - a.len));
+  return kept[0].emoji;
 }
-// Applies a guess to a habit/quest that's still wearing its seed icon, and pushes the
-// new value straight into the open editor's emoji input — no re-render, so the caret
-// stays put in the name field the user is mid-word in.
-function autoEmoji(item, box) {
+
+/* ---- Typical durations, same table shape and the same word-boundary matching as the
+   emoji list above. This is what lets a bare "Brush teeth" arrive with 2 minutes on it
+   instead of 0. Rough by definition — they're starting points, and the moment you type
+   your own number `timedAuto` clears and we stop touching it. Longest keyword wins, so
+   'cold shower' beats 'shower' and 'walk the dog' beats 'walk'. ---- */
+const MINUTE_KEYWORDS = [
+  [2,  ['brush teeth', 'teeth', 'floss', 'vitamin', 'vitamins', 'supplement', 'supplements', 'meds', 'medication', 'pill', 'pills', 'make bed', 'weigh in', 'sunscreen', 'water plants', 'hydrate']],
+  [3,  ['skincare', 'moisturize', 'lotion', 'gratitude', 'affirmations', 'breathe', 'breathing', 'breathwork']],
+  [5,  ['stretch', 'stretching', 'mobility', 'warmup', 'warm up', 'plank', 'tidy', 'trash', 'garbage', 'bins', 'recycling', 'litter', 'inbox']],
+  [10, ['shower', 'cold shower', 'ice bath', 'cold plunge', 'meditate', 'meditation', 'journal', 'journaling', 'diary', 'reflect', 'reflection', 'dishes', 'dishwasher', 'walk the dog', 'pray', 'prayer', 'devotion', 'flashcards', 'anki', 'make lunch', 'breakfast']],
+  [15, ['walk', 'steps', 'stroll', 'sketch', 'doodle', 'declutter', 'laundry', 'nap', 'reply', 'emails', 'email', 'inbox zero', 'scales', 'warm-up']],
+  [20, ['read', 'reading', 'book', 'chapter', 'novel', 'yoga', 'practice', 'podcast', 'audiobook', 'duolingo', 'vocab', 'pronunciation', 'stretch session']],
+  [30, ['run', 'running', 'jog', 'jogging', 'gym', 'workout', 'lift', 'lifting', 'weights', 'strength', 'cardio', 'bike', 'biking', 'cycle', 'cycling', 'swim', 'swimming', 'clean', 'cleaning', 'cook', 'cooking', 'meal prep', 'dinner', 'guitar', 'piano', 'cello', 'violin', 'drums', 'code', 'coding', 'program', 'write', 'writing', 'blog', 'draw', 'drawing', 'paint', 'painting', 'garden', 'gardening', 'grocery', 'groceries', 'vacuum']],
+  [45, ['study', 'studying', 'homework', 'deep work', 'revision', 'revise', 'lecture', 'leetcode', 'essay', 'physics', 'chemistry', 'biology', 'calculus', 'algebra', 'math', 'maths']],
+  [60, ['hike', 'hiking', 'trail', 'trek', 'class', 'lesson', 'therapy', 'soccer', 'basketball', 'tennis', 'golf', 'climbing', 'bouldering', 'karate', 'judo', 'bjj', 'taekwondo', 'dance class']],
+  [120, ['movie', 'film']],
+];
+const MINUTE_MATCHERS = MINUTE_KEYWORDS
+  .flatMap(([mins, words]) => words.map(w => ({
+    mins, len: w.length,
+    re: new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i'),
+  })))
+  .sort((a, b) => b.len - a.len);
+function guessMinutes(name) {
+  const s = String(name || '').toLowerCase().trim();
+  if (!s) return 0;
+  for (const m of MINUTE_MATCHERS) if (m.re.test(s)) return m.mins;
+  return 0;
+}
+// A number the user actually wrote into the name always beats the table: "45 min run"
+// is 45, not the 30 that a bare "run" would get.
+function inferMinutes(name) { return detectMinutes(name) || guessMinutes(name); }
+
+/* ---- Applying a guess. Both of these only ever touch an item that is still wearing
+   what we gave it at creation (`emojiAuto` / `timedAuto`); the first manual edit clears
+   the flag forever, and legacy saves have no flag at all → false → never touched. They
+   mutate the item only — painting the open editor is the caller's job, deliberately, so
+   nothing re-renders under a caret the user is typing in. ---- */
+function autoEmoji(item) {
   if (!item || !item.emojiAuto) return false;
   const g = guessEmoji(item.name);
   if (!g || g === item.emoji) return false;
   item.emoji = g;
-  const inp = box && box.querySelector('.emoji-in');
-  if (inp) inp.value = g;
   return true;
 }
+function autoMinutes(item) {
+  if (!item || !item.timedAuto) return false;
+  const m = inferMinutes(item.name);
+  if (!m || m === (item.timedMinutes || 0)) return false;
+  item.timedMinutes = m;
+  return true;
+}
+/* Guessing used to run on every keystroke, which made the icon flicker 🏃→📚→🐕 as you
+   typed "read to the dog". It now waits for you to stop. `focusout` flushes early so
+   tapping Done straight after the last character still applies the guess. */
+const NAME_SETTLE_MS = 600;
+let nameSettle = null;              // { kind, id, timer }
+function scheduleNameSettle(kind, id) {
+  if (nameSettle) clearTimeout(nameSettle.timer);
+  nameSettle = { kind, id, timer: setTimeout(() => flushNameSettle(), NAME_SETTLE_MS) };
+}
+function flushNameSettle() {
+  if (!nameSettle) return;
+  const { kind, id } = nameSettle;
+  clearTimeout(nameSettle.timer);
+  nameSettle = null;
+  const item = kind === 'habit' ? (state.habits || []).find(x => x.id === id)
+                                : (state.oneoffs || []).find(x => x.id === id);
+  if (!item) return;
+  const changedE = autoEmoji(item), changedM = autoMinutes(item);
+  if (!changedE && !changedM) return;
+  // Paint every open copy of this editor by hand. The sheet and the Habits view can both
+  // be showing the same item, and a re-render here would destroy the input being typed in.
+  const sel = kind === 'habit' ? `.hedit[data-id="${id}"]` : `.qedit[data-id="${id}"]`;
+  $$(sel).forEach(box => {
+    const ei = box.querySelector('.emoji-in'); if (ei) ei.value = item.emoji;
+    const mi = box.querySelector('[data-f="timedMinutes"], [data-of="timedMinutes"]');
+    if (mi) mi.value = item.timedMinutes || 0;
+    const sum = box.querySelector('[data-sum="duration"]');
+    if (sum) sum.textContent = durationSummary(item);
+  });
+  save();
+}
 
-// Duration detection is suggest-only — never applied silently ("buy 15 apples" would misfire).
-// The chip shows in the inline editor; tapping ✓ writes the minutes, ✕ dismisses that suggestion.
+// The old ask-before-applying chip. Auto-fill (autoMinutes) has taken over for anything
+// still flagged `timedAuto`, so this now only appears where auto-fill deliberately won't
+// go: extra tiers, and items whose duration the user has already set by hand — where a
+// later "20 min" typed into the name is still worth offering, but never worth taking.
+// One line of a summary for the editor's duration bar lives here too, next to fmtMins.
+function durationSummary(item) {
+  const m = (item && item.timedMinutes) || 0;
+  if (!m) return 'not set';
+  return fmtMins(m) + (item.timedAuto ? ' · auto' : '');
+}
 let timerSuggestDismissed = '';   // "<habitId>:<page>:<minutes>" the user said no to (transient)
-function timerSuggestHTML(habitId, page, name, currentMins) {
+function timerSuggestHTML(habitId, page, name, currentMins, isAuto) {
+  if (isAuto) return '';
   const det = detectMinutes(name);
   if (!det || det === currentMins || timerSuggestDismissed === `${habitId}:${page}:${det}`) return '';
   return `<button class="btn ghost sm" data-act="applyTimerSuggest" data-page="${page}" data-min="${det}" style="color:var(--cyan)">⏱ "${fmtMins(det)}" detected — set as expected duration?</button>
@@ -5422,26 +5666,49 @@ function recordPaceToday() {
   if (!p.total) return;                       // nothing was set for today — don't log a 0%
   state.paceLog = state.paceLog || {};
   const today = todayStr(), prev = state.paceLog[today];
-  if (prev && prev.done === p.done && prev.total === p.total) return;   // unchanged
-  state.paceLog[today] = { done: p.done, total: p.total };
+  const lo = currentLoadout();
+  if (prev && prev.done === p.done && prev.total === p.total && prev.loadout === lo) return;   // unchanged
+  // The loadout is stamped on every write, so the last write of a day wins — i.e. the
+  // loadout you ENDED the day on. Switching mid-day re-attributes the whole day to where
+  // you finished, which is the only reading that keeps one day in exactly one bucket.
+  state.paceLog[today] = { done: p.done, total: p.total, loadout: lo };
   // Keep roughly two months. The 7-day window only ever reads the tail.
   const keys = Object.keys(state.paceLog).sort();
   if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete state.paceLog[k]);
   save();
 }
-function pacePctFor(dateStr) {
-  const e = (state.paceLog || {})[dateStr];
-  return e && e.total ? Math.round(e.done / e.total * 100) : null;
+function pacePct(e) { return e && e.total ? Math.round(e.done / e.total * 100) : null; }
+
+/* Past days that belong to the SAME loadout as today, newest first, today excluded.
+
+   Comparing a "School day" against a weekend is comparing two different lists of habits —
+   a 60% on a 12-habit school day and a 60% on a 3-habit weekend say completely different
+   things. Scoping the history to the loadout is what makes the number mean something. */
+function paceHistory() {
+  const lo = currentLoadout(), today = todayStr(), log = state.paceLog || {};
+  return Object.keys(log)
+    .filter(d => d < today && (log[d].loadout || 'Default') === lo)
+    .sort().reverse()
+    .map(d => ({ date: d, pct: pacePct(log[d]) }))
+    .filter(x => x.pct != null);
 }
 function renderHomePace() {
   const box = $('#homePace'); if (!box) return;
   const p = paceToday();
-  const yest = pacePctFor(todayStr(-1));
-  // The last 7 CLOSED days — today is still in progress, so averaging it in would drag
-  // the comparison down all morning by design.
-  const week = [];
-  for (let i = 1; i <= 7; i++) { const v = pacePctFor(todayStr(-i)); if (v != null) week.push(v); }
-  const avg = week.length ? Math.round(week.reduce((s, v) => s + v, 0) / week.length) : null;
+  const lo = currentLoadout();
+  const hist = paceHistory();
+  const last = hist[0] || null;
+  const week = hist.slice(0, 7);                 // the 7 most recent CLOSED days on this loadout
+  const avg = week.length ? Math.round(week.reduce((s, x) => s + x.pct, 0) / week.length) : null;
+  // Name the row after the day it actually found, since with loadouts the most recent
+  // comparable day is often not yesterday. "Yesterday" would quietly be a lie otherwise.
+  const lastLabel = !last ? 'Last time'
+    : last.date === todayStr(-1) ? 'Yesterday'
+    : `Last ${new Date(last.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' })}`;
+  // Only mention the loadout once there's more than one in play — for a single-loadout
+  // user the name is noise on every row.
+  const manyLoadouts = new Set(Object.values(state.paceLog || {}).map(e => e.loadout || 'Default')).size > 1;
+  const avgLabel = manyLoadouts ? `${lo} average` : '7-day average';
   const val = (v, suffix = '') => v == null
     ? `<span class="ph-v none">no data yet</span>`
     : `<span class="ph-v">${v}%${suffix}</span>`;
@@ -5454,9 +5721,10 @@ function renderHomePace() {
       <span class="pace-pct">${p.pct}%</span>
     </div>
     <div class="pace-hist">
-      <span class="ph-k">Yesterday</span>${val(yest)}
-      <span class="ph-k">7-day average</span>${val(avg, week.length < 7 ? ` <span class="ph-v none">(${week.length}d)</span>` : '')}
-    </div>`;
+      <span class="ph-k">${escapeHtml(lastLabel)}</span>${val(last && last.pct)}
+      <span class="ph-k">${escapeHtml(avgLabel)}</span>${val(avg, week.length && week.length < 7 ? ` <span class="ph-v none">(${week.length}d)</span>` : '')}
+    </div>
+    ${manyLoadouts ? `<div class="hint" style="margin-top:10px">Compared against your other 🗂️ ${escapeHtml(lo)} days only.</div>` : ''}`;
 }
 function renderHomeTally() {
   const box = $('#homeToday'); if (!box) return;
@@ -6825,6 +7093,9 @@ function rewardEditCardHTML(r) {
         ${REWARD_TIERS.map(t => `<option value="${t}" ${r.tier === t ? 'selected' : ''}>${TIERS[t].emoji} ${TIERS[t].label}</option>`).join('')}
       </select>
       <span class="pill" title="If > 0, this is a time reward (gets the unlock-window bonus). Leave at 0 to read the duration out of the name.">⏱ <input class="num-in" data-rf="minutes" type="number" min="0" max="999" value="${r.minutes || 0}"> min</span>
+    </div>
+    <div class="hedit-r hedit-tall">
+      <textarea class="name-in desc-in" data-rf="desc" rows="2" placeholder="What exactly is this reward? (optional)">${escapeHtml(r.desc || '')}</textarea>
     </div>
     ${rewardSpecHintHTML(r)}
     <div class="hedit-r hedit-actions">
@@ -8420,6 +8691,7 @@ function renderTodayContext() {
 // was built to fix. Shared by habitPlanSummary, tierFillSystemPrompt, and appContext.
 function habitContextLines(h) {
   const bits = [];
+  if (h.desc) bits.push(`what it involves: "${h.desc}"`);
   if (h.why) bits.push(`why: "${h.why}"`);
   if (Array.isArray(h.context) && h.context.length) {
     bits.push(...h.context.map(c => `${c.question === '(conversation)' ? 'said' : c.question} → "${c.answer}"`));
@@ -9445,10 +9717,32 @@ function addCategoryName(v) {
   ensureHappyHours(); ensureCategoryColors(); save();
   return true;
 }
+// Everything that has to repaint when the identity list changes. Named because three
+// separate places need the same list and one of them kept forgetting a renderer.
+function renderAfterCategoryChange() {
+  renderCategories(); renderPassSettings(); renderHabitEditor(); renderHappyHours(); renderQuestAdd();
+}
+/* The identity <select> in the habit and quest editors carries a trailing "＋ New
+   identity…" option so a new one can be made without a trip to Settings. Returns false
+   when it has fully handled the event (created + re-rendered, or the user backed out),
+   true when the caller should carry on and save normally. */
+const NEW_CATEGORY_OPT = '__newcat';
+function pickCategoryInto(item, sel) {
+  if (sel.value !== NEW_CATEGORY_OPT) { item.category = sel.value; return true; }
+  const v = (prompt('New identity name:') || '').trim();
+  // Put the select back whatever happens next — it is currently showing the sentinel,
+  // and a cancelled prompt must not leave "＋ New identity…" sitting there as the value.
+  sel.value = item.category;
+  if (!v) return false;
+  if (!addCategoryName(v) && !state.categories.includes(v)) return false;
+  item.category = v;
+  save(); renderAfterCategoryChange(); renderEditSheet();
+  return false;
+}
 $('#addCategory').addEventListener('click', () => {
   const inp = $('#newCategory');
   addCategoryName(inp.value);
-  inp.value = ''; renderCategories(); renderPassSettings(); renderHabitEditor(); renderHappyHours(); renderQuestAdd();
+  inp.value = ''; renderAfterCategoryChange();
 });
 $('#newCategory').addEventListener('keydown', e => { if (e.key === 'Enter') $('#addCategory').click(); });
 // Core category removal — shared by the Settings ✕ button and the AI's categoryDelete proposal.
@@ -9665,7 +9959,7 @@ function onHabitsClick(e) {
   }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
-    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
+    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', desc: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, timedMinutes: 0, timedAuto: true, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
     // openEditor, not a bare editingHabitId — only it raises the sheet, and a brand-new
     // habit with no name is useless until you can type into it.
     state.habits.push(nh); SFX.click(); save(); renderHabits(); openEditor('habit', nh.id);
@@ -9719,7 +10013,8 @@ function onInlineHabitField(e) {
   const h = state.habits.find(x => x.id === box.dataset.id); if (!h) return;
   if (f === 'reward') h.reward = clamp(parseInt(e.target.value) || 0, 0, 999);
   else if (f === 'cap') h.cap = clamp(parseInt(e.target.value) || 1, 1, 99);
-  else if (f === 'timedMinutes') h.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999);
+  else if (f === 'timedMinutes') { h.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999); h.timedAuto = false; }   // a real number — stop guessing
+  else if (f === 'category') { if (!pickCategoryInto(h, e.target)) return; }
   else if (f === 'section') h.section = (e.target.value === 'extra' ? 'extra' : 'daily');
   else if (f === 'loadout') { h.loadout = e.target.value.trim() ? e.target.value.trim() : null; renderHabits(); } // '' = universal
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
@@ -9728,8 +10023,8 @@ function onInlineHabitField(e) {
     h[f] = e.target.value;
     if (f === 'name') {
       const sug = box.querySelector('.timer-suggest');   // live duration detection as the name is typed
-      if (sug) sug.innerHTML = timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0);
-      autoEmoji(h, box);                                 // and an icon to match, until the user picks one
+      if (sug) sug.innerHTML = timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0, h.timedAuto);
+      scheduleNameSettle('habit', h.id);                 // icon + duration, once you stop typing
     }
   }
   save();
@@ -9746,6 +10041,7 @@ function onInlineHabitField(e) {
   v.addEventListener('pointercancel', onHabitPointerUp);
   v.addEventListener('input', onInlineHabitField);
   v.addEventListener('change', onInlineHabitField);
+  v.addEventListener('focusout', flushNameSettle);   // leaving the name field settles the guesses now
 });
 
 /* =================================================================
@@ -9758,13 +10054,19 @@ function onInlineHabitField(e) {
    dispatched by whichever editor is open. Do not duplicate their logic.
    ================================================================= */
 let editMoreOpen = false;   // "More" disclosure inside the habit editor
+/* Which More bar is expanded ('where' | 'details' | 'repeats' | 'duration' | 'tiers' |
+   'copy' | 'retire'), or null for all shut. A module variable rather than a DOM class
+   because every renderHabits() reaches renderEditSheet(), which replaces the sheet's
+   innerHTML wholesale — a class toggled on the element would be gone by the next repaint.
+   Same reason editMoreOpen is one. */
+let editSecOpen = null;
 
 function openEditor(kind, id) {
   editingHabitId = editingOneoffId = editingRewardId = null;
   if (kind === 'habit') editingHabitId = id;
   else if (kind === 'oneoff') editingOneoffId = id;
   else editingRewardId = id;
-  editMoreOpen = false;                       // a freshly opened editor starts compact
+  editMoreOpen = false; editSecOpen = null;   // a freshly opened editor starts compact
   editTierPage = null;
   // Show BEFORE rendering: the sheet measures its active page to set its own height, and
   // a display:none overlay measures 0, which would collapse it to an empty strip.
@@ -9777,7 +10079,8 @@ function openEditor(kind, id) {
 function closeEditor() {
   $('#editOverlay').classList.remove('show');
   editingHabitId = editingOneoffId = editingRewardId = null;
-  editTierPage = null; editMoreOpen = false;
+  editTierPage = null; editMoreOpen = false; editSecOpen = null;
+  flushNameSettle();                          // a guess pending from the last keystroke still lands
   renderHabits(); renderOneoffs(); renderPrizes();
 }
 function editorIsOpen() { return !!(editingHabitId || editingOneoffId || editingRewardId); }
@@ -9828,7 +10131,11 @@ function syncEditSheetHeight() {
 // quest editor never runs the habit branches (or reads a .qrow that isn't there).
 $('#editOverlay').addEventListener('click', e => {
   if (e.target.id === 'editOverlay' || e.target.closest('[data-act="closeEditor"]')) { SFX.click(); closeEditor(); return; }
-  if (e.target.closest('[data-act="editMore"]')) { editMoreOpen = !editMoreOpen; SFX.click(); renderEditSheet(); return; }
+  if (e.target.closest('[data-act="editMore"]')) { flushNameSettle(); editMoreOpen = !editMoreOpen; editSecOpen = null; SFX.click(); renderEditSheet(); return; }
+  // One More bar open at a time. Settle any pending name guess first — this re-renders,
+  // and a guess landing afterwards would write into a node that no longer exists.
+  const secHead = e.target.closest('[data-act="editSec"]');
+  if (secHead) { flushNameSettle(); const s = secHead.dataset.sec; editSecOpen = (editSecOpen === s ? null : s); SFX.click(); renderEditSheet(); return; }
   if (editingHabitId) onHabitsClick(e);
   else if (editingOneoffId) onTasksClick(e);
   else if (editingRewardId) onPrizePoolClick(e);
@@ -9840,6 +10147,7 @@ const editSheetField = e => {
 };
 $('#editOverlay').addEventListener('input', editSheetField);
 $('#editOverlay').addEventListener('change', editSheetField);
+$('#editOverlay').addEventListener('focusout', flushNameSettle);   // tapping Done still gets the last guess
 $('#editOverlay').addEventListener('pointerdown', onHabitPointerDown);   // tier swiping
 $('#editOverlay').addEventListener('pointermove', onHabitPointerMove);
 $('#editOverlay').addEventListener('pointerup', onHabitPointerUp);
@@ -9882,6 +10190,7 @@ let copyPickForId = null;
 function copyHabitDefinition(from, into) {
   into.emoji = from.emoji;
   into.emojiAuto = false;                       // an explicit choice now — stop guessing
+  into.timedAuto = false;                       // ditto the duration — it came from a real habit
   into.name = from.name;
   into.category = from.category || 'Unsorted';
   into.reward = from.reward;
@@ -9897,6 +10206,7 @@ function copyHabitDefinition(from, into) {
 }
 function openCopyPicker(id) {
   copyPickForId = id;
+  copyPicked = new Set();                       // never inherit last time's ticks
   renderCopyPicker();
   $('#copyPickSheet').classList.add('show');
   $('#copyPickSheet').setAttribute('aria-hidden', 'false');
@@ -9906,37 +10216,93 @@ function closeCopyPicker() {
   $('#copyPickSheet').classList.remove('show');
   $('#copyPickSheet').setAttribute('aria-hidden', 'true');
 }
+// Ticked habits, by id. Cleared every time the sheet opens — a stale tick from last time
+// would copy something the user never looked at.
+let copyPicked = new Set();
 function renderCopyPicker() {
   const body = $('#copyPickBody'); if (!body) return;
   // Every habit except the one being edited — archived ones included, since graduating a
   // habit and then rebuilding it in another loadout is a real reason to reach for this.
   const all = state.habits.filter(h => h.id !== copyPickForId && (h.name || '').trim());
-  if (!all.length) { body.innerHTML = `<div class="subtle" style="padding:14px 16px">No other habits to copy from yet.</div>`; return; }
+  if (!all.length) {
+    body.innerHTML = `<div class="subtle" style="padding:14px 16px">No other habits to copy from yet.</div>`;
+    syncCopyApply(); return;
+  }
   const cur = currentLoadout();
   const loadouts = [...new Set(all.map(h => h.loadout || 'Default'))]
     .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));   // current loadout first
+  // One drop-down per loadout, same two-level shape the Schedule's ＋ picker uses, and
+  // like that one every group starts SHUT — an open group pushes the rest off-screen, so
+  // opening the sheet on a wall of habits is worse than one tap to the loadout you want.
+  // The current loadout is still sorted first and still labelled; only the collapse differs.
   body.innerHTML = loadouts.map(lo => {
     const list = all.filter(h => (h.loadout || 'Default') === lo);
-    return `<div class="pick-sec">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}</div>` + list.map(h => `
-      <button class="pick-row" data-copyfrom="${h.id}">
-        <span class="pick-e">${escapeHtml(h.emoji || '⭐')}</span>
-        <span class="pick-n">${escapeHtml(h.name)}</span>
-        <span class="subtle">${h.archived ? 'graduated' : (h.section === 'extra' ? 'extra' : 'daily')} · +${h.reward}🪙</span>
-      </button>`).join('');
+    return `
+      <div class="pick-group pick-lo collapsed">
+        <div class="pick-sub" data-act="pickToggle">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}
+          <span class="pick-count">${list.length}</span></div>
+        <div class="pick-body">${list.map(h => `
+          <button class="pick-row" data-copyfrom="${h.id}" aria-pressed="${copyPicked.has(h.id)}">
+            <span class="pick-check${copyPicked.has(h.id) ? ' on' : ''}">${copyPicked.has(h.id) ? '✓' : ''}</span>
+            <span class="pick-e">${escapeHtml(h.emoji || '⭐')}</span>
+            <span class="pick-n">${escapeHtml(h.name)}</span>
+            <span class="subtle">${h.archived ? 'graduated' : (h.section === 'extra' ? 'extra' : 'daily')} · +${h.reward}🪙</span>
+          </button>`).join('')}</div>
+      </div>`;
   }).join('');
+  syncCopyApply();
 }
-$('#copyPickSheet').addEventListener('click', e => {
-  if (e.target.closest('[data-act="copyPickClose"]')) { SFX.click(); closeCopyPicker(); return; }
-  const btn = e.target.closest('[data-copyfrom]'); if (!btn) return;
+function syncCopyApply() {
+  const btn = $('#copyPickApply'); if (!btn) return;
+  const n = copyPicked.size;
+  btn.disabled = n === 0;
+  btn.textContent = n === 0 ? 'Copy' : n === 1 ? 'Copy 1 habit' : `Copy ${n} habits`;
+}
+/* Apply the whole selection.
+
+   The habit being edited takes the FIRST pick — that's the single-select behaviour this
+   started as, and the editor is open on it, so it has to end up as something. Every
+   further pick becomes a NEW habit beside it, in the current loadout and the target's
+   section. `days` and `section` still deliberately stay with the target (see
+   copyHabitDefinition) so nothing can arrive pre-hidden. */
+function applyCopyPicks() {
   const into = state.habits.find(x => x.id === copyPickForId);
-  const from = state.habits.find(x => x.id === btn.dataset.copyfrom);
-  if (!into || !from) { closeCopyPicker(); return; }
-  copyHabitDefinition(from, into);
+  const picks = [...copyPicked].map(id => state.habits.find(h => h.id === id)).filter(Boolean);
+  if (!into || !picks.length) { closeCopyPicker(); return; }
+  copyHabitDefinition(picks[0], into);
+  const extras = picks.slice(1).map(src => {
+    const nh = { id: uid(), emoji: '⭐', emojiAuto: false, name: '', section: into.section,
+      category: 'Unsorted', loadout: into.loadout, reward: 1, repeatable: false, cap: 1,
+      lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0,
+      days: Array.isArray(into.days) ? into.days.slice() : [true, true, true, true, true, true, true],
+      doneAt: 0, doneMin: null, context: [], contextAsked: true };
+    copyHabitDefinition(src, nh);
+    return nh;
+  });
+  // Inserted right after the habit being edited rather than at the end, so a batch lands
+  // where you were working instead of at the bottom of the list.
+  if (extras.length) state.habits.splice(state.habits.indexOf(into) + 1, 0, ...extras);
   SFX.coin(); save();
   closeCopyPicker();
   renderHabits(); syncEditorSheet();             // the open editor repaints with the copied values
-  toast(`Copied “${from.name}”`, 'var(--green)');
+  toast(picks.length === 1 ? `Copied “${picks[0].name}”` : `Copied ${picks.length} habits`, 'var(--green)');
+}
+$('#copyPickSheet').addEventListener('click', e => {
+  if (e.target.closest('[data-act="copyPickClose"]')) { SFX.click(); closeCopyPicker(); return; }
+  const head = e.target.closest('[data-act="pickToggle"]');
+  if (head) { head.closest('.pick-group').classList.toggle('collapsed'); SFX.click(); return; }
+  const btn = e.target.closest('[data-copyfrom]'); if (!btn) return;
+  const id = btn.dataset.copyfrom;
+  copyPicked.has(id) ? copyPicked.delete(id) : copyPicked.add(id);
+  // Repaint the one row rather than the whole list — a full re-render would close every
+  // drop-down the user just opened to get here.
+  const chk = btn.querySelector('.pick-check');
+  const on = copyPicked.has(id);
+  chk.classList.toggle('on', on); chk.textContent = on ? '✓' : '';
+  btn.setAttribute('aria-pressed', String(on));
+  syncCopyApply(); SFX.click();
 });
+$('#copyPickApply').addEventListener('click', () => applyCopyPicks());
 
 /* =================================================================
    DIFFICULTY LADDER — the whole tier system of one habit on one line.
@@ -10340,8 +10706,9 @@ function onInlineOneoffField(e) {
   const t = state.oneoffs.find(x => x.id === box.dataset.id); if (!t) return;
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
-  else if (f === 'category') t.category = e.target.value;
+  else if (f === 'category') { if (!pickCategoryInto(t, e.target)) return; }
   else if (f === 'emoji') { t.emoji = e.target.value; t.emojiAuto = false; }   // a deliberate icon — stop guessing
+  else if (f === 'timedMinutes') { t.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999); t.timedAuto = false; }   // a real number — stop guessing
   else if (f === 'due') {
     const v = e.target.value;
     t.due = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
@@ -10349,13 +10716,14 @@ function onInlineOneoffField(e) {
   }
   else {
     t[f] = e.target.value;
-    if (f === 'name') autoEmoji(t, box);
+    if (f === 'name') scheduleNameSettle('oneoff', t.id);   // icon + duration, once you stop typing
   }
   save();
 }
 $('#view-tasks').addEventListener('click', onTasksClick);
 $('#view-tasks').addEventListener('input', onInlineOneoffField);
 $('#view-tasks').addEventListener('change', onInlineOneoffField);
+$('#view-tasks').addEventListener('focusout', flushNameSettle);   // leaving the name field settles it now
 
 /* ---- Drag a quest between matrix boxes. Pointer events, same shape as the tier
    ladder's reorder: HTML5 drag-and-drop doesn't work on touch at all.
@@ -10535,7 +10903,7 @@ $('#prizePool').addEventListener('click', onPrizePoolClick);
 $('#prizePool').addEventListener('input', onRewardInlineField);
 $('#prizePool').addEventListener('change', onRewardInlineField);
 $('#addRewardInline').addEventListener('click', () => {
-  const r = { id: uid(), emoji: '🎁', name: '', tier: 'common', minutes: 0 };
+  const r = { id: uid(), emoji: '🎁', name: '', desc: '', tier: 'common', minutes: 0 };
   state.rewards.push(r); editingRewardId = r.id;
   SFX.click(); save(); renderPrizes(); renderRewardEditor();
   setTimeout(() => $('#prizePool .prize-edit .name-in')?.focus(), 30);
@@ -10635,7 +11003,7 @@ $('#rewardEditor').addEventListener('click', e => {
 });
 $('#addReward').addEventListener('click', () => {
   SFX.click();
-  state.rewards.push({ id: uid(), emoji: '🎁', name: 'New reward', tier: 'common', minutes: 0 });
+  state.rewards.push({ id: uid(), emoji: '🎁', name: 'New reward', desc: '', tier: 'common', minutes: 0 });
   save(); renderRewardEditor();
   $('#rewardEditor').lastElementChild?.querySelector('.name-in')?.select();
 });
@@ -11187,10 +11555,12 @@ function removePlannedBlock(dateStr, refId) {
 $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
 
-/* ---- + button: put a habit or quest onto the day you're looking at ---------------- */
-// Which picker groups are open. Kept across opens so the sections you actually use stay
-// expanded; Daily starts open because it's the common case.
-const schedPickOpenGroups = { daily: true, extra: false, task: false };
+/* ---- + button: put a habit or quest onto the day you're looking at ----------------
+   Every group opens COLLAPSED, every time. The picker used to remember which sections you
+   had expanded, which meant tapping ＋ dropped you into a wall of rows you had to scroll
+   past to reach anything else. Starting shut makes the whole shape of what's addable
+   visible in one screen — and with two levels of grouping there is no state worth
+   remembering anyway, since it's the same two taps either way. */
 function schedPickOpen() {
   const dateStr = todayStr(schedOffset);
   const shown = new Set(computeDayBlocks(dateStr).map(b => b.refId).filter(Boolean));
@@ -11202,19 +11572,25 @@ function schedPickOpen() {
       <span class="pick-n">${escapeHtml(o.name)}</span>
       <span class="subtle">${kind === 'task' ? 'quest' : `+${o.reward}🪙`}</span>
     </button>`;
-  // Habits are split by loadout under a divider — each loadout is its own set of habits,
-  // and without the split a name appearing in two loadouts is indistinguishable.
+  // Each loadout is its own set of habits, so it gets its own drop-down inside the section
+  // rather than a bare divider — one loadout's worth of rows at a time, with a count so
+  // you can tell what's in there without opening it. Current loadout sorts first.
   const byLoadout = list => {
     const cur = currentLoadout();
     const names = [...new Set(list.map(h => h.loadout || 'Default'))]
       .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));
-    return names.map(lo =>
-      `<div class="pick-sub">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}</div>`
-      + list.filter(h => (h.loadout || 'Default') === lo).map(h => row(h, 'habit')).join('')
-    ).join('');
+    return names.map(lo => {
+      const rows = list.filter(h => (h.loadout || 'Default') === lo);
+      return `
+      <div class="pick-group pick-lo collapsed">
+        <div class="pick-sub" data-act="pickToggle">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}
+          <span class="pick-count">${rows.length}</span></div>
+        <div class="pick-body">${rows.map(h => row(h, 'habit')).join('')}</div>
+      </div>`;
+    }).join('');
   };
   const group = (key, title, count, inner) => `
-    <div class="pick-group ${schedPickOpenGroups[key] ? '' : 'collapsed'}" data-group="${key}">
+    <div class="pick-group collapsed" data-group="${key}">
       <div class="pick-sec" data-act="pickToggle">${title} <span class="pick-count">${count}</span></div>
       <div class="pick-body">${count ? inner : `<div class="subtle" style="padding:10px 16px">Nothing left to add.</div>`}</div>
     </div>`;
@@ -11246,9 +11622,9 @@ $('#schedPickSheet').addEventListener('click', e => {
   if (e.target.closest('[data-act="schedPickClose"]')) { SFX.click(); schedPickClose(); return; }
   const head = e.target.closest('[data-act="pickToggle"]');
   if (head) {
-    const g = head.closest('.pick-group');
-    const open = g.classList.toggle('collapsed') === false;
-    schedPickOpenGroups[g.dataset.group] = open;
+    // closest() from the header lands on the group that OWNS it, so a loadout header
+    // toggles its own drop-down and leaves the section around it alone.
+    head.closest('.pick-group').classList.toggle('collapsed');
     SFX.click(); return;
   }
   const pick = e.target.closest('[data-pick]'); if (!pick) return;
@@ -11257,7 +11633,7 @@ $('#schedPickSheet').addEventListener('click', e => {
   const src = kind === 'task'
     ? state.oneoffs.find(t => t.id === pick.dataset.pick)
     : state.habits.find(h => h.id === pick.dataset.pick);
-  const dur = src ? (kind === 'task' ? 30 : (habitMedianActualMinutes(src) || habitCurrentMinutes(src) || 15)) : 15;
+  const dur = src ? (kind === 'task' ? (src.timedMinutes || 30) : (habitMedianActualMinutes(src) || habitCurrentMinutes(src) || 15)) : 15;
   const name = upsertPlannedBlock(dateStr, kind, pick.dataset.pick, nextFreeMinute(dateStr), dur);
   if (name) { SFX.coin(); toast(`${name} added — drag to place it`, 'var(--cyan)'); }
   schedPickClose(); renderBlockSchedule();
