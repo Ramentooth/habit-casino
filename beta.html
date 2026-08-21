@@ -1012,7 +1012,17 @@
     .quad-grid .qrow .hrow-reward, .quad-grid .qrow .row-chip { display: none; }
     .quad-grid .qrow .hrow-check { width: 22px; height: 22px; font-size: 12px; border-width: 1px; }
     .quad-grid .qrow .hrow-emoji { font-size: 15px; }
-    .quad-grid .qrow .hrow-name { font-size: 13px; }
+    /* Matrix columns are ~170px — a longer name used to hard-truncate to one line and
+       vanish. Let it wrap to a second line before the ellipsis kicks in, and align the
+       row to the top so a two-line name doesn't float the emoji/check buttons to its
+       vertical centre. */
+    .quad-grid .qrow { align-items: flex-start; }
+    .quad-grid .qrow .hrow-check { margin-top: 1px; }
+    .quad-grid .qrow .hrow-main { align-items: flex-start; }
+    .quad-grid .qrow .hrow-name {
+      font-size: 13px; white-space: normal; display: -webkit-box;
+      -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    }
     .qrow.quad-lifted {
       position: fixed; z-index: 60; pointer-events: none;
       box-shadow: 0 12px 26px rgba(0,0,0,.6); opacity: .95; transform: scale(1.03);
@@ -1042,6 +1052,23 @@
     .chip:active { transform: scale(.95); }
     .cat-chip.sel { background: var(--purple); border-color: var(--purple); color: #fff; box-shadow: 0 0 10px rgba(176,38,255,.6); }
     .cat-chip.new { border-style: dashed; color: var(--ink-dim); }
+    /* Quick-add's quadrant picker. Deliberately its own class rather than `.chip`/
+       `.quad-btn` — both get swept to plain grey by the checked-state override further
+       down, which would defeat the one thing asked for here: four buttons you can tell
+       apart by colour before you've read a single label. Same --qc token the Matrix
+       boxes use, so a quest picked here visibly matches the box it lands in. */
+    .quad-chip {
+      cursor: pointer; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px;
+      padding: 5px 11px; border-radius: 999px; flex: 1 1 40%; text-align: center;
+      background: rgba(0,0,0,0.3); border: 1.5px solid color-mix(in srgb, var(--qc) 55%, transparent);
+      color: var(--qc); transition: .15s;
+    }
+    .quad-chip:active { transform: scale(.95); }
+    .quad-chip.sel {
+      background: var(--qc); border-color: var(--qc); color: #0b0518;
+      box-shadow: 0 0 10px color-mix(in srgb, var(--qc) 55%, transparent);
+    }
+    .qadd-more-btn { margin-top: 8px; }
 
     /* Stats / analytics view */
     .stats-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
@@ -2276,7 +2303,14 @@
               <button class="btn green sm" id="questAddBtn">+ Add</button>
             </div>
             <div class="chip-row" id="questTierChips"></div>
-            <div class="chip-row" id="questCatChips"></div>
+            <!-- Which quadrant a new quest lands in, right here — no drag to the Matrix
+                 needed afterward. Its own row, not behind More: this is the one thing
+                 request said should stay in plain sight. -->
+            <div class="chip-row" id="questQuadChips"></div>
+            <!-- Category is the one control folded behind More in THIS form only — the
+                 full quest editor and every other editor still show it plainly. -->
+            <button class="btn ghost sm qadd-more-btn" id="questAddMoreBtn" aria-expanded="false">⋯ More</button>
+            <div class="chip-row" id="questCatChips" style="display:none"></div>
           </div>
           <div class="task-actionbar">
             <button class="btn ghost sm" id="questAddToggle">＋ Add</button>
@@ -3263,6 +3297,7 @@ let habitSpinning = false;
 let wheelPickId = null;        // one-off the quest wheel just picked (highlighted in the list)
 let quickTier = 'medium';      // quick-add bar: selected tier chip
 let quickCat = 'Unsorted';     // quick-add bar: selected category chip
+let quickQuad = null;          // quick-add bar: selected Eisenhower quadrant, null = unsorted
 let editingOneoffId = null;    // one-off currently "blown up" into the inline editor on the Tasks screen
 let editingRewardId = null;    // reward currently "blown up" into the inline editor on the Winnings screen
 let currentInvGroups = [];     // stacked inventory groups for the current Prizes render
@@ -4498,7 +4533,8 @@ function renderTasks() {
    ONE-OFF QUESTS  (to-do list + a spinnable "wheel of quests")
    ================================================================= */
 // Quick-add bar: tier chips (filled when selected) + category chips + "+ New".
-let questAddOpen = false;   // transient — the Tasks tab always opens with the form folded
+let questAddOpen = false;      // transient — the Tasks tab always opens with the form folded
+let questAddMoreOpen = false;  // transient — the category row inside quick-add starts folded too
 function renderQuestAdd() {
   const tc = $('#questTierChips'); if (!tc) return;
   const box = $('#questAdd'), tog = $('#questAddToggle');
@@ -4513,11 +4549,23 @@ function renderQuestAdd() {
       : `border-color:${ti.color};color:${ti.color};`;
     return `<button class="chip tier-chip ${sel ? 'sel' : ''}" data-tier="${k}" style="${style}">${ti.label} +${tierReward(k)}</button>`;
   }).join('');
-  const cats = (state.categories || []).filter(c => c !== 'Unsorted').concat('Unsorted'); // Unsorted last
-  if (!cats.includes(quickCat)) quickCat = 'Unsorted';
-  $('#questCatChips').innerHTML = cats.map(c =>
-    `<button class="chip cat-chip ${c === quickCat ? 'sel' : ''}" data-cat="${escapeHtml(c)}">🏷️ ${escapeHtml(c)}</button>`).join('')
-    + `<button class="chip cat-chip new" data-act="newCat">＋ New</button>`;
+  // Quadrant picker: the same four colours the Matrix rims its boxes with (--qc), so a
+  // quest sorted here lands in a box that already looks like the button that sent it.
+  // Not `.quad-btn` / `.chip` — both are swept grey by the checked-state override
+  // elsewhere in the file, which would erase the colour the whole point is to show.
+  $('#questQuadChips').innerHTML = EISENHOWER.map(q => `
+    <button class="quad-chip ${quickQuad === q.key ? 'sel' : ''}" data-quad="${q.key}" style="--qc:${q.color}" title="${escapeHtml(q.hint)}">${q.icon} ${escapeHtml(q.label)}</button>`).join('');
+  const moreBtn = $('#questAddMoreBtn');
+  if (moreBtn) { moreBtn.textContent = questAddMoreOpen ? '⌃ Less' : '⋯ More'; moreBtn.setAttribute('aria-expanded', questAddMoreOpen); }
+  const catRow = $('#questCatChips');
+  if (catRow) catRow.style.display = questAddMoreOpen ? '' : 'none';
+  if (questAddMoreOpen) {
+    const cats = (state.categories || []).filter(c => c !== 'Unsorted').concat('Unsorted'); // Unsorted last
+    if (!cats.includes(quickCat)) quickCat = 'Unsorted';
+    catRow.innerHTML = cats.map(c =>
+      `<button class="chip cat-chip ${c === quickCat ? 'sel' : ''}" data-cat="${escapeHtml(c)}">🏷️ ${escapeHtml(c)}</button>`).join('')
+      + `<button class="chip cat-chip new" data-act="newCat">＋ New</button>`;
+  }
   syncTaskDockRoom();                        // chips are in — the dock's height is final
 }
 // The dock is position:fixed, so the view has to reserve its footprint itself; otherwise
@@ -4538,13 +4586,16 @@ function addQuickQuest() {
   const inp = $('#questAddName'); const name = (inp.value || '').trim();
   if (!name) { inp.focus(); return; }
   const tier = TASK_TIERS[quickTier] ? quickTier : 'medium';
-  // The quick-add bar has no editor open, so the icon is guessed once here instead.
   // The quick-add bar has no editor open, so both guesses are taken once, here.
-  const task = { id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, timedMinutes: inferMinutes(name), timedAuto: true, desc: '', createdAt: Date.now() };
+  const task = { id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name, tier, category: quickCat || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, timedMinutes: inferMinutes(name), timedAuto: true, desc: '', quadrant: quickQuad || null, createdAt: Date.now() };
   state.oneoffs.push(task);
   logEvent('task_created', { entityType: 'task', entityId: task.id, name: task.name, category: task.category, level: task.tier, iterations: task.iterations });
   inp.value = ''; SFX.coin(); save();
-  renderOneoffs(); buildHabitWheel();
+  // Close the form on a successful add rather than leaving it open for the next one —
+  // tier/category/quadrant selections still carry over into the next open, so a batch
+  // of same-shaped quests is still just tap-tap-tap, one open per quest.
+  questAddOpen = false; questAddMoreOpen = false;
+  renderOneoffs(); buildHabitWheel(); renderQuestAdd();
   toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} 🪙`, TASK_TIERS[tier].color);
 }
 // One quest row. Shared by the Tasks list and the Due Now board so the two can't drift.
@@ -5727,10 +5778,14 @@ function renderDueSoon() {
   // unscheduled quest here would just be a to-do dumped onto a board that means NOW.
   // Give it a planned block for today and it behaves exactly like a habit: it surfaces in
   // the hour before that block and drops off once the time passes. No block, no appearance.
+  // Unlike a habit — which only surfaces in the hour before its usual time — a planned
+  // quest shows the moment it's on today's schedule and stays until it's done. A habit
+  // has dozens of other occurrences to fall back on; a quest on the Schedule has exactly
+  // one, so hiding it until the last hour risked it never being seen at all.
   const dueTasks = ((state.plannedBlocks || {})[todayStr()] || [])
     .filter(b => b && b.kind === 'task' && Number.isFinite(b.startMin))
     .map(b => ({ t: (state.oneoffs || []).find(t => t.id === b.refId), m: b.startMin }))
-    .filter(x => x.t && (x.t.progress || 0) < Math.max(1, x.t.iterations || 1) && until(x.m) <= 60);
+    .filter(x => x.t && (x.t.progress || 0) < Math.max(1, x.t.iterations || 1));
   const due = dueHabits.concat(dueTasks)
     .sort((a, b) => until(a.m) - until(b.m))
     .slice(0, 3);                                         // fewer visible choices, not more
@@ -10862,6 +10917,13 @@ function onTasksClick(e) {
   if (e.target.closest('#questAddBtn')) { addQuickQuest(); return; }
   const tierChip = e.target.closest('#questTierChips .chip');
   if (tierChip) { quickTier = tierChip.dataset.tier; SFX.click(); renderQuestAdd(); return; }
+  const quadChip = e.target.closest('#questQuadChips .quad-chip');
+  if (quadChip) {
+    const k = quadChip.dataset.quad;
+    quickQuad = (quickQuad === k) ? null : k;   // tap the selected one again to go back to unsorted
+    SFX.click(); renderQuestAdd(); return;
+  }
+  if (e.target.closest('#questAddMoreBtn')) { questAddMoreOpen = !questAddMoreOpen; SFX.click(); renderQuestAdd(); return; }
   const catChip = e.target.closest('#questCatChips .chip');
   if (catChip) {
     if (catChip.dataset.act === 'newCat') {
@@ -10915,10 +10977,11 @@ function onTasksClick(e) {
   }
 }
 $('#questAddName').addEventListener('keydown', e => { if (e.key === 'Enter') addQuickQuest(); });
-// Quick-add starts folded away. It stays open after an add so several quests can be
-// typed in a row — the toggle is the only thing that closes it.
+// Quick-add starts folded away, and folds itself again after a successful add (see
+// addQuickQuest) — this toggle is for opening it, and for backing out without adding.
 $('#questAddToggle').addEventListener('click', () => {
   questAddOpen = !questAddOpen;
+  if (!questAddOpen) questAddMoreOpen = false;   // next open starts with categories folded too
   SFX.click(); renderQuestAdd();
   if (questAddOpen) $('#questAddName').focus();
 });
