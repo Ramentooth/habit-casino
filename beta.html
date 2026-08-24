@@ -306,6 +306,8 @@
     .aw-meta b { color: var(--aw); font-family: 'Orbitron', sans-serif; }
     .aw-bar { height: 5px; border-radius: 3px; background: rgba(0,0,0,.45); margin-top: 6px; overflow: hidden; }
     .aw-fill { height: 100%; background: var(--aw); box-shadow: 0 0 8px var(--aw); transition: width .5s linear; }
+    .aw-row.paused { opacity: .75; }
+    .aw-row.paused .aw-fill { box-shadow: none; }
     .spec-hint { font-size: 12px; color: var(--cyan); margin-top: 2px; }
 
     /* ---------- Block Schedule ---------- */
@@ -1458,6 +1460,20 @@
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    #undoBar {
+      position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+      z-index: 81; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+      background: rgba(20,6,42,0.95); border: 1px solid var(--cyan);
+      color: #fff; padding: 8px 8px 8px 16px; border-radius: 12px; font-weight: 700;
+      box-shadow: 0 0 24px rgba(0,240,255,0.45); opacity: 0; transition: .25s; pointer-events: none;
+    }
+    #undoBar.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    .undo-label { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Not colored to match the bar's cyan border — the greyscale layer further down
+       flattens every .btn.ghost.sm with its own !important, later in source order, so
+       an override here would just lose. A plain ghost button reads fine on its own. */
+    #undoBarBtn { flex: 0 0 auto; }
+
     .float-token {
       position: fixed; z-index: 75; font-family:'Orbitron'; font-weight:900; font-size: 20px;
       color: var(--yellow); text-shadow: 0 0 12px var(--gold); pointer-events: none;
@@ -1597,8 +1613,14 @@
       min-height: 60px; padding: 8px 4px; border-radius: 12px; border: 1px solid var(--panel-edge); overflow: hidden; }
     .pt-cell.free { background: linear-gradient(160deg, rgba(0,240,255,0.10), rgba(20,6,42,0.5)); }
     .pt-cell.pro  { background: linear-gradient(160deg, rgba(255,171,0,0.12), rgba(20,6,42,0.5)); border-color: rgba(255,200,0,0.35); }
-    .pt-cell.locked { filter: grayscale(.7) brightness(.6); opacity: .8; }
+    .pt-cell.locked, .pt-cell.needpro { filter: grayscale(.7) brightness(.6); opacity: .8; }
     .pt-cell.got { box-shadow: inset 0 0 0 2px rgba(57,255,20,0.5); }
+    /* Reached, unpaid — the whole point of "claimable" is that this is the one state
+       that visibly asks for a tap, so it gets the pulse the others don't. */
+    .pt-cell.claimable { cursor: pointer; box-shadow: 0 0 0 2px var(--gold), 0 0 14px rgba(255,200,0,.5); animation: ptClaimPulse 1.6s ease-in-out infinite; }
+    .pt-cell.claimable:active { transform: scale(.95); }
+    @keyframes ptClaimPulse { 50% { box-shadow: 0 0 0 2px var(--gold), 0 0 24px rgba(255,200,0,.85); } }
+    .pt-claim { position: absolute; top: 4px; right: 5px; font-size: 13px; animation: ptClaimPulse 1.6s ease-in-out infinite; }
     .pt-cell.wild { background: linear-gradient(135deg, #ff1b8d, #b026ff 50%, #00f0ff); border-color: rgba(255,255,255,0.6); }
     .pt-cell.wild .ptc-label, .pt-cell.wild .ptc-emoji { color: #fff !important; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
     .ptc-emoji { font-size: 26px; line-height: 1; }
@@ -2123,6 +2145,16 @@
     .pick-foot .btn:disabled { opacity: .4; pointer-events: none; }
     .pick-e { font-size: 22px; line-height: 1; }
     .pick-n { flex: 1 1 auto; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* One extracted assignment: a checkbox + editable name, then its own tier/quadrant
+       pickers — unchecking a row excludes it from Add without deleting what the AI read. */
+    .assign-row { padding: 12px 16px; border-bottom: 1px solid var(--gs-edge); display: flex; flex-direction: column; gap: 8px; }
+    .assign-row.off { opacity: .45; }
+    .assign-row.off .ar-name { text-decoration: line-through; }
+    .ar-top { display: flex; align-items: center; gap: 10px; }
+    .ar-top .pick-check { cursor: pointer; }
+    .ar-name { flex: 1 1 auto; min-width: 0; }
+    .ar-due { font-size: 11px; color: var(--ink-dim); margin-left: 32px; }
+    .ar-tiers, .ar-quads { margin-left: 32px; }
 
     /* --- overlays --------------------------------------------------------- */
     .pass-overlay, .auth-overlay, .wild-overlay, .more-scrim { background: rgba(0,0,0,.76); }
@@ -2190,6 +2222,18 @@
     <!-- Tick as many as you like, then apply them in one go. Sticky, because the list is
          long enough to scroll past the button otherwise. -->
     <div class="pick-foot"><button class="btn green sm" id="copyPickApply" disabled>Copy</button></div>
+  </div>
+
+  <!-- What the AI read out of the photo(s), one row per assignment. Tier and quadrant
+       are never AI-set — every row lands on a sane default and the user is the one who
+       actually picks difficulty & urgency before anything is created. -->
+  <div class="pick-sheet" id="assignPickSheet" aria-hidden="true">
+    <div class="pick-head">
+      <span id="assignPickTitle">From your photo</span>
+      <button class="pass-close" data-act="assignPickClose" title="Close">✕</button>
+    </div>
+    <div id="assignPickBody"></div>
+    <div class="pick-foot"><button class="btn green sm" id="assignPickApply" disabled>Add</button></div>
   </div>
 
   <!-- Habits hidden from today's board — wrong weekday, mostly. Without this they are
@@ -2314,6 +2358,12 @@
           </div>
           <div class="task-actionbar">
             <button class="btn ghost sm" id="questAddToggle">＋ Add</button>
+            <!-- Photograph an assignment sheet/syllabus and let the AI draft one quest per
+                 assignment it can read — the user only fills in difficulty & urgency
+                 afterward, in the review sheet this opens (#assignPickSheet). Reuses
+                 whichever AI provider/key is already set up in Settings → 🤖 AI Coach. -->
+            <button class="btn ghost sm" id="scanAssignBtn" title="Photograph assignments and let AI draft tasks for them">📷 Scan</button>
+            <input type="file" id="scanAssignFile" accept="image/*" capture="environment" multiple style="display:none">
             <span class="task-viewbar" id="taskViewBar"></span>
           </div>
         </div>
@@ -2556,6 +2606,15 @@
         <div class="row" style="margin:8px 0 0"><button class="btn ghost sm" id="sortRewards">⇅ Sort: Legendary → Common</button></div>
         <div class="editor-list" id="rewardEditor"></div>
         <button class="btn ghost sm" id="addReward">+ Add reward</button>
+      </div>
+
+      <div class="panel set-section">
+        <div class="section-title neon-cyan">🃏 Wild Cards</div>
+        <div class="subtle">A wild card redeems for ANY reward of its rarity instead of one specific prize. The Habit Pass can already pay these out (see ⚡ Habit Pass below) — this turns the casino games into a second source, right alongside your regular rewards.</div>
+        <div class="row between" style="margin-top:10px"><span>Roll in the casino</span><label class="toggle"><input type="checkbox" id="wildCasinoOn"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row between"><span>Chance vs. a normal reward at that rarity</span><span class="pill">%&nbsp;<input class="num-in" id="wildCasinoWeight" type="number" min="0" max="500" style="width:56px"></span></div>
+        <div class="hint">100% = as likely to come up as any one reward of that rarity. Default 50% keeps a wild card a rarer find than picking one specific prize.</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px" id="wildCardCounts"></div>
       </div>
 
       <div class="panel set-section">
@@ -2817,6 +2876,13 @@
   </div>
 
   <div id="toast"></div>
+  <!-- Undo bar: appears after completing a habit/quest or claiming a reward, offering a
+       single-tap reversal for a few seconds. Sits above the toast rather than sharing its
+       spot, since the "+N tokens" toast for the very same action is usually still showing. -->
+  <div id="undoBar">
+    <span class="undo-label" id="undoBarLabel"></span>
+    <button class="btn ghost sm" id="undoBarBtn">↩ Undo</button>
+  </div>
 
 <script>
 "use strict";
@@ -2942,6 +3008,10 @@ function defaultState() {
     settings: { sound: true, reducedMotion: false, dailyBonus: 10, dailyBonusDate: '', extraBonus: 8, extraBonusDate: '',
                 weeklyBonus: 100, dailyStreak: 0, dailyStreakDate: '',
                 streakFreeze: { enabled: true, tier: 'epic', emoji: '🧊', name: 'Streak Freeze' },
+                // Casino Wild Cards: a "pick any reward of this rarity" token, rollable at
+                // its own rarity in every game once this is on. weightPct is its chance
+                // relative to an ordinary reward at the same tier (50 = half as likely).
+                wildCardsInCasino: true, wildCardCasinoWeightPct: 50,
                 // Reward unlock window: 'always' | 'allDaily' (all daily quests done) | 'time' (after `time`).
                 // When the window is open, "time" rewards get +timeBonus% extra minutes.
                 redeem: { mode: 'always', time: '18:00', timeBonus: 50 },
@@ -3967,6 +4037,48 @@ function toast(msg, color = 'var(--pink)') {
 }
 
 /* =================================================================
+   UNDO — "just in case." Completing a habit/quest or claiming a reward touches a lot of
+   scattered state at once: tokens, XP, Pass XP and goal progress, streak/dayCount, plus
+   the history/eventLog/rewardLog entries the Schedule reconstructs its "actually done"
+   blocks from. Reversing each of those by hand, correctly, for every code path (an
+   archived-on-final-rep quest, a merged multi-copy reward claim, a streak that only
+   ticks on the day's FIRST rep...) is exactly the kind of surface where a hand-written
+   inverse quietly drifts from the forward path and undoes the wrong thing.
+
+   So this doesn't reverse anything — it snapshots the ENTIRE state object right before
+   the action, and undo is just "become that snapshot again." Whatever the action touched,
+   touches nothing else, or turns out to touch six more things next year, undo is still
+   exactly correct, because it was never computed — it's just replayed.
+
+   Only the most recent action is ever undoable, and only for a short window: a second
+   completion supersedes the first (offerUndo overwrites lastUndo), matching how "undo"
+   reads on every platform that has one — it means "that last thing," not a history stack.
+   ================================================================= */
+let lastUndo = null;          // { snapshot, label } — snapshot is a full deep clone of `state`
+let undoHideTimer = null;
+const UNDO_WINDOW_MS = 8000;
+function undoSnapshot() { return JSON.parse(JSON.stringify(state)); }
+function offerUndo(snapshot, label) {
+  lastUndo = { snapshot, label };
+  const bar = $('#undoBar'); if (!bar) return;
+  $('#undoBarLabel').textContent = label;
+  bar.classList.add('show');
+  clearTimeout(undoHideTimer);
+  undoHideTimer = setTimeout(() => { bar.classList.remove('show'); lastUndo = null; }, UNDO_WINDOW_MS);
+}
+function performUndo() {
+  if (!lastUndo) return;
+  clearTimeout(undoHideTimer);
+  state = lastUndo.snapshot;   // `state` is a module-level `let` — every function reads off it live
+  lastUndo = null;
+  $('#undoBar').classList.remove('show');
+  save();
+  fullRender();
+  toast('↩ Undone', 'var(--cyan)');
+}
+$('#undoBarBtn').addEventListener('click', () => { SFX.click(); performUndo(); });
+
+/* =================================================================
    TOP BAR
    ================================================================= */
 let displayTokens = state.tokens;
@@ -4646,7 +4758,6 @@ function oneoffCardHTML(t) {
       <div class="hrow qrow ${picked ? 'spin-pick' : ''}" data-id="${t.id}" data-act="editOneoff"${cc && !picked ? ` style="border-left:4px solid ${cc}"` : ''}>
         ${hhTag}
         ${leftBits}
-        <span class="hrow-emoji">${escapeHtml(t.emoji || '🎯')}</span>
         <div class="hrow-main">
           <span class="hrow-name">${escapeHtml(t.name)}</span>
           ${chips}
@@ -4741,7 +4852,6 @@ function oneoffEditHTML(t) {
   return `
     <div class="hedit qedit" data-id="${t.id}">
       <div class="hedit-r">
-        <input class="emoji-in" data-of="emoji" maxlength="4" value="${escapeHtml(t.emoji)}">
         <input class="name-in" data-of="name" value="${escapeHtml(t.name)}" placeholder="Quest name">
       </div>
       <div class="hedit-r">
@@ -4776,6 +4886,7 @@ function oneoffEditHTML(t) {
 // viaSpin = true when done from the Quest Wheel result (earns a spin bonus).
 function completeOneoff(id, viaSpin, timing) {
   const t = state.oneoffs.find(x => x.id === id); if (!t) return;
+  const undoSnap = undoSnapshot(), undoName = t.name;
   t.timer = null;                                    // a completion always ends any running timer
   t.progress = (t.progress || 0) + 1;
   SFX.coin();
@@ -4814,6 +4925,7 @@ function completeOneoff(id, viaSpin, timing) {
   save();
   renderOneoffs();
   buildHabitWheel();
+  offerUndo(undoSnap, undoName);
 }
 
 const HABIT_WHEEL_COLORS = ['#ff1b8d', '#00f0ff', '#b026ff', '#39ff14', '#ffe600', '#ff6b00', '#c44dff', '#1ca64c'];
@@ -4893,6 +5005,7 @@ function updateDailyStreakInfo() {
 function completeHabit(id, timing) {
   const h = state.habits.find(x => x.id === id);
   if (!h) return;
+  const undoSnap = undoSnapshot(), undoName = `${h.emoji || '⚡'} ${h.name}`;
   const finishedAt = Date.now();
   const timerSnapshot = h.timer ? { ...h.timer } : null;
   h.timer = null;                                    // a completion always ends any running timer
@@ -4945,6 +5058,7 @@ function completeHabit(id, timing) {
   passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
   passGoalProgress('habit', { category: h.category || 'Unsorted' });
   save();
+  offerUndo(undoSnap, undoName);
 }
 
 /* =================================================================
@@ -5173,13 +5287,16 @@ function flushNameSettle() {
   const item = kind === 'habit' ? (state.habits || []).find(x => x.id === id)
                                 : (state.oneoffs || []).find(x => x.id === id);
   if (!item) return;
-  const changedE = autoEmoji(item), changedM = autoMinutes(item);
+  // Quests dropped the emoji field to keep more width for the name — nothing to guess
+  // or paint there. Habits still show theirs, so the guess still runs for them.
+  const changedE = kind === 'habit' && autoEmoji(item);
+  const changedM = autoMinutes(item);
   if (!changedE && !changedM) return;
   // Paint every open copy of this editor by hand. The sheet and the Habits view can both
   // be showing the same item, and a re-render here would destroy the input being typed in.
   const sel = kind === 'habit' ? `.hedit[data-id="${id}"]` : `.qedit[data-id="${id}"]`;
   $$(sel).forEach(box => {
-    const ei = box.querySelector('.emoji-in'); if (ei) ei.value = item.emoji;
+    if (changedE) { const ei = box.querySelector('.emoji-in'); if (ei) ei.value = item.emoji; }
     const mi = box.querySelector('[data-f="timedMinutes"], [data-of="timedMinutes"]');
     if (mi) mi.value = item.timedMinutes || 0;
     const sum = box.querySelector('[data-sum="duration"]');
@@ -5274,6 +5391,28 @@ setInterval(() => {
   // Active Winnings countdowns. Expiry has to be checked even when the Winnings tab
   // isn't open, or a reward would sit "active" until you happened to look at it.
   const now = Date.now();
+  let winsJustCleared = false;
+
+  // A claimed reward is good for the day you claimed it and no longer — this overrides
+  // whatever time/reps it still had left, running or paused, so nothing carries into
+  // tomorrow unused. Checked before the ordinary timer expiry below so an item that hits
+  // BOTH conditions on the same tick is reported once, with the clearer reason.
+  const today = todayStr();
+  const dayStale = state.inventory.filter(w =>
+    isActiveWin(w) && w.redeemedAt && dateStrFromTs(w.redeemedAt) !== today && !w.expiredSeen);
+  if (dayStale.length) {
+    dayStale.forEach(w => {
+      w.expiredSeen = true; w.actualEndedAt = now;
+      w.activeUntil = 0; w.remaining = 0; w.activePlain = false; w.pausedAt = null; w.pausedRemainingMs = null;
+      logEvent('reward_finished', { entityType: 'reward', entityId: w.rewardId || w.id, inventoryId: w.id, name: w.name,
+        startedAt: w.actualStartedAt || null, endedAt: now, allocatedMinutes: w.activeMinutes || null, finishReason: 'day_ended' });
+    });
+    SFX.lose();
+    toast(`🌙 ${dayStale[0].name}${dayStale.length > 1 ? ` +${dayStale.length - 1} more` : ''} — the day ended before you finished`, 'var(--pink)');
+    save(); renderPrizes();
+    winsJustCleared = true;
+  }
+
   const justExpired = state.inventory.filter(w =>
     w.redeemed && Number.isFinite(w.activeUntil) && w.activeUntil > 0 && w.activeUntil <= now && !w.expiredSeen);
   if (justExpired.length) {
@@ -5281,7 +5420,7 @@ setInterval(() => {
     SFX.win();
     toast(`⌛ ${justExpired[0].name} — time's up!`, 'var(--gold)');
     save(); renderPrizes();
-  } else if ($('#view-prizes').classList.contains('active')) {
+  } else if (!winsJustCleared && $('#view-prizes').classList.contains('active')) {
     $$('[data-win-timer]').forEach(el => {
       const w = state.inventory.find(x => x.id === el.dataset.winTimer);
       if (!w || !Number.isFinite(w.activeUntil)) return;
@@ -6131,11 +6270,31 @@ function streakFreezeReward() {
   const sf = state.settings.streakFreeze;
   return { id: 'streakfreeze', special: 'streakFreeze', emoji: sf.emoji || '🧊', name: sf.name || 'Streak Freeze', tier: sf.tier };
 }
+// A casino-won Wild Card: same "pick any reward of this rarity" token the Habit Pass
+// can pay out, now also a possible spin outcome at its own rarity — gated by a Settings
+// toggle (default on) and drawn at half the weight of an ordinary reward by default
+// (Settings → 🎁 Rewards → 🃏 Wild Cards), so it shows up without crowding out the
+// rewards the user actually configured.
+function wildCardCasinoReward(tier) {
+  const pct = clamp(parseInt(state.settings.wildCardCasinoWeightPct, 10) || 0, 0, 500);
+  return { id: 'wildcard-' + tier, special: 'wildCard', emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, weight: pct / 100 };
+}
 function rewardsByTier(tier) {
   const list = state.rewards.filter(r => r.tier === tier);
   const sf = state.settings.streakFreeze;
   if (sf && sf.enabled && sf.tier === tier) list.push(streakFreezeReward()); // special reward joins its rarity pool
+  if (state.settings.wildCardsInCasino !== false) list.push(wildCardCasinoReward(tier));
   return list;
+}
+// Uniform among ordinary rewards, same as the old flat pick() — but anything carrying
+// its own `.weight` (today, only the casino Wild Card) is drawn proportionally instead.
+// With no weighted entries in the pool this reduces to exactly the old distribution.
+function pickWeightedReward(pool) {
+  const weights = pool.map(r => (Number.isFinite(r.weight) ? r.weight : 1));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < pool.length; i++) { if ((roll -= weights[i]) < 0) return pool[i]; }
+  return pool[pool.length - 1];
 }
 
 function resolveOutcome(outcome, game) {
@@ -6148,7 +6307,7 @@ function resolveOutcome(outcome, game) {
   let order = REWARD_TIERS.slice(0, REWARD_TIERS.indexOf(outcome) + 1).reverse(); // e.g. epic -> [epic,rare,common]
   for (const t of order) {
     const pool = rewardsByTier(t);
-    if (pool.length) return { type: 'reward', tier: t, reward: pick(pool) };
+    if (pool.length) return { type: 'reward', tier: t, reward: pickWeightedReward(pool) };
   }
   // no rewards defined at all -> give tokens instead
   const amt = randInt(game.tokenWin[0], game.tokenWin[1]);
@@ -6164,6 +6323,9 @@ function applyResult(res) {
     state.stats.wins++;
     if (res.reward.special === 'streakFreeze') {
       state.streakFreezes = (state.streakFreezes || 0) + 1; // banked, not added to redeemable inventory
+    } else if (res.reward.special === 'wildCard') {
+      addWildCard(res.reward.tier);   // straight into Winnings as a wild card, same as a Pass payout
+      logEvent('reward_won', { entityType: 'wildcard', entityId: 'wildcard-' + res.reward.tier, name: res.reward.name, tier: res.reward.tier, wonAt: Date.now() });
     } else {
       const won = {
         id: uid(), rewardId: res.reward.id, emoji: res.reward.emoji,
@@ -6198,6 +6360,8 @@ function showReveal(res) {
     $('#revealName').style.textShadow = `0 0 16px ${ti.hex}`;
     $('#revealSub').textContent = res.reward.special === 'streakFreeze'
       ? `🧊 Banked! Protects your daily streak from a missed day.`
+      : res.reward.special === 'wildCard'
+      ? `🃏 Banked! Redeem it for any ${ti.label} reward from Winnings.`
       : `${ti.label} reward — added to your Winnings 🏆`;
     $('#revealCard').style.borderColor = ti.hex;
     $('#revealCard').style.boxShadow = `0 0 50px ${ti.hex}`;
@@ -6942,8 +7106,30 @@ function rewardSpecFor(item) {
 function isActiveWin(w) {
   const now = Date.now();
   return !!(w.redeemed && ((Number.isFinite(w.activeUntil) && w.activeUntil > now) ||
+    (w.pausedAt && Number.isFinite(w.pausedRemainingMs)) ||
     (Number.isFinite(w.remaining) && w.remaining > 0) ||
     w.activePlain === true));
+}
+// Freezes a running countdown: the remaining time is banked onto the item itself
+// (pausedRemainingMs) and activeUntil is cleared so the expiry sweep leaves it alone
+// while paused — same shape the habit/quest stopwatch uses (pausedAt + a banked amount),
+// just banked in whole milliseconds instead of accumulated seconds.
+function pauseActiveWin(id) {
+  const item = state.inventory.find(x => x.id === id);
+  if (!item || item.pausedAt || !Number.isFinite(item.activeUntil)) return;
+  item.pausedRemainingMs = Math.max(0, item.activeUntil - Date.now());
+  item.pausedAt = Date.now();
+  item.activeUntil = null;
+  SFX.click(); toast(`⏸ ${item.name} paused`, 'var(--cyan)');
+  save(); renderPrizes();
+}
+function resumeActiveWin(id) {
+  const item = state.inventory.find(x => x.id === id);
+  if (!item || !item.pausedAt) return;
+  item.activeUntil = Date.now() + (item.pausedRemainingMs || 0);
+  item.pausedAt = null; item.pausedRemainingMs = null;
+  SFX.click(); toast(`▶ ${item.name} resumed`, 'var(--green)');
+  save(); renderPrizes();
 }
 function activeWinnings() { return state.inventory.filter(isActiveWin); }
 
@@ -7046,8 +7232,10 @@ function claimFromPool(rewardId, qty) {
   const owned = ownedOf(rewardId);
   qty = clamp(qty, 1, owned.length);
   if (!qty) return;
+  const undoSnap = undoSnapshot();
   const taken = owned.slice(0, qty);
   const item = taken[0];
+  const undoName = `${item.emoji || '🎁'} ${item.name}`;
   item.redeemedAt = Date.now(); item.actualStartedAt = item.redeemedAt;
   taken.forEach(x => { x.redeemed = true; });          // all consumed
   taken.slice(1).forEach(x => { x.mergedInto = item.id; });
@@ -7079,6 +7267,7 @@ function claimFromPool(rewardId, qty) {
   logRewardClaim(item, qty);
   claimOpenId = null;
   save(); renderPrizes();
+  offerUndo(undoSnap, undoName);
 }
 // When a reward was cashed in, for the Schedule tab. Duration rewards carry their length
 // so they draw as a real span; everything else is a moment mark at the claim time.
@@ -7132,6 +7321,7 @@ function redeemOneFrom(g) {
   if (!win.open) { toast(`🔒 ${win.reason}`, 'var(--pink)'); SFX.lose(); return; }
   const item = state.inventory.find(x => x.id === g.items[0].id);
   if (!item) return;
+  const undoSnap = undoSnapshot(), undoName = `${item.emoji || '🎁'} ${item.name}`;
   item.redeemed = true; item.redeemedAt = Date.now(); item.actualStartedAt = item.redeemedAt; recycleOpen = null;
   const spec = rewardSpecFor(item) || {};
   const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
@@ -7159,6 +7349,7 @@ function redeemOneFrom(g) {
   }
   logRewardClaim(item, 1);
   save(); renderPrizes();
+  offerUndo(undoSnap, undoName);
 }
 // Tick one rep off an active counter; the last one closes it out.
 function useOneRep(id) {
@@ -7178,6 +7369,7 @@ function endActiveWin(id) {
     actualUsedMinutes: item.actualStartedAt ? Math.max(0, Math.round((endedAt - item.actualStartedAt) / 60000)) : null, finishReason: 'ended_early' });
   item.actualEndedAt = endedAt;
   item.activeUntil = 0; item.remaining = 0; item.activePlain = false;
+  item.pausedAt = null; item.pausedRemainingMs = null;   // a paused countdown must not read as active once ended
   SFX.click(); save(); renderPrizes();
 }
 function trashOneFrom(g) {
@@ -7205,18 +7397,21 @@ function renderActiveWins() {
   if (!act.length) { box.innerHTML = ''; return; }
   box.innerHTML = act.map(w => {
     const col = (TIERS[w.tier] || {}).hex || 'var(--green)';
-    if (Number.isFinite(w.activeUntil) && w.activeUntil > Date.now()) {
-      const leftSec = Math.max(0, Math.round((w.activeUntil - Date.now()) / 1000));
+    const paused = !!(w.pausedAt && Number.isFinite(w.pausedRemainingMs));
+    if (paused || (Number.isFinite(w.activeUntil) && w.activeUntil > Date.now())) {
+      const leftSec = paused ? Math.round(w.pausedRemainingMs / 1000)
+                              : Math.max(0, Math.round((w.activeUntil - Date.now()) / 1000));
       const total = Math.max(1, (w.activeMinutes || 1) * 60);
       const pct = clamp(100 - (leftSec / total * 100), 0, 100);
       return `
-      <div class="aw-row" data-id="${w.id}" style="--aw:${col}">
+      <div class="aw-row ${paused ? 'paused' : ''}" data-id="${w.id}" style="--aw:${col}">
         <span class="aw-emoji">${escapeHtml(w.emoji || '🎁')}</span>
         <div class="aw-main">
           <div class="aw-name">${escapeHtml(w.name)}</div>
-          <div class="aw-meta">⏳ <b data-win-timer="${w.id}">${escapeHtml(fmtTimerSec(leftSec))}</b> left</div>
-          <div class="aw-bar"><div class="aw-fill" data-win-fill="${w.id}" style="width:${pct}%"></div></div>
+          <div class="aw-meta">${paused ? '⏸ paused ·' : '⏳'} <b${paused ? '' : ` data-win-timer="${w.id}"`}>${escapeHtml(fmtTimerSec(leftSec))}</b> left</div>
+          <div class="aw-bar"><div class="aw-fill" ${paused ? '' : `data-win-fill="${w.id}"`} style="width:${pct}%${paused ? ';transition:none' : ''}"></div></div>
         </div>
+        <button class="btn ghost sm" data-act="${paused ? 'resumeWin' : 'pauseWin'}">${paused ? '▶' : '⏸'}</button>
         <button class="btn ghost sm" data-act="endWin">⏹ End</button>
       </div>`;
     }
@@ -7292,7 +7487,8 @@ function prizeTileHTML(r, ti) {
   const lit = n > 0;
   const redemption = redeemWindow();
   const locked = lit && !redemption.open;
-  const title = r.special ? 'Edit the Streak Freeze in Settings'
+  const title = r.special === 'streakFreeze' ? 'Edit the Streak Freeze in Settings'
+    : r.special === 'wildCard' ? `Can drop from any ${ti.label} game — redeem one from Winnings`
     : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim` : 'Not won yet — tap to edit'));
   return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
@@ -7441,12 +7637,20 @@ function grantPassReward(d) {
   }
 }
 
-// Grant both lanes for a freshly-reached tier (PRO only if unlocked).
-function passGrantTier(level) {
+// Tap-to-collect: a level only ever pays out here, never as a side effect of reaching
+// it. `claimed.free`/`claimed.pro` now mean exactly "the user collected this," not
+// "this was auto-granted and shouldn't be granted twice."
+function passClaimTier(level, lane) {
   const p = state.pass;
   if (p.rewardsEnabled === false) return;
-  if (!p.claimed.free.includes(level)) { grantPassReward(passTierReward(level, 'free')); p.claimed.free.push(level); }
-  if (p.proUnlocked && !p.claimed.pro.includes(level)) { grantPassReward(passTierReward(level, 'pro')); p.claimed.pro.push(level); }
+  if (!(level >= 1 && level <= p.level)) return;             // not reached yet
+  if (lane === 'pro' && !p.proUnlocked) return;               // PRO lane still locked
+  if (p.claimed[lane].includes(level)) return;                // already collected
+  grantPassReward(passTierReward(level, lane));
+  p.claimed[lane].push(level);
+  SFX.coin(); burst({ count: 40, colors: lane === 'pro' ? ['#ffd700', '#ff1b8d'] : ['#39ff14', '#00f0ff'] });
+  toast(`🎁 Level ${level} ${lane === 'pro' ? 'PRO' : 'FREE'} reward claimed!`, lane === 'pro' ? 'var(--gold)' : 'var(--green)');
+  refreshPassUI(); save();
 }
 
 function passGainXP(amount, source) {
@@ -7456,7 +7660,7 @@ function passGainXP(amount, source) {
   passEnsureWeek();
   p.xp += amount;
   let leveled = false;
-  while (p.xp >= p.xpPerLevel && p.level < PASS_MAX_TIERS) { p.xp -= p.xpPerLevel; p.level++; leveled = true; passGrantTier(p.level); }
+  while (p.xp >= p.xpPerLevel && p.level < PASS_MAX_TIERS) { p.xp -= p.xpPerLevel; p.level++; leveled = true; }
   if (p.level >= PASS_MAX_TIERS) p.xp = Math.min(p.xp, p.xpPerLevel);
   if (leveled) {
     SFX.win(); toast(`⚡ Habit Pass — Level ${p.level}!`, 'var(--purple)');
@@ -7533,9 +7737,8 @@ function passUpgradePro() {
   state.tokens = Math.max(0, state.tokens - p.proCost);
   if (typeof displayTokens !== 'undefined') displayTokens = state.tokens;
   p.proUnlocked = true;
-  for (let lv = 1; lv <= p.level; lv++) if (!p.claimed.pro.includes(lv)) { grantPassReward(passTierReward(lv, 'pro')); p.claimed.pro.push(lv); }
   SFX.jackpot(); burst({ count: 140, colors: ['#ffd700', '#ff1b8d', '#00f0ff'] });
-  toast('🌟 Habit Pass PRO unlocked!', 'var(--gold)');
+  toast('🌟 Habit Pass PRO unlocked — tap any reached level to collect its reward!', 'var(--gold)');
   renderTopbar(); refreshPassUI(); save();
 }
 
@@ -7561,17 +7764,27 @@ function renderPass() {
     const reached = p.level >= lv;
     const ff = passRewardFace(passTierReward(lv, 'free'));
     const pr = passTierReward(lv, 'pro'); const pf = passRewardFace(pr);
-    const freeState = reached ? 'got' : 'locked';
-    const proState = reached ? (p.proUnlocked ? 'got' : 'claimable') : 'locked';
+    const freeClaimed = p.claimed.free.includes(lv);
+    const proClaimed = p.claimed.pro.includes(lv);
+    // 'claimable' is the only state a tap does anything on. 'needpro' looks the same as
+    // locked (still greyed, still a lock icon) but is a distinct state so the tier the
+    // user is about to unlock with PRO is easy to tell apart from tiers they haven't
+    // reached at all — mostly a documentation aid, since the two share their look today.
+    const freeState = !reached ? 'locked' : (freeClaimed ? 'got' : 'claimable');
+    const proState = !reached ? 'locked' : (!p.proUnlocked ? 'needpro' : (proClaimed ? 'got' : 'claimable'));
     const milestone = lv % 10 === 0;
+    const cellIcon = st => st === 'got' ? '<span class="pt-tick">✓</span>'
+      : st === 'needpro' ? '<span class="pt-lock">🔒</span>'
+      : st === 'claimable' ? '<span class="pt-claim">🎁</span>' : '';
+    const tapAttr = (lane, st) => st === 'claimable' ? ` data-act="passClaim" data-lv="${lv}" data-lane="${lane}"` : '';
     rows += `<div class="pass-tier ${reached ? 'reached' : ''} ${lv === p.level ? 'current' : ''}">
-      <div class="pt-cell free ${freeState}">${passCellHTML(ff)}${freeState === 'got' ? '<span class="pt-tick">✓</span>' : ''}</div>
+      <div class="pt-cell free ${freeState}"${tapAttr('free', freeState)}>${passCellHTML(ff)}${cellIcon(freeState)}</div>
       <div class="pt-num ${milestone ? 'milestone' : ''}">${lv}</div>
-      <div class="pt-cell pro ${proState} ${pr.type === 'wild' ? 'wild' : ''}">${passCellHTML(pf)}${proState === 'got' ? '<span class="pt-tick">✓</span>' : (proState === 'claimable' ? '<span class="pt-lock">🔒</span>' : '')}</div>
+      <div class="pt-cell pro ${proState} ${pr.type === 'wild' ? 'wild' : ''}"${tapAttr('pro', proState)}>${passCellHTML(pf)}${cellIcon(proState)}</div>
     </div>`;
   }
   const proCtl = p.proUnlocked
-    ? `<div class="pass-pro-on">🌟 PRO UNLOCKED — premium rewards auto-claim</div>`
+    ? `<div class="pass-pro-on">🌟 PRO UNLOCKED — tap 🎁 on any reached level to collect it</div>`
     : `<button class="btn gold" data-act="passUpgrade">⬆ Unlock PRO — 🪙 ${p.proCost}</button>`;
   const goalsDone = (p.goals || []).filter(g => g.done).length, goalsTot = (p.goals || []).length;
   // Head (banner + level + Goals dropdown) stays pinned; only .pass-scroll scrolls.
@@ -7819,6 +8032,7 @@ function renderSettings() {
   renderTabEditor();
   renderTierRewards();
   renderRewardEditor();
+  renderWildCardSettings();
   renderStreakFreezeEditor();
   renderCategories();
   renderPassSettings();
@@ -7900,6 +8114,17 @@ function renderRewardEditor() {
     </div>`).join('') || `<div class="hint">No rewards yet — add one below.</div>`;
 }
 // The special, undeletable Streak Freeze reward — toggle, theme + rarity only.
+// Settings → 🎁 Rewards → 🃏 Wild Cards: the casino-roll toggle/weight, plus how many
+// of each rarity are currently sitting unredeemed in Winnings.
+function renderWildCardSettings() {
+  const on = $('#wildCasinoOn'); if (!on) return;
+  on.checked = state.settings.wildCardsInCasino !== false;
+  $('#wildCasinoWeight').value = Number.isFinite(state.settings.wildCardCasinoWeightPct) ? state.settings.wildCardCasinoWeightPct : 50;
+  $('#wildCardCounts').innerHTML = REWARD_TIERS.map(t => {
+    const n = state.inventory.filter(w => w.wild && !w.redeemed && w.tier === t).length;
+    return `<span class="pill" style="border-color:${TIERS[t].hex}88;color:${TIERS[t].hex}">${TIERS[t].emoji} ${TIERS[t].label}: <b>${n}</b></span>`;
+  }).join('');
+}
 function renderStreakFreezeEditor() {
   const sf = state.settings.streakFreeze; if (!sf) return;
   $('#streakFreezeEditor').innerHTML = `
@@ -8073,6 +8298,174 @@ function parseAIReply(raw) {
   }
   return { message: text || '(empty reply)', proposals: [] };
 }
+
+/* =================================================================
+   AI ASSIGNMENT READING — photograph a syllabus/worksheet, the AI reads out one quest
+   name per assignment it can find. Deliberately its OWN reply contract, not the general
+   {message,proposals} one above: proposals already know how to set a tier, and that is
+   exactly what must NOT happen here — the whole point is the user is the one who sets
+   difficulty & urgency, for every row, before anything is created. Reuses whichever AI
+   provider/key is already configured for the chat coach; nothing new to set up.
+   ================================================================= */
+function parseAssignmentReply(raw) {
+  const text = String(raw || '').trim();
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  if (a >= 0 && b > a) {
+    try {
+      const o = JSON.parse(text.slice(a, b + 1));
+      return { message: String(o.message || '').trim() || '(no message)', assignments: Array.isArray(o.assignments) ? o.assignments : [] };
+    } catch (e) { /* fall through */ }
+  }
+  return { message: text || '(empty reply)', assignments: [] };
+}
+function assignmentExtractPrompt() {
+  return `You read photos of school/work assignment sheets, syllabi, or worksheets and pull out each distinct assignment as a short task name.
+
+RULES
+- One assignment = one entry. Keep "name" short (under 60 characters) and in plain words — summarize, don't transcribe a whole paragraph.
+- If a due date is printed or clearly implied, resolve it to "YYYY-MM-DD" using ${todayStr()} as today (so "next Friday", "in two weeks" etc. become a real date). If there's no date or you're not confident, use null — never guess.
+- Do NOT set a difficulty, priority, category, or token value. Those are not extracted from the photo — they're for the user to choose afterward, and any you invent will be ignored.
+- If nothing assignment-like is visible, return an empty array and say so plainly in "message".
+
+OUTPUT — respond with ONE JSON object, no markdown fences, no text outside it:
+{"message": "one short sentence about what you found", "assignments": [{"name": "...", "due": "YYYY-MM-DD" or null}, ...]}`;
+}
+// Anthropic wants base64 with no "data:" prefix and an explicit media_type; OpenAI wants
+// the full data-URI string under image_url. Not interchangeable — see callAI, which
+// forwards whatever content shape it's given straight into each provider's request body.
+function buildVisionMessage(dataUris, text) {
+  if (aiSettings.provider === 'openai') {
+    return { role: 'user', content: [
+      ...dataUris.map(u => ({ type: 'image_url', image_url: { url: u } })),
+      { type: 'text', text },
+    ] };
+  }
+  return { role: 'user', content: [
+    ...dataUris.map(u => {
+      const m = /^data:(image\/[a-zA-Z0-9+.-]+);base64,(.*)$/.exec(u);
+      return { type: 'image', source: { type: 'base64', media_type: m ? m[1] : 'image/jpeg', data: m ? m[2] : u } };
+    }),
+    { type: 'text', text },
+  ] };
+}
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Could not read ' + file.name));
+    r.readAsDataURL(file);
+  });
+}
+let assignRows = [];      // { name, due, tier, quadrant, include } — one per extracted assignment
+let assignBusy = false;
+async function scanAssignmentPhotos(files) {
+  if (!files || !files.length || assignBusy) return;
+  if (!activeKey()) { toast('Add an AI key in Settings → 🤖 AI Coach first.', 'var(--pink)'); return; }
+  assignBusy = true;
+  const btn = $('#scanAssignBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '🔎 Reading…'; }
+  try {
+    const dataUris = await Promise.all([...files].map(fileToDataURL));
+    const msg = buildVisionMessage(dataUris, files.length > 1
+      ? 'Extract every assignment you can find across these photos.'
+      : 'Extract every assignment you can find in this photo.');
+    const raw = await callAI(assignmentExtractPrompt(), [msg]);
+    const { message, assignments } = parseAssignmentReply(raw);
+    if (!assignments.length) { toast(message || 'No assignments found in that photo.', 'var(--pink)'); return; }
+    assignRows = assignments.slice(0, 30).map(a => ({
+      name: String((a && a.name) || 'Assignment').slice(0, 120),
+      due: (a && typeof a.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.due)) ? a.due : null,
+      tier: 'medium', quadrant: null, include: true,
+    }));
+    openAssignPicker();
+  } catch (err) {
+    toast('AI error: ' + (err && err.message ? err.message : 'something went wrong'), 'var(--pink)');
+  } finally {
+    assignBusy = false;
+    if (btn) { btn.disabled = false; btn.textContent = '📷 Scan'; }
+  }
+}
+function openAssignPicker() {
+  renderAssignPicker();
+  $('#assignPickSheet').classList.add('show');
+  $('#assignPickSheet').setAttribute('aria-hidden', 'false');
+}
+function closeAssignPicker() {
+  $('#assignPickSheet').classList.remove('show');
+  $('#assignPickSheet').setAttribute('aria-hidden', 'true');
+}
+function renderAssignPicker() {
+  const body = $('#assignPickBody'); if (!body) return;
+  $('#assignPickTitle').textContent = `From your photo · ${assignRows.length} found`;
+  body.innerHTML = assignRows.map((row, i) => `
+    <div class="assign-row ${row.include ? '' : 'off'}" data-idx="${i}">
+      <div class="ar-top">
+        <span class="pick-check ${row.include ? 'on' : ''}" data-act="assignToggle">${row.include ? '✓' : ''}</span>
+        <input class="name-in ar-name" data-act="assignName" value="${escapeHtml(row.name)}" placeholder="Assignment name">
+      </div>
+      ${row.due ? `<div class="ar-due">📅 due ${escapeHtml(row.due)}</div>` : ''}
+      <div class="chip-row ar-tiers">${Object.entries(TASK_TIERS).map(([k, ti]) => {
+        const sel = k === row.tier;
+        const style = sel ? `background:${ti.color};border-color:${ti.color};color:#0b0518;` : `border-color:${ti.color};color:${ti.color};`;
+        return `<button class="chip tier-chip ${sel ? 'sel' : ''}" data-act="assignTier" data-tier="${k}" style="${style}">${ti.label} +${tierReward(k)}</button>`;
+      }).join('')}</div>
+      <div class="chip-row ar-quads">${EISENHOWER.map(q => `
+        <button class="quad-chip ${row.quadrant === q.key ? 'sel' : ''}" data-act="assignQuad" data-quad="${q.key}" style="--qc:${q.color}" title="${escapeHtml(q.hint)}">${q.icon} ${escapeHtml(q.label)}</button>`).join('')}</div>
+    </div>`).join('');
+  syncAssignApply();
+}
+function syncAssignApply() {
+  const btn = $('#assignPickApply'); if (!btn) return;
+  const n = assignRows.filter(r => r.include).length;
+  btn.disabled = n === 0;
+  btn.textContent = n === 0 ? 'Add' : n === 1 ? 'Add 1 quest' : `Add ${n} quests`;
+}
+function applyAssignRows() {
+  const picks = assignRows.filter(r => r.include && r.name.trim());
+  if (!picks.length) { closeAssignPicker(); return; }
+  picks.forEach(row => {
+    const name = row.name.trim();
+    const q = {
+      id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name,
+      tier: TASK_TIERS[row.tier] ? row.tier : 'medium', category: 'Unsorted',
+      reward: tierReward(TASK_TIERS[row.tier] ? row.tier : 'medium'),
+      iterations: 1, progress: 0, due: row.due || null, quadrant: row.quadrant || null,
+      timedMinutes: inferMinutes(name), timedAuto: true, desc: '', createdBy: 'ai', createdAt: Date.now(),
+    };
+    state.oneoffs.push(q);
+    state.aiMeta.oneoffs.push(q.id);
+    logEvent('task_created', { entityType: 'task', entityId: q.id, name: q.name, category: q.category, level: q.tier, iterations: q.iterations, createdBy: 'ai', selectionSource: 'photo_scan' });
+  });
+  SFX.coin(); save();
+  renderOneoffs(); buildHabitWheel();
+  closeAssignPicker();
+  toast(picks.length === 1 ? `🎯 Added "${picks[0].name.trim()}"` : `🎯 Added ${picks.length} quests`, 'var(--gold)');
+}
+$('#scanAssignBtn').addEventListener('click', () => { $('#scanAssignFile').value = ''; $('#scanAssignFile').click(); });
+$('#scanAssignFile').addEventListener('change', e => { scanAssignmentPhotos(e.target.files); });
+$('#assignPickSheet').addEventListener('click', e => {
+  if (e.target.closest('[data-act="assignPickClose"]')) { SFX.click(); closeAssignPicker(); return; }
+  const row = e.target.closest('.assign-row'); if (!row) return;
+  const idx = parseInt(row.dataset.idx, 10); const r = assignRows[idx]; if (!r) return;
+  if (e.target.closest('[data-act="assignToggle"]')) {
+    r.include = !r.include;
+    row.classList.toggle('off', !r.include);
+    row.querySelector('.pick-check').classList.toggle('on', r.include);
+    row.querySelector('.pick-check').textContent = r.include ? '✓' : '';
+    syncAssignApply();
+    return;
+  }
+  const tierBtn = e.target.closest('[data-act="assignTier"]');
+  if (tierBtn) { r.tier = tierBtn.dataset.tier; renderAssignPicker(); return; }
+  const quadBtn = e.target.closest('[data-act="assignQuad"]');
+  if (quadBtn) { const k = quadBtn.dataset.quad; r.quadrant = (r.quadrant === k ? null : k); renderAssignPicker(); return; }
+});
+$('#assignPickSheet').addEventListener('input', e => {
+  if (e.target.dataset.act !== 'assignName') return;
+  const row = e.target.closest('.assign-row'); const idx = parseInt(row.dataset.idx, 10);
+  if (assignRows[idx]) assignRows[idx].name = e.target.value;
+});
+$('#assignPickApply').addEventListener('click', () => { SFX.click(); applyAssignRows(); });
 
 /* ---- Whole-app context: the AI's working model of how the user's day actually
    runs, built once from all habits/quests/history/economy. Compact summary, not
@@ -9951,6 +10344,8 @@ $('#passClose').addEventListener('click', () => { SFX.click(); closePass(); });
 $('#passOverlay').addEventListener('click', e => { if (e.target.id === 'passOverlay') closePass(); });
 $('#passBody').addEventListener('click', e => {
   if (e.target.closest('[data-act="passUpgrade"]')) { passUpgradePro(); return; }
+  const claimCell = e.target.closest('[data-act="passClaim"]');
+  if (claimCell) { passClaimTier(parseInt(claimCell.dataset.lv, 10) || 0, claimCell.dataset.lane); return; }
   if (e.target.closest('[data-act="toggleGoals"]')) { passGoalsOpen = !passGoalsOpen; SFX.click(); renderPass(); }
 });
 $('#wildOverlay').addEventListener('click', e => { if (e.target.id === 'wildOverlay') $('#wildOverlay').classList.remove('show'); });
@@ -10998,7 +11393,6 @@ function onInlineOneoffField(e) {
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
   else if (f === 'category') { if (!pickCategoryInto(t, e.target)) return; }
-  else if (f === 'emoji') { t.emoji = e.target.value; t.emojiAuto = false; }   // a deliberate icon — stop guessing
   else if (f === 'timedMinutes') { t.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999); t.timedAuto = false; }   // a real number — stop guessing
   else if (f === 'due') {
     const v = e.target.value;
@@ -11207,6 +11601,8 @@ $('#activeWins').addEventListener('click', e => {
   if (act === 'useRep') useOneRep(row.dataset.id);
   else if (act === 'finishWin') finishPlainWin(row.dataset.id);
   else if (act === 'endWin') endActiveWin(row.dataset.id);
+  else if (act === 'pauseWin') pauseActiveWin(row.dataset.id);
+  else if (act === 'resumeWin') resumeActiveWin(row.dataset.id);
 });
 
 $('#invGrid').addEventListener('click', e => {
@@ -11322,6 +11718,8 @@ $('#sortHabits').addEventListener('click', () => {
 });
 
 // ---- Settings: Streak Freeze (special reward) ----
+$('#wildCasinoOn').addEventListener('change', e => { state.settings.wildCardsInCasino = e.target.checked; save(); });
+$('#wildCasinoWeight').addEventListener('input', e => { state.settings.wildCardCasinoWeightPct = clamp(parseInt(e.target.value) || 0, 0, 500); save(); });
 $('#streakFreezeEditor').addEventListener('input', e => {
   const sf = state.settings.streakFreeze;
   if (e.target.id === 'sfEmoji') sf.emoji = e.target.value;
