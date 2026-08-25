@@ -375,8 +375,12 @@
        Index ranges doubled along with SCHED_ZOOMS — old 4-5 → 8-11, old 6-7 → 12-14. */
     .sched-grid.zoom-8 .sched-sub.half, .sched-grid.zoom-9 .sched-sub.half,
     .sched-grid.zoom-10 .sched-sub.half, .sched-grid.zoom-11 .sched-sub.half { opacity: .5; }
-    .sched-grid.zoom-12 .sched-sub, .sched-grid.zoom-13 .sched-sub,
-    .sched-grid.zoom-14 .sched-sub { opacity: .5; }
+    .sched-grid.zoom-12 .sched-sub.half, .sched-grid.zoom-12 .sched-sub.quarter,
+    .sched-grid.zoom-13 .sched-sub.half, .sched-grid.zoom-13 .sched-sub.quarter,
+    .sched-grid.zoom-14 .sched-sub.half, .sched-grid.zoom-14 .sched-sub.quarter { opacity: .5; }
+    /* Five-minute lines only at the deepest two stops — the scale where a five-minute
+       drag is a visible distance rather than a rounding error. */
+    .sched-grid.zoom-13 .sched-sub.fine, .sched-grid.zoom-14 .sched-sub.fine { opacity: .22; }
     /* Draggable predictions: grab cursor, and touch-action:none so a vertical drag moves
        the block instead of scrolling the page out from under it. */
     .sched-block.draggable { cursor: grab; touch-action: none; }
@@ -415,15 +419,57 @@
     }
     .sched-block.predicted b { color: var(--ink); }
     /* Untimed completions are SOLID: they really happened, they just have no measurable
-       length. Dashed is reserved for predictions, so the two can never be confused. */
+       length. Dashed is reserved for predictions, so the two can never be confused.
+       Left deliberately transparent: a moment is a tick on the timeline, not a span, and
+       boxing it would claim a duration it doesn't have. */
     .sched-block.moment {
       background: transparent; border: 0; border-left: 0; padding-left: 0;
       border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); border-radius: 0;
     }
-    /* Left deliberately transparent: a moment is a tick on the timeline, not a span, and
-       boxing it would claim a duration it doesn't have. It no longer collides with its
-       neighbours because layoutLanes now reserves its real drawn height. */
     .sched-block.moment b { font-size: 10px; opacity: .85; line-height: 1.2; }
+
+    /* ---------- Short blocks: honest bars, names in a right-hand column ----------
+       A block shorter than LABEL_MIN_PX keeps its TRUE height and drops its text. It used
+       to be inflated to 18px so the name would fit, which at low zoom meant two things
+       done five minutes apart drew as two 18px boxes almost on top of each other and read
+       as simultaneous. The bar now says when, the label column says what. */
+    .sched-block.tiny { padding: 0; min-height: 0; }
+    .sched-block.tiny > b, .sched-block.tiny > .sb-time { display: none; }
+    .sched-block.tiny:not(.moment) { border-radius: 2px; border-width: 0 0 0 3px; background: var(--sb); }
+    .sched-labels { position: absolute; left: 58%; right: 4px; top: 0; bottom: 0; pointer-events: none; display: none; }
+    .sched-grid.has-tiny .sched-labels { display: block; }
+    .sched-grid.has-tiny .sched-lanes { right: 44%; }
+    .sched-lanes, .sched-labels { transition: right .28s cubic-bezier(.4,0,.2,1), left .28s cubic-bezier(.4,0,.2,1); }
+    .sb-label {
+      position: absolute; left: 0; right: 0; display: none; overflow: visible;
+      font-size: 10.5px; line-height: 1.25; padding-left: 5px;
+      border-left: 3px solid var(--sb); transition: top .28s cubic-bezier(.4,0,.2,1);
+    }
+    .sb-label.show { display: block; }
+    .sb-label b { display: block; color: var(--ink); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-label .sbl-time { display: none; }         /* the bar already says when; the name is what didn't fit */
+    /* The elbow. JS sets top/height so it reaches from the bar's real minute down to
+       wherever the label had to be nudged to avoid the label above it. */
+    .sb-leader {
+      position: absolute; left: -10px; width: 10px; border-top: 1px dashed var(--sb);
+      border-left: 1px dashed var(--sb); opacity: .65; pointer-events: none;
+    }
+    /* A session still running, drawn live rather than reconstructed from history. */
+    .sched-block.running { animation: schedPulse 2.4s ease-in-out infinite; }
+    @keyframes schedPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+    /* Resize grips on a predicted block's top and bottom edges. Only present once the
+       block is tall enough for the two edges to be distinguishable (.resizable). */
+    .sb-grip { position: absolute; left: 0; right: 0; height: 9px; display: none; touch-action: none; cursor: ns-resize; z-index: 2; }
+    .sched-block.resizable .sb-grip { display: block; }
+    .sb-grip.t { top: -1px; }
+    .sb-grip.b { bottom: -1px; }
+    .sb-grip::after {
+      content: ''; position: absolute; left: 50%; width: 22px; height: 2px; margin-left: -11px;
+      border-radius: 2px; background: var(--sb); opacity: .55;
+    }
+    .sb-grip.t::after { top: 1px; }
+    .sb-grip.b::after { bottom: 1px; }
+    .sched-block.resizing { transition: none; z-index: 5; border-style: solid; box-shadow: 0 6px 20px rgba(0,0,0,.6); }
 
     /* Red "needs attention" dot — on the More tab and on the row it belongs to. */
     .nav-dot {
@@ -1933,7 +1979,9 @@
        greys every rule that reads it without chasing each usage. */
     .prize      { --pz: var(--gs-edge-hi) !important; }
     .aw-row     { --aw: var(--gs-edge-hi) !important; }
-    .sched-block{ --sb: #6f6f7a !important; }
+    /* .sb-label rides along: it reads the same --sb its block does, and greying only the
+       block left a grey bar wired to a coloured name. */
+    .sched-block, .sb-label { --sb: #6f6f7a !important; }
     .hrow.done, .hrow.arch { background: var(--gs-card) !important; }
     .hrow.done { border-color: var(--gs-edge-hi) !important; }
     .hrow.done .hrow-name { text-decoration-color: var(--gs-edge-hi); }
@@ -2145,6 +2193,11 @@
     .pick-foot .btn:disabled { opacity: .4; pointer-events: none; }
     .pick-e { font-size: 22px; line-height: 1; }
     .pick-n { flex: 1 1 auto; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* The scan-mode rows are a choice, not a list — each needs a line explaining what it
+       does, so they opt out of the one-line ellipsis every other pick row wants. */
+    #assignModeBody .pick-row { align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
+    #assignModeBody .pick-n { white-space: normal; text-overflow: clip; }
+    #assignModeBody .am-sub { display: block; font-weight: 500; font-size: 11.5px; line-height: 1.35; margin-top: 3px; }
     /* One extracted assignment: a checkbox + editable name, then its own tier/quadrant
        pickers — unchecking a row excludes it from Add without deleting what the AI read. */
     .assign-row { padding: 12px 16px; border-bottom: 1px solid var(--gs-edge); display: flex; flex-direction: column; gap: 8px; }
@@ -2222,6 +2275,26 @@
     <!-- Tick as many as you like, then apply them in one go. Sticky, because the list is
          long enough to scroll past the button otherwise. -->
     <div class="pick-foot"><button class="btn green sm" id="copyPickApply" disabled>Copy</button></div>
+  </div>
+
+  <!-- Asked BEFORE the camera opens, not after: the tap that picks a mode is also the
+       user gesture iOS requires before a file input will open, and choosing first means
+       you never re-shoot a photo because the AI split a worksheet you wanted whole. -->
+  <div class="pick-sheet" id="assignModeSheet" aria-hidden="true">
+    <div class="pick-head">
+      <span>Scan assignments</span>
+      <button class="pass-close" data-act="assignModeClose" title="Close">✕</button>
+    </div>
+    <div id="assignModeBody">
+      <button class="pick-row" data-mode="single">
+        <span class="pick-e">📄</span>
+        <span class="pick-n">One task for the whole thing<span class="subtle am-sub">A worksheet or handout → a single task, like "Math 2.7". Several photos count as one assignment.</span></span>
+      </button>
+      <button class="pick-row" data-mode="multi">
+        <span class="pick-e">🧩</span>
+        <span class="pick-n">A separate task per item<span class="subtle am-sub">A syllabus or list → one task for every assignment the AI can read.</span></span>
+      </button>
+    </div>
   </div>
 
   <!-- What the AI read out of the photo(s), one row per assignment. Tier and quadrant
@@ -3394,6 +3467,19 @@ function normalizeModes(modes) {
   return out;
 }
 
+/* A running timer's work segments, restored from disk. Saves written before segments
+   existed have none — those get one synthetic segment covering the whole session, so an
+   in-progress timer survives the upgrade instead of vanishing off the Schedule. Anything
+   malformed is dropped rather than trusted; the readers assume `s` is a real timestamp. */
+function normalizeSegments(segs, startedAt, pausedAt) {
+  const rows = (Array.isArray(segs) ? segs : [])
+    .filter(s => s && Number.isFinite(s.s))
+    .map(s => ({ s: s.s, e: Number.isFinite(s.e) ? s.e : null }));
+  // A timer saved mid-pause has to come back CLOSED, or the open segment would keep
+  // growing against the wall clock and draw the paused stretch as still being worked.
+  return rows.length ? rows : [{ s: startedAt, e: Number.isFinite(pausedAt) ? pausedAt : null }];
+}
+
 // Fill in any missing fields so saves from older versions keep working.
 function normalizeHabit(h) {
   h = h || {};
@@ -3455,7 +3541,11 @@ function normalizeHabit(h) {
     timer: (h.timer && Number.isFinite(h.timer.startedAt))
       ? { startedAt: h.timer.startedAt,
           pausedAt: Number.isFinite(h.timer.pausedAt) ? h.timer.pausedAt : null,
-          pausedTotalSec: h.timer.pausedTotalSec || 0, pauseCount: h.timer.pauseCount || 0 }
+          pausedTotalSec: h.timer.pausedTotalSec || 0, pauseCount: h.timer.pauseCount || 0,
+          // The pause SHAPE, not just its total — this is what redraws an interrupted
+          // session as separate blocks after a reload. Must be listed explicitly: this
+          // merge is a whitelist, so anything unnamed is silently dropped.
+          segments: normalizeSegments(h.timer.segments, h.timer.startedAt, h.timer.pausedAt) }
       : null,
     baseIdx: Number.isFinite(h.baseIdx) ? h.baseIdx : null,
     curTier: Number.isFinite(h.curTier) ? h.curTier : null,
@@ -3539,7 +3629,8 @@ function load(raw) {
         timer: (t.timer && Number.isFinite(t.timer.startedAt))
           ? { startedAt: t.timer.startedAt,
               pausedAt: Number.isFinite(t.timer.pausedAt) ? t.timer.pausedAt : null,
-              pausedTotalSec: t.timer.pausedTotalSec || 0, pauseCount: t.timer.pauseCount || 0 }
+              pausedTotalSec: t.timer.pausedTotalSec || 0, pauseCount: t.timer.pauseCount || 0,
+              segments: normalizeSegments(t.timer.segments, t.timer.startedAt, t.timer.pausedAt) }
           : null,
       };
     });
@@ -4262,8 +4353,11 @@ function habitCardHTML(h, usualMin) {
     const paused = !!h.timer.pausedAt;
     // One readout per pane; the 1s ticker updates every match, so duplicates are fine.
     timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
+    // ↺ un-starts: the exit that used to be missing. ⏹ pays out, ⏸ holds — before this
+    // there was no way to say "I never meant to start that" without one or the other.
     rightBits = `
       <button class="hrow-check timer-btn" data-act="pauseTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
+      <button class="hrow-check timer-btn" data-act="cancelTimer" aria-label="Undo start" title="Undo start — no tokens, nothing logged" style="color:var(--ink-dim)">↺</button>
       <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
   } else if (!complete) {
     rightBits = `
@@ -4742,6 +4836,7 @@ function oneoffCardHTML(t) {
     timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
     leftBits = `
         <button class="hrow-check timer-btn" data-act="pauseOneoffTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
+        <button class="hrow-check timer-btn" data-act="cancelOneoffTimer" aria-label="Undo start" title="Undo start — no tokens, nothing logged" style="color:var(--ink-dim)">↺</button>
         <button class="hrow-check timer-btn" data-act="finishOneoffTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
   } else {
     leftBits = `
@@ -4906,7 +5001,9 @@ function completeOneoff(id, viaSpin, timing) {
   const completedAt = Date.now();
   logCompletion({ ts: completedAt, kind: 'task', id: t.id, name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt, iteration: t.progress, iterations: t.iterations, viaSpin: !!viaSpin,
     actualElapsedSec: (timing && Number.isFinite(timing.actualElapsedSec)) ? timing.actualElapsedSec : undefined,
-    pauseCount: timing ? timing.pauseCount : undefined, totalPausedSec: timing ? timing.totalPausedSec : undefined });
+    pauseCount: timing ? timing.pauseCount : undefined, totalPausedSec: timing ? timing.totalPausedSec : undefined,
+    // Broken-up sessions only — see completeHabit for why one segment isn't worth keeping.
+    segments: (timing && Array.isArray(timing.segments) && timing.segments.length > 1) ? timing.segments : undefined });
   logEvent('task_completed', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted', level: t.tier || 'medium', iteration: t.progress, iterations: t.iterations, selectionSource: viaSpin ? 'quest_wheel' : 'manual', baseReward: reward, multiplier: hh * spinMult, finalReward: amt, createdAt: t.createdAt || null });
   if (t.progress >= Math.max(1, t.iterations || 1)) {
     state.archivedOneoffs = Array.isArray(state.archivedOneoffs) ? state.archivedOneoffs : [];
@@ -5044,6 +5141,9 @@ function completeHabit(id, timing) {
     entry.actualElapsedSec = timing.actualElapsedSec;
     entry.pauseCount = timing.pauseCount;
     entry.totalPausedSec = timing.totalPausedSec;
+    // Only worth storing when the session was actually broken up — a single unbroken
+    // stretch says nothing that ts + actualElapsedSec doesn't already say.
+    if (Array.isArray(timing.segments) && timing.segments.length > 1) entry.segments = timing.segments;
   }
   logCompletion(entry);
   logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.band : null,
@@ -5325,21 +5425,63 @@ function timerSuggestHTML(habitId, page, name, currentMins, isAuto) {
 }
 function timerElapsedSec(t) { return Math.max(0, ((t.pausedAt || Date.now()) - t.startedAt) / 1000 - (t.pausedTotalSec || 0)); }
 function fmtTimerSec(sec) { sec = Math.max(0, Math.round(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
+
+/* ---- Working segments: WHEN the pauses happened, not just how long they were ----------
+   pausedTotalSec is enough to price a session but says nothing about its shape, so a
+   habit you paused for lunch used to draw on the Schedule as one unbroken block. Each
+   segment is a real stretch of work — { s: startedAt, e: endedAt|null } — so an
+   interrupted session renders as the two (or five) sittings it actually was.
+   Every reader goes through these two helpers so a timer created before this existed,
+   or restored from an older save, is repaired on contact rather than crashing.       */
+function timerSegments(t) {
+  if (!t) return [];
+  if (!Array.isArray(t.segments) || !t.segments.length) t.segments = [{ s: t.startedAt, e: t.pausedAt || null }];
+  return t.segments;
+}
+// The stretch currently being worked, or null while paused.
+function openSegment(t) {
+  const segs = timerSegments(t);
+  const last = segs[segs.length - 1];
+  return (last && !Number.isFinite(last.e)) ? last : null;
+}
+// Close the running stretch at `ts`. Safe to call twice — a closed segment stays closed.
+function closeSegment(t, ts) {
+  const open = openSegment(t);
+  if (open) open.e = ts;
+}
 // Open stopwatch — no pre-set duration needed, works for every habit. This replaces
 // the old "timedMinutes" countdown-timer feature: the AI now learns actual
 // time-on-task from EVERY play→finish session, not just ones explicitly marked timed.
 function startHabitTimer(id) {
   const h = state.habits.find(x => x.id === id); if (!h || h.timer || isComplete(h)) return;
-  h.timer = { startedAt: Date.now(), pausedAt: null, pausedTotalSec: 0, pauseCount: 0 };
+  const now = Date.now();
+  h.timer = { startedAt: now, pausedAt: null, pausedTotalSec: 0, pauseCount: 0, segments: [{ s: now, e: null }] };
   logEvent('habit_started', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null });
   SFX.click(); save(); renderHabits();
 }
 function toggleHabitTimerPause(id) {
   const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
   const t = h.timer;
-  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; logEvent('habit_resumed', { entityType: 'habit', entityId: h.id, name: h.name }); }
-  else { t.pausedAt = Date.now(); t.pauseCount = (t.pauseCount || 0) + 1; logEvent('habit_paused', { entityType: 'habit', entityId: h.id, name: h.name, pauseCount: t.pauseCount }); }
-  SFX.click(); save(); renderHabits();
+  const now = Date.now();
+  // Resuming opens a NEW segment rather than extending the old one — that gap is the
+  // whole point, and it's what draws the second block as "… (continued)".
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); logEvent('habit_resumed', { entityType: 'habit', entityId: h.id, name: h.name }); }
+  else { t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now); logEvent('habit_paused', { entityType: 'habit', entityId: h.id, name: h.name, pauseCount: t.pauseCount }); }
+  SFX.click(); save(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+}
+/* ---- Undo Start: back out of a session you never meant to begin. ----------------------
+   Deliberately NOT a completion — no tokens, no history row, no streak, nothing on the
+   Schedule. It routes through the ordinary undo bar because it discards real elapsed
+   time, and "I meant to hit pause" deserves the same 8-second grace every other
+   destructive tap in the app gets. */
+function cancelHabitTimer(id) {
+  const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
+  const snap = undoSnapshot();
+  logEvent('habit_start_cancelled', { entityType: 'habit', entityId: h.id, name: h.name, startedAt: h.timer.startedAt, elapsedSecAtCancel: Math.round(timerElapsedSec(h.timer)) });
+  h.timer = null;
+  SFX.click(); save(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+  toast(`↺ Un-started ${h.name}`, 'var(--cyan)');
+  offerUndo(snap, `↺ ${h.emoji || '⚡'} ${h.name}`);
 }
 // Ends the session and completes the habit, logging actual elapsed time. There's no
 // "finished early" concept anymore — no target duration means Finish always just
@@ -5347,32 +5489,50 @@ function toggleHabitTimerPause(id) {
 function finishTimedHabit(id) {
   const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
   const t = h.timer;
-  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; }
+  const now = Date.now();
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; }
+  closeSegment(t, now);
   completeHabit(id, { actualElapsedSec: Math.round(timerElapsedSec(t)),
-                      pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0) });
+                      pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0),
+                      segments: timerSegments(t).map(s => ({ s: s.s, e: s.e })) });
 }
 
 /* ---- Quest stopwatches. Same three verbs as habits, so a one-off can be timed and
    therefore drawn on the Block Schedule as a real span rather than a moment mark. ---- */
 function startOneoffTimer(id) {
   const t = state.oneoffs.find(x => x.id === id); if (!t || t.timer) return;
-  t.timer = { startedAt: Date.now(), pausedAt: null, pausedTotalSec: 0, pauseCount: 0 };
+  const now = Date.now();
+  t.timer = { startedAt: now, pausedAt: null, pausedTotalSec: 0, pauseCount: 0, segments: [{ s: now, e: null }] };
   logEvent('task_started', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted' });
-  SFX.click(); save(); renderOneoffs(); renderHabits();
+  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
 }
 function toggleOneoffTimerPause(id) {
   const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
   const t = q.timer;
-  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; logEvent('task_resumed', { entityType: 'task', entityId: q.id, name: q.name }); }
-  else { t.pausedAt = Date.now(); t.pauseCount = (t.pauseCount || 0) + 1; logEvent('task_paused', { entityType: 'task', entityId: q.id, name: q.name, pauseCount: t.pauseCount }); }
-  SFX.click(); save(); renderOneoffs(); renderHabits();
+  const now = Date.now();
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); logEvent('task_resumed', { entityType: 'task', entityId: q.id, name: q.name }); }
+  else { t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now); logEvent('task_paused', { entityType: 'task', entityId: q.id, name: q.name, pauseCount: t.pauseCount }); }
+  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+}
+// Quest twin of cancelHabitTimer — same "no payout, no history, undoable" contract.
+function cancelOneoffTimer(id) {
+  const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
+  const snap = undoSnapshot();
+  logEvent('task_start_cancelled', { entityType: 'task', entityId: q.id, name: q.name, startedAt: q.timer.startedAt, elapsedSecAtCancel: Math.round(timerElapsedSec(q.timer)) });
+  q.timer = null;
+  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+  toast(`↺ Un-started ${q.name}`, 'var(--cyan)');
+  offerUndo(snap, `↺ ${q.name}`);
 }
 function finishTimedOneoff(id) {
   const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
   const t = q.timer;
-  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (Date.now() - t.pausedAt) / 1000; t.pausedAt = null; }
+  const now = Date.now();
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; }
+  closeSegment(t, now);
   completeOneoff(id, false, { actualElapsedSec: Math.round(timerElapsedSec(t)),
-                              pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0) });
+                              pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0),
+                              segments: timerSegments(t).map(s => ({ s: s.s, e: s.e })) });
 }
 // 1s tick: just refreshes visible elapsed-time readouts in place — no auto-finish,
 // since an open stopwatch has no target to hit. The user always taps Finish themselves.
@@ -5605,21 +5765,67 @@ function recordFor(loadout) {
 // real span (finished at `ts`, ran `actualElapsedSec`), so start = end − duration. A habit
 // ticked off without the stopwatch only tells us WHEN it finished, never how long it took —
 // those become zero-length "moment" marks rather than an invented duration.
+/* One work segment → one block, clamped to the day being viewed so a session that ran
+   through midnight doesn't draw off the end of the grid. `idx > 0` means the user paused
+   and came back, so the block says so: sitting two of the same habit is not a second
+   habit, and labelling it "(continued)" is what keeps the day readable. */
+function segmentBlock(e, seg, idx, dateStr, endTs) {
+  const dayStart = new Date(dateStr + 'T00:00:00').getTime();
+  const s = Math.max(seg.s, dayStart);
+  const en = Math.min(Number.isFinite(seg.e) ? seg.e : endTs, dayStart + 86400000 - 1);
+  if (!(en > s)) return null;
+  const startMin = Math.floor((s - dayStart) / 60000);
+  const endMin = Math.floor((en - dayStart) / 60000);
+  return {
+    name: idx > 0 ? `${e.name} (continued)` : e.name, baseName: e.name, emoji: e.emoji, category: e.category,
+    startMin, endMin, durMin: Math.max(0, endMin - startMin),
+    kind: 'actual', type: e.kind === 'task' ? 'task' : 'habit',
+  };
+}
 function computeActualBlocks(dateStr) {
-  return (state.history || [])
+  const out = [];
+  (state.history || [])
     .filter(e => e && (e.kind === 'habit' || e.kind === 'task') && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
-    .map(e => {
+    .forEach(e => {
+      // An interrupted session was several separate sittings — draw it that way rather
+      // than as one unbroken span that covers a gap the user wasn't actually working.
+      if (Array.isArray(e.segments) && e.segments.length > 1) {
+        const parts = e.segments.map((seg, i) => segmentBlock(e, seg, i, dateStr, e.ts)).filter(Boolean);
+        if (parts.length) { out.push(...parts); return; }
+      }
       const d = new Date(e.ts);
       const endMin = d.getHours() * 60 + d.getMinutes();
       const timed = Number.isFinite(e.actualElapsedSec) && e.actualElapsedSec >= 60;
       const durMin = timed ? Math.round(e.actualElapsedSec / 60) : 0;
-      return {
-        name: e.name, emoji: e.emoji, category: e.category,
+      out.push({
+        name: e.name, baseName: e.name, emoji: e.emoji, category: e.category,
         startMin: Math.max(0, endMin - durMin), endMin, durMin,
         kind: timed ? 'actual' : 'moment', type: e.kind === 'task' ? 'task' : 'habit',
-      };
-    })
-    .sort((a, b) => a.startMin - b.startMin);
+      });
+    });
+  return out.sort((a, b) => a.startMin - b.startMin);
+}
+
+/* Sessions still in progress. Without this a pause left no mark until you finished, so
+   the one moment you most want the chart to record — "I stopped here" — was the one it
+   couldn't show. Reads the live timers instead of history, so the block appears the
+   instant ⏸ is tapped and the running stretch grows to `now`. Today only: a timer has no
+   meaning on a day it isn't running through. */
+function computeLiveBlocks(dateStr) {
+  if (dateStr !== todayStr()) return [];
+  const now = Date.now();
+  const out = [];
+  const push = (src, kind) => {
+    if (!src.timer) return;
+    const e = { name: src.name, emoji: src.emoji, category: src.category, kind };
+    timerSegments(src.timer).forEach((seg, i) => {
+      const b = segmentBlock(e, seg, i, dateStr, now);
+      if (b) { b.live = true; b.running = !Number.isFinite(seg.e); out.push(b); }
+    });
+  };
+  (state.habits || []).forEach(h => push(h, 'habit'));
+  (state.oneoffs || []).forEach(t => push(t, 'task'));
+  return out.sort((a, b) => a.startMin - b.startMin);
 }
 
 // Reward claims for a date, from their own log. A duration reward ran from the moment it
@@ -5646,12 +5852,24 @@ function computeRewardBlocks(dateStr) {
 // other. Without this a busy hour renders as one illegible pile of text.
 // Walk in start order, close a cluster whenever a block starts after everything so far has
 // ended, then within the cluster drop each block into the first lane that's free.
-/* A block is never drawn shorter than these, however brief it actually was — a 4-minute
-   task still has to fit its own name. Lane layout has to reserve the same space, in
-   MINUTES, or two blocks it considers clear get painted on top of each other. */
-const MIN_BLOCK_PX = 18;      // .sched-block floor
-const MIN_MOMENT_PX = 16;     // .sched-block.moment is a fixed height
-function blockFloorPx(b) { return b.kind === 'moment' ? MIN_MOMENT_PX : MIN_BLOCK_PX; }
+/* Blocks used to be inflated to an 18px floor so their names would fit. That made the
+   chart lie: at 32px/hour an 18px floor is 34 minutes, so two things done five minutes
+   apart drew as two nearly-touching boxes and read as simultaneous — you could not tell a
+   busy ten minutes from a busy hour.
+
+   Geometry now always tells the truth. A bar is drawn at its real height, floored only at
+   BAR_MIN_PX so a brief one is still visible at all. When that leaves it too short to
+   hold text (< LABEL_MIN_PX), the block goes "tiny": the bar stays honest and its NAME
+   moves out to a column on the right, joined back by a leader line. Zoom in and the label
+   returns inside the block. */
+const BAR_MIN_PX = 3;         // a bar is never invisible, but never inflated either
+const LABEL_MIN_PX = 15;      // below this a block cannot hold a legible line of text
+const LABEL_H = 15;           // vertical pitch between two labels in the right column
+function blockFloorPx() { return BAR_MIN_PX; }
+// Drawn height of a block at a given scale, in pixels — the single source of truth for
+// "is this tall enough to read?", shared by the renderer and the zoom relayout.
+function blockDrawnPx(durMin, px) { return Math.max(BAR_MIN_PX, (durMin || 0) / 60 * px); }
+function isTinyBlock(durMin, px) { return blockDrawnPx(durMin, px) < LABEL_MIN_PX; }
 
 function layoutLanes(blocks, px) {
   // How many minutes the shortest drawable block occupies AT THIS ZOOM. This used to be a
@@ -5665,7 +5883,7 @@ function layoutLanes(blocks, px) {
   blocks.forEach(b => {
     // +2px so neighbours never graze: reserving the exact drawn height leaves them
     // touching, and sub-pixel rounding then reads as a 1px overlap at some scales.
-    const end = b.startMin + Math.max(b.durMin, (blockFloorPx(b) + 2) / pxPerHour * 60);
+    const end = b.startMin + Math.max(b.durMin, (blockFloorPx() + 2) / pxPerHour * 60);
     if (b.startMin >= clusterEnd && cluster.length) closeCluster();
     let lane = lanes.findIndex(laneEnd => laneEnd <= b.startMin);
     if (lane === -1) { lane = lanes.length; lanes.push(end); } else { lanes[lane] = end; }
@@ -5691,7 +5909,7 @@ let schedZoomIdx = 4;       // Schedule tab — 56px, the old default (index 2 o
 // on the same scale: a level that reads well across a full page is far too loose in a
 // window a fifth the height. Independent, so zooming one never disturbs the other.
 let homeZoomIdx = 2;        // = 44px
-const SNAP_MIN = 15;        // drags snap to quarter-hours
+const SNAP_MIN = 5;         // drags and resizes snap to five minutes
 function schedPx(idx = schedZoomIdx) { return SCHED_ZOOMS[clamp(idx, 0, SCHED_ZOOMS.length - 1)]; }
 // Zoom without re-rendering: only --ph changes, and CSS transitions carry every block,
 // gridline and the now-marker to their new positions together.
@@ -5715,19 +5933,40 @@ function applyZoomWithin(rootSel, idx) {
    vertical glide keeps running underneath, untouched. */
 function relayoutLanes(rootSel, px) {
   const root = $(rootSel); if (!root) return;
+  const grid = root.querySelector('.sched-grid'); if (!grid) return;
+  const loMin = (parseInt(grid.dataset.lo, 10) || 0) * 60;
   const items = [...root.querySelectorAll('.sched-block')].map(el => ({
     el,
     startMin: parseInt(el.dataset.start, 10) || 0,
     durMin: parseInt(el.dataset.dur, 10) || 0,
-    kind: el.classList.contains('moment') ? 'moment' : 'block',
+    label: grid.querySelector(`.sb-label[data-lbl="${el.dataset.idx}"]`),
   })).sort((a, b) => a.startMin - b.startMin);
-  if (!items.length) return;
+  if (!items.length) { grid.classList.remove('has-tiny'); return; }
   layoutLanes(items, px);
+  // Labels are pushed DOWN only, never up, so a label always sits at or below the block
+  // it names and its leader line only ever has to reach downward.
+  let anyTiny = false, prevLabelY = -Infinity;
   items.forEach(b => {
     const lanes = Math.max(1, b.laneCount || 1), wpct = 100 / lanes;
     b.el.style.left = (b.lane * wpct) + '%';
     b.el.style.width = `calc(${wpct}% - 5px)`;
+    const tiny = isTinyBlock(b.durMin, px);
+    b.el.classList.toggle('tiny', tiny);
+    b.el.classList.toggle('resizable', b.el.classList.contains('draggable') && blockDrawnPx(b.durMin, px) >= 26);
+    if (!b.label) return;
+    b.label.classList.toggle('show', tiny);
+    if (!tiny) return;
+    anyTiny = true;
+    const trueY = (b.startMin - loMin) / 60 * px;
+    const y = Math.max(trueY, prevLabelY + LABEL_H);
+    prevLabelY = y;
+    b.label.style.top = y + 'px';
+    // The elbow: runs from the bar's real position down to wherever the label had to be
+    // nudged. Without it a pushed-down label would be pointing at the wrong minute.
+    const leader = b.label.querySelector('.sb-leader');
+    if (leader) { leader.style.top = (trueY - y) + 'px'; leader.style.height = Math.max(0, y - trueY) + 'px'; }
   });
+  grid.classList.toggle('has-tiny', anyTiny);
 }
 function applySchedZoom() {
   schedZoomIdx = clamp(schedZoomIdx, 0, SCHED_ZOOMS.length - 1);
@@ -5758,9 +5997,11 @@ function schedGridParts(dateStr, opts = {}) {
   const isFuture = daysBetween(todayStr(), dateStr) > 0;
   // Future days have no history — they're pure plan. Past days are pure record. Today is
   // both: what already happened, plus what's still expected.
-  const actual = isFuture ? [] : computeActualBlocks(dateStr);
+  const actual = isFuture ? [] : computeActualBlocks(dateStr).concat(computeLiveBlocks(dateStr));
   const rewards = isFuture ? [] : computeRewardBlocks(dateStr);
-  const doneNames = new Set(actual.map(b => b.name));
+  // Matched on baseName, not name: a resumed sitting is titled "… (continued)", and its
+  // prediction still has to be suppressed by the habit's real name.
+  const doneNames = new Set(actual.map(b => b.baseName || b.name));
   const blocks = (isToday || isFuture
     ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
     : actual).concat(rewards);
@@ -5787,18 +6028,26 @@ function schedGridParts(dateStr, opts = {}) {
     // Quarter-hour lines are always in the DOM; CSS reveals them as the zoom class grows,
     // which is what makes a 15-minute gap visible instead of one undifferentiated band.
     if (h < hi) {
-      for (let m = 15; m < 60; m += 15) {
-        hourLines.push(`<div class="sched-sub ${m === 30 ? 'half' : 'quarter'}" style="top:${at((h - lo) + m / 60)}"><span>${escapeHtml(fmtMinOfDay(h * 60 + m))}</span></div>`);
+      // Five-minute lines exist so the five-minute snap has something to land against;
+      // CSS keeps them hidden until the deepest zooms, where they're the whole point.
+      for (let m = 5; m < 60; m += 5) {
+        const cls = m === 30 ? 'half' : (m % 15 === 0 ? 'quarter' : 'fine');
+        hourLines.push(`<div class="sched-sub ${cls}" style="top:${at((h - lo) + m / 60)}"><span>${escapeHtml(fmtMinOfDay(h * 60 + m))}</span></div>`);
       }
     }
   }
   const nowLine = isToday && nowMinutes() >= lo * 60 && nowMinutes() <= hi * 60
     ? `<div class="sched-now" style="top:${at((nowMinutes() - lo * 60) / 60)}"></div>` : '';
 
-  const blockEls = blocks.map(b => {
+  // Names for blocks too short to hold them, drawn in a column to the right. Built in the
+  // same pass as the blocks so the two can never fall out of step; which of them are
+  // actually shown is decided by relayoutLanes, because that answer changes with zoom.
+  const labelEls = [];
+  const blockEls = blocks.map((b, i) => {
     const topH = (b.startMin - lo * 60) / 60;
     const top = at(topH);
-    const height = b.kind === 'moment' ? MIN_MOMENT_PX + 'px' : `max(${MIN_BLOCK_PX}px, ${at(b.durMin / 60)})`;
+    // True height, floored only enough to stay visible. No inflation — see BAR_MIN_PX.
+    const height = `max(${BAR_MIN_PX}px, ${at(b.durMin / 60)})`;
     const col = b.type === 'reward'
       ? (b.tierHex || 'var(--gold)')                 // rewards wear their rarity colour
       : (categoryColor(b.category) || 'var(--cyan)');
@@ -5812,25 +6061,36 @@ function schedGridParts(dateStr, opts = {}) {
     // stays put: it's a record, not a plan, so moving it would be rewriting history.
     const drag = draggable && b.kind === 'predicted' && b.refId;
     const pin = b.pinned ? ' 📌' : '';
+    const tiny = isTinyBlock(b.durMin, px);
+    labelEls.push(`<div class="sb-label${tiny ? ' show' : ''}" data-lbl="${i}" style="--sb:${col}">
+      <i class="sb-leader"></i>
+      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
+      <span class="sbl-time">${escapeHtml(timeLabel)}</span>
+    </div>`);
     // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
     // these percentages are of the block area alone and the gutter never enters the math.
     // Tall enough to show a time? Show it — during a drag it doubles as the readout.
     // Measured at the ACTUAL scale, not a hardcoded 96px/hour: a second line needs ~30px,
     // and at 32px/hour almost nothing has that, so the label was being clipped rather
     // than omitted. Draggable blocks always keep it — that's their live drag readout.
-    const showTime = b.kind !== 'moment' && (b.durMin / 60 * px >= 30) && lanes <= 2;
+    const showTime = !tiny && (b.durMin / 60 * px >= 30) && lanes <= 2;
+    // Grips only make sense once the block is tall enough to have two distinguishable
+    // edges; relayoutLanes re-decides this on zoom, since zoom doesn't re-render.
+    const resizable = drag && blockDrawnPx(b.durMin, px) >= 26;
     // start/dur ride on EVERY block, not just the draggable ones: relayoutLanes() rebuilds
     // the lane assignment from the DOM when the zoom changes, and it needs their timing.
-    return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}"
-      title="${escapeHtml(title)}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"${drag ? ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"` : ''}
+    return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}${resizable ? ' resizable' : ''}${tiny ? ' tiny' : ''}${b.running ? ' running' : ''}"
+      title="${escapeHtml(title)}" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"${drag ? ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"` : ''}
       style="top:${top};height:${height};left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
       <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
       ${showTime || drag ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
+      ${drag ? `<div class="sb-grip t" data-grip="top"></div><div class="sb-grip b" data-grip="bot"></div>` : ''}
       ${drag && b.pinned ? `<button class="sb-unpin" data-act="unpin" title="Back to my usual time">✕</button>` : ''}
     </div>`;
   }).join('');
 
-  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture, inner: `${hourLines.join('')}${nowLine}<div class="sched-lanes">${blockEls}</div>` };
+  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture,
+    inner: `${hourLines.join('')}${nowLine}<div class="sched-lanes">${blockEls}</div><div class="sched-labels">${labelEls.join('')}</div>` };
 }
 
 /* The record bar: which day is being replayed, and how far back to look for it.
@@ -5892,8 +6152,11 @@ function renderBlockSchedule() {
     </div>
     <div class="sched-grid zoom-${schedZoomIdx}" data-lo="${lo}" data-hours="${hi - lo}"
          style="--ph:${schedPx()}px;height:calc(var(--ph) * ${hi - lo})">${inner}</div>
-    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a dashed block to say when you'll actually do it — it snaps to 15 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your record time.' : ''}</div>` : ''}
+    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a dashed block to say when you'll actually do it, or drag its top/bottom edge to change how long it takes — both snap to 5 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your record time.' : ''}</div>` : ''}
     ${!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>${escapeHtml(emptyMsg)}</div>` : ''}`;
+  // Which blocks are too short to hold their own name depends on the zoom, so the answer
+  // is computed against the live DOM rather than baked into the markup above.
+  relayoutLanes('#view-schedule', schedPx());
 }
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
 // Once the usual time passes it drops back into the regular list — no "overdue" flag.
@@ -8318,11 +8581,18 @@ function parseAssignmentReply(raw) {
   }
   return { message: text || '(empty reply)', assignments: [] };
 }
-function assignmentExtractPrompt() {
-  return `You read photos of school/work assignment sheets, syllabi, or worksheets and pull out each distinct assignment as a short task name.
+function assignmentExtractPrompt(mode) {
+  // 'single' = the photos are ONE assignment; 'multi' = one entry per assignment found.
+  // Only this paragraph differs — the date rule, the don't-set-difficulty rule and the
+  // output shape are identical, so the review sheet works the same either way.
+  const scope = mode === 'single'
+    ? `- Every photo below is ONE single assignment — pages of the same worksheet, handout, or problem set. Return EXACTLY ONE entry covering all of them, no matter how many separate questions or problems you can see.
+- Name it the way the user would refer to the whole thing: prefer a printed title, unit, chapter, or section number (e.g. "Math 2.7", "Bio Lab 4", "Ch. 12 review"). If nothing like that is printed, write a short plain description of the sheet as a whole.`
+    : `- One assignment = one entry. Keep "name" short (under 60 characters) and in plain words — summarize, don't transcribe a whole paragraph.`;
+  return `You read photos of school/work assignment sheets, syllabi, or worksheets and pull out assignments as short task names.
 
 RULES
-- One assignment = one entry. Keep "name" short (under 60 characters) and in plain words — summarize, don't transcribe a whole paragraph.
+${scope}
 - If a due date is printed or clearly implied, resolve it to "YYYY-MM-DD" using ${todayStr()} as today (so "next Friday", "in two weeks" etc. become a real date). If there's no date or you're not confident, use null — never guess.
 - Do NOT set a difficulty, priority, category, or token value. Those are not extracted from the photo — they're for the user to choose afterward, and any you invent will be ignored.
 - If nothing assignment-like is visible, return an empty array and say so plainly in "message".
@@ -8356,23 +8626,31 @@ function fileToDataURL(file) {
     r.readAsDataURL(file);
   });
 }
-let assignRows = [];      // { name, due, tier, quadrant, include } — one per extracted assignment
+let assignRows = [];         // { name, due, tier, quadrant, include } — one per extracted assignment
 let assignBusy = false;
-async function scanAssignmentPhotos(files) {
+let assignScanMode = 'multi'; // 'single' = these photos are one assignment; 'multi' = one task per item
+async function scanAssignmentPhotos(files, mode) {
   if (!files || !files.length || assignBusy) return;
   if (!activeKey()) { toast('Add an AI key in Settings → 🤖 AI Coach first.', 'var(--pink)'); return; }
+  const single = mode === 'single';
   assignBusy = true;
   const btn = $('#scanAssignBtn');
   if (btn) { btn.disabled = true; btn.textContent = '🔎 Reading…'; }
   try {
     const dataUris = await Promise.all([...files].map(fileToDataURL));
-    const msg = buildVisionMessage(dataUris, files.length > 1
-      ? 'Extract every assignment you can find across these photos.'
-      : 'Extract every assignment you can find in this photo.');
-    const raw = await callAI(assignmentExtractPrompt(), [msg]);
+    const msg = buildVisionMessage(dataUris, single
+      ? (files.length > 1
+          ? 'These photos are all pages of ONE assignment. Name that single assignment.'
+          : 'This photo is ONE assignment. Name it.')
+      : (files.length > 1
+          ? 'Extract every assignment you can find across these photos.'
+          : 'Extract every assignment you can find in this photo.'));
+    const raw = await callAI(assignmentExtractPrompt(mode), [msg]);
     const { message, assignments } = parseAssignmentReply(raw);
     if (!assignments.length) { toast(message || 'No assignments found in that photo.', 'var(--pink)'); return; }
-    assignRows = assignments.slice(0, 30).map(a => ({
+    // Belt and braces: the prompt asks for one entry in single mode, this guarantees it.
+    // A model that splits the sheet anyway must not quietly produce eight tasks.
+    assignRows = assignments.slice(0, single ? 1 : 30).map(a => ({
       name: String((a && a.name) || 'Assignment').slice(0, 120),
       due: (a && typeof a.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.due)) ? a.due : null,
       tier: 'medium', quadrant: null, include: true,
@@ -8441,8 +8719,26 @@ function applyAssignRows() {
   closeAssignPicker();
   toast(picks.length === 1 ? `🎯 Added "${picks[0].name.trim()}"` : `🎯 Added ${picks.length} quests`, 'var(--gold)');
 }
-$('#scanAssignBtn').addEventListener('click', () => { $('#scanAssignFile').value = ''; $('#scanAssignFile').click(); });
-$('#scanAssignFile').addEventListener('change', e => { scanAssignmentPhotos(e.target.files); });
+function openAssignModeSheet() {
+  $('#assignModeSheet').classList.add('show');
+  $('#assignModeSheet').setAttribute('aria-hidden', 'false');
+}
+function closeAssignModeSheet() {
+  $('#assignModeSheet').classList.remove('show');
+  $('#assignModeSheet').setAttribute('aria-hidden', 'true');
+}
+$('#scanAssignBtn').addEventListener('click', () => { SFX.click(); openAssignModeSheet(); });
+$('#assignModeSheet').addEventListener('click', e => {
+  if (e.target.closest('[data-act="assignModeClose"]')) { SFX.click(); closeAssignModeSheet(); return; }
+  const row = e.target.closest('[data-mode]'); if (!row) return;
+  assignScanMode = row.dataset.mode === 'single' ? 'single' : 'multi';
+  closeAssignModeSheet();
+  // Opened straight out of this tap on purpose: iOS only honours input.click() inside a
+  // real user gesture, and this click is one. Deferring it would silently do nothing.
+  $('#scanAssignFile').value = '';
+  $('#scanAssignFile').click();
+});
+$('#scanAssignFile').addEventListener('change', e => { scanAssignmentPhotos(e.target.files, assignScanMode); });
 $('#assignPickSheet').addEventListener('click', e => {
   if (e.target.closest('[data-act="assignPickClose"]')) { SFX.click(); closeAssignPicker(); return; }
   const row = e.target.closest('.assign-row'); if (!row) return;
@@ -10557,6 +10853,7 @@ function onHabitsClick(e) {
     if (act === 'doneOneoff') { completeOneoff(qrow.dataset.id, false); renderHabits(); return; }
     if (act === 'startOneoffTimer') { startOneoffTimer(qrow.dataset.id); return; }
     if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(qrow.dataset.id); return; }
+    if (act === 'cancelOneoffTimer') { cancelOneoffTimer(qrow.dataset.id); return; }
     if (act === 'finishOneoffTimer') { finishTimedOneoff(qrow.dataset.id); renderHabits(); return; }
     SFX.click(); switchView('tasks'); openEditor('oneoff', qrow.dataset.id); return;
   }
@@ -10569,6 +10866,7 @@ function onHabitsClick(e) {
   if (act === 'done') { completeHabit(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'startTimer') { startHabitTimer(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'pauseTimer') { toggleHabitTimerPause(e.target.closest('.hrow').dataset.id); return; }
+  if (act === 'cancelTimer') { cancelHabitTimer(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'skipTimer') { finishTimedHabit(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'applyTimerSuggest' || act === 'dismissTimerSuggest') {
     const btn = e.target.closest('[data-act]');
@@ -11336,6 +11634,7 @@ function onTasksClick(e) {
   if (act === 'doneOneoff') { completeOneoff(e.target.closest('.qrow').dataset.id, false); return; }
   if (act === 'startOneoffTimer') { startOneoffTimer(e.target.closest('.qrow').dataset.id); return; }
   if (act === 'pauseOneoffTimer') { toggleOneoffTimerPause(e.target.closest('.qrow').dataset.id); return; }
+  if (act === 'cancelOneoffTimer') { cancelOneoffTimer(e.target.closest('.qrow').dataset.id); return; }
   if (act === 'finishOneoffTimer') { finishTimedOneoff(e.target.closest('.qrow').dataset.id); return; }
   if (e.target.closest('[data-act="toggleUnsorted"]')) { unsortedOpen = !unsortedOpen; SFX.click(); renderTaskMatrix(); return; }
   const seg = e.target.closest('[data-taskview]');
@@ -12192,36 +12491,62 @@ $('#view-schedule').addEventListener('pointerdown', e => {
   const el = e.target.closest('.sched-block.draggable');
   if (!el || e.target.closest('[data-act]')) return;
   const grid = $('#view-schedule .sched-grid'); if (!grid) return;     // scoped: Home has one too
+  // A grip under the finger means "change how long this takes"; anywhere else on the
+  // block means "change when it happens". Same gesture, decided by where it starts.
+  const grip = e.target.closest('.sb-grip');
+  const start = parseInt(el.dataset.start, 10);
+  const dur = parseInt(el.dataset.dur, 10) || 15;
   schedDrag = {
     el, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
-    durMin: parseInt(el.dataset.dur, 10) || 15, start: parseInt(el.dataset.start, 10),
-    lo: parseInt(grid.dataset.lo, 10) * 60, y0: e.clientY, min: parseInt(el.dataset.start, 10), moved: false,
+    mode: grip ? (grip.dataset.grip === 'top' ? 'top' : 'bot') : 'move',
+    durMin: dur, start, end: start + dur,
+    lo: parseInt(grid.dataset.lo, 10) * 60, y0: e.clientY,
+    min: start, dur, moved: false,
   };
   // Capture keeps the gesture alive if the finger leaves the block; not fatal if refused.
   try { el.setPointerCapture(e.pointerId); } catch (err) {}
-  el.classList.add('dragging');
+  el.classList.add(grip ? 'resizing' : 'dragging');
 });
 $('#view-schedule').addEventListener('pointermove', e => {
   if (!schedDrag) return;
-  const dy = e.clientY - schedDrag.y0;
-  if (!schedDrag.moved && Math.abs(dy) < 4) return;      // ignore a plain tap
-  schedDrag.moved = true;
+  const d = schedDrag;
+  const dy = e.clientY - d.y0;
+  if (!d.moved && Math.abs(dy) < 4) return;              // ignore a plain tap
+  d.moved = true;
   const deltaMin = dy / schedPx() * 60;
-  const m = clamp(Math.round((schedDrag.start + deltaMin) / SNAP_MIN) * SNAP_MIN, 0, 1439);
-  schedDrag.min = m;
-  schedDrag.el.style.top = `calc(var(--ph) * ${((m - schedDrag.lo) / 60).toFixed(4)})`;
-  const t = schedDrag.el.querySelector('.sb-time');
-  if (t) t.textContent = fmtMinOfDay(m);
+  const snap = v => Math.round(v / SNAP_MIN) * SNAP_MIN;
+  if (d.mode === 'move') {
+    d.min = clamp(snap(d.start + deltaMin), 0, 1439);
+    d.dur = d.durMin;
+  } else if (d.mode === 'bot') {
+    // The end moves, the start holds. Never shorter than one snap step.
+    const end = clamp(snap(d.end + deltaMin), d.start + SNAP_MIN, 1440);
+    d.min = d.start; d.dur = end - d.start;
+  } else {
+    // The start moves, the END holds — so dragging the top edge shortens from above
+    // rather than sliding the whole block.
+    const st = clamp(snap(d.start + deltaMin), 0, d.end - SNAP_MIN);
+    d.min = st; d.dur = d.end - st;
+  }
+  d.el.style.top = `calc(var(--ph) * ${((d.min - d.lo) / 60).toFixed(4)})`;
+  d.el.style.height = `max(${BAR_MIN_PX}px, calc(var(--ph) * ${(d.dur / 60).toFixed(4)}))`;
+  const t = d.el.querySelector('.sb-time');
+  if (t) t.textContent = d.mode === 'move' ? fmtMinOfDay(d.min)
+    : `${fmtMinOfDay(d.min)}–${fmtMinOfDay((d.min + d.dur) % 1440)} · ${fmtMins(d.dur)}`;
 });
 function endSchedDrag() {
   if (!schedDrag) return;
   const d = schedDrag; schedDrag = null;
-  d.el.classList.remove('dragging');
-  if (!d.moved || d.min === d.start) { renderBlockSchedule(); return; }
+  d.el.classList.remove('dragging', 'resizing');
+  if (!d.moved || (d.min === d.start && d.dur === d.durMin)) { renderBlockSchedule(); return; }
   // Writes the DAY being viewed, not the habit's global usual time — that's what makes
-  // "Thursday at 3pm, just this once" possible and leaves every other day alone.
-  const name = upsertPlannedBlock(todayStr(schedOffset), d.refKind, d.refId, d.min, d.durMin);
-  if (name) { SFX.coin(); toast(`${name} → ${fmtMinOfDay(d.min)}`, 'var(--cyan)'); }
+  // "Thursday at 3pm, just this once" possible and leaves every other day alone. A resize
+  // pins the block the same way a move does, so its new length is that day's plan.
+  const name = upsertPlannedBlock(todayStr(schedOffset), d.refKind, d.refId, d.min, d.dur);
+  if (name) {
+    SFX.coin();
+    toast(d.mode === 'move' ? `${name} → ${fmtMinOfDay(d.min)}` : `${name} → ${fmtMins(d.dur)}`, 'var(--cyan)');
+  }
   renderBlockSchedule(); renderHabits();
 }
 
