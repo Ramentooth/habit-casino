@@ -260,6 +260,15 @@
       background: var(--pz); color: #0a0012; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px;
       box-shadow: 0 0 10px var(--pz); border: 2px solid rgba(4,0,10,.85);
     }
+    /* Loadout bonus marker. Top-LEFT, opposite the count and the ⋯ so it can't collide
+       with either, and clear of the centred emoji. Gold reads as "on loan": a tile
+       showing 5 with "3 BONUS" says which 3 vanish when the loadout does. */
+    .prize-stock {
+      position: absolute; top: 6px; left: 6px; z-index: 3; padding: 2px 6px; border-radius: 9px;
+      background: rgba(255,214,0,.16); border: 1px solid rgba(255,214,0,.5); color: var(--gold);
+      font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 9px; letter-spacing: .5px;
+      line-height: 1.35; white-space: nowrap; pointer-events: none;
+    }
     /* ⋯ settings, top-right of every tile. */
     .prize-dots {
       position: absolute; top: 4px; right: 4px; z-index: 2;
@@ -2060,6 +2069,9 @@
       background: rgba(255,255,255,.10) !important; border-color: var(--gs-edge) !important; box-shadow: none !important;
     }
     .prize-count, .hh-tag { background: var(--gs-lite); color: var(--gs-on-lite); box-shadow: none; border-color: transparent; }
+    /* Bonus marker keeps its gold TEXT (colour is how you spot it) but drops the tinted
+       fill for the same dark chip every other badge wears here. */
+    .prize-stock { background: var(--gs-ctl); border-color: var(--gs-edge-hi); box-shadow: none; }
     .ver-badge, .ver-badge.alpha, .ver-badge.beta {
       background: var(--gs-ctl) !important; color: var(--ink) !important; box-shadow: none !important;
     }
@@ -3514,7 +3526,11 @@ function normalizeStock(v) {
   });
   // Wild cards stay OUT of the stock unless asked for — a daily wild card is a much
   // bigger giveaway than a daily copy of one specific reward.
-  return { on: !!v.on, counts, wild: !!v.wild, lastDate: typeof v.lastDate === 'string' ? v.lastDate : '' };
+  return { on: !!v.on, counts, wild: !!v.wild, lastDate: typeof v.lastDate === 'string' ? v.lastDate : '',
+    // Bonus copies handed back when you leave this loadout. Stored as whole items so
+    // returning the same day restores exactly what you left with — see shelveStock().
+    shelf: Array.isArray(v.shelf) ? v.shelf.filter(x => x && typeof x === 'object') : [],
+    shelfDate: typeof v.shelfDate === 'string' ? v.shelfDate : '' };
 }
 
 // Fill in any missing fields so saves from older versions keep working.
@@ -3643,6 +3659,16 @@ function load(raw) {
     merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
       : (merged.loadouts.includes(((parsed.dayPlans || {})[todayStr()] || {}).context) ? parsed.dayPlans[todayStr()].context : 'Default');
     merged.habits.forEach(h => { if (!h.loadout || !merged.loadouts.includes(h.loadout)) h.loadout = 'Default'; });
+    // Bonus copies used to be flagged `fromStock: true` with no record of WHICH loadout
+    // handed them out, so they could never be handed back. Adopt those into the loadout
+    // that's active now — the only defensible guess, and it makes them behave from here on.
+    // A shelf naming a loadout that no longer exists would strand its items forever, so
+    // those go back into the pool instead of being dropped.
+    merged.inventory.forEach(w => { if (w && w.fromStock === true) w.fromStock = merged.activeLoadout; });
+    Object.entries(merged.loadoutStock).forEach(([name, cfg]) => {
+      if (!cfg.shelf.length) return;
+      if (!merged.loadouts.includes(name)) { merged.inventory.unshift(...cfg.shelf); cfg.shelf = []; cfg.shelfDate = ''; }
+    });
     const trw = merged.settings.tierRewards = { easy: 5, medium: 10, hard: 20, ...(merged.settings.tierRewards || {}) };
     // Tab bar layout. Repaired rather than trusted: an unknown id, a duplicate or a short
     // list would leave the bar with a hole and a view reachable from nowhere. sanitizeBar
@@ -7449,11 +7475,24 @@ function resumeActiveWin(id) {
 function activeWinnings() { return state.inventory.filter(isActiveWin); }
 
 
+// Which loadout handed this item out as a bonus, or '' if it was genuinely won.
+// Legacy saves wrote `fromStock: true` before the name was recorded; load() upgrades
+// those, so anything still boolean here is treated as a real win rather than guessed at.
+function stockOwner(w) { return (w && typeof w.fromStock === 'string') ? w.fromStock : ''; }
+function isStockItem(w) { return !!stockOwner(w); }
+
 // Unclaimed copies of one reward sitting in the inventory. Wild cards included: they
 // carry rewardId 'wildcard-<tier>' and are claimed from their own tile like anything else.
+//
+// Loadout bonus copies sort FIRST. Every consumer takes what it needs off the front
+// (`owned.slice(0, qty)` in claimFromPool/discardFromPool/recycleFromPool), so spending
+// burns the borrowed copies before the ones actually won — those survive the switch.
 function ownedOf(rewardId) {
-  return state.inventory.filter(w => !w.redeemed && w.rewardId === rewardId);
+  return state.inventory.filter(w => !w.redeemed && w.rewardId === rewardId)
+    .sort((a, b) => (isStockItem(b) ? 1 : 0) - (isStockItem(a) ? 1 : 0));
 }
+// How many of those are loadout bonus — drives the pool tile's "n bonus" marker.
+function stockCountOf(rewardId) { return ownedOf(rewardId).filter(isStockItem).length; }
 
 // Claim N copies at once. They collapse into a SINGLE active entry with the amounts
 // multiplied — three 30-minute rewards is 90 minutes of Xbox, not three identical
@@ -7712,16 +7751,19 @@ function prizeTileHTML(r, ti) {
   const wild = r.special === 'wildCard';
   const n = (r.special && !wild) ? 0 : ownedOf(r.id).length;
   const lit = n > 0;
+  // How many of those are on loan from the current loadout rather than won.
+  const bonus = lit ? stockCountOf(r.id) : 0;
   const redemption = redeemWindow();
   const locked = lit && !redemption.open;
   const title = r.special === 'streakFreeze' ? 'Edit the Streak Freeze in Settings'
     : wild ? (lit ? `${n} held — tap to trade for any ${ti.label} reward` : `Can drop from any ${ti.label} game`)
-    : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim` : 'Not won yet — tap to edit'));
+    : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim${bonus ? ` (${bonus} loadout bonus, spent first)` : ''}` : 'Not won yet — tap to edit'));
   return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
     ${r.special ? '' : `<button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>`}
     ${locked ? `<span class="prize-lock" title="${escapeHtml(redemption.reason)}" aria-label="Reward locked">🔒</span>` : ''}
     ${lit ? `<span class="prize-count">${n}</span>` : ''}
+    ${bonus ? `<span class="prize-stock" title="${bonus} of these are ${escapeHtml(currentLoadout())} bonus — they go back if you switch loadout, and are spent first">${bonus} BONUS</span>` : ''}
     <div class="pe-wrap">
       <div class="pe">${escapeHtml(r.emoji || ti.emoji)}</div>
     </div>
@@ -7749,12 +7791,15 @@ function claimCardHTML(r) {
     : spec.count ? `${spec.count * qty} ${escapeHtml(spec.unit)} total` : `${qty} claimed`;
   const win = redeemWindow();
   const recVal = (RECYCLE_VALUE[r.tier] || 1) * qty;
+  // ownedOf() puts loadout bonus first, so the first `qty` copies are the ones that go.
+  const bonusTaken = owned.slice(0, qty).filter(isStockItem).length;
   return `
   <div class="claim-card" data-rid="${r.id}" style="--pz:${ti.hex}">
     <button class="pass-close" data-act="claimCancel" title="Close">✕</button>
     <div class="cc-head"><span class="cc-e">${escapeHtml(r.emoji || ti.emoji)}</span>
       <div><div class="cc-n">${escapeHtml(r.name)}</div>
-      <div class="subtle">${n} available · ${per}</div></div>
+      <div class="subtle">${n} available · ${per}</div>
+      ${bonusTaken ? `<div class="subtle" style="color:var(--gold)">${bonusTaken} of these ${bonusTaken === 1 ? 'is' : 'are'} ${escapeHtml(currentLoadout())} bonus — spent before anything you won</div>` : ''}</div>
     </div>
     <div class="cc-qty">
       <button class="rstep" data-act="claimMinus" title="Fewer">−</button>
@@ -7849,11 +7894,14 @@ function passRewardFace(d) {
 }
 
 // Add a wild card to Winnings; redeeming it lets you choose any reward of its tier.
-function addWildCard(tier) {
+function addWildCard(tier, fromStock) {
   // rewardId matches wildCardCasinoReward(tier)'s id, which is what makes a wild card
   // findable by ownedOf() and therefore claimable from its own Prize Pool tile like
   // every other reward — instead of needing a panel of its own above the pool.
-  state.inventory.unshift({ id: uid(), wild: true, rewardId: 'wildcard-' + tier, emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, wonAt: Date.now(), redeemed: false });
+  // `fromStock` (a loadout name) marks it as that loadout's bonus rather than a real win.
+  const w = { id: uid(), wild: true, rewardId: 'wildcard-' + tier, emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, wonAt: Date.now(), redeemed: false };
+  if (fromStock) w.fromStock = fromStock;
+  state.inventory.unshift(w);
 }
 /* Top the current loadout's inventory up to its daily allowance.
 
@@ -7883,9 +7931,9 @@ function applyLoadoutStock() {
     const pool = cfg.wild ? rewardsByTier(tier) : rewardsByTier(tier).filter(r => !r.special);
     pool.filter(r => r.special !== 'streakFreeze').forEach(r => {
       for (let have = ownedOf(r.id).length; have < n; have++) {
-        if (r.special === 'wildCard') addWildCard(tier);
+        if (r.special === 'wildCard') addWildCard(tier, name);
         else state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name,
-          tier: r.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false, fromStock: true });
+          tier: r.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false, fromStock: name });
         added++;
       }
     });
@@ -7896,6 +7944,68 @@ function applyLoadoutStock() {
   }
   save();
   return added;
+}
+
+/* Loadout bonus is BORROWED, not banked. Leaving a loadout takes back the copies it
+   handed you; coming back the same day returns exactly those same copies.
+
+   A sweep rather than a leave-hook, because `activeLoadout` is written in four places
+   (the picker, loadout creation, load(), and the "Stock now" temp swap) and a hook on
+   each would be one refactor away from leaking bonus items permanently. Reconciling
+   against whatever is active right now can't drift.
+
+   Only UNCLAIMED copies move. Once you've cashed one in it's yours — an Active Winning
+   is never yanked back out from under you mid-use. */
+function reconcileLoadoutStock() {
+  const cur = currentLoadout();
+  const today = todayStr();
+  state.loadoutStock = state.loadoutStock || {};
+
+  // 1. Shelve every unclaimed bonus copy belonging to some OTHER loadout.
+  const keep = [];
+  const shelved = {};
+  state.inventory.forEach(w => {
+    const owner = stockOwner(w);
+    if (owner && owner !== cur && !w.redeemed) (shelved[owner] = shelved[owner] || []).push(w);
+    else keep.push(w);
+  });
+  let took = 0;
+  const tookFrom = [];
+  Object.entries(shelved).forEach(([owner, items]) => {
+    const cfg = stockFor(owner);
+    // A shelf from an earlier day is stale the moment it's touched — that day's
+    // allowance is spent, and tomorrow's stock is granted fresh by applyLoadoutStock().
+    if (cfg.shelfDate !== today) cfg.shelf = [];
+    cfg.shelf = [...cfg.shelf, ...items];
+    cfg.shelfDate = today;
+    took += items.length;
+    tookFrom.push(owner);
+  });
+  if (took) state.inventory = keep;
+
+  // 2. Hand back what this loadout was holding, if it was set aside today.
+  const mine = state.loadoutStock[cur];
+  let gave = 0;
+  if (mine && Array.isArray(mine.shelf) && mine.shelf.length) {
+    if (mine.shelfDate === today) {
+      state.inventory.unshift(...mine.shelf);
+      gave = mine.shelf.length;
+    }
+    mine.shelf = [];
+    mine.shelfDate = '';
+  }
+
+  if (took || gave) {
+    logEvent('loadout_stock_reconciled', { loadout: cur, shelved: took, restored: gave, from: tookFrom, date: today });
+    // Name the loadout each half belongs to — "12 set aside" under the name of the
+    // loadout you just arrived at would read as though THIS one lost them.
+    const bits = [];
+    if (gave) bits.push(`${gave} ${cur} bonus back`);
+    if (took) bits.push(`${took} returned to ${tookFrom.join(' & ')}`);
+    toast(`🗂️ ${bits.join(' · ')}`, 'var(--cyan)');
+    save();
+  }
+  return { shelved: took, restored: gave };
 }
 
 function grantPassReward(d) {
@@ -11660,6 +11770,7 @@ function createLoadoutFromMenu() {
   state.habits.push(...copies);
   state.activeLoadout = name;
   logEvent('loadout_created', { name, copiedHabitCount: copies.length });
+  reconcileLoadoutStock();                     // the loadout we just left keeps its own bonus
   save(); closeLoadoutMenu(); renderHabits(); renderHabitEditor();
   toast(copies.length ? `${name} created with ${copies.length} copied habit${copies.length === 1 ? '' : 's'}` : `${name} created — blank slate`, 'var(--green)');
 }
@@ -11677,6 +11788,7 @@ $('#loadoutBody').addEventListener('click', e => {
   if (pick) {
     state.activeLoadout = pick.dataset.loadoutPick;
     logEvent('loadout_selected', { name: state.activeLoadout });
+    reconcileLoadoutStock();                   // hand back the old loadout's bonus, reclaim this one's
     applyLoadoutStock();                       // arriving on a stocked loadout stocks it for today
     save(); closeLoadoutMenu(); renderHabits(); renderPrizes(); return;
   }
@@ -11690,6 +11802,9 @@ $('#loadoutBody').addEventListener('click', e => {
     const was = state.activeLoadout; state.activeLoadout = loadoutEditName;
     const n = applyLoadoutStock();
     state.activeLoadout = was;
+    // Stocking a loadout you're not on shouldn't dump its bonus into your live pool —
+    // the sweep parks it on that loadout's shelf until you actually switch there.
+    reconcileLoadoutStock();
     if (!n) toast('Already fully stocked', 'var(--cyan)');
     SFX.click(); save(); renderLoadoutMenu(); renderPrizes();
   }
@@ -13142,6 +13257,7 @@ function fullRender() {
 // Boot is synchronous again: the save comes from localStorage, so nothing waits on the
 // network or on an account. The cloud layer attaches later, if and when it loads.
 processClosedDayOutcomes();
+reconcileLoadoutStock();
 applyLoadoutStock();
 fullRender();
 // If load() couldn't read the save, this is the first thing the user sees — before any
