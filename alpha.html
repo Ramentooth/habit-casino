@@ -471,17 +471,6 @@
     .sb-grip.b::after { bottom: 1px; }
     .sched-block.resizing { transition: none; z-index: 5; border-style: solid; box-shadow: 0 6px 20px rgba(0,0,0,.6); }
 
-    /* ---------- Check-in multiple choice ---------- */
-    .mc-opt { width: 100%; text-align: left; margin-bottom: 6px; }
-    /* "Other" reads as the escape hatch, not a fifth guess: it opens a box rather than
-       answering, and the trailing ellipsis is the promise that something follows. */
-    .mc-other { font-style: italic; }
-    .mc-otherbox {
-      margin-top: 4px; padding: 10px; border-radius: 12px;
-      border: 1px solid var(--panel-edge); background: rgba(0,0,0,.25);
-    }
-    .mc-otherbox .name-in { width: 100%; }
-
     /* Red "needs attention" dot — on the More tab and on the row it belongs to. */
     .nav-dot {
       position: absolute; top: 5px; left: 50%; margin-left: 8px;
@@ -502,17 +491,6 @@
       width: 10px; height: 10px; border-radius: 50%; background: #ff3b30;
       box-shadow: 0 0 8px rgba(255,59,48,.95);
     }
-    /* The count, repeated on the sheet row so the trail from the More tab actually ends
-       somewhere. Same purple as the tab badge — it's the same notification, twice. */
-    .more-row .mr-badge {
-      margin-left: auto; flex: 0 0 auto;
-      background: var(--purple, #b026ff); color: #fff;
-      font-size: 11px; font-weight: 800; line-height: 1;
-      border-radius: 9px; padding: 3px 7px; min-width: 16px; text-align: center;
-      box-shadow: 0 0 10px rgba(176,38,255,.6);
-    }
-    /* Both markers on one tab: the dot steps left so the count keeps the corner. */
-    .nav-dot.with-badge { left: auto; right: 32px; top: 4px; margin-left: 0; }
     .cloud-pending {
       margin-top: 10px; padding: 12px; border-radius: 12px;
       border: 1px solid rgba(255,59,48,.55); background: rgba(255,59,48,.10);
@@ -9898,20 +9876,6 @@ let mcQuestions = null;
 let mcAnswers = [];
 let mcIndex = 0;
 let mcBusy = false;
-/* "Other" is the option the AI is told to always include, and it used to save the literal
-   word "Other" — which records that none of the guesses fit while throwing away the one
-   answer that did. Tapping it now opens a box instead; mcOtherText[i] holds what was
-   typed, and every read goes through mcAnswerText() so the typed answer is what lands in
-   the habit's context and the reflection log. */
-let mcOtherText = [];
-let mcOtherIdx = null;      // question index whose "Other" box is open; null = none
-function isOtherOption(label) { return /^\s*(other|something else)\b/i.test(String(label || '')); }
-function mcAnswerText(i) {
-  const typed = (mcOtherText[i] || '').trim();
-  if (typed) return typed;
-  const q = mcQuestions && mcQuestions[i];
-  return q ? q.options[mcAnswers[i]] : '';
-}
 
 function anomalyDetailsFor(habitIds) {
   return computeAnomalies(todayStr(-1)).filter(a => (habitIds || []).includes(a.habitId));
@@ -9939,51 +9903,14 @@ function pendingQuestionnaires() { return (state.questionnaires || []).filter(q 
 // The pending check-in count belongs to Chat. renderNav() parks the badge on the More tab
 // by default, so if the user promotes Chat into the bar it has to move with it — a count
 // sitting on "More" while Chat is right there in the bar points at the wrong place.
-/* Everything in the nav that says "look here", painted in one pass.
-
-   The markers used to stop at the bar: a count landed on More, and opening More showed a
-   plain list with nothing on it — the indicator pointed at the door and then went dark,
-   so you had to guess which of six rows it meant. Each source is now marked in BOTH
-   places it can be looked for: the tab (its own if it's in the bar, otherwise More) AND
-   its row inside the sheet. The trail leads all the way to the thing. */
-function navAttention() {
-  const out = [];
-  const q = pendingQuestionnaires().length;
-  if (q) out.push({ view: 'chat', kind: 'badge', count: q, why: `${q} check-in${q > 1 ? 's' : ''} waiting` });
-  // Settings alerts, worst first. A save that won't write is more urgent than a cloud
-  // conflict, and it's the one thing in the app the user genuinely must be told about.
-  if (saveLocked || (lastLoadFailed && !lastLoadFailed.salvaged)) out.push({ view: 'settings', kind: 'dot', count: 1, why: 'Your save needs attention' });
-  else if (cloudPending) out.push({ view: 'settings', kind: 'dot', count: 1, why: 'A cloud save needs a decision' });
-  return out;
+function renderQuestionnaireNav() {
+  const badge = $('#qNavBadge'); if (!badge) return;
+  const host = navHostFor('chat');
+  if (host && badge.parentElement !== host) host.appendChild(badge);
+  const n = pendingQuestionnaires().length;
+  badge.style.display = n ? '' : 'none';
+  badge.textContent = n ? String(n) : '';
 }
-function renderNavAttention() {
-  const nav = $('#nav'); if (!nav) return;
-  $$('#nav .nav-dot, #nav .nav-badge, #nav .mr-dot, #nav .mr-badge').forEach(d => d.remove());
-  const mark = (host, cls, text, title) => {
-    if (!host) return;
-    const el = document.createElement('span');
-    el.className = cls;
-    if (text != null) el.textContent = text;
-    if (title) el.title = title;
-    host.appendChild(el);
-  };
-  navAttention().forEach(a => {
-    // The sheet row — the half that was missing.
-    const row = $(`#moreSheet .more-row[data-view="${a.view}"]`);
-    mark(row, a.kind === 'badge' ? 'mr-badge' : 'mr-dot', a.kind === 'badge' ? String(a.count) : null, a.why);
-    if (row) row.title = a.why;
-    // navHostFor gives the view's own tab when it's in the bar, else the More tab.
-    mark(navHostFor(a.view), a.kind === 'badge' ? 'nav-badge' : 'nav-dot', a.kind === 'badge' ? String(a.count) : null, a.why);
-  });
-  // A tab carrying both a count and a red dot would stack them on top of each other.
-  $$('#nav .tab').forEach(t => {
-    const d = t.querySelector('.nav-dot');
-    if (d && t.querySelector('.nav-badge')) d.classList.add('with-badge');
-  });
-}
-// Kept as names because several call sites already say one or the other; both now mean
-// "repaint every nav marker", since the two sources share one painter.
-function renderQuestionnaireNav() { renderNavAttention(); }
 function renderQuestionnaireBanner() {
   const box = $('#questionnaireBanner'); if (!box) return;
   const pending = pendingQuestionnaires();
@@ -10017,7 +9944,7 @@ function startQuestionnaire(format) {
   activeQuestionnaire = q;
   checkinAnomalies = anomalyDetailsFor(q.habitIds);
   checkinMessages = []; checkinTurns = 0; checkinFormat = format;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false; mcOtherText = []; mcOtherIdx = null;
+  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
   clearVoiceTimer();
   $('#checkinOverlay').classList.add('show');
   if (format === 'mc') { runMCGenerate(); return; }
@@ -10041,7 +9968,7 @@ function openHabitContextPicker(habitId) {
   const h = state.habits.find(x => x.id === habitId); if (!h) return;
   checkinKind = 'habitctx'; habitCtxId = habitId; activeQuestionnaire = null;
   checkinFormat = null; checkinMessages = []; checkinTurns = 0;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false; mcOtherText = []; mcOtherIdx = null;
+  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
   clearVoiceTimer();
   $('#checkinOverlay').classList.add('show');
   renderCheckinBody();
@@ -10052,7 +9979,7 @@ function startHabitContextQuestionnaire(format) {
     toast('Voice isn\'t supported in this browser — switched to text', 'var(--gold)'); format = 'text';
   }
   checkinMessages = []; checkinTurns = 0; checkinFormat = format;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false; mcOtherText = []; mcOtherIdx = null;
+  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
   clearVoiceTimer();
   if (format === 'mc') { runHabitContextMCGenerate(h); return; }
   renderCheckinBody();
@@ -10101,7 +10028,6 @@ async function runHabitContextMCGenerate(h) {
       ? o.questions.filter(q => q && q.text && Array.isArray(q.options) && q.options.length).slice(0, 4)
       : [];
     mcAnswers = new Array(mcQuestions.length).fill(null);
-    mcOtherText = new Array(mcQuestions.length).fill('');
     mcIndex = 0;
     mcBusy = false;
     if (!mcQuestions.length) { toast('Nothing generated — try text chat instead', 'var(--cyan)'); closeCheckin(); return; }
@@ -10195,26 +10121,15 @@ function renderCheckinBody() {
           <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">📝</span><span class="pass-title" style="font-size:19px">CHECK-IN</span></div>
           ${total ? `<span class="subtle">Question ${mcIndex + 1} of ${total}</span>` : ''}
         </div>
-        <div class="pass-sub">Tap the closest answer — or tap <b>Other</b> to say it in your own words.</div>
+        <div class="pass-sub">Tap the closest answer — saves automatically, no typing needed.</div>
       </div>
       <div class="pass-scroll">
         ${mcBusy || !mcQuestions ? `<div class="ai-msg thinking">🤖 thinking…</div>` : q ? `
           <div class="ai-msg assistant" style="max-width:100%">${escapeHtml(q.text)}</div>
           <div class="chip-row" style="margin-top:10px;flex-direction:column;align-items:stretch">
-            ${q.options.map((opt, oi) => `<button class="chip mc-opt${isOtherOption(opt) ? ' mc-other' : ''}" data-mcopt="${oi}">${escapeHtml(opt)}${isOtherOption(opt) ? ' \u2026' : ''}</button>`).join('')}
-          </div>
-          ${mcOtherIdx === mcIndex ? `
-          <div class="mc-otherbox">
-            <input class="name-in" id="mcOtherInput" placeholder="So what actually happened?" value="${escapeHtml(mcOtherText[mcIndex] || '')}" autocomplete="off">
-            <div class="chip-row" style="margin-top:8px;justify-content:flex-end">
-              <button class="btn ghost sm" data-act="mcOtherCancel">Back</button>
-              <button class="btn purple sm" data-act="mcOtherSave">Save answer</button>
-            </div>
-          </div>` : ''}` : `<div class="subtle" style="text-align:center;padding:10px">✓ Saved — thanks!</div>`}
+            ${q.options.map((opt, oi) => `<button class="chip" style="width:100%;text-align:left;margin-bottom:6px" data-mcopt="${oi}">${escapeHtml(opt)}</button>`).join('')}
+          </div>` : `<div class="subtle" style="text-align:center;padding:10px">✓ Saved — thanks!</div>`}
       </div>`;
-    // Autofocus so the keyboard is already up — the box only exists because the user
-    // just said none of the tap-able answers fit, and typing is the whole point of it.
-    if (mcOtherIdx === mcIndex) { const i = $('#mcOtherInput'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }
     return;
   }
   const capLabel = checkinFormat === 'voice' ? `<span id="voiceTimer" style="font-weight:800;color:var(--purple)"></span>` : `<span class="subtle">Question ${Math.min(checkinTurns + 1, 4)} of 4</span>`;
@@ -10301,7 +10216,6 @@ async function runMCGenerate() {
       ? o.questions.filter(q => q && q.habitId && q.text && Array.isArray(q.options) && q.options.length).slice(0, 4)
       : [];
     mcAnswers = new Array(mcQuestions.length).fill(null);
-    mcOtherText = new Array(mcQuestions.length).fill('');
     mcIndex = 0;
     mcBusy = false;
     if (!mcQuestions.length) { toast('Nothing to ask right now', 'var(--cyan)'); closeCheckin(); return; }
@@ -10312,33 +10226,10 @@ async function runMCGenerate() {
     closeCheckin();
   }
 }
-// Tapping "Other" doesn't answer anything on its own — it opens the box. Every other
-// option commits immediately, exactly as before.
-function mcPick(idx, optionIdx) {
-  const q = mcQuestions && mcQuestions[idx]; if (!q) return;
-  if (isOtherOption(q.options[optionIdx])) { mcAnswers[idx] = optionIdx; mcOtherIdx = idx; renderCheckinBody(); return; }
-  mcOtherText[idx] = '';
-  mcAnswer(idx, optionIdx);
-}
-function mcAnswer(idx, optionIdx, text) {
+function mcAnswer(idx, optionIdx) {
   mcAnswers[idx] = optionIdx;
-  if (text !== undefined) mcOtherText[idx] = text;
-  mcOtherIdx = null;
   if (mcAnswers.every(x => x != null)) { finishMC(); return; }
   if (idx === mcIndex) mcIndex = mcAnswers.findIndex(x => x == null);
-  renderCheckinBody();
-}
-// Leaving the box empty is allowed: it still records that none of the options fit, which
-// is a real answer — just without the detail.
-function mcSaveOther() {
-  if (mcOtherIdx == null) return;
-  const el = $('#mcOtherInput');
-  mcAnswer(mcOtherIdx, mcAnswers[mcOtherIdx], el ? el.value.trim() : '');
-}
-function mcCancelOther() {
-  if (mcOtherIdx == null) return;
-  mcAnswers[mcOtherIdx] = null;          // un-pick "Other" so the question is unanswered again
-  mcOtherIdx = null;
   renderCheckinBody();
 }
 function finishMC() {
@@ -10346,7 +10237,7 @@ function finishMC() {
     const h = state.habits.find(x => x.id === habitCtxId);
     if (h) {
       h.context = Array.isArray(h.context) ? h.context : [];
-      mcQuestions.forEach((qq, i) => h.context.push({ question: qq.text, answer: mcAnswerText(i), ts: Date.now() }));
+      mcQuestions.forEach((qq, i) => h.context.push({ question: qq.text, answer: qq.options[mcAnswers[i]], ts: Date.now() }));
       h.contextAsked = true;
       save(); renderHabits();
     }
@@ -10357,7 +10248,7 @@ function finishMC() {
     return;
   }
   const q = activeQuestionnaire; if (!q) return;
-  const answered = mcQuestions.map((qq, i) => ({ habitId: qq.habitId, question: qq.text, answer: mcAnswerText(i) }));
+  const answered = mcQuestions.map((qq, i) => ({ habitId: qq.habitId, question: qq.text, answer: qq.options[mcAnswers[i]] }));
   state.reflections = state.reflections || [];
   answered.forEach(a => {
     state.reflections.push({ id: uid(), date: q.date, habitId: a.habitId, kind: 'chip', chip: null,
@@ -10404,9 +10295,6 @@ $('#questionnaireBanner').addEventListener('click', e => {
   SFX.click(); startQuestionnaire(btn.dataset.startq);
 });
 $('#checkinClose').addEventListener('click', () => { SFX.click(); closeCheckin(); });
-$('#checkinBody').addEventListener('keydown', e => {
-  if (e.target.id === 'mcOtherInput' && e.key === 'Enter') { e.preventDefault(); SFX.click(); mcSaveOther(); }
-});
 $('#checkinOverlay').addEventListener('click', e => { if (e.target.id === 'checkinOverlay') { closeCheckin(); } });
 $('#checkinBody').addEventListener('click', e => {
   const hctx = e.target.closest('[data-hctxformat]');
@@ -10421,10 +10309,8 @@ $('#checkinBody').addEventListener('click', e => {
     }
     SFX.click(); startHabitContextQuestionnaire(f); return;
   }
-  if (e.target.closest('[data-act="mcOtherSave"]')) { SFX.click(); mcSaveOther(); return; }
-  if (e.target.closest('[data-act="mcOtherCancel"]')) { SFX.click(); mcCancelOther(); return; }
   const opt = e.target.closest('[data-mcopt]');
-  if (opt) { SFX.click(); mcPick(mcIndex, parseInt(opt.dataset.mcopt)); return; }
+  if (opt) { SFX.click(); mcAnswer(mcIndex, parseInt(opt.dataset.mcopt)); return; }
   if (e.target.id === 'checkinMic') { startBrowserListen(); return; }
   if (e.target.id === 'checkinSend') {
     const inp = $('#checkinInput'); const v = (inp.value || '').trim();
@@ -10569,10 +10455,12 @@ function renderNav() {
     ${bar.map(tab).join('')}
     <div class="tab more-tab${more.includes(currentView) ? ' active' : ''}" id="moreTab" role="button" aria-expanded="false">
       <span class="ti">⋯</span><span class="tl">More</span>
+      <span class="nav-badge" id="qNavBadge" style="display:none"></span>
     </div>`;
-  // Markers APPEND children into the nav, so an innerHTML rebuild wipes them — and this
-  // is also what decides which tab each one hangs off, which just changed.
-  renderNavAttention();
+  // Both of these APPEND children into the nav, so an innerHTML rebuild wipes them.
+  // They also decide *which* tab to hang off, which just changed.
+  renderQuestionnaireNav();
+  renderCloudBadge();
 }
 /* =================================================================
    Settings → 🧭 Tab bar. Every view in one ordered list; the first BAR_SLOTS of them are
@@ -12358,7 +12246,19 @@ function resolveCloudPending(useCloud) {
 // Red dot on the nav for anything in Settings needing attention. Where it goes depends on
 // where the user has put Settings: its own tab if it's in the bar, otherwise the More tab
 // (which is all that's visible when it's tucked away) plus the row inside the sheet.
-function renderCloudBadge() { renderNavAttention(); }
+function renderCloudBadge() {
+  const show = !!cloudPending;
+  const put = (host, cls) => {
+    if (!host) return;
+    let dot = host.querySelector('.' + cls);
+    if (show && !dot) { dot = document.createElement('span'); dot.className = cls; host.appendChild(dot); }
+    else if (!show && dot) dot.remove();
+  };
+  // Clear any dot left on a tab Settings has since moved away from.
+  $$('#nav .nav-dot, #nav .mr-dot').forEach(d => d.remove());
+  put(navHostFor('settings'), 'nav-dot');
+  put($('#moreSheet .more-row[data-view="settings"]'), 'mr-dot');
+}
 
 // Called by the cloud layer after each successful write.
 window.HCCloudSynced = function () { cloudSyncedAt = Date.now(); renderCloudUI(); };
