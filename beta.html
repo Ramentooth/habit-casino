@@ -471,6 +471,17 @@
     .sb-grip.b::after { bottom: 1px; }
     .sched-block.resizing { transition: none; z-index: 5; border-style: solid; box-shadow: 0 6px 20px rgba(0,0,0,.6); }
 
+    /* ---------- Check-in multiple choice ---------- */
+    .mc-opt { width: 100%; text-align: left; margin-bottom: 6px; }
+    /* "Other" reads as the escape hatch, not a fifth guess: it opens a box rather than
+       answering, and the trailing ellipsis is the promise that something follows. */
+    .mc-other { font-style: italic; }
+    .mc-otherbox {
+      margin-top: 4px; padding: 10px; border-radius: 12px;
+      border: 1px solid var(--panel-edge); background: rgba(0,0,0,.25);
+    }
+    .mc-otherbox .name-in { width: 100%; }
+
     /* Red "needs attention" dot — on the More tab and on the row it belongs to. */
     .nav-dot {
       position: absolute; top: 5px; left: 50%; margin-left: 8px;
@@ -491,6 +502,17 @@
       width: 10px; height: 10px; border-radius: 50%; background: #ff3b30;
       box-shadow: 0 0 8px rgba(255,59,48,.95);
     }
+    /* The count, repeated on the sheet row so the trail from the More tab actually ends
+       somewhere. Same purple as the tab badge — it's the same notification, twice. */
+    .more-row .mr-badge {
+      margin-left: auto; flex: 0 0 auto;
+      background: var(--purple, #b026ff); color: #fff;
+      font-size: 11px; font-weight: 800; line-height: 1;
+      border-radius: 9px; padding: 3px 7px; min-width: 16px; text-align: center;
+      box-shadow: 0 0 10px rgba(176,38,255,.6);
+    }
+    /* Both markers on one tab: the dot steps left so the count keeps the corner. */
+    .nav-dot.with-badge { left: auto; right: 32px; top: 4px; margin-left: 0; }
     .cloud-pending {
       margin-top: 10px; padding: 12px; border-radius: 12px;
       border: 1px solid rgba(255,59,48,.55); background: rgba(255,59,48,.10);
@@ -1171,21 +1193,14 @@
     .pip-dot.gold.on { background: var(--gold); box-shadow: 0 0 12px var(--gold); border-color: var(--gold); }
     .streak-goal { color: var(--ink-dim); font-weight: 700; }
 
-    /* Stacked-prize count badge + recycle +/- menu */
-    .stack-badge {
-      position: absolute; top: 8px; right: 8px; min-width: 26px; height: 26px; padding: 0 7px; z-index: 2;
-      border-radius: 999px; background: linear-gradient(180deg, var(--pink), #c1106a); color: #fff;
-      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; display: grid; place-items: center;
-      border: 1.5px solid rgba(255,255,255,0.55); box-shadow: 0 0 12px rgba(255,27,141,0.7);
-    }
-    .recycle-menu { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: center; }
-    .recycle-menu .rstep {
+    /* Quantity stepper in the claim panel. Was scoped to `.recycle-menu .rstep`, a
+       wrapper only the deleted Wild Cards grid ever emitted — so the claim panel's own
+       bare `.rstep` buttons were picking up none of it. */
+    .rstep {
       width: 26px; height: 26px; border-radius: 7px; cursor: pointer; line-height: 1;
       border: 1px solid var(--panel-edge); background: rgba(255,255,255,0.06); color: #fff; font-weight: 900; font-size: 16px;
     }
-    .recycle-menu .rstep:hover { box-shadow: 0 0 10px var(--gold); border-color: var(--gold); }
-    .recycle-menu .rqty { font-family: 'Orbitron', sans-serif; font-weight: 900; min-width: 32px; text-align: center; font-size: 13px; }
-    .recycle-menu .rqty .subtle { font-size: 11px; }
+    .rstep:hover { box-shadow: 0 0 10px var(--gold); border-color: var(--gold); }
 
     /* Streak Freeze count tag + special prize marker */
     .freeze-tag {
@@ -1403,16 +1418,13 @@
     .prize .pe { font-size: 34px; }
     .prize .pn { font-weight: 700; margin-top: 4px; font-size: 14px; }
 
-    .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px,1fr)); gap: 12px; }
-    .inv-card {
-      background: linear-gradient(160deg, rgba(255,215,0,0.1), rgba(20,6,42,0.6));
-      border: 1px solid var(--panel-edge); border-radius: 14px; padding: 14px; text-align: center; position: relative;
+    /* A labelled divider inside a settings panel — lets one section hold two or three
+       related groups without each needing its own collapsible panel. */
+    .sub-head {
+      margin: 20px 0 6px; padding-top: 14px; border-top: 1px solid var(--panel-edge);
+      font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 13px;
+      letter-spacing: .6px; color: var(--cyan);
     }
-    .inv-card.redeemed { filter: grayscale(.6) brightness(.7); }
-    .inv-card .ie { font-size: 40px; }
-    .inv-card .in { font-weight: 700; margin: 6px 0; }
-    .inv-card .when { font-size: 11px; color: var(--ink-dim); }
-    .inv-card .mins { font-size: 12px; font-weight: 700; color: var(--cyan); margin-bottom: 2px; }
     .redeem-lock { margin-top: 12px; padding: 10px 14px; border-radius: 12px; font-size: 14px;
       background: rgba(255,27,141,0.1); border: 1px solid rgba(255,27,141,0.4); color: var(--ink); }
     .happy-badge { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px; letter-spacing: 1px;
@@ -1557,8 +1569,8 @@
       .tab, .game-tab, .iconbtn { min-height: 44px; }
       .tab:hover, .game-tab:hover, .btn:hover, .habit:hover, .prize:hover,
       .iconbtn:hover, .rou-chip:hover, .rou-mode:hover, .rou-cell:hover,
-      .day-dot:hover, .pack-wrapper:hover, .recycle-menu .rstep:hover,
-      .inv-card:hover, .game-tab:hover { transform: none; }
+      .day-dot:hover, .pack-wrapper:hover, .rstep:hover,
+      .game-tab:hover { transform: none; }
     }
 
     /* iOS only zooms the page when a focused field is < 16px — force 16px on phones */
@@ -1686,7 +1698,6 @@
     .wild-pick:hover { transform: translateY(-3px); box-shadow: 0 0 16px rgba(255,255,255,0.25); }
     .wp-e { font-size: 34px; } .wp-n { font-weight: 700; font-size: 13px; }
     /* Wild card in the Winnings list */
-    .inv-card.wildcard { background: linear-gradient(160deg, rgba(176,38,255,0.18), rgba(20,6,42,0.6)); border-color: rgba(255,255,255,0.4); }
 
     /* Build-channel badge (alpha / beta) */
     .ver-badge {
@@ -1866,6 +1877,20 @@
     .loadout-button::after { content: '▾'; color: var(--cyan); }
     .loadout-modal { width: min(560px, 94vw); }
     .loadout-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+    /* The row that pairs a loadout with its ⋯. The choice keeps all the flexible width so
+       the dots sit hard against the right edge whatever the name's length. */
+    .loadout-row { display: flex; align-items: stretch; gap: 8px; }
+    .loadout-row .loadout-choice { flex: 1 1 auto; min-width: 0; }
+    .loadout-dots {
+      flex: 0 0 auto; width: 42px; border-radius: 12px; cursor: pointer;
+      background: rgba(255,255,255,.06); border: 1px solid var(--panel-edge);
+      color: var(--ink-dim); font-size: 20px; font-weight: 800; line-height: 1;
+    }
+    .loadout-dots:hover { color: var(--ink); border-color: var(--cyan); }
+    .stock-row { margin-top: 12px; }
+    .stock-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; }
+    .stock-top .num-in { width: 52px; }
+    .stock-sub { font-size: 12px; margin-top: 2px; }
     .loadout-choice {
       width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
       padding: 12px 14px; border-radius: 12px; cursor: pointer; color: var(--ink); font: 800 16px 'Rajdhani', sans-serif;
@@ -1969,7 +1994,7 @@
     .sched-grid, .sched-hour, .sched-sub { border-color: var(--gs-edge); }
 
     /* --- cards ------------------------------------------------------------ */
-    .hrow, .qrow, .inv-card, .prize, .editrow, .aw-row, .claim-card, .hedit, .prize-edit,
+    .hrow, .qrow, .prize, .editrow, .aw-row, .claim-card, .hedit, .prize-edit,
     .prop-card, .qcard, .checkin-prop {
       background: var(--gs-card) !important;
       border-color: var(--gs-edge) !important;
@@ -1992,7 +2017,7 @@
     .ai-msg.err       { background: var(--gs-card); border-color: var(--gs-edge-hi); }
 
     /* --- secondary controls: DARK, shaped by their border ------------------ */
-    .btn.ghost, .btn.sm, .chip, .tier-chip, .rstep, .zbtn, .prize-more, .del,
+    .btn.ghost, .btn.sm, .chip, .tier-chip, .zbtn, .prize-more, .del,
     .day-dot, .sb-unpin, .iconbtn, .game-tab,
     .name-in, .num-in, .sect-in, .emoji-in, input, textarea, select, .loadout-button {
       background: var(--gs-ctl) !important;
@@ -2001,7 +2026,7 @@
       box-shadow: none !important;
       text-shadow: none;
     }
-    .hrow-reward, .pill, .badge, .stack-badge, .ucard, .mini-card, .pf-lvl {
+    .hrow-reward, .pill, .badge, .ucard, .mini-card, .pf-lvl {
       background: var(--gs-card) !important; border-color: var(--gs-edge) !important; box-shadow: none !important;
     }
     /* --- the sparing light: primary actions & checked states --------------- */
@@ -2601,12 +2626,6 @@
         <div class="subtle">Rewards you're using right now.</div>
         <div id="activeWins" style="margin-top:12px"></div>
       </div>
-      <!-- Wild cards aren't tied to a single reward, so they can't live on a pool tile. -->
-      <div class="panel" id="wildPanel" style="display:none;margin-bottom:16px">
-        <div class="section-title neon-purple">🃏 Wild Cards</div>
-        <div class="subtle">Trade one in for any reward of its rarity.</div>
-        <div class="inv-grid" id="invGrid" style="margin-top:14px"></div>
-      </div>
       <div class="panel">
         <div class="section-title neon-cyan">💎 Prize Pool</div>
         <div class="subtle">Everything you can win, by rarity. Lit tiles are ones you're holding — tap to claim. Dim ones you haven't won yet; tap to edit.</div>
@@ -2679,15 +2698,17 @@
         <div class="row" style="margin:8px 0 0"><button class="btn ghost sm" id="sortRewards">⇅ Sort: Legendary → Common</button></div>
         <div class="editor-list" id="rewardEditor"></div>
         <button class="btn ghost sm" id="addReward">+ Add reward</button>
-      </div>
 
-      <div class="panel set-section">
-        <div class="section-title neon-cyan">🃏 Wild Cards</div>
-        <div class="subtle">A wild card redeems for ANY reward of its rarity instead of one specific prize. The Habit Pass can already pay these out (see ⚡ Habit Pass below) — this turns the casino games into a second source, right alongside your regular rewards.</div>
+        <div class="sub-head">🃏 Wild cards</div>
+        <div class="subtle">A wild card trades in for ANY reward of its rarity. You hold and spend them from the Prize Pool like anything else; the Habit Pass pays them out too.</div>
         <div class="row between" style="margin-top:10px"><span>Roll in the casino</span><label class="toggle"><input type="checkbox" id="wildCasinoOn"><span class="track"></span><span class="knob"></span></label></div>
         <div class="row between"><span>Chance vs. a normal reward at that rarity</span><span class="pill">%&nbsp;<input class="num-in" id="wildCasinoWeight" type="number" min="0" max="500" style="width:56px"></span></div>
         <div class="hint">100% = as likely to come up as any one reward of that rarity. Default 50% keeps a wild card a rarer find than picking one specific prize.</div>
         <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px" id="wildCardCounts"></div>
+
+        <div class="sub-head">🧭 Gap check-ins</div>
+        <div class="subtle">When two hours or more go by with nothing logged, the Schedule marks it with a “?”. Answering what you were doing is optional and always skippable.</div>
+        <div class="row between" style="margin-top:10px"><span>Pay 1 🪙 for answering one</span><label class="toggle"><input type="checkbox" id="gapTokenOn"><span class="track"></span><span class="knob"></span></label></div>
       </div>
 
       <div class="panel set-section">
@@ -3152,6 +3173,10 @@ function defaultState() {
     // said about each upcoming day. A date present in dayPlans is "flagged": habits can
     // wear a Mode that day, and a miss there never breaks a streak.
     loadouts: ['Default'], // independent habit sets; every habit belongs to exactly one
+    // Per-loadout daily reward allowance. name → { on, counts, wild, lastDate }.
+    // A stocked loadout hands you rewards outright each day instead of making you win
+    // every one of them in the casino; casino wins still stack on top.
+    loadoutStock: {},
     activeLoadout: 'Default',
     contexts: [],         // Planner day contexts such as Travel/School; separate from loadouts
     dayPlans: {},         // 'YYYY-MM-DD' → { raw, context, ts }
@@ -3443,15 +3468,12 @@ let quickCat = 'Unsorted';     // quick-add bar: selected category chip
 let quickQuad = null;          // quick-add bar: selected Eisenhower quadrant, null = unsorted
 let editingOneoffId = null;    // one-off currently "blown up" into the inline editor on the Tasks screen
 let editingRewardId = null;    // reward currently "blown up" into the inline editor on the Winnings screen
-let currentInvGroups = [];     // stacked inventory groups for the current Prizes render
-let recycleOpen = null;        // group key whose recycle +/- menu is open
 let claimOpenId = null;        // reward id whose claim panel is expanded in the Prize Pool
 let claimQty = 1;              // quantity chosen in that panel
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
 let editTierPage = null;       // which difficulty page the habit editor shows (null = the base habit's page)
 let tierLadderId = null;       // habit whose difficulty ladder is open in the tier popup
 let passGoalsOpen = true;      // Habit Pass "Goals" dropdown open/closed
-let recycleQty = 1;            // quantity selected in that menu
 
 // One habit's context Modes, sanitized (a mode with no usable name is dropped).
 function normalizeModes(modes) {
@@ -3478,6 +3500,21 @@ function normalizeSegments(segs, startedAt, pausedAt) {
   // A timer saved mid-pause has to come back CLOSED, or the open segment would keep
   // growing against the wall clock and draw the paused stretch as still being worked.
   return rows.length ? rows : [{ s: startedAt, e: Number.isFinite(pausedAt) ? pausedAt : null }];
+}
+
+// One loadout's daily reward allowance, sanitized. Counts are PER REWARD at that
+// rarity, not a total: two common rewards at 5 each means five of both.
+const STOCK_DEFAULTS = { common: 5, rare: 3, epic: 1, legendary: 0 };
+function normalizeStock(v) {
+  v = v || {};
+  const counts = {};
+  REWARD_TIERS.forEach(t => {
+    const n = parseInt((v.counts || {})[t], 10);
+    counts[t] = clamp(Number.isFinite(n) ? n : STOCK_DEFAULTS[t], 0, 99);
+  });
+  // Wild cards stay OUT of the stock unless asked for — a daily wild card is a much
+  // bigger giveaway than a daily copy of one specific reward.
+  return { on: !!v.on, counts, wild: !!v.wild, lastDate: typeof v.lastDate === 'string' ? v.lastDate : '' };
 }
 
 // Fill in any missing fields so saves from older versions keep working.
@@ -3590,10 +3627,17 @@ function load(raw) {
           } };
       })(),
     };
+    // Wild cards predate having a rewardId; without one they'd never light their pool
+    // tile after the panel that used to hold them was removed.
+    merged.inventory = (Array.isArray(parsed.inventory) ? parsed.inventory : []).map(w =>
+      (w && w.wild && !w.rewardId && w.tier) ? { ...w, rewardId: 'wildcard-' + w.tier } : w);
     merged.habits = (Array.isArray(parsed.habits) ? parsed.habits : base.habits).map(normalizeHabit);
     // Loadouts used to be planner contexts with optional universal habits. Migrate every
     // habit into a concrete set and keep planner contexts independent from now on.
     const taggedLoadouts = merged.habits.map(h => h.loadout).filter(Boolean);
+    merged.loadoutStock = (parsed.loadoutStock && typeof parsed.loadoutStock === 'object' && !Array.isArray(parsed.loadoutStock))
+      ? Object.fromEntries(Object.entries(parsed.loadoutStock).map(([k, v]) => [k, normalizeStock(v)]))
+      : {};
     merged.loadouts = [...new Set(['Default', ...(Array.isArray(parsed.loadouts) ? parsed.loadouts : []), ...taggedLoadouts]
       .map(x => String(x || '').trim()).filter(Boolean))];
     merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
@@ -3646,6 +3690,8 @@ function load(raw) {
     ensureHappyHours(merged);
     ensureCategoryColors(merged);
     merged.history = Array.isArray(parsed.history) ? parsed.history : [];
+    // Backfill row identities so older completions are editable on the Schedule too.
+    merged.history.forEach(e => { if (e && !e.hid) e.hid = uid(); });
     // Saves written before reward logging existed have no rewardLog — seed it, and drop
     // any malformed rows rather than trusting them at every read site.
     merged.rewardLog = (Array.isArray(parsed.rewardLog) ? parsed.rewardLog : [])
@@ -3826,6 +3872,7 @@ function trimForCloud(json) {
 // Append one completion event to the analytics log (capped so the cloud save stays small).
 function logCompletion(entry) {
   state.history = Array.isArray(state.history) ? state.history : [];
+  if (!entry.hid) entry.hid = uid();     // this ROW's identity; entry.id is the habit's
   state.history.push(entry);
   if (state.history.length > 2000) state.history = state.history.slice(-1500);
 }
@@ -5780,6 +5827,7 @@ function segmentBlock(e, seg, idx, dateStr, endTs) {
     name: idx > 0 ? `${e.name} (continued)` : e.name, baseName: e.name, emoji: e.emoji, category: e.category,
     startMin, endMin, durMin: Math.max(0, endMin - startMin),
     kind: 'actual', type: e.kind === 'task' ? 'task' : 'habit',
+    hid: e.hid || null, segIndex: idx,      // which history row and which sitting — see updateHistoryBlock
   };
 }
 function computeActualBlocks(dateStr) {
@@ -5801,6 +5849,7 @@ function computeActualBlocks(dateStr) {
         name: e.name, baseName: e.name, emoji: e.emoji, category: e.category,
         startMin: Math.max(0, endMin - durMin), endMin, durMin,
         kind: timed ? 'actual' : 'moment', type: e.kind === 'task' ? 'task' : 'habit',
+        hid: e.hid || null, segIndex: 0,
       });
     });
   return out.sort((a, b) => a.startMin - b.startMin);
@@ -6056,10 +6105,13 @@ function schedGridParts(dateStr, opts = {}) {
     const timeLabel = b.kind === 'moment'
       ? `✓ ${fmtMinOfDay(b.startMin)}`
       : `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay((b.startMin + b.durMin) % 1440)} · ${fmtMins(Math.round(b.durMin))}`;
-    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted (drag to move)' : ''}${timeLabel}`;
+    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted (drag to move)' : (b.hid && !b.live ? 'drag or resize to correct what really happened · ' : '')}${timeLabel}`;
     // Predictions are always draggable — no mode to enter. Anything that already happened
     // stays put: it's a record, not a plan, so moving it would be rewriting history.
-    const drag = draggable && b.kind === 'predicted' && b.refId;
+    // Predictions move to re-plan; finished blocks move to CORRECT the record. Both use
+    // the same gesture; where the change is written is what differs (see endSchedDrag).
+    const editHist = draggable && b.hid && !b.live && b.type !== 'reward';
+    const drag = draggable && ((b.kind === 'predicted' && b.refId) || editHist);
     const pin = b.pinned ? ' 📌' : '';
     const tiny = isTinyBlock(b.durMin, px);
     labelEls.push(`<div class="sb-label${tiny ? ' show' : ''}" data-lbl="${i}" style="--sb:${col}">
@@ -6080,12 +6132,12 @@ function schedGridParts(dateStr, opts = {}) {
     // start/dur ride on EVERY block, not just the draggable ones: relayoutLanes() rebuilds
     // the lane assignment from the DOM when the zoom changes, and it needs their timing.
     return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}${resizable ? ' resizable' : ''}${tiny ? ' tiny' : ''}${b.running ? ' running' : ''}"
-      title="${escapeHtml(title)}" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"${drag ? ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"` : ''}
+      title="${escapeHtml(title)}" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"${drag ? (editHist ? ` data-hid="${b.hid}" data-seg="${b.segIndex || 0}"` : ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"`) : ''}
       style="top:${top};height:${height};left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
       <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
       ${showTime || drag ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
       ${drag ? `<div class="sb-grip t" data-grip="top"></div><div class="sb-grip b" data-grip="bot"></div>` : ''}
-      ${drag && b.pinned ? `<button class="sb-unpin" data-act="unpin" title="Back to my usual time">✕</button>` : ''}
+      ${drag && b.pinned && !editHist ? `<button class="sb-unpin" data-act="unpin" title="Back to my usual time">✕</button>` : ''}
     </div>`;
   }).join('');
 
@@ -7396,94 +7448,11 @@ function resumeActiveWin(id) {
 }
 function activeWinnings() { return state.inventory.filter(isActiveWin); }
 
-// Only WILD CARDS live in their own grid now. Ordinary winnings are claimed straight from
-// their Prize Pool tile, so the old "Your Winnings" list would just duplicate them — but a
-// wild card isn't tied to any one reward, so it has nowhere else to live.
-function inventoryGroups() {
-  const map = new Map();
-  state.inventory.filter(w => w.wild && !w.redeemed).forEach(w => {
-    const key = (w.rewardId || (w.name + '|' + w.tier + '|' + w.emoji)) + '|' + (w.redeemed ? 'R' : 'A');
-    if (!map.has(key)) map.set(key, { key, tier: w.tier, emoji: w.emoji, name: w.name, redeemed: !!w.redeemed, items: [] });
-    map.get(key).items.push(w);
-  });
-  return [...map.values()].sort((a, b) => {
-    if (a.redeemed !== b.redeemed) return a.redeemed ? 1 : -1; // available first
-    return latestWon(b) - latestWon(a);
-  });
-}
-function latestWon(g) { return g.items.reduce((m, x) => Math.max(m, x.wonAt || 0), 0); }
 
-function invCardHTML(g, gi) {
-  const ti = TIERS[g.tier] || TIERS.common;
-  const count = g.items.length;
-  // Wild Card — redeem to choose ANY reward of its rarity.
-  if (g.items[0] && g.items[0].wild) {
-    const stackBadge = count > 1 ? `<span class="stack-badge" title="${count} stacked">×${count}</span>` : '';
-    return `
-    <div class="inv-card wildcard" data-gi="${gi}">
-      <span class="badge" style="color:${ti.hex}">${ti.label} WILD</span>
-      ${stackBadge}
-      <div class="ie">🃏</div>
-      <div class="in">${escapeHtml(g.name)}</div>
-      <div class="when">pick any ${ti.label} reward</div>
-      <div class="row" style="justify-content:center;gap:6px;margin-top:10px">
-        <button class="btn green sm" data-act="wildRedeem">🎁 Choose</button>
-        <button class="del" data-act="trash" title="Remove one">🗑</button>
-      </div>
-    </div>`;
-  }
-  const recycleVal = RECYCLE_VALUE[g.tier] || 1;
-  const mins = g.items[0].minutes || 0;
-  const win = redeemWindow();
-  const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
-  const windowed = state.settings.redeem && state.settings.redeem.mode !== 'always';
-  const stackBadge = count > 1 ? `<span class="stack-badge" title="${count} stacked">×${count}</span>` : '';
-  const whenText = `${count > 1 ? count + ' owned · ' : ''}won ${timeAgo(latestWon(g))}`;
-  let timeLine = '';
-  if (g.redeemed && g.items[0].redeemedMinutes) timeLine = `<div class="mins">⏱ ${fmtMins(g.items[0].redeemedMinutes)} granted</div>`;
-  else if (mins > 0) timeLine = `<div class="mins">⏱ ${fmtMins(mins)}${windowed && bonusPct > 0 ? ` <span class="subtle">(+${bonusPct}% in window)</span>` : ''}</div>`;
-  let actions;
-  if (g.redeemed) {
-    actions = `<span class="pill">✓ Redeemed</span><button class="del" data-act="trash" title="Remove one">🗑</button>`;
-  } else if (count > 1 && recycleOpen === g.key) {
-    const qty = clamp(recycleQty, 1, count);
-    actions = `
-      <div class="recycle-menu">
-        <button class="rstep" data-act="recMinus" title="Fewer">−</button>
-        <span class="rqty">${qty}<span class="subtle">/${count}</span></span>
-        <button class="rstep" data-act="recPlus" title="More">+</button>
-        <button class="btn gold sm" data-act="recDo">♻ +${qty * recycleVal}🪙</button>
-        <button class="del" data-act="recCancel" title="Cancel">✕</button>
-      </div>`;
-  } else {
-    const recycleBtn = count > 1
-      ? `<button class="btn gold sm" data-act="recycle" title="Recycle some into tokens">♻ Recycle</button>`
-      : `<button class="btn gold sm" data-act="recycle" title="Recycle into tokens">♻ +${recycleVal}</button>`;
-    const redeemBtn = win.open
-      ? `<button class="btn green sm" data-act="redeem">Redeem</button>`
-      : `<button class="btn green sm" data-act="redeem" disabled title="${win.reason}">🔒 Locked</button>`;
-    actions = `
-      ${redeemBtn}
-      ${recycleBtn}
-      <button class="del" data-act="trash" title="Remove one">🗑</button>`;
-  }
-  return `
-    <div class="inv-card ${g.redeemed ? 'redeemed' : ''}" data-gi="${gi}">
-      <span class="badge" style="color:${ti.hex}">${ti.label}</span>
-      ${stackBadge}
-      <div class="ie">${escapeHtml(g.emoji || ti.emoji)}</div>
-      <div class="in">${escapeHtml(g.name)}</div>
-      ${timeLine}
-      <div class="when">${whenText}</div>
-      <div class="row" style="justify-content:center;gap:6px;margin-top:10px">
-        ${actions}
-      </div>
-    </div>`;
-}
-
-// Unclaimed copies of one reward sitting in the inventory.
+// Unclaimed copies of one reward sitting in the inventory. Wild cards included: they
+// carry rewardId 'wildcard-<tier>' and are claimed from their own tile like anything else.
 function ownedOf(rewardId) {
-  return state.inventory.filter(w => !w.redeemed && !w.wild && w.rewardId === rewardId);
+  return state.inventory.filter(w => !w.redeemed && w.rewardId === rewardId);
 }
 
 // Claim N copies at once. They collapse into a SINGLE active entry with the amounts
@@ -7502,46 +7471,94 @@ function claimFromPool(rewardId, qty) {
   item.redeemedAt = Date.now(); item.actualStartedAt = item.redeemedAt;
   taken.forEach(x => { x.redeemed = true; });          // all consumed
   taken.slice(1).forEach(x => { x.mergedInto = item.id; });
-  const spec = rewardSpecFor(item) || {};
-  const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
-  const windowed = state.settings.redeem && state.settings.redeem.mode !== 'always';
-  if (spec.minutes > 0) {
-    const bonus = (bonusPct > 0 && windowed);
-    let total = spec.minutes * qty;
-    if (bonus) total = Math.round(total * (1 + bonusPct / 100));
-    item.redeemedMinutes = total; item.activeMinutes = total;
-    item.actualStartedAt = Date.now();
-    item.activeUntil = Date.now() + total * 60000;
-    item.expiredSeen = false;
-    toast(`🎉 ${fmtMins(total)} of ${item.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
-    SFX.win(); burst({ count: 40, colors: ['#39ff14', '#ffe600', '#00f0ff'] });
-  } else if (spec.count > 0) {
-    const total = spec.count * qty;
-    item.countTotal = total; item.remaining = total; item.countUnit = spec.unit || 'uses';
-    toast(`🎉 ${total} ${spec.unit} unlocked — count them off as you go`, 'var(--green)');
-    SFX.win();
-  } else {
-    // Nothing measurable in the name — it still becomes an Active Winning, just one
-    // that waits for you to tap Done rather than counting anything down.
-    item.activePlain = true;
-    item.activeQty = qty;
-    toast(`Enjoy your ${qty > 1 ? qty + '× ' : ''}${item.name}! 🎉`, 'var(--green)'); SFX.coin();
-  }
-  logRewardClaim(item, qty);
+  applyClaim(item, qty);
   claimOpenId = null;
   save(); renderPrizes();
   offerUndo(undoSnap, undoName);
 }
+
+/* The same reward, already running → ADD to it rather than starting a rival copy.
+   Claiming two "phone for 5 minutes" at once always compounded into ten minutes, but
+   claiming one and then another a minute later built a second entry, so you got two
+   five-minute countdowns finishing together instead of ten minutes of phone. Time you
+   won is time you won, whichever order you cashed it in. */
+function activeSameReward(item) {
+  return state.inventory.find(w => w.id !== item.id && isActiveWin(w)
+    && (w.rewardId ? w.rewardId === item.rewardId : w.name === item.name));
+}
+// Turn `qty` claimed copies of `item` into (or onto) an Active Winning.
+function applyClaim(item, qty) {
+  let added = 0;                                  // minutes this claim was worth
+  const spec = rewardSpecFor(item) || {};
+  const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
+  const windowed = state.settings.redeem && state.settings.redeem.mode !== 'always';
+  const into = activeSameReward(item);
+  if (into) { item.mergedInto = into.id; }        // the new copies are absorbed, not started
+  const target = into || item;
+  if (spec.minutes > 0) {
+    const bonus = (bonusPct > 0 && windowed);
+    let total = spec.minutes * qty;
+    if (bonus) total = Math.round(total * (1 + bonusPct / 100));
+    added = total;
+    if (into) {
+      // A paused countdown banks its remaining time in pausedRemainingMs and clears
+      // activeUntil. Extending has to top up the bank, or claiming more would silently
+      // restart a reward the user deliberately paused.
+      if (into.pausedAt && Number.isFinite(into.pausedRemainingMs)) into.pausedRemainingMs += total * 60000;
+      else into.activeUntil = Math.max(Date.now(), into.activeUntil || Date.now()) + total * 60000;
+      into.activeMinutes = (into.activeMinutes || 0) + total;
+      into.redeemedMinutes = (into.redeemedMinutes || 0) + total;
+      into.expiredSeen = false;
+      toast(`➕ ${fmtMins(total)} more ${into.name} — ${fmtMins(into.activeMinutes)} total`, 'var(--green)');
+    } else {
+      target.redeemedMinutes = total; target.activeMinutes = total;
+      target.actualStartedAt = Date.now();
+      target.activeUntil = Date.now() + total * 60000;
+      target.expiredSeen = false;
+      toast(`🎉 ${fmtMins(total)} of ${target.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
+    }
+    SFX.win(); burst({ count: 40, colors: ['#39ff14', '#ffe600', '#00f0ff'] });
+  } else if (spec.count > 0) {
+    const total = spec.count * qty;
+    if (into) {
+      into.countTotal = (into.countTotal || 0) + total;
+      into.remaining = (into.remaining || 0) + total;
+      toast(`➕ ${total} more ${into.countUnit || spec.unit} — ${into.remaining} left`, 'var(--green)');
+    } else {
+      target.countTotal = total; target.remaining = total; target.countUnit = spec.unit || 'uses';
+      toast(`🎉 ${total} ${spec.unit} unlocked — count them off as you go`, 'var(--green)');
+    }
+    SFX.win();
+  } else {
+    // Nothing measurable in the name — it still becomes an Active Winning, just one
+    // that waits for you to tap Done rather than counting anything down.
+    if (into) {
+      into.activeQty = (into.activeQty || 1) + qty;
+      toast(`➕ ${into.activeQty}× ${into.name} on the go`, 'var(--green)');
+    } else {
+      target.activePlain = true;
+      target.activeQty = qty;
+      toast(`Enjoy your ${qty > 1 ? qty + '× ' : ''}${target.name}! 🎉`, 'var(--green)');
+    }
+    SFX.coin();
+  }
+  logRewardClaim(target, qty, added);
+}
 // When a reward was cashed in, for the Schedule tab. Duration rewards carry their length
 // so they draw as a real span; everything else is a moment mark at the claim time.
-function logRewardClaim(item, qty) {
+function logRewardClaim(item, qty, addedMinutes) {
   state.rewardLog = Array.isArray(state.rewardLog) ? state.rewardLog : [];
+  // Minutes THIS claim was worth. When a claim tops up a reward already running, the
+  // entry's activeMinutes is the running total — logging that would draw the whole
+  // extended span again on the Schedule instead of just the part just added.
+  const mins = Number.isFinite(addedMinutes) ? addedMinutes
+    : (Number.isFinite(item.activeMinutes) ? item.activeMinutes : 0);
   state.rewardLog.push({
     ts: Date.now(), name: item.name, emoji: item.emoji || '🎁', tier: item.tier,
-    minutes: Number.isFinite(item.activeMinutes) ? item.activeMinutes : 0, qty,
+    minutes: mins, qty,
   });
   logEvent('reward_redeemed', { entityType: 'reward', entityId: item.rewardId || item.id, inventoryId: item.id, name: item.name, tier: item.tier, qty,
-    allocatedMinutes: Number.isFinite(item.activeMinutes) ? item.activeMinutes : 0, startedAt: item.actualStartedAt || null, expectedEndTs: item.activeUntil || null });
+    allocatedMinutes: mins, startedAt: item.actualStartedAt || null, expectedEndTs: item.activeUntil || null });
   if (state.rewardLog.length > 600) state.rewardLog = state.rewardLog.slice(-400);
 }
 // Closes out a plain reward — the Done button's action.
@@ -7579,41 +7596,6 @@ function recycleFromPool(rewardId, qty) {
 }
 
 // Stack actions operate on the underlying inventory items by id.
-function redeemOneFrom(g) {
-  const win = redeemWindow();
-  if (!win.open) { toast(`🔒 ${win.reason}`, 'var(--pink)'); SFX.lose(); return; }
-  const item = state.inventory.find(x => x.id === g.items[0].id);
-  if (!item) return;
-  const undoSnap = undoSnapshot(), undoName = `${item.emoji || '🎁'} ${item.name}`;
-  item.redeemed = true; item.redeemedAt = Date.now(); item.actualStartedAt = item.redeemedAt; recycleOpen = null;
-  const spec = rewardSpecFor(item) || {};
-  const bonusPct = (state.settings.redeem && state.settings.redeem.timeBonus) || 0;
-  const windowed = state.settings.redeem && state.settings.redeem.mode !== 'always';
-  if (spec.minutes > 0) {
-    // A duration becomes a live countdown in ⚡ Active Winnings.
-    const bonus = (bonusPct > 0 && windowed);
-    const total = bonus ? Math.round(spec.minutes * (1 + bonusPct / 100)) : spec.minutes;
-    item.redeemedMinutes = total;
-    item.activeMinutes = total;
-    item.actualStartedAt = Date.now();
-    item.activeUntil = Date.now() + total * 60000;
-    toast(`🎉 Enjoy ${fmtMins(total)} of ${item.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
-    if (bonus) { SFX.win(); burst({ count: 44, colors: ['#39ff14', '#ffe600', '#00f0ff'] }); } else SFX.coin();
-  } else if (spec.count > 0) {
-    // A count becomes a tally you tick down as you use it.
-    item.countTotal = spec.count;
-    item.remaining = spec.count;
-    item.countUnit = spec.unit || 'uses';
-    toast(`🎉 ${spec.count} ${spec.unit} unlocked — count them off as you go`, 'var(--green)');
-    SFX.coin();
-  } else {
-    item.actualStartedAt = Date.now();
-    toast('Enjoy your reward! 🎉', 'var(--green)'); SFX.coin();
-  }
-  logRewardClaim(item, 1);
-  save(); renderPrizes();
-  offerUndo(undoSnap, undoName);
-}
 // Tick one rep off an active counter; the last one closes it out.
 function useOneRep(id) {
   const item = state.inventory.find(x => x.id === id); if (!item || !item.remaining) return;
@@ -7634,21 +7616,6 @@ function endActiveWin(id) {
   item.activeUntil = 0; item.remaining = 0; item.activePlain = false;
   item.pausedAt = null; item.pausedRemainingMs = null;   // a paused countdown must not read as active once ended
   SFX.click(); save(); renderPrizes();
-}
-function trashOneFrom(g) {
-  const id = g.items[0].id;
-  state.inventory = state.inventory.filter(x => x.id !== id);
-  recycleOpen = null; save(); renderPrizes();
-}
-function recycleFrom(g, qty) {
-  qty = clamp(qty, 1, g.items.length);
-  const val = (RECYCLE_VALUE[g.tier] || 1) * qty;
-  const ids = new Set(g.items.slice(0, qty).map(x => x.id));
-  state.inventory = state.inventory.filter(x => !ids.has(x.id));
-  addTokens(val); SFX.coin();
-  toast(`♻ Recycled ${qty}× ${g.name} → +${val} 🪙`, 'var(--gold)');
-  burst({ count: 22, coin: true, colors: ['#ffe600', '#ffd700'] });
-  recycleOpen = null; save(); renderPrizes();
 }
 
 // ⚡ Active Winnings — what you're in the middle of using, pinned above everything else.
@@ -7710,17 +7677,11 @@ function renderActiveWins() {
 function renderPrizes() {
   syncEditorSheet();
   renderActiveWins();
-  const inv = $('#invGrid');
   const lock = $('#redeemLock'), win = redeemWindow();
   if (lock) {
     if (win.open) lock.style.display = 'none';
     else { lock.style.display = ''; lock.innerHTML = `🔒 <b>Redeeming is locked</b> — ${win.reason}.${(state.settings.redeem.timeBonus > 0) ? ` Time rewards get <b>+${state.settings.redeem.timeBonus}%</b> when it opens.` : ''} <span class="subtle">(You can still ♻ recycle.)</span>`; }
   }
-  currentInvGroups = inventoryGroups();
-  // Wild-card panel only appears when you're holding one.
-  const wildPanel = $('#wildPanel');
-  if (wildPanel) wildPanel.style.display = currentInvGroups.length ? '' : 'none';
-  if (inv) inv.innerHTML = currentInvGroups.map((g, gi) => invCardHTML(g, gi)).join('');
   // prize pool grouped by tier with live drop hints
   const pool = $('#prizePool');
   pool.innerHTML = REWARD_TIERS.map(tier => {
@@ -7746,16 +7707,19 @@ function renderPrizes() {
 // A Prize Pool tile. Lit and claimable when you're holding one; dimmed when you aren't,
 // which is what makes the pool readable as "what I can cash in right now".
 function prizeTileHTML(r, ti) {
-  const n = r.special ? 0 : ownedOf(r.id).length;
+  // A Streak Freeze is banked, not redeemable, so its tile never lights. A Wild Card is
+  // held and spent exactly like an ordinary reward and counts the same way.
+  const wild = r.special === 'wildCard';
+  const n = (r.special && !wild) ? 0 : ownedOf(r.id).length;
   const lit = n > 0;
   const redemption = redeemWindow();
   const locked = lit && !redemption.open;
   const title = r.special === 'streakFreeze' ? 'Edit the Streak Freeze in Settings'
-    : r.special === 'wildCard' ? `Can drop from any ${ti.label} game — redeem one from Winnings`
+    : wild ? (lit ? `${n} held — tap to trade for any ${ti.label} reward` : `Can drop from any ${ti.label} game`)
     : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim` : 'Not won yet — tap to edit'));
   return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
-    <button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>
+    ${r.special ? '' : `<button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>`}
     ${locked ? `<span class="prize-lock" title="${escapeHtml(redemption.reason)}" aria-label="Reward locked">🔒</span>` : ''}
     ${lit ? `<span class="prize-count">${n}</span>` : ''}
     <div class="pe-wrap">
@@ -7764,8 +7728,8 @@ function prizeTileHTML(r, ti) {
     <div class="pn">${escapeHtml(r.name)}</div>
     ${r.special ? '<div class="special-tag">SPECIAL</div>' : ''}
     ${lit ? `<div class="prize-foot">
-      <span class="prize-claim">CLAIM</span>
-      <button class="prize-more" data-act="prizeMore" title="Claim several, recycle or discard">more</button>
+      <span class="prize-claim">${wild ? 'CHOOSE' : 'CLAIM'}</span>
+      ${wild ? '' : `<button class="prize-more" data-act="prizeMore" title="Claim several, recycle or discard">more</button>`}
     </div>` : ''}
   </div>`;
 }
@@ -7886,8 +7850,54 @@ function passRewardFace(d) {
 
 // Add a wild card to Winnings; redeeming it lets you choose any reward of its tier.
 function addWildCard(tier) {
-  state.inventory.unshift({ id: uid(), wild: true, emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, wonAt: Date.now(), redeemed: false });
+  // rewardId matches wildCardCasinoReward(tier)'s id, which is what makes a wild card
+  // findable by ownedOf() and therefore claimable from its own Prize Pool tile like
+  // every other reward — instead of needing a panel of its own above the pool.
+  state.inventory.unshift({ id: uid(), wild: true, rewardId: 'wildcard-' + tier, emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, wonAt: Date.now(), redeemed: false });
 }
+/* Top the current loadout's inventory up to its daily allowance.
+
+   TOPS UP TO the configured count rather than adding it: "you have 5 of each" is a
+   standing allowance, so five unspent ones from yesterday don't become ten today. Casino
+   winnings still stack on top — this sets a floor, not a ceiling.
+
+   Runs at most once per calendar day per loadout, and again when you switch loadouts, so
+   arriving on a stocked loadout mid-day stocks it for today. */
+function stockFor(name) {
+  state.loadoutStock = state.loadoutStock || {};
+  if (!state.loadoutStock[name]) state.loadoutStock[name] = normalizeStock({});
+  return state.loadoutStock[name];
+}
+function applyLoadoutStock() {
+  const name = currentLoadout();
+  const cfg = (state.loadoutStock || {})[name];
+  if (!cfg || !cfg.on) return 0;
+  const today = todayStr();
+  if (cfg.lastDate === today) return 0;
+  cfg.lastDate = today;
+  let added = 0;
+  REWARD_TIERS.forEach(tier => {
+    const n = clamp(parseInt(cfg.counts[tier], 10) || 0, 0, 99);
+    if (!n) return;
+    // EVERY reward at that rarity, each to its own count — not n items shared between them.
+    const pool = cfg.wild ? rewardsByTier(tier) : rewardsByTier(tier).filter(r => !r.special);
+    pool.filter(r => r.special !== 'streakFreeze').forEach(r => {
+      for (let have = ownedOf(r.id).length; have < n; have++) {
+        if (r.special === 'wildCard') addWildCard(tier);
+        else state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name,
+          tier: r.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false, fromStock: true });
+        added++;
+      }
+    });
+  });
+  if (added) {
+    logEvent('loadout_stocked', { name, added, date: today });
+    toast(`🗂️ ${name} restocked — ${added} reward${added === 1 ? '' : 's'} ready`, 'var(--gold)');
+  }
+  save();
+  return added;
+}
+
 function grantPassReward(d) {
   if (d.type === 'tokens') { addTokens(d.amount); }
   else if (d.type === 'wild') { if (state.pass.wildCardsEnabled !== false) addWildCard(d.tier); }
@@ -8088,7 +8098,9 @@ function openWildChooser(g) {
   wildPending = g;
   const ti = TIERS[g.tier];
   $('#wildTitle').innerHTML = `Pick any <span style="color:${ti.hex}">${ti.label}</span> reward`;
-  const pool = rewardsByTier(g.tier);
+  // Real rewards only. rewardsByTier now includes the wild card itself (that's what
+  // puts it on a pool tile), and trading a wild card for a wild card is nothing.
+  const pool = rewardsByTier(g.tier).filter(r => !r.special);
   $('#wildGrid').innerHTML = pool.length
     ? pool.map(r => `<button class="wild-pick" data-rid="${r.id}" style="border-color:${ti.hex}66"><span class="wp-e">${escapeHtml(r.emoji || ti.emoji)}</span><span class="wp-n">${escapeHtml(r.name)}</span></button>`).join('')
     : `<div class="subtle">No ${ti.label} rewards defined — add some in Settings first.</div>`;
@@ -8100,7 +8112,7 @@ function pickWildReward(rid) {
   const wildId = wildPending.items[0].id;
   state.inventory = state.inventory.filter(x => x.id !== wildId);  // consume the wild card
   state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name, tier: wildPending.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false });
-  wildPending = null; $('#wildOverlay').classList.remove('show');
+  wildPending = null; $('#wildOverlay').classList.remove('show'); claimOpenId = null;
   SFX.win(); burst({ count: 70, colors: [(TIERS[r.tier] || TIERS.common).hex, '#fff'] });
   toast(`🃏 Wild Card → ${r.name}!`, 'var(--gold)');
   save(); renderPrizes();
@@ -9876,6 +9888,20 @@ let mcQuestions = null;
 let mcAnswers = [];
 let mcIndex = 0;
 let mcBusy = false;
+/* "Other" is the option the AI is told to always include, and it used to save the literal
+   word "Other" — which records that none of the guesses fit while throwing away the one
+   answer that did. Tapping it now opens a box instead; mcOtherText[i] holds what was
+   typed, and every read goes through mcAnswerText() so the typed answer is what lands in
+   the habit's context and the reflection log. */
+let mcOtherText = [];
+let mcOtherIdx = null;      // question index whose "Other" box is open; null = none
+function isOtherOption(label) { return /^\s*(other|something else)\b/i.test(String(label || '')); }
+function mcAnswerText(i) {
+  const typed = (mcOtherText[i] || '').trim();
+  if (typed) return typed;
+  const q = mcQuestions && mcQuestions[i];
+  return q ? q.options[mcAnswers[i]] : '';
+}
 
 function anomalyDetailsFor(habitIds) {
   return computeAnomalies(todayStr(-1)).filter(a => (habitIds || []).includes(a.habitId));
@@ -9903,14 +9929,51 @@ function pendingQuestionnaires() { return (state.questionnaires || []).filter(q 
 // The pending check-in count belongs to Chat. renderNav() parks the badge on the More tab
 // by default, so if the user promotes Chat into the bar it has to move with it — a count
 // sitting on "More" while Chat is right there in the bar points at the wrong place.
-function renderQuestionnaireNav() {
-  const badge = $('#qNavBadge'); if (!badge) return;
-  const host = navHostFor('chat');
-  if (host && badge.parentElement !== host) host.appendChild(badge);
-  const n = pendingQuestionnaires().length;
-  badge.style.display = n ? '' : 'none';
-  badge.textContent = n ? String(n) : '';
+/* Everything in the nav that says "look here", painted in one pass.
+
+   The markers used to stop at the bar: a count landed on More, and opening More showed a
+   plain list with nothing on it — the indicator pointed at the door and then went dark,
+   so you had to guess which of six rows it meant. Each source is now marked in BOTH
+   places it can be looked for: the tab (its own if it's in the bar, otherwise More) AND
+   its row inside the sheet. The trail leads all the way to the thing. */
+function navAttention() {
+  const out = [];
+  const q = pendingQuestionnaires().length;
+  if (q) out.push({ view: 'chat', kind: 'badge', count: q, why: `${q} check-in${q > 1 ? 's' : ''} waiting` });
+  // Settings alerts, worst first. A save that won't write is more urgent than a cloud
+  // conflict, and it's the one thing in the app the user genuinely must be told about.
+  if (saveLocked || (lastLoadFailed && !lastLoadFailed.salvaged)) out.push({ view: 'settings', kind: 'dot', count: 1, why: 'Your save needs attention' });
+  else if (cloudPending) out.push({ view: 'settings', kind: 'dot', count: 1, why: 'A cloud save needs a decision' });
+  return out;
 }
+function renderNavAttention() {
+  const nav = $('#nav'); if (!nav) return;
+  $$('#nav .nav-dot, #nav .nav-badge, #nav .mr-dot, #nav .mr-badge').forEach(d => d.remove());
+  const mark = (host, cls, text, title) => {
+    if (!host) return;
+    const el = document.createElement('span');
+    el.className = cls;
+    if (text != null) el.textContent = text;
+    if (title) el.title = title;
+    host.appendChild(el);
+  };
+  navAttention().forEach(a => {
+    // The sheet row — the half that was missing.
+    const row = $(`#moreSheet .more-row[data-view="${a.view}"]`);
+    mark(row, a.kind === 'badge' ? 'mr-badge' : 'mr-dot', a.kind === 'badge' ? String(a.count) : null, a.why);
+    if (row) row.title = a.why;
+    // navHostFor gives the view's own tab when it's in the bar, else the More tab.
+    mark(navHostFor(a.view), a.kind === 'badge' ? 'nav-badge' : 'nav-dot', a.kind === 'badge' ? String(a.count) : null, a.why);
+  });
+  // A tab carrying both a count and a red dot would stack them on top of each other.
+  $$('#nav .tab').forEach(t => {
+    const d = t.querySelector('.nav-dot');
+    if (d && t.querySelector('.nav-badge')) d.classList.add('with-badge');
+  });
+}
+// Kept as names because several call sites already say one or the other; both now mean
+// "repaint every nav marker", since the two sources share one painter.
+function renderQuestionnaireNav() { renderNavAttention(); }
 function renderQuestionnaireBanner() {
   const box = $('#questionnaireBanner'); if (!box) return;
   const pending = pendingQuestionnaires();
@@ -9944,7 +10007,7 @@ function startQuestionnaire(format) {
   activeQuestionnaire = q;
   checkinAnomalies = anomalyDetailsFor(q.habitIds);
   checkinMessages = []; checkinTurns = 0; checkinFormat = format;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
+  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false; mcOtherText = []; mcOtherIdx = null;
   clearVoiceTimer();
   $('#checkinOverlay').classList.add('show');
   if (format === 'mc') { runMCGenerate(); return; }
@@ -9968,7 +10031,7 @@ function openHabitContextPicker(habitId) {
   const h = state.habits.find(x => x.id === habitId); if (!h) return;
   checkinKind = 'habitctx'; habitCtxId = habitId; activeQuestionnaire = null;
   checkinFormat = null; checkinMessages = []; checkinTurns = 0;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
+  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false; mcOtherText = []; mcOtherIdx = null;
   clearVoiceTimer();
   $('#checkinOverlay').classList.add('show');
   renderCheckinBody();
@@ -9979,7 +10042,7 @@ function startHabitContextQuestionnaire(format) {
     toast('Voice isn\'t supported in this browser — switched to text', 'var(--gold)'); format = 'text';
   }
   checkinMessages = []; checkinTurns = 0; checkinFormat = format;
-  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false;
+  mcQuestions = null; mcAnswers = []; mcIndex = 0; mcBusy = false; mcOtherText = []; mcOtherIdx = null;
   clearVoiceTimer();
   if (format === 'mc') { runHabitContextMCGenerate(h); return; }
   renderCheckinBody();
@@ -10028,6 +10091,7 @@ async function runHabitContextMCGenerate(h) {
       ? o.questions.filter(q => q && q.text && Array.isArray(q.options) && q.options.length).slice(0, 4)
       : [];
     mcAnswers = new Array(mcQuestions.length).fill(null);
+    mcOtherText = new Array(mcQuestions.length).fill('');
     mcIndex = 0;
     mcBusy = false;
     if (!mcQuestions.length) { toast('Nothing generated — try text chat instead', 'var(--cyan)'); closeCheckin(); return; }
@@ -10121,15 +10185,26 @@ function renderCheckinBody() {
           <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">📝</span><span class="pass-title" style="font-size:19px">CHECK-IN</span></div>
           ${total ? `<span class="subtle">Question ${mcIndex + 1} of ${total}</span>` : ''}
         </div>
-        <div class="pass-sub">Tap the closest answer — saves automatically, no typing needed.</div>
+        <div class="pass-sub">Tap the closest answer — or tap <b>Other</b> to say it in your own words.</div>
       </div>
       <div class="pass-scroll">
         ${mcBusy || !mcQuestions ? `<div class="ai-msg thinking">🤖 thinking…</div>` : q ? `
           <div class="ai-msg assistant" style="max-width:100%">${escapeHtml(q.text)}</div>
           <div class="chip-row" style="margin-top:10px;flex-direction:column;align-items:stretch">
-            ${q.options.map((opt, oi) => `<button class="chip" style="width:100%;text-align:left;margin-bottom:6px" data-mcopt="${oi}">${escapeHtml(opt)}</button>`).join('')}
-          </div>` : `<div class="subtle" style="text-align:center;padding:10px">✓ Saved — thanks!</div>`}
+            ${q.options.map((opt, oi) => `<button class="chip mc-opt${isOtherOption(opt) ? ' mc-other' : ''}" data-mcopt="${oi}">${escapeHtml(opt)}${isOtherOption(opt) ? ' \u2026' : ''}</button>`).join('')}
+          </div>
+          ${mcOtherIdx === mcIndex ? `
+          <div class="mc-otherbox">
+            <input class="name-in" id="mcOtherInput" placeholder="So what actually happened?" value="${escapeHtml(mcOtherText[mcIndex] || '')}" autocomplete="off">
+            <div class="chip-row" style="margin-top:8px;justify-content:flex-end">
+              <button class="btn ghost sm" data-act="mcOtherCancel">Back</button>
+              <button class="btn purple sm" data-act="mcOtherSave">Save answer</button>
+            </div>
+          </div>` : ''}` : `<div class="subtle" style="text-align:center;padding:10px">✓ Saved — thanks!</div>`}
       </div>`;
+    // Autofocus so the keyboard is already up — the box only exists because the user
+    // just said none of the tap-able answers fit, and typing is the whole point of it.
+    if (mcOtherIdx === mcIndex) { const i = $('#mcOtherInput'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }
     return;
   }
   const capLabel = checkinFormat === 'voice' ? `<span id="voiceTimer" style="font-weight:800;color:var(--purple)"></span>` : `<span class="subtle">Question ${Math.min(checkinTurns + 1, 4)} of 4</span>`;
@@ -10216,6 +10291,7 @@ async function runMCGenerate() {
       ? o.questions.filter(q => q && q.habitId && q.text && Array.isArray(q.options) && q.options.length).slice(0, 4)
       : [];
     mcAnswers = new Array(mcQuestions.length).fill(null);
+    mcOtherText = new Array(mcQuestions.length).fill('');
     mcIndex = 0;
     mcBusy = false;
     if (!mcQuestions.length) { toast('Nothing to ask right now', 'var(--cyan)'); closeCheckin(); return; }
@@ -10226,10 +10302,33 @@ async function runMCGenerate() {
     closeCheckin();
   }
 }
-function mcAnswer(idx, optionIdx) {
+// Tapping "Other" doesn't answer anything on its own — it opens the box. Every other
+// option commits immediately, exactly as before.
+function mcPick(idx, optionIdx) {
+  const q = mcQuestions && mcQuestions[idx]; if (!q) return;
+  if (isOtherOption(q.options[optionIdx])) { mcAnswers[idx] = optionIdx; mcOtherIdx = idx; renderCheckinBody(); return; }
+  mcOtherText[idx] = '';
+  mcAnswer(idx, optionIdx);
+}
+function mcAnswer(idx, optionIdx, text) {
   mcAnswers[idx] = optionIdx;
+  if (text !== undefined) mcOtherText[idx] = text;
+  mcOtherIdx = null;
   if (mcAnswers.every(x => x != null)) { finishMC(); return; }
   if (idx === mcIndex) mcIndex = mcAnswers.findIndex(x => x == null);
+  renderCheckinBody();
+}
+// Leaving the box empty is allowed: it still records that none of the options fit, which
+// is a real answer — just without the detail.
+function mcSaveOther() {
+  if (mcOtherIdx == null) return;
+  const el = $('#mcOtherInput');
+  mcAnswer(mcOtherIdx, mcAnswers[mcOtherIdx], el ? el.value.trim() : '');
+}
+function mcCancelOther() {
+  if (mcOtherIdx == null) return;
+  mcAnswers[mcOtherIdx] = null;          // un-pick "Other" so the question is unanswered again
+  mcOtherIdx = null;
   renderCheckinBody();
 }
 function finishMC() {
@@ -10237,7 +10336,7 @@ function finishMC() {
     const h = state.habits.find(x => x.id === habitCtxId);
     if (h) {
       h.context = Array.isArray(h.context) ? h.context : [];
-      mcQuestions.forEach((qq, i) => h.context.push({ question: qq.text, answer: qq.options[mcAnswers[i]], ts: Date.now() }));
+      mcQuestions.forEach((qq, i) => h.context.push({ question: qq.text, answer: mcAnswerText(i), ts: Date.now() }));
       h.contextAsked = true;
       save(); renderHabits();
     }
@@ -10248,7 +10347,7 @@ function finishMC() {
     return;
   }
   const q = activeQuestionnaire; if (!q) return;
-  const answered = mcQuestions.map((qq, i) => ({ habitId: qq.habitId, question: qq.text, answer: qq.options[mcAnswers[i]] }));
+  const answered = mcQuestions.map((qq, i) => ({ habitId: qq.habitId, question: qq.text, answer: mcAnswerText(i) }));
   state.reflections = state.reflections || [];
   answered.forEach(a => {
     state.reflections.push({ id: uid(), date: q.date, habitId: a.habitId, kind: 'chip', chip: null,
@@ -10295,6 +10394,9 @@ $('#questionnaireBanner').addEventListener('click', e => {
   SFX.click(); startQuestionnaire(btn.dataset.startq);
 });
 $('#checkinClose').addEventListener('click', () => { SFX.click(); closeCheckin(); });
+$('#checkinBody').addEventListener('keydown', e => {
+  if (e.target.id === 'mcOtherInput' && e.key === 'Enter') { e.preventDefault(); SFX.click(); mcSaveOther(); }
+});
 $('#checkinOverlay').addEventListener('click', e => { if (e.target.id === 'checkinOverlay') { closeCheckin(); } });
 $('#checkinBody').addEventListener('click', e => {
   const hctx = e.target.closest('[data-hctxformat]');
@@ -10309,8 +10411,10 @@ $('#checkinBody').addEventListener('click', e => {
     }
     SFX.click(); startHabitContextQuestionnaire(f); return;
   }
+  if (e.target.closest('[data-act="mcOtherSave"]')) { SFX.click(); mcSaveOther(); return; }
+  if (e.target.closest('[data-act="mcOtherCancel"]')) { SFX.click(); mcCancelOther(); return; }
   const opt = e.target.closest('[data-mcopt]');
-  if (opt) { SFX.click(); mcAnswer(mcIndex, parseInt(opt.dataset.mcopt)); return; }
+  if (opt) { SFX.click(); mcPick(mcIndex, parseInt(opt.dataset.mcopt)); return; }
   if (e.target.id === 'checkinMic') { startBrowserListen(); return; }
   if (e.target.id === 'checkinSend') {
     const inp = $('#checkinInput'); const v = (inp.value || '').trim();
@@ -10455,12 +10559,10 @@ function renderNav() {
     ${bar.map(tab).join('')}
     <div class="tab more-tab${more.includes(currentView) ? ' active' : ''}" id="moreTab" role="button" aria-expanded="false">
       <span class="ti">⋯</span><span class="tl">More</span>
-      <span class="nav-badge" id="qNavBadge" style="display:none"></span>
     </div>`;
-  // Both of these APPEND children into the nav, so an innerHTML rebuild wipes them.
-  // They also decide *which* tab to hang off, which just changed.
-  renderQuestionnaireNav();
-  renderCloudBadge();
+  // Markers APPEND children into the nav, so an innerHTML rebuild wipes them — and this
+  // is also what decides which tab each one hangs off, which just changed.
+  renderNavAttention();
 }
 /* =================================================================
    Settings → 🧭 Tab bar. Every view in one ordered list; the first BAR_SLOTS of them are
@@ -11456,6 +11558,7 @@ $('#tierOverlay').addEventListener('pointercancel', endLadderDrag);
    Fully in-app: no native <select> or prompt. Creating a loadout can clone any chosen
    habits, grouped by their source loadout; choosing none creates a clean blank slate. */
 let loadoutScreen = 'list';
+let loadoutEditName = null;    // which loadout the ⋯ editor screen is showing
 function openLoadoutMenu(screen = 'list') {
   loadoutScreen = screen;
   renderLoadoutMenu();
@@ -11470,11 +11573,54 @@ function renderLoadoutMenu() {
       <div class="subtle">Each loadout has its own complete set of Daily and Extra habits.</div>
       <div class="loadout-list">${(state.loadouts || ['Default']).map(name => {
         const count = state.habits.filter(h => !h.archived && h.loadout === name).length;
-        return `<button class="loadout-choice ${name === currentLoadout() ? 'active' : ''}" data-loadout-pick="${escapeHtml(name)}">
-          <span>${name === currentLoadout() ? '✓ ' : ''}${escapeHtml(name)}</span><span class="subtle">${count} habit${count === 1 ? '' : 's'}</span>
-        </button>`;
+        const st = (state.loadoutStock || {})[name];
+        return `<div class="loadout-row">
+          <button class="loadout-choice ${name === currentLoadout() ? 'active' : ''}" data-loadout-pick="${escapeHtml(name)}">
+            <span>${name === currentLoadout() ? '✓ ' : ''}${escapeHtml(name)}</span>
+            <span class="subtle">${count} habit${count === 1 ? '' : 's'}${st && st.on ? ' · 🎁 stocked' : ''}</span>
+          </button>
+          <button class="loadout-dots" data-act="loadoutEdit" data-loadout="${escapeHtml(name)}" title="Edit ${escapeHtml(name)}" aria-label="Edit ${escapeHtml(name)}">⋯</button>
+        </div>`;
       }).join('')}</div>
       <button class="btn purple" data-act="loadoutNew" style="width:100%">＋ Create new loadout</button>`;
+    return;
+  }
+  if (loadoutScreen === 'edit') {
+    const name = loadoutEditName;
+    const cfg = stockFor(name);
+    // Spell out what the numbers mean for the rewards that actually exist — "5 common"
+    // is meaningless until you know how many common rewards you've defined.
+    const lines = REWARD_TIERS.map(t => {
+      const ti = TIERS[t];
+      const pool = state.rewards.filter(r => r.tier === t).length + (cfg.wild ? 1 : 0);
+      const n = cfg.counts[t] || 0;
+      // Name and field on one line, the arithmetic on its own beneath — at 375px a single
+      // row wraps the pill onto a second line anyway, raggedly and per-row.
+      return `<div class="stock-row">
+        <div class="stock-top">
+          <span style="color:${ti.hex}">${ti.emoji} ${ti.label}</span>
+          <span class="pill"><input class="num-in" data-stock="${t}" type="number" min="0" max="99" value="${n}"> each</span>
+        </div>
+        <div class="subtle stock-sub">${pool} reward${pool === 1 ? '' : 's'} → ${n * pool} item${n * pool === 1 ? '' : 's'} a day</div>
+      </div>`;
+    }).join('');
+    body.innerHTML = `
+      <div class="pass-title">⋯ ${escapeHtml(name)}</div>
+      <div class="subtle">Settings for this loadout only.</div>
+      <div class="sub-head">🎁 Daily reward stock</div>
+      <div class="subtle">Hands you a set number of <b>every</b> reward at each rarity, once a day, instead of making you win each one. Tops up to the amounts below — leftovers don't pile up — and anything you win in the casino still stacks on top.</div>
+      <div class="row between" style="margin-top:12px"><span>Stock this loadout daily</span>
+        <label class="toggle"><input type="checkbox" id="stockOn" ${cfg.on ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
+      <div id="stockRows" style="${cfg.on ? '' : 'opacity:.45;pointer-events:none'}">
+        ${lines}
+        <div class="row between stock-row" style="margin-top:16px"><span>🃏 Include wild cards</span>
+          <label class="toggle"><input type="checkbox" id="stockWild" ${cfg.wild ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
+        <div class="hint">${cfg.lastDate === todayStr() ? 'Already stocked today — the next top-up is tomorrow.' : 'Not stocked yet today.'}</div>
+      </div>
+      <div class="row" style="gap:8px;margin-top:18px">
+        <button class="btn ghost" data-act="loadoutBack">‹ Back</button>
+        <button class="btn green" data-act="stockNow" style="flex:1" ${cfg.on ? '' : 'disabled'}>Stock now</button>
+      </div>`;
     return;
   }
   const groups = (state.loadouts || ['Default']).map(name => {
@@ -11521,16 +11667,54 @@ $('#loadoutSwitch').addEventListener('click', () => { SFX.click(); openLoadoutMe
 $('#loadoutClose').addEventListener('click', closeLoadoutMenu);
 $('#loadoutOverlay').addEventListener('click', e => { if (e.target.id === 'loadoutOverlay') closeLoadoutMenu(); });
 $('#loadoutBody').addEventListener('click', e => {
+  // Checked BEFORE the row, or tapping ⋯ would switch loadout on the way to the editor.
+  const dots = e.target.closest('[data-act="loadoutEdit"]');
+  if (dots) {
+    loadoutEditName = dots.dataset.loadout;
+    loadoutScreen = 'edit'; SFX.click(); renderLoadoutMenu(); return;
+  }
   const pick = e.target.closest('[data-loadout-pick]');
   if (pick) {
     state.activeLoadout = pick.dataset.loadoutPick;
     logEvent('loadout_selected', { name: state.activeLoadout });
-    save(); closeLoadoutMenu(); renderHabits(); return;
+    applyLoadoutStock();                       // arriving on a stocked loadout stocks it for today
+    save(); closeLoadoutMenu(); renderHabits(); renderPrizes(); return;
   }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'loadoutNew') { loadoutScreen = 'create'; renderLoadoutMenu(); }
-  else if (act === 'loadoutBack') { loadoutScreen = 'list'; renderLoadoutMenu(); }
+  else if (act === 'loadoutBack') { loadoutScreen = 'list'; loadoutEditName = null; renderLoadoutMenu(); }
   else if (act === 'loadoutCreate') createLoadoutFromMenu();
+  else if (act === 'stockNow') {
+    // Manual top-up: clear today's stamp so the same once-a-day code path runs.
+    const cfg = stockFor(loadoutEditName); cfg.lastDate = '';
+    const was = state.activeLoadout; state.activeLoadout = loadoutEditName;
+    const n = applyLoadoutStock();
+    state.activeLoadout = was;
+    if (!n) toast('Already fully stocked', 'var(--cyan)');
+    SFX.click(); save(); renderLoadoutMenu(); renderPrizes();
+  }
+});
+// Stock settings write straight through — no Save button, same as every other toggle.
+$('#loadoutBody').addEventListener('change', e => {
+  if (!loadoutEditName) return;
+  const cfg = stockFor(loadoutEditName);
+  if (e.target.id === 'stockOn') { cfg.on = e.target.checked; save(); renderLoadoutMenu(); return; }
+  if (e.target.id === 'stockWild') { cfg.wild = e.target.checked; save(); renderLoadoutMenu(); return; }
+});
+$('#loadoutBody').addEventListener('input', e => {
+  if (!loadoutEditName) return;
+  const t = e.target.dataset.stock; if (!t) return;
+  const cfg = stockFor(loadoutEditName);
+  cfg.counts[t] = clamp(parseInt(e.target.value, 10) || 0, 0, 99);
+  save();
+  // Repaint only the "→ N items/day" readouts, so the field keeps focus while typing.
+  $$('#loadoutBody .stock-row').forEach(row => {
+    const inp = row.querySelector('[data-stock]'); if (!inp) return;
+    const pool = state.rewards.filter(r => r.tier === inp.dataset.stock).length + (cfg.wild ? 1 : 0);
+    const n = cfg.counts[inp.dataset.stock] || 0;
+    const sub = row.querySelector('.stock-sub');
+    if (sub) sub.textContent = `${pool} reward${pool === 1 ? '' : 's'} → ${n * pool} item${n * pool === 1 ? '' : 's'} a day`;
+  });
 });
 
 /* ---- Tier swiping, on a checklist row or on the editor sheet's tier pages.
@@ -11862,6 +12046,14 @@ function onPrizePoolClick(e) {
     if (card.classList.contains('special')) { toast('Edit the Streak Freeze in Settings', 'var(--cyan)'); return; }
     openSettings(); return;
   }
+  // A wild card is spent by choosing what it becomes, so its tile opens the chooser
+  // instead of claiming. Everything else about the tile behaves normally.
+  if (rid.startsWith('wildcard-')) {
+    const held = ownedOf(rid);
+    if (!held.length) { toast('No wild cards of that rarity yet', 'var(--cyan)'); return; }
+    SFX.click(); openWildChooser({ tier: held[0].tier, items: held });
+    return;
+  }
   if (card.classList.contains('special')) return;      // Streak Freeze keeps its Settings editor
   // "more" — the bulk actions that used to be a popup on every claim.
   if (e.target.closest('[data-act="prizeMore"]')) {
@@ -11904,22 +12096,6 @@ $('#activeWins').addEventListener('click', e => {
   else if (act === 'resumeWin') resumeActiveWin(row.dataset.id);
 });
 
-$('#invGrid').addEventListener('click', e => {
-  const card = e.target.closest('.inv-card'); if (!card) return;
-  const g = currentInvGroups[parseInt(card.dataset.gi)]; if (!g) return;
-  const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
-  if (act === 'wildRedeem') openWildChooser(g);
-  else if (act === 'redeem') redeemOneFrom(g);
-  else if (act === 'trash') trashOneFrom(g);
-  else if (act === 'recycle') {
-    if (g.items.length > 1) { recycleOpen = g.key; recycleQty = 1; renderPrizes(); } // stacked → open +/- menu
-    else recycleFrom(g, 1);                                                          // single → recycle straight away
-  }
-  else if (act === 'recMinus') { recycleQty = clamp(recycleQty - 1, 1, g.items.length); renderPrizes(); }
-  else if (act === 'recPlus') { recycleQty = clamp(recycleQty + 1, 1, g.items.length); renderPrizes(); }
-  else if (act === 'recDo') recycleFrom(g, recycleQty);
-  else if (act === 'recCancel') { recycleOpen = null; renderPrizes(); }
-});
 
 // ---- Settings: habits editor (delegated; text/number on input, select/checkbox on change) ----
 function onHabitField(e) {
@@ -12246,19 +12422,7 @@ function resolveCloudPending(useCloud) {
 // Red dot on the nav for anything in Settings needing attention. Where it goes depends on
 // where the user has put Settings: its own tab if it's in the bar, otherwise the More tab
 // (which is all that's visible when it's tucked away) plus the row inside the sheet.
-function renderCloudBadge() {
-  const show = !!cloudPending;
-  const put = (host, cls) => {
-    if (!host) return;
-    let dot = host.querySelector('.' + cls);
-    if (show && !dot) { dot = document.createElement('span'); dot.className = cls; host.appendChild(dot); }
-    else if (!show && dot) dot.remove();
-  };
-  // Clear any dot left on a tab Settings has since moved away from.
-  $$('#nav .nav-dot, #nav .mr-dot').forEach(d => d.remove());
-  put(navHostFor('settings'), 'nav-dot');
-  put($('#moreSheet .more-row[data-view="settings"]'), 'mr-dot');
-}
+function renderCloudBadge() { renderNavAttention(); }
 
 // Called by the cloud layer after each successful write.
 window.HCCloudSynced = function () { cloudSyncedAt = Date.now(); renderCloudUI(); };
@@ -12498,6 +12662,7 @@ $('#view-schedule').addEventListener('pointerdown', e => {
   const dur = parseInt(el.dataset.dur, 10) || 15;
   schedDrag = {
     el, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
+    hid: el.dataset.hid || null, segIndex: parseInt(el.dataset.seg, 10) || 0,
     mode: grip ? (grip.dataset.grip === 'top' ? 'top' : 'bot') : 'move',
     durMin: dur, start, end: start + dur,
     lo: parseInt(grid.dataset.lo, 10) * 60, y0: e.clientY,
@@ -12539,13 +12704,24 @@ function endSchedDrag() {
   const d = schedDrag; schedDrag = null;
   d.el.classList.remove('dragging', 'resizing');
   if (!d.moved || (d.min === d.start && d.dur === d.durMin)) { renderBlockSchedule(); return; }
-  // Writes the DAY being viewed, not the habit's global usual time — that's what makes
-  // "Thursday at 3pm, just this once" possible and leaves every other day alone. A resize
-  // pins the block the same way a move does, so its new length is that day's plan.
-  const name = upsertPlannedBlock(todayStr(schedOffset), d.refKind, d.refId, d.min, d.dur);
-  if (name) {
-    SFX.coin();
-    toast(d.mode === 'move' ? `${name} → ${fmtMinOfDay(d.min)}` : `${name} → ${fmtMins(d.dur)}`, 'var(--cyan)');
+  const dateStr = todayStr(schedOffset);
+  let name;
+  if (d.hid) {
+    // Editing history, not a plan. Snapshot first: this rewrites a real completion and
+    // the predictions built on it, so a slip of the finger has to be as recoverable as a
+    // mis-tapped ✓.
+    const undoSnap = undoSnapshot();
+    name = updateHistoryBlock(d.hid, d.segIndex, dateStr, d.min, d.dur);
+    if (name) { SFX.coin(); toast(`✏️ ${name} → ${fmtMins(d.dur)} at ${fmtMinOfDay(d.min)}`, 'var(--cyan)'); offerUndo(undoSnap, `✏️ ${name}`); }
+  } else {
+    // Writes the DAY being viewed, not the habit's global usual time — that's what makes
+    // "Thursday at 3pm, just this once" possible and leaves every other day alone. A resize
+    // pins the block the same way a move does, so its new length is that day's plan.
+    name = upsertPlannedBlock(dateStr, d.refKind, d.refId, d.min, d.dur);
+    if (name) {
+      SFX.coin();
+      toast(d.mode === 'move' ? `${name} → ${fmtMinOfDay(d.min)}` : `${name} → ${fmtMins(d.dur)}`, 'var(--cyan)');
+    }
   }
   renderBlockSchedule(); renderHabits();
 }
@@ -12564,6 +12740,40 @@ function upsertPlannedBlock(dateStr, kind, refId, startMin, durMin) {
   else list.push({ id: uid(), kind, refId, startMin: clamp(startMin, 0, 1439), durMin: clamp(durMin || 15, 1, 1440) });
   save();
   return src.name;
+}
+/* Correct a finished block. Leave a timer running through dinner and the day records two
+   hours of cello forever — and because habitMedianActualMinutes predicts from
+   actualElapsedSec, that one bad run then skews every future prediction for that habit.
+   So this doesn't just move a rectangle: it rewrites the completion the rectangle came
+   from, and the predictions follow.
+
+   Every entry is normalised to the segment shape first, so one code path covers all three
+   cases — an untimed ✓ with no duration at all, a single unbroken run, and a
+   paused-and-resumed run where only ONE sitting is being corrected. */
+function updateHistoryBlock(hid, segIndex, dateStr, startMin, durMin) {
+  const e = (state.history || []).find(x => x && x.hid === hid);
+  if (!e) return null;
+  const dayStart = new Date(dateStr + 'T00:00:00').getTime();
+  if (!Array.isArray(e.segments) || !e.segments.length) {
+    const dur = (Number.isFinite(e.actualElapsedSec) ? e.actualElapsedSec : 0) * 1000;
+    e.segments = [{ s: e.ts - dur, e: e.ts }];
+  }
+  const seg = e.segments[segIndex]; if (!seg) return null;
+  seg.s = dayStart + startMin * 60000;
+  seg.e = dayStart + (startMin + Math.max(0, durMin)) * 60000;
+  e.segments.sort((a, b) => a.s - b.s);
+  // ts is the FINISH time and actualElapsedSec is time actually worked — so an
+  // interrupted run's elapsed is the sum of its sittings, never end-minus-start.
+  // Seeded at 0, NOT at the old e.ts — seeding with the previous finish time makes the
+  // max sticky, so shortening a run would keep its original end and silently stretch the
+  // block backwards instead of pulling its finish in.
+  e.ts = e.segments.reduce((m, x) => Math.max(m, Number.isFinite(x.e) ? x.e : x.s), 0) || e.ts;
+  e.actualElapsedSec = Math.round(e.segments.reduce((sum, x) =>
+    sum + Math.max(0, (Number.isFinite(x.e) ? x.e : x.s) - x.s), 0) / 1000);
+  if (e.segments.length === 1) delete e.segments;   // back to the plain shape it came in as
+  recordCache = null;                               // the record day is memoised off history
+  save();
+  return e.name;
 }
 function removePlannedBlock(dateStr, refId) {
   const list = (state.plannedBlocks || {})[dateStr]; if (!list) return;
@@ -12932,6 +13142,7 @@ function fullRender() {
 // Boot is synchronous again: the save comes from localStorage, so nothing waits on the
 // network or on an account. The cloud layer attaches later, if and when it loads.
 processClosedDayOutcomes();
+applyLoadoutStock();
 fullRender();
 // If load() couldn't read the save, this is the first thing the user sees — before any
 // interaction can trigger a save() that would write over what's still down there.
