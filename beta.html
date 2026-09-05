@@ -1503,6 +1503,16 @@
     #view-settings .section-title::after { content: '▾'; display: inline-block; margin-left: 8px; opacity: .55; transition: transform .2s; }
     #view-settings .panel.collapsed .section-title::after { transform: rotate(-90deg); }
     #view-settings .panel.collapsed > *:not(.section-title) { display: none; }
+
+    /* 📱 Screen Time. Own class names on purpose — the late !important greyscale block
+       flattens .chip / .btn.ghost / .tier-chip, and these need to stay readable as on/off. */
+    .st-tog { background: transparent; border: 1px solid var(--panel-edge); border-radius: 8px;
+              padding: 4px 7px; font-size: 15px; line-height: 1; cursor: pointer;
+              opacity: .3; filter: grayscale(1); transition: opacity .15s, filter .15s, border-color .15s; }
+    .st-tog.on { opacity: 1; filter: none; border-color: var(--h1); box-shadow: 0 0 8px rgba(255,158,44,.35); }
+    .st-status { margin-top: 10px; font-weight: 700; font-size: 13px; }
+    .st-status.locked { color: var(--h1); }
+    .st-status.open { color: var(--ink-dim); }
     .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .row.between { justify-content: space-between; }
     .editor-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
@@ -2810,6 +2820,12 @@
       </div>
 
       <div class="panel set-section">
+        <div class="section-title t2">📱 Screen Time</div>
+        <div class="subtle">Turns a time reward into a real lock. Apps you pick stay blocked until you claim a reward marked 📱 — and the block comes back by itself when the timer ends, whether or not Habit Casino is open.</div>
+        <div id="screenTimeBody"></div>
+      </div>
+
+      <div class="panel set-section">
         <div class="section-title t2">🏷️ Identities</div>
         <div class="subtle">Group habits &amp; tasks around what you're building toward. Identities drive row colors, weekly pass goals, happy hours, and the Habits tab's accordions — assign them in ⚙️ Habits and 🎯 One-Off Quests. Set an identity's purpose ("why") by talking to it in 💬 AI Chat.</div>
         <div class="editor-list" id="categoryList"></div>
@@ -3281,6 +3297,11 @@ function defaultState() {
     // free-text answer into a tap-able option next time a similar hour goes unexplained.
     gapLog: [],        // { date, startMin, endMin, answer, skipped, loadout, ts }
     gapAnswers: [],    // { text, loadout, hourBucket, count, lastTs }
+    // Screen Time enforcement. Only ever live inside the iOS wrapper: the page asks for a
+    // window, the OS is what actually enforces it. `authorized`/`pickedCount`/`shielded`
+    // are mirrored FROM native for display only and are never trusted as the truth —
+    // native re-reports them on launch and after every change it makes.
+    screenTime: { on: false, authorized: false, pickedCount: 0, shielded: false },
     activeLoadout: 'Default',
     contexts: [],         // Planner day contexts such as Travel/School; separate from loadouts
     dayPlans: {},         // 'YYYY-MM-DD' → { raw, context, ts }
@@ -3765,6 +3786,10 @@ function load(raw) {
     merged.loadoutStock = (parsed.loadoutStock && typeof parsed.loadoutStock === 'object' && !Array.isArray(parsed.loadoutStock))
       ? Object.fromEntries(Object.entries(parsed.loadoutStock).map(([k, v]) => [k, normalizeStock(v)]))
       : {};
+    // Only the user's own switch survives a reload. The mirrored native fields start false
+    // every boot: a save restored onto a phone with no wrapper — or one where Screen Time
+    // permission has since been revoked — must not claim it still holds a shield.
+    merged.screenTime = { ...base.screenTime, on: !!(parsed.screenTime && parsed.screenTime.on) };
     merged.loadouts = [...new Set(['Default', ...(Array.isArray(parsed.loadouts) ? parsed.loadouts : []), ...taggedLoadouts]
       .map(x => String(x || '').trim()).filter(Boolean))];
     merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
@@ -5774,6 +5799,9 @@ setInterval(() => {
       if (fill) fill.style.width = clamp(100 - (leftSec / Math.max(1, (w.activeMinutes || 1) * 60) * 100), 0, 100) + '%';
     });
   }
+  // Safety net for the paths that don't repaint Winnings: expiry, day rollover, and a
+  // reload that lands mid-reward. syncShield dedupes, so this costs nothing per tick.
+  syncShield();
 }, 1000);
 
 /* =================================================================
@@ -6841,6 +6869,7 @@ function applyResult(res) {
       const won = {
         id: uid(), rewardId: res.reward.id, emoji: res.reward.emoji,
         name: res.reward.name, tier: res.tier, minutes: res.reward.minutes || 0, wonAt: Date.now(), redeemed: false,
+        screenTime: res.reward.screenTime === true,   // fallback if the reward is later deleted
       };
       state.inventory.unshift(won);
       logEvent('reward_won', { entityType: 'reward', entityId: won.rewardId, inventoryId: won.id, name: won.name, tier: won.tier, allocatedMinutes: won.minutes, wonAt: won.wonAt });
@@ -7644,6 +7673,65 @@ function resumeActiveWin(id) {
 }
 function activeWinnings() { return state.inventory.filter(isActiveWin); }
 
+/* ---- SCREEN TIME BRIDGE -------------------------------------------------
+   A web page cannot touch Screen Time — the frameworks are native and entitlement-gated.
+   Inside the iOS wrapper a WKScriptMessageHandler named `habitCasino` is installed, and
+   these two functions are the entire conversation with it. Everything here is inert in an
+   ordinary browser, which is what lets this ship ahead of the wrapper existing.
+
+   The division of labour matters: this page only ever REQUESTS a window. Native answers by
+   clearing the shield AND scheduling its own re-shield at the deadline, so the block still
+   returns if this page is backgrounded, killed, or can't be reached at all. */
+const HCBridge = {
+  get present() {
+    return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.habitCasino);
+  },
+  send(msg) { if (this.present) window.webkit.messageHandlers.habitCasino.postMessage(msg); },
+};
+// Native calls this on launch and after anything it changes. Nothing here is authoritative
+// — it is what the phone reports, mirrored so Settings can draw an honest status line.
+window.HCNative = {
+  onStatus(s) {
+    s = s || {};
+    Object.assign(state.screenTime, { authorized: !!s.authorized,
+                                      pickedCount: parseInt(s.picked, 10) || 0,
+                                      shielded: !!s.shielded });
+    save();
+    if ($('#view-settings') && $('#view-settings').classList.contains('active')) renderScreenTime();
+  },
+  /* The wrapper finished a native Google sign-in and is handing back the ID token.
+     Backing out of the Google sheet is not an error — it just lets the form go idle. */
+  async onGoogleToken(idToken, err) {
+    if (err === 'cancelled') { authBusy = false; cloudMsg = ''; renderAuth(); return; }
+    if (err || !idToken) { authFail(err || 'Google sign-in failed'); return; }
+    try { await window.HCCloud.signInWithGoogleIdToken(idToken); }
+    catch (e) { authFail((e && e.message) || 'Google sign-in failed'); }
+  },
+};
+// Whether a won item unlocks blocked apps. Read from the live reward definition so ticking
+// the box takes effect on copies already sitting in the Prize Pool; the stamped flag is the
+// fallback for items whose reward has since been deleted.
+function isScreenTimeWin(w) {
+  if (!w) return false;
+  const def = w.rewardId && (state.rewards || []).find(r => r.id === w.rewardId);
+  return def ? def.screenTime === true : w.screenTime === true;
+}
+/* Derive the shield state from `state` rather than hooking the six places a reward's timer
+   moves (claim, extend, pause, resume, end early, expire, day-end). One derivation cannot
+   miss a path, and it is still correct after a reload with a reward already running.
+   Deduped on the deadline so the 1s tick doesn't spam the bridge. */
+let lastShieldPush = null;
+function syncShield() {
+  if (!HCBridge.present || !state.screenTime || !state.screenTime.on) return;
+  const w = activeWinnings().find(isScreenTimeWin);
+  // A paused reward banks its remaining time and must not spend it — so pausing re-shields.
+  const until = (w && !w.pausedAt && Number.isFinite(w.activeUntil) && w.activeUntil > Date.now())
+    ? w.activeUntil : 0;
+  if (String(until) === lastShieldPush) return;
+  lastShieldPush = String(until);
+  HCBridge.send(until ? { op: 'unshield', until } : { op: 'shield' });
+}
+
 
 // Which loadout handed this item out as a bonus, or '' if it was genuinely won.
 // Legacy saves wrote `fromStock: true` before the name was recorded; load() upgrades
@@ -7884,6 +7972,9 @@ function renderActiveWins() {
 }
 
 function renderPrizes() {
+  // Every path that starts, extends, pauses, resumes, ends or expires a reward repaints
+  // this view, so one call here covers all of them with no lag on the claim itself.
+  syncShield();
   syncEditorSheet();
   renderActiveWins();
   const lock = $('#redeemLock'), win = redeemWindow();
@@ -8103,7 +8194,8 @@ function applyLoadoutStock() {
       for (let have = ownedOf(r.id).length; have < n; have++) {
         if (r.special === 'wildCard') addWildCard(tier, name);
         else state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name,
-          tier: r.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false, fromStock: name });
+          tier: r.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false,
+          screenTime: r.screenTime === true, fromStock: name });
         added++;
       }
     });
@@ -8588,6 +8680,7 @@ function renderSettings() {
   renderTierRewards();
   renderRewardEditor();
   renderWildCardSettings();
+  renderScreenTime();
   renderStreakFreezeEditor();
   renderCategories();
   renderPassSettings();
@@ -8655,6 +8748,11 @@ function renderHabitEditor() {
     </div>`;
   }).join('') || `<div class="hint">No habits yet — add one below.</div>`;
 }
+// Only a reward with a duration can unlock anything — there'd be no deadline to re-lock at.
+// The name is checked too, since "15 min phone break" is a time reward without `minutes` set.
+function rewardHasDuration(r) {
+  return (r.minutes || 0) > 0 || ((detectRewardSpec(r.name) || {}).minutes || 0) > 0;
+}
 function renderRewardEditor() {
   const box = $('#rewardEditor');
   box.innerHTML = state.rewards.map(r => `
@@ -8665,6 +8763,7 @@ function renderRewardEditor() {
         ${REWARD_TIERS.map(t => `<option value="${t}" ${r.tier === t ? 'selected' : ''}>${TIERS[t].emoji} ${TIERS[t].label}</option>`).join('')}
       </select>
       <span class="pill" title="If > 0, this is a time reward (gets the unlock-window bonus)">⏱ <input class="num-in" data-f="minutes" type="number" min="0" max="999" value="${r.minutes || 0}"> min</span>
+      ${rewardHasDuration(r) ? `<button class="st-tog${r.screenTime ? ' on' : ''}" data-act="togScreenTime" title="${r.screenTime ? 'Claiming this unlocks your blocked apps' : 'Make claiming this unlock your blocked apps'}">📱</button>` : ''}
       <button class="del" data-act="delReward" title="Delete">✕</button>
     </div>`).join('') || `<div class="hint">No rewards yet — add one below.</div>`;
 }
@@ -8680,6 +8779,25 @@ function renderWildCardSettings() {
     const n = state.inventory.filter(w => w.wild && !w.redeemed && w.tier === t).length;
     return `<span class="pill" style="border-color:${TIERS[t].hex}88;color:${TIERS[t].hex}">${TIERS[t].emoji} ${TIERS[t].label}: <b>${n}</b></span>`;
   }).join('');
+}
+// Settings → 📱 Screen Time. Every control is native-only, so with no wrapper attached the
+// panel says so plainly instead of offering switches that quietly do nothing.
+function renderScreenTime() {
+  const box = $('#screenTimeBody'); if (!box) return;
+  const st = state.screenTime || {};
+  if (!HCBridge.present) {
+    box.innerHTML = `<div class="hint">Only works inside the Habit Casino iOS app — Screen Time can't be reached from a browser tab. Everything else on this page behaves exactly the same here.</div>`;
+    return;
+  }
+  const marked = state.rewards.filter(r => r.screenTime === true).length;
+  box.innerHTML = `
+    <div class="row between" style="margin-top:10px"><span>Block my apps by default</span><label class="toggle"><input type="checkbox" id="stOn" ${st.on ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn ghost sm" id="stAuth">${st.authorized ? '✓ Permission granted' : 'Grant Screen Time permission'}</button>
+      <button class="btn ghost sm" id="stPick">${st.pickedCount ? `Blocking ${st.pickedCount} app${st.pickedCount === 1 ? '' : 's'} — change` : 'Choose apps to block'}</button>
+    </div>
+    <div class="st-status ${st.shielded ? 'locked' : 'open'}">${st.shielded ? '🔒 Apps are blocked right now' : '🔓 Apps are unlocked right now'}</div>
+    <div class="hint">${marked ? `${marked} reward${marked === 1 ? '' : 's'} marked 📱.` : 'No rewards marked 📱 yet — tap the 📱 beside a timed reward above to make claiming it unlock your apps.'} Apple never tells this app which apps you picked, only how many. Deleting the app removes every block instantly.</div>`;
 }
 function renderStreakFreezeEditor() {
   const sf = state.settings.streakFreeze; if (!sf) return;
@@ -12587,15 +12705,42 @@ $('#rewardEditor').addEventListener('click', e => {
   if (e.target.closest('[data-act="delReward"]')) {
     const row = e.target.closest('.editrow');
     state.rewards = state.rewards.filter(x => x.id !== row.dataset.id);
-    save(); renderRewardEditor();
+    save(); renderRewardEditor(); renderPrizes();
+  } else if (e.target.closest('[data-act="togScreenTime"]')) {
+    const row = e.target.closest('.editrow');
+    const r = state.rewards.find(x => x.id === row.dataset.id); if (!r) return;
+    r.screenTime = !r.screenTime;
+    SFX.click(); save();
+    // renderPrizes re-derives the shield, so un-marking a reward that's running right now
+    // puts the block straight back instead of waiting for its timer.
+    renderRewardEditor(); renderScreenTime(); renderPrizes();
   }
 });
 $('#addReward').addEventListener('click', () => {
   SFX.click();
-  state.rewards.push({ id: uid(), emoji: '🎁', name: 'New reward', desc: '', tier: 'common', minutes: 0 });
+  state.rewards.push({ id: uid(), emoji: '🎁', name: 'New reward', desc: '', tier: 'common', minutes: 0, screenTime: false });
   save(); renderRewardEditor();
   $('#rewardEditor').lastElementChild?.querySelector('.name-in')?.select();
 });
+
+// ---- Settings: 📱 Screen Time ----
+// Delegated, because renderScreenTime replaces the whole body on every status update.
+$('#screenTimeBody').addEventListener('change', e => {
+  if (e.target.id !== 'stOn') return;
+  state.screenTime.on = e.target.checked;
+  lastShieldPush = null;                 // whatever was last sent, the next push must land
+  save();
+  // Turning the feature OFF has to stand the shield down. Leaving apps blocked with the
+  // switch off would be a lockout with no control left in the app that caused it.
+  if (state.screenTime.on) syncShield(); else HCBridge.send({ op: 'off' });
+  renderScreenTime();
+});
+$('#screenTimeBody').addEventListener('click', e => {
+  if (e.target.id === 'stAuth') { SFX.click(); HCBridge.send({ op: 'authorize' }); }
+  else if (e.target.id === 'stPick') { SFX.click(); HCBridge.send({ op: 'pick' }); }
+});
+// Ask the phone where things stand. No-op in a browser; native answers via HCNative.onStatus.
+HCBridge.send({ op: 'status' });
 
 // ---- Settings: one-off tier payouts (quests themselves are edited on the Tasks tab) ----
 $('#tierRewards').addEventListener('input', e => {
@@ -13011,6 +13156,10 @@ $('#authOverlay').addEventListener('click', async e => {
 
   if (e.target.closest('#authGoogle')) {
     authBusy = true; cloudMsg = ''; renderAuth();
+    // In the iOS wrapper the popup/redirect flow can't work — Google blocks OAuth in
+    // embedded web views. Hand it to the app, which signs in through a real Safari
+    // session and calls HCNative.onGoogleToken. This branch never runs on the web.
+    if (HCBridge.present) { HCBridge.send({ op: 'googleSignIn' }); return; }
     try { await window.HCCloud.signInGoogle(); } catch (err) { authFail(err.message || 'Google sign-in failed'); }
     return;
   }
@@ -13618,6 +13767,7 @@ setInterval(() => {
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
   import {
     getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+    signInWithCredential,
     createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
   import {
@@ -13715,6 +13865,16 @@ setInterval(() => {
         if (c === 'auth/popup-closed-by-user') return;
         throw new Error(friendly(e));
       }
+    },
+    /* Sign in from an ID token that was obtained OUTSIDE this page.
+       Google refuses OAuth inside an embedded web view (disallowed_useragent), so the iOS
+       wrapper runs the flow in a real Safari session and posts the token back. From here
+       on nothing is special: this produces the same Firebase user, fires the same
+       onAuthStateChanged, and reconciles through the same path as a web sign-in. */
+    async signInWithGoogleIdToken(idToken) {
+      try {
+        await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+      } catch (e) { throw new Error(friendly(e)); }
     },
     async signInEmail(email, pass, create) {
       try {
