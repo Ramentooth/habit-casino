@@ -34,18 +34,18 @@
       --bg0: #08000f;
       --bg1: #14002b;
       --bg2: #1c0040;
-      --panel: rgba(20, 6, 42, 0.72);
-      --panel-edge: rgba(176, 38, 255, 0.35);
+      --panel: rgba(24, 15, 6, 0.72);
+      --panel-edge: rgba(70, 167, 214, 0.35);
       --ink: #f4ecff;
       --ink-dim: #b39ddb;
 
       --pink: #ff1b8d;
-      --cyan: #00f0ff;
+      --cyan: #ff9e2c;
       --purple: #b026ff;
       --green: #39ff14;
-      --yellow: #ffe600;
+      --yellow: #ffc247;
       --orange: #ff6b00;
-      --gold: #ffd700;
+      --gold: #ffb020;
 
       --t-blank: #5a6473;
       --t-tokens: #ffe600;
@@ -84,9 +84,9 @@
     #bg {
       position: fixed; inset: 0; z-index: -3;
       background:
-        radial-gradient(1200px 800px at 15% -10%, rgba(176,38,255,0.35), transparent 60%),
-        radial-gradient(1000px 700px at 110% 10%, rgba(0,240,255,0.22), transparent 55%),
-        radial-gradient(900px 900px at 50% 120%, rgba(255,27,141,0.28), transparent 60%),
+        radial-gradient(1200px 800px at 15% -10%, rgba(196,122,58,0.35), transparent 60%),
+        radial-gradient(1000px 700px at 110% 10%, rgba(255,158,44,0.22), transparent 55%),
+        radial-gradient(900px 900px at 50% 120%, rgba(255,158,44,0.28), transparent 60%),
         linear-gradient(160deg, var(--bg0), var(--bg1) 45%, var(--bg2));
       background-size: 200% 200%, 200% 200%, 200% 200%, 100% 100%;
       animation: bgShift 18s ease-in-out infinite;
@@ -99,8 +99,8 @@
     #grid {
       position: fixed; left: 0; right: 0; bottom: 0; height: 45vh; z-index: -2;
       background-image:
-        linear-gradient(rgba(0,240,255,0.18) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,27,141,0.18) 1px, transparent 1px);
+        linear-gradient(rgba(255,158,44,0.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,158,44,0.18) 1px, transparent 1px);
       background-size: 44px 44px, 44px 44px;
       transform: perspective(420px) rotateX(68deg);
       transform-origin: bottom center;
@@ -132,34 +132,34 @@
       font-family: 'Orbitron', sans-serif; font-weight: 900;
       font-size: clamp(18px, 2.4vw, 26px); letter-spacing: 2px;
       white-space: nowrap;
-      background: linear-gradient(90deg, var(--cyan), var(--pink), var(--yellow));
+      background: linear-gradient(90deg, var(--h1), var(--h-live));
       -webkit-background-clip: text; background-clip: text; color: transparent;
-      filter: drop-shadow(0 0 10px rgba(255,27,141,0.6));
-      animation: hue 8s linear infinite;
+      filter: drop-shadow(0 0 10px rgba(255,158,44,0.5));
+      animation: logoGlow 4s ease-in-out infinite;
     }
-    @keyframes hue { to { filter: drop-shadow(0 0 10px rgba(255,27,141,0.6)) hue-rotate(360deg); } }
-    .logo .bolt { -webkit-text-fill-color: var(--yellow); }
+    @keyframes logoGlow { 50% { filter: drop-shadow(0 0 16px rgba(255,158,44,0.75)); } }
+    .logo .bolt { -webkit-text-fill-color: var(--h1); }
 
     .balance {
       display: flex; align-items: center; gap: 10px;
       padding: 8px 16px; border-radius: 999px;
-      background: rgba(255,230,0,0.08);
-      border: 1.5px solid rgba(255,230,0,0.5);
-      box-shadow: 0 0 18px rgba(255,230,0,0.25), inset 0 0 14px rgba(255,230,0,0.12);
+      background: rgba(255,194,71,0.08);
+      border: 1.5px solid rgba(255,194,71,0.5);
+      box-shadow: 0 0 18px rgba(255,194,71,0.25), inset 0 0 14px rgba(255,194,71,0.12);
     }
     .balance .coin { font-size: 22px; filter: drop-shadow(0 0 6px var(--gold)); animation: coinSpin 3.5s linear infinite; }
     @keyframes coinSpin { 50% { transform: rotateY(180deg) scale(1.05); } }
     .balance .amount {
       font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(18px,2.4vw,24px);
-      color: var(--yellow); text-shadow: 0 0 12px rgba(255,230,0,0.7); min-width: 1ch;
+      color: var(--yellow); text-shadow: 0 0 12px rgba(255,194,71,0.7); min-width: 1ch;
     }
     .balance.pop { animation: pop 0.4s ease; }
     @keyframes pop { 0%{transform:scale(1);} 40%{transform:scale(1.18);} 100%{transform:scale(1);} }
 
     .level { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
     .level .lvlrow { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; color: var(--ink-dim); letter-spacing: 1px; }
-    .level .lvlrow b { color: var(--cyan); text-shadow: 0 0 8px rgba(0,240,255,0.6); }
-    .xpbar { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; border: 1px solid rgba(0,240,255,0.25); }
+    .level .lvlrow b { color: var(--cyan); text-shadow: 0 0 8px rgba(255,158,44,0.6); }
+    .xpbar { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; border: 1px solid rgba(255,158,44,0.25); }
     .xpfill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--purple)); box-shadow: 0 0 12px var(--cyan); transition: width 0.6s cubic-bezier(.2,.9,.2,1); }
 
     .spacer { flex: 1 1 auto; }
@@ -191,9 +191,9 @@
     .tab .ti { font-size: 22px; line-height: 1; filter: grayscale(.4); opacity: .75; transition: .15s; }
     .tab .tl { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: .4px; font-size: 9.5px; white-space: nowrap; }
     .tab.active { color: #fff;
-      background: linear-gradient(180deg, rgba(255,27,141,0.20), rgba(176,38,255,0.14));
-      border-color: rgba(255,27,141,0.5);
-      box-shadow: 0 0 14px rgba(255,27,141,0.35), inset 0 0 12px rgba(176,38,255,0.18);
+      background: linear-gradient(180deg, rgba(255,158,44,0.20), rgba(196,122,58,0.14));
+      border-color: rgba(255,158,44,0.5);
+      box-shadow: 0 0 14px rgba(255,158,44,0.35), inset 0 0 12px rgba(196,122,58,0.18);
     }
     .tab.active .ti { filter: none; opacity: 1; transform: translateY(-1px); }
     .tab.active .tl { color: #fff; }
@@ -202,9 +202,9 @@
     /* ---- "More" overflow sheet (Duolingo-style): slides up from behind the nav ---- */
     .more-tab .ti { letter-spacing: 1px; }
     .more-tab.open { color: #fff;
-      background: linear-gradient(180deg, rgba(0,240,255,0.18), rgba(176,38,255,0.14));
-      border-color: rgba(0,240,255,0.55);
-      box-shadow: 0 0 14px rgba(0,240,255,0.3);
+      background: linear-gradient(180deg, rgba(255,158,44,0.18), rgba(196,122,58,0.14));
+      border-color: rgba(255,158,44,0.55);
+      box-shadow: 0 0 14px rgba(255,158,44,0.3);
     }
     .more-tab.open .ti { filter: none; opacity: 1; }
     .more-scrim {
@@ -229,7 +229,7 @@
       border-bottom: 1px solid var(--panel-edge); transition: background .15s;
     }
     .more-row:last-child { border-bottom: 0; }
-    .more-row:active { background: rgba(176,38,255,0.16); }
+    .more-row:active { background: rgba(196,122,58,0.16); }
     .more-row.active .mr-label { color: var(--cyan); }
     /* ---------- Prize Pool tiles: claimable when held, dimmed when not ---------- */
     /* Dim the CONTENT, not the tile: opacity on the tile would drag the ⋯ button down
@@ -259,6 +259,15 @@
       display: grid; place-items: center; border-radius: 11px;
       background: var(--pz); color: #0a0012; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px;
       box-shadow: 0 0 10px var(--pz); border: 2px solid rgba(4,0,10,.85);
+    }
+    /* Loadout bonus marker. Top-LEFT, opposite the count and the ⋯ so it can't collide
+       with either, and clear of the centred emoji. Gold reads as "on loan": a tile
+       showing 5 with "3 BONUS" says which 3 vanish when the loadout does. */
+    .prize-stock {
+      position: absolute; top: 6px; left: 6px; z-index: 3; padding: 2px 6px; border-radius: 9px;
+      background: rgba(255,158,44,.14); border: 1px solid rgba(255,158,44,.45); color: var(--h1);
+      font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 9px; letter-spacing: .5px;
+      line-height: 1.35; white-space: nowrap; pointer-events: none;
     }
     /* ⋯ settings, top-right of every tile. */
     .prize-dots {
@@ -395,8 +404,8 @@
     /* Blocks live in here, already inset past the hour labels, so their left/width
        percentages are of the block area alone. */
     .sched-lanes { position: absolute; left: 56px; right: 6px; top: 0; bottom: 0; }
-    .sched-now { position: absolute; left: 48px; right: 0; border-top: 2px solid var(--pink); box-shadow: 0 0 8px var(--pink); z-index: 3; }
-    .sched-now::before { content: ''; position: absolute; left: 0; top: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--pink); }
+    .sched-now { position: absolute; left: 48px; right: 0; border-top: 2px solid var(--h-live); box-shadow: 0 0 8px var(--h-live); z-index: 3; }
+    .sched-now::before { content: ''; position: absolute; left: 0; top: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--h-live); }
     .sched-block {
       position: absolute; overflow: hidden; border-radius: 6px; padding: 1px 6px; font-size: 11px;
       /* OPAQUE, not a 16%-of-transparent wash. Two blocks that graze each other used to
@@ -427,6 +436,25 @@
       border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); border-radius: 0;
     }
     .sched-block.moment b { font-size: 10px; opacity: .85; line-height: 1.2; }
+
+    /* An unaccounted stretch. Deliberately the quietest thing on the grid — recessed
+       rather than highlighted, because it marks an absence, not an event. Sits behind
+       everything (z-index 0) so a real block landing inside it still reads on top. */
+    .sched-block.gap {
+      z-index: 0; border: 1px dashed var(--panel-edge); border-radius: 8px;
+      background: repeating-linear-gradient(135deg,
+        rgba(255,255,255,.028) 0 8px, rgba(255,255,255,0) 8px 16px), rgba(0,0,0,.34);
+      display: grid; place-items: center; cursor: pointer; padding: 0;
+    }
+    .sched-block.gap:hover { border-color: var(--cyan); background: rgba(255,158,44,.06); }
+    .gap-q {
+      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 20px;
+      color: var(--ink-dim); opacity: .75; line-height: 1; pointer-events: none;
+    }
+    .sched-block.gap:hover .gap-q { color: var(--cyan); opacity: 1; }
+    /* Read-only surfaces (the Home widget) shouldn't invite a tap that does nothing. */
+    #homeNow .sched-block.gap { cursor: default; }
+    #homeNow .sched-block.gap:hover { border-color: var(--panel-edge); background: rgba(0,0,0,.34); }
 
     /* ---------- Short blocks: honest bars, names in a right-hand column ----------
        A block shorter than LABEL_MIN_PX keeps its TRUE height and drops its text. It used
@@ -493,7 +521,7 @@
        `.tab { position: relative }`. */
     .nav-badge {
       position: absolute; top: 2px; right: 10px;
-      background: var(--purple, #b026ff); color: #fff;
+      background: var(--purple, #c47a3a); color: #fff;
       font-size: 10px; font-weight: 800; line-height: 1;
       border-radius: 8px; padding: 2px 5px; min-width: 14px; text-align: center;
     }
@@ -506,10 +534,10 @@
        somewhere. Same purple as the tab badge — it's the same notification, twice. */
     .more-row .mr-badge {
       margin-left: auto; flex: 0 0 auto;
-      background: var(--purple, #b026ff); color: #fff;
+      background: var(--purple, #c47a3a); color: #fff;
       font-size: 11px; font-weight: 800; line-height: 1;
       border-radius: 9px; padding: 3px 7px; min-width: 16px; text-align: center;
-      box-shadow: 0 0 10px rgba(176,38,255,.6);
+      box-shadow: 0 0 10px rgba(196,122,58,.6);
     }
     /* Both markers on one tab: the dot steps left so the count keeps the corner. */
     .nav-dot.with-badge { left: auto; right: 32px; top: 4px; margin-left: 0; }
@@ -517,7 +545,7 @@
       margin-top: 10px; padding: 12px; border-radius: 12px;
       border: 1px solid rgba(255,59,48,.55); background: rgba(255,59,48,.10);
     }
-    .cp-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .5px; color: #ff6b60; }
+    .cp-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .5px; color: var(--pink); }
     .cp-body { font-size: 13px; color: var(--ink-dim); margin-top: 4px; }
     .mr-ico { font-size: 24px; line-height: 1; width: 30px; text-align: center; flex: 0 0 auto; }
     .mr-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .5px; color: var(--ink); }
@@ -543,16 +571,16 @@
 
     .panel {
       background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 18px;
-      padding: 18px; box-shadow: inset 0 0 30px rgba(176,38,255,0.06);
+      padding: 18px; box-shadow: inset 0 0 30px rgba(196,122,58,0.06);
     }
     .section-title {
       font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 2px;
       font-size: clamp(16px,2.4vw,22px); margin-bottom: 4px; text-transform: uppercase;
     }
-    .neon-cyan { color: var(--cyan); text-shadow: 0 0 12px rgba(0,240,255,.7); }
-    .neon-pink { color: var(--pink); text-shadow: 0 0 12px rgba(255,27,141,.7); }
-    .neon-purple { color: var(--purple); text-shadow: 0 0 12px rgba(176,38,255,.7); }
-    .neon-gold { color: var(--gold); text-shadow: 0 0 12px rgba(255,215,0,.7); }
+    .neon-cyan { color: var(--cyan); text-shadow: 0 0 12px rgba(255,158,44,.7); }
+    .neon-pink { color: var(--pink); text-shadow: 0 0 12px rgba(255,158,44,.7); }
+    .neon-purple { color: var(--purple); text-shadow: 0 0 12px rgba(196,122,58,.7); }
+    .neon-gold { color: var(--gold); text-shadow: 0 0 12px rgba(255,159,26,.7); }
     .neon-green { color: var(--green); text-shadow: 0 0 12px rgba(57,255,20,.7); }
     .subtle { color: var(--ink-dim); font-size: 14px; }
 
@@ -561,15 +589,15 @@
       font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px;
       cursor: pointer; border: none; border-radius: 12px; color: #fff;
       padding: 12px 20px; font-size: 14px; transition: .15s; position: relative;
-      background: linear-gradient(180deg, var(--pink), #c1106a);
-      box-shadow: 0 0 18px rgba(255,27,141,.5), 0 6px 0 #7a0a44;
+      background: linear-gradient(180deg, var(--h1), #0b7f96);
+      box-shadow: 0 0 18px rgba(255,158,44,.35), 0 6px 0 #075463;
     }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 0 26px rgba(255,27,141,.8), 0 8px 0 #7a0a44; }
-    .btn:active { transform: translateY(3px); box-shadow: 0 0 18px rgba(255,27,141,.6), 0 3px 0 #7a0a44; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 0 26px rgba(255,158,44,.8), 0 8px 0 #7a400f; }
+    .btn:active { transform: translateY(3px); box-shadow: 0 0 18px rgba(255,158,44,.6), 0 3px 0 #7a400f; }
     .btn[disabled] { filter: grayscale(.7) brightness(.6); cursor: not-allowed; box-shadow: none; transform: none; }
-    .btn.cyan { background: linear-gradient(180deg, var(--cyan), #0093a8); box-shadow: 0 0 18px rgba(0,240,255,.5), 0 6px 0 #045e6b; color: #022; }
-    .btn.cyan:hover { box-shadow: 0 0 26px rgba(0,240,255,.85), 0 8px 0 #045e6b; }
-    .btn.gold { background: linear-gradient(180deg, #ffe600, #d4a800); box-shadow: 0 0 18px rgba(255,230,0,.5), 0 6px 0 #8a6e00; color: #221c00; }
+    .btn.cyan { background: linear-gradient(180deg, var(--cyan), #c2600a); box-shadow: 0 0 18px rgba(255,158,44,.5), 0 6px 0 #7a3d05; color: #022; }
+    .btn.cyan:hover { box-shadow: 0 0 26px rgba(255,158,44,.85), 0 8px 0 #7a3d05; }
+    .btn.gold { background: linear-gradient(180deg, #ffb020, #c2600a); box-shadow: 0 0 18px rgba(255,158,44,.5), 0 6px 0 #7a3d05; color: #2a1504; }
     .btn.green { background: linear-gradient(180deg, var(--green), #1f9e0a); box-shadow: 0 0 18px rgba(57,255,20,.5), 0 6px 0 #126b06; color: #042; }
     .btn.ghost { background: rgba(255,255,255,0.06); box-shadow: none; border: 1px solid var(--panel-edge); }
     .btn.ghost:hover { box-shadow: 0 0 14px var(--purple); transform: translateY(-2px); }
@@ -581,8 +609,8 @@
     .daily-banner {
       display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
       margin-bottom: 16px; padding: 16px 18px;
-      border: 1px solid rgba(0,240,255,0.3); border-radius: 16px;
-      background: linear-gradient(120deg, rgba(0,240,255,0.08), rgba(176,38,255,0.08));
+      border: 1px solid rgba(255,158,44,0.3); border-radius: 16px;
+      background: linear-gradient(120deg, rgba(255,158,44,0.08), rgba(196,122,58,0.08));
     }
     .daily-banner .dtext { flex: 1 1 240px; }
     .progress-wrap { height: 16px; border-radius: 999px; background: rgba(0,0,0,0.4); overflow: hidden; border: 1px solid rgba(255,255,255,0.12); margin-top: 8px; }
@@ -591,20 +619,20 @@
     .habit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 14px; }
     .habit {
       position: relative; overflow: hidden;
-      background: linear-gradient(160deg, rgba(176,38,255,0.12), rgba(20,6,42,0.6));
+      background: linear-gradient(160deg, rgba(196,122,58,0.12), rgba(24,15,6,0.6));
       border: 1px solid var(--panel-edge); border-radius: 16px; padding: 16px;
       display: flex; flex-direction: column; gap: 12px; transition: .2s;
     }
-    .habit:hover { border-color: var(--cyan); box-shadow: 0 0 22px rgba(0,240,255,0.25); transform: translateY(-3px); }
+    .habit:hover { border-color: var(--cyan); box-shadow: 0 0 22px rgba(255,158,44,0.25); transform: translateY(-3px); }
     .habit.done { border-color: var(--green); box-shadow: 0 0 22px rgba(57,255,20,0.25); }
     .habit .top { display: flex; align-items: center; gap: 12px; }
     .habit .emoji { font-size: 34px; filter: drop-shadow(0 0 8px rgba(255,255,255,.3)); }
     .habit .hname { font-weight: 700; font-size: 18px; line-height: 1.1; }
-    .habit .streak { font-size: 13px; color: var(--orange); font-weight: 700; }
+    .habit .streak { font-size: 13px; color: var(--h2); font-weight: 700; }
     .habit .streak.cold { color: var(--ink-dim); }
     .habit .reward-tag {
       display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
-      background: rgba(255,230,0,0.12); border: 1px solid rgba(255,230,0,0.4);
+      background: rgba(255,194,71,0.12); border: 1px solid rgba(255,194,71,0.4);
       color: var(--yellow); padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 13px;
     }
     .habit .donebtn { margin-top: auto; }
@@ -616,7 +644,7 @@
     .hrow {
       display: flex; align-items: center; gap: 8px; cursor: pointer;
       padding: 5px 10px; border-radius: 11px; transition: .15s; position: relative;
-      background: linear-gradient(160deg, rgba(176,38,255,0.10), rgba(20,6,42,0.55));
+      background: linear-gradient(160deg, rgba(196,122,58,0.10), rgba(24,15,6,0.55));
       border: 1px solid var(--panel-edge);
     }
     /* Habit difficulty levels. The ONLY coloured thing is the "tier N" word in the pill —
@@ -720,7 +748,7 @@
     .edit-overlay.tier-overlay { z-index: 79; }
     /* Graduated (archived) habit rows */
     #archivedSection { padding-bottom: 96px; } /* keep the last Restore button clear of the Habit Pass FAB */
-    .hrow.arch { cursor: default; opacity: .8; background: linear-gradient(160deg, rgba(255,215,0,0.06), rgba(20,6,42,0.5)); border-color: rgba(255,215,0,0.28); }
+    .hrow.arch { cursor: default; opacity: .8; background: linear-gradient(160deg, rgba(255,159,26,0.06), rgba(24,15,6,0.5)); border-color: rgba(255,159,26,0.28); }
     .hrow.arch .hrow-emoji { filter: grayscale(.5) opacity(.8); }
     /* "×N" corner tag while this row's category happy hour is live (tinted per category, window below) */
     .hh-tag {
@@ -758,13 +786,13 @@
       background: rgba(255,255,255,.07); border-radius: 999px; padding: 1px 6px;
     }
     .row-chip b { font-weight: 800; }
-    .row-chip.live { color: var(--cyan); background: rgba(0,240,255,.12); }
-    .row-chip.spin { color: var(--gold); background: rgba(255,215,0,.14); }
-    .row-chip.due.today { color: var(--gold); background: rgba(255,215,0,.14); }
-    .row-chip.due.late { color: var(--pink); background: rgba(255,27,141,.16); }
+    .row-chip.live { color: var(--cyan); background: rgba(255,158,44,.12); }
+    .row-chip.spin { color: var(--h1); background: rgba(255,158,44,.12); }
+    .row-chip.due.today { color: var(--h1); background: rgba(255,158,44,.12); }
+    .row-chip.due.late { color: var(--pink); background: rgba(255,59,92,.16); }
     .hrow-reward {
       flex: 0 0 auto; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px; white-space: nowrap;
-      color: var(--yellow); background: rgba(255,230,0,0.10); border: 1px solid rgba(255,230,0,0.4);
+      color: var(--yellow); background: rgba(255,194,71,0.10); border: 1px solid rgba(255,194,71,0.4);
       padding: 2px 7px; border-radius: 999px;
     }
     .hrow-check {
@@ -773,7 +801,7 @@
       background: rgba(255,255,255,0.05); border: 2px solid var(--panel-edge); transition: .15s;
     }
     .hrow-check:active { transform: scale(.9); }
-    .hrow.done { border-color: rgba(57,255,20,0.45); background: linear-gradient(160deg, rgba(57,255,20,0.10), rgba(20,6,42,0.5)); }
+    .hrow.done { border-color: rgba(57,255,20,0.45); background: linear-gradient(160deg, rgba(57,255,20,0.10), rgba(24,15,6,0.5)); }
     .hrow.done .hrow-name { text-decoration: line-through; text-decoration-color: rgba(57,255,20,0.7); color: var(--ink-dim); }
     .hrow.done .hrow-emoji { filter: grayscale(.3) opacity(.7); }
     .hrow.done .hrow-check { color: #04210a; background: linear-gradient(180deg, var(--green), #1f9e0a); border-color: var(--green); box-shadow: 0 0 10px rgba(57,255,20,.5); }
@@ -782,8 +810,8 @@
     .hedit {
       display: flex; flex-direction: column; gap: 10px; padding: 14px;
       border-radius: 16px; border: 1.5px solid var(--cyan);
-      background: linear-gradient(160deg, rgba(0,240,255,0.10), rgba(20,6,42,0.7));
-      box-shadow: 0 0 22px rgba(0,240,255,0.25); animation: fadeUp .2s ease;
+      background: linear-gradient(160deg, rgba(255,158,44,0.10), rgba(24,15,6,0.7));
+      box-shadow: 0 0 22px rgba(255,158,44,0.25); animation: fadeUp .2s ease;
     }
     .hedit-r { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .hedit-r .name-in { flex: 1 1 140px; }
@@ -913,8 +941,8 @@
     .game-tab .gi { font-size: 21px; line-height: 1; display: block; }
     .game-tab .gn { font-family: 'Orbitron'; font-size: 8px; letter-spacing: .2px; margin-top: 3px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .game-tab:hover { transform: translateY(-3px); }
-    .game-tab.active { background: linear-gradient(180deg, rgba(255,230,0,.18), rgba(255,27,141,.13)); border-color: rgba(255,230,0,.55); box-shadow: 0 0 14px rgba(255,230,0,.3); }
-    .game-tab.active .gn { color: var(--yellow); }
+    .game-tab.active { background: linear-gradient(180deg, rgba(255,158,44,.18), rgba(196,122,58,.13)); border-color: rgba(255,158,44,.55); box-shadow: 0 0 14px rgba(255,158,44,.3); }
+    .game-tab.active .gn { color: var(--h1); }
 
     .game-stage { display: none; }
     .game-stage.active { display: block; animation: fadeUp .3s ease; }
@@ -930,12 +958,12 @@
     .wheel-pointer {
       position: absolute; top: -6px; left: 50%; transform: translateX(-50%); z-index: 5;
       width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent;
-      border-top: 28px solid var(--yellow); filter: drop-shadow(0 0 8px var(--yellow));
+      border-top: 28px solid var(--h1); filter: drop-shadow(0 0 8px var(--h1));
     }
     .wheel {
       position: absolute; inset: 0; border-radius: 50%;
       border: 8px solid rgba(255,255,255,0.9);
-      box-shadow: 0 0 0 6px rgba(176,38,255,0.6), 0 0 40px rgba(176,38,255,0.7), inset 0 0 30px rgba(0,0,0,0.5);
+      box-shadow: 0 0 0 6px rgba(196,122,58,0.6), 0 0 40px rgba(196,122,58,0.7), inset 0 0 30px rgba(0,0,0,0.5);
       transition: transform 4.6s cubic-bezier(.12,.72,.05,1);
     }
     .wheel .seg-label {
@@ -945,15 +973,15 @@
     }
     .wheel-hub {
       position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; transform: translate(-50%,-50%);
-      border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #b026ff);
+      border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #c47a3a);
       box-shadow: 0 0 20px var(--purple); z-index: 4; display: grid; place-items: center; font-size: 22px;
     }
 
     /* Slots */
     .slot-machine {
-      background: linear-gradient(180deg, #2a0c4d, #160427);
-      border: 3px solid var(--yellow); border-radius: 20px; padding: 18px;
-      box-shadow: 0 0 30px rgba(255,230,0,0.4), inset 0 0 30px rgba(0,0,0,0.6);
+      background: linear-gradient(180deg, #2a1a0d, #1a1108);
+      border: 3px solid var(--h1); border-radius: 20px; padding: 18px;
+      box-shadow: 0 0 30px rgba(255,194,71,0.4), inset 0 0 30px rgba(0,0,0,0.6);
     }
     .reels { display: flex; gap: 10px; }
     .reel {
@@ -963,38 +991,38 @@
     }
     .reel .strip { display: flex; flex-direction: column; }
     .reel .cell { height: clamp(64px, 22vw, 96px); display: grid; place-items: center; font-size: clamp(34px, 11vw, 52px); }
-    .reel.win { border-color: var(--gold); box-shadow: 0 0 22px var(--gold), inset 0 0 16px rgba(255,215,0,0.3); }
-    .reel.near { border-color: var(--pink); box-shadow: 0 0 18px var(--pink); }
-    .payline { position: absolute; left: -4px; right: -4px; top: 50%; height: 2px; background: var(--pink); box-shadow: 0 0 10px var(--pink); transform: translateY(-1px); opacity: .0; }
+    .reel.win { border-color: var(--h1); box-shadow: 0 0 22px var(--h1), inset 0 0 16px rgba(255,158,44,0.25); }
+    .reel.near { border-color: var(--h1); box-shadow: 0 0 18px var(--h1); }
+    .payline { position: absolute; left: -4px; right: -4px; top: 50%; height: 2px; background: var(--h1); box-shadow: 0 0 10px var(--h1); transform: translateY(-1px); opacity: .0; }
 
     /* Dice */
     .dice-tray { display: flex; gap: 18px; }
     .die {
       width: clamp(70px, 24vw, 96px); height: clamp(70px, 24vw, 96px); border-radius: 16px;
-      background: linear-gradient(150deg, #fff, #d7d0ff); position: relative;
-      box-shadow: 0 0 20px rgba(0,240,255,0.4), inset 0 -6px 10px rgba(0,0,0,0.2);
+      background: linear-gradient(150deg, #fff, #f0e2cf); position: relative;
+      box-shadow: 0 0 20px rgba(255,158,44,0.4), inset 0 -6px 10px rgba(0,0,0,0.2);
       display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); padding: 14px; gap: 4px;
     }
     .die.rolling { animation: diceShake .5s ease infinite; }
     @keyframes diceShake { 0%,100%{transform:rotate(-8deg) translateY(0);} 50%{transform:rotate(8deg) translateY(-8px);} }
     .die .pip { width: 100%; height: 100%; border-radius: 50%; background: transparent; }
-    .die .pip.on { background: radial-gradient(circle at 35% 30%, #ff5fae, #8a0a4a); box-shadow: 0 0 6px rgba(138,10,74,0.6); }
-    .die.win { box-shadow: 0 0 28px var(--gold); }
+    .die .pip.on { background: radial-gradient(circle at 35% 30%, #c2601a, #8a0a4a); box-shadow: 0 0 6px rgba(138,10,74,0.6); }
+    .die.win { box-shadow: 0 0 28px var(--h1); }
 
     /* Mystery box */
     .mbox {
       width: clamp(130px, 40vw, 180px); height: clamp(130px, 40vw, 180px); border-radius: 22px; cursor: pointer;
-      background: linear-gradient(160deg, #2a0c4d, #4a127a); border: 3px solid var(--cyan);
-      box-shadow: 0 0 30px rgba(0,240,255,0.5), inset 0 0 30px rgba(0,0,0,0.4);
+      background: linear-gradient(160deg, #2a1a0d, #5e3b12); border: 3px solid var(--cyan);
+      box-shadow: 0 0 30px rgba(255,158,44,0.5), inset 0 0 30px rgba(0,0,0,0.4);
       display: grid; place-items: center; font-size: 72px; transition: .15s; position: relative;
     }
     .mbox .lid { transition: .3s; }
     .mbox.shake { animation: boxShake .4s ease; }
     @keyframes boxShake { 0%,100%{transform:translateX(0) rotate(0);} 20%{transform:translateX(-6px) rotate(-4deg);} 40%{transform:translateX(6px) rotate(4deg);} 60%{transform:translateX(-5px) rotate(-3deg);} 80%{transform:translateX(5px) rotate(3deg);} }
-    .mbox.open { box-shadow: 0 0 60px var(--gold); border-color: var(--gold); }
+    .mbox.open { box-shadow: 0 0 60px var(--h1); border-color: var(--h1); }
 
     /* ---------- Extra-habits + editor controls ---------- */
-    .extra-banner { border-color: rgba(0,240,255,0.32); background: linear-gradient(120deg, rgba(0,240,255,0.08), rgba(57,255,20,0.06)); }
+    .extra-banner { border-color: rgba(255,158,44,0.32); background: linear-gradient(120deg, rgba(255,158,44,0.08), rgba(57,255,20,0.06)); }
     .progress-fill.extra { background: linear-gradient(90deg, var(--cyan), var(--purple)); box-shadow: 0 0 16px var(--cyan); }
     .sect-in { padding: 6px 8px; font-size: 13px; }
     .rep-toggle { cursor: pointer; user-select: none; }
@@ -1006,9 +1034,9 @@
     .oneoff-wheel { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 0 0 auto; }
     .habit-wheel-wrap { width: min(74vw, 270px); height: min(74vw, 270px); }
     .oneoff-grid { flex: 1 1 300px; align-content: flex-start; }
-    .btn.purple { background: linear-gradient(180deg, var(--purple), #7a0aa8); box-shadow: 0 0 18px rgba(176,38,255,.5), 0 6px 0 #4a0668; color: #fff; }
-    .btn.purple:hover { box-shadow: 0 0 26px rgba(176,38,255,.85), 0 8px 0 #4a0668; }
-    .habit.oneoff { border-color: rgba(176,38,255,0.32); }
+    .btn.purple { background: linear-gradient(180deg, var(--purple), #a3561c); box-shadow: 0 0 18px rgba(196,122,58,.5), 0 6px 0 #6b360e; color: #fff; }
+    .btn.purple:hover { box-shadow: 0 0 26px rgba(196,122,58,.85), 0 8px 0 #6b360e; }
+    .habit.oneoff { border-color: rgba(196,122,58,0.32); }
     .habit.spin-pick { border-color: var(--yellow); box-shadow: 0 0 26px var(--yellow); animation: pickPulse .55s ease 3; }
     @keyframes pickPulse { 50% { transform: scale(1.04); } }
 
@@ -1061,7 +1089,7 @@
     .quad[style*="--qc"] .quad-head { color: var(--qc); }
     .quad[style*="--qc"] .quad-n { color: color-mix(in srgb, var(--qc) 75%, #fff 25%); }
     /* The box the finger is currently over. */
-    .quad.over { border-color: var(--cyan) !important; background: rgba(0,240,255,.07); border-style: solid; }
+    .quad.over { border-color: var(--cyan) !important; background: rgba(255,158,44,.07); border-style: solid; }
     .quad-head {
       display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px;
       font-size: 11px; font-weight: 800; letter-spacing: .3px;
@@ -1120,7 +1148,7 @@
       border: 1.5px solid var(--panel-edge); color: var(--ink); transition: .15s;
     }
     .chip:active { transform: scale(.95); }
-    .cat-chip.sel { background: var(--purple); border-color: var(--purple); color: #fff; box-shadow: 0 0 10px rgba(176,38,255,.6); }
+    .cat-chip.sel { background: var(--purple); border-color: var(--purple); color: #fff; box-shadow: 0 0 10px rgba(196,122,58,.6); }
     .cat-chip.new { border-style: dashed; color: var(--ink-dim); }
     /* Quick-add's quadrant picker. Deliberately its own class rather than `.chip`/
        `.quad-btn` — both get swept to plain grey by the checked-state override further
@@ -1168,8 +1196,8 @@
     /* Live per-category happy-hour banner (Habits + Tasks tabs) */
     .hh-banner {
       display: none; margin: 10px 0; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 14px;
-      border: 1px solid var(--purple); background: linear-gradient(120deg, rgba(176,38,255,0.15), rgba(0,240,255,0.06));
-      box-shadow: 0 0 16px rgba(176,38,255,0.35);
+      border: 1px solid var(--purple); background: linear-gradient(120deg, rgba(196,122,58,0.15), rgba(255,158,44,0.06));
+      box-shadow: 0 0 16px rgba(196,122,58,0.35);
     }
     .hh-banner div + div { margin-top: 4px; }
 
@@ -1189,8 +1217,8 @@
     .pips { display: inline-flex; gap: 4px; }
     .pip-dot { width: 13px; height: 13px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); transition: .2s; }
     .pip-dot.on { background: var(--orange); box-shadow: 0 0 8px var(--orange); border-color: var(--orange); }
-    .pip-dot.gold { border-color: rgba(255,215,0,0.5); }
-    .pip-dot.gold.on { background: var(--gold); box-shadow: 0 0 12px var(--gold); border-color: var(--gold); }
+    .pip-dot.gold { border-color: rgba(255,158,44,0.5); }
+    .pip-dot.gold.on { background: var(--h1); box-shadow: 0 0 12px var(--h1); border-color: var(--h1); }
     .streak-goal { color: var(--ink-dim); font-weight: 700; }
 
     /* Quantity stepper in the claim panel. Was scoped to `.recycle-menu .rstep`, a
@@ -1200,33 +1228,33 @@
       width: 26px; height: 26px; border-radius: 7px; cursor: pointer; line-height: 1;
       border: 1px solid var(--panel-edge); background: rgba(255,255,255,0.06); color: #fff; font-weight: 900; font-size: 16px;
     }
-    .rstep:hover { box-shadow: 0 0 10px var(--gold); border-color: var(--gold); }
+    .rstep:hover { box-shadow: 0 0 10px var(--h1); border-color: var(--h1); }
 
     /* Streak Freeze count tag + special prize marker */
     .freeze-tag {
       display: inline-flex; align-items: center; gap: 2px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px;
-      color: var(--cyan); background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.4);
-      padding: 2px 9px; border-radius: 999px; box-shadow: 0 0 8px rgba(0,240,255,0.25);
+      color: var(--cyan); background: rgba(255,158,44,0.1); border: 1px solid rgba(255,158,44,0.4);
+      padding: 2px 9px; border-radius: 999px; box-shadow: 0 0 8px rgba(255,158,44,0.25);
     }
-    .prize.special { border-color: var(--cyan) !important; box-shadow: 0 0 14px rgba(0,240,255,0.35); position: relative; }
+    .prize.special { border-color: var(--cyan) !important; box-shadow: 0 0 14px rgba(255,158,44,0.35); position: relative; }
     .special-tag {
       margin-top: 4px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 9px; letter-spacing: 1px;
-      color: var(--cyan); text-shadow: 0 0 8px rgba(0,240,255,0.6);
+      color: var(--cyan); text-shadow: 0 0 8px rgba(255,158,44,0.6);
     }
 
     /* ---------- Ultra Pack ---------- */
-    .ultra-title { background: linear-gradient(90deg, var(--cyan), var(--pink), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 8px rgba(255,27,141,.4)); }
-    #openUltra { background: linear-gradient(180deg, var(--purple), #7a0aa8); box-shadow: 0 0 18px rgba(176,38,255,.6), 0 6px 0 #4a0668; color: #fff; }
-    #openUltra:hover { box-shadow: 0 0 26px rgba(176,38,255,.9), 0 8px 0 #4a0668; transform: translateY(-2px); }
+    .ultra-title { background: linear-gradient(90deg, var(--h1), var(--h-live)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 8px rgba(255,158,44,.35)); }
+    #openUltra { background: linear-gradient(180deg, var(--purple), #a3561c); box-shadow: 0 0 18px rgba(196,122,58,.6), 0 6px 0 #6b360e; color: #fff; }
+    #openUltra:hover { box-shadow: 0 0 26px rgba(196,122,58,.9), 0 8px 0 #6b360e; transform: translateY(-2px); }
     .ultra-stage { width: 100%; min-height: min(104vw, 380px); display: grid; place-items: center; }
     .ultra-hint { margin-top: 14px; text-align: center; color: var(--ink-dim); font-weight: 700; min-height: 20px; }
 
     /* Foil wrapper */
     .pack-wrapper {
       width: min(68vw, 240px); height: min(96vw, 340px); border-radius: 16px; position: relative; cursor: pointer; overflow: hidden;
-      background: linear-gradient(135deg, #ff1b8d, #b026ff 30%, #00f0ff 60%, #ffd700 90%); background-size: 300% 300%;
+      background: linear-gradient(135deg, #ff9e2c, #c47a3a 30%, #ffc96b 60%, #f2794a 90%); background-size: 300% 300%;
       animation: foilShift 4s linear infinite; border: 3px solid rgba(255,255,255,.55);
-      box-shadow: 0 0 42px rgba(176,38,255,.6), inset 0 0 40px rgba(0,0,0,.3); transition: transform .25s;
+      box-shadow: 0 0 42px rgba(196,122,58,.6), inset 0 0 40px rgba(0,0,0,.3); transition: transform .25s;
     }
     .pack-wrapper:hover { transform: translateY(-5px) scale(1.02); }
     @keyframes foilShift { to { background-position: 300% 0; } }
@@ -1249,14 +1277,14 @@
 
     /* Cards */
     .ucard-stack { position: relative; width: min(70vw, 248px); height: min(100vw, 348px); display: grid; place-items: center; }
-    .stack-edge { position: absolute; width: 94%; height: 97%; border-radius: 14px; background: linear-gradient(160deg, #2a0c4d, #160427); border: 1px solid rgba(255,255,255,.12); }
+    .stack-edge { position: absolute; width: 94%; height: 97%; border-radius: 14px; background: linear-gradient(160deg, #2a1a0d, #1a1108); border: 1px solid rgba(255,255,255,.12); }
     .stack-edge.e1 { transform: translate(9px, 9px) rotate(2.5deg); }
     .stack-edge.e2 { transform: translate(-8px, 6px) rotate(-2.5deg); }
     .stack-edge.e3 { transform: translate(4px, 13px) rotate(1deg); }
     .ucard {
       position: relative; width: min(70vw, 248px); height: min(100vw, 348px); border-radius: 16px; overflow: hidden;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer; user-select: none;
-      background: linear-gradient(165deg, #241043, #120322); border: 3px solid var(--t-common); text-align: center;
+      background: linear-gradient(165deg, #0d1b29, #060f18); border: 3px solid var(--t-common); text-align: center;
       box-shadow: 0 12px 32px rgba(0,0,0,.5);
     }
     .ucard.dealIn { animation: dealIn .5s cubic-bezier(.2,1.35,.4,1); }
@@ -1271,12 +1299,12 @@
     .ucard.epic { border-color: var(--t-epic); color: var(--t-epic); box-shadow: 0 0 34px rgba(196,77,255,.6); }
     .ucard.legendary { border-color: var(--t-legendary); color: var(--t-legendary); box-shadow: 0 0 42px rgba(255,215,0,.7); }
     .ucard.rare .ucard-foil, .ucard.epic .ucard-foil, .ucard.legendary .ucard-foil { opacity: 1; animation: foilSweep 2.4s linear infinite; }
-    .ucard.penult { box-shadow: 0 0 54px rgba(0,240,255,.85); }
+    .ucard.penult { box-shadow: 0 0 54px rgba(255,158,44,.85); }
     .ucard.finale { animation: dealIn .5s cubic-bezier(.2,1.35,.4,1), finalePulse 1.3s ease-in-out infinite .5s; }
-    @keyframes finalePulse { 50% { box-shadow: 0 0 95px rgba(255,215,0,1), 0 0 45px rgba(255,27,141,.85); } }
+    @keyframes finalePulse { 50% { box-shadow: 0 0 95px rgba(255,158,44,1), 0 0 45px rgba(255,201,107,.85); } }
 
     /* Cover card (hides card 1) */
-    .ucard.cover { background: linear-gradient(135deg, #ff1b8d, #b026ff 45%, #00f0ff 85%); border-color: rgba(255,255,255,.65); color: #fff; }
+    .ucard.cover { background: linear-gradient(135deg, #ff9e2c, #c47a3a 45%, #ff9e2c 85%); border-color: rgba(255,255,255,.65); color: #fff; }
     .cover-bolt { font-size: 64px; filter: drop-shadow(0 0 12px #fff); z-index: 1; }
     .cover-name { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(20px, 5vw, 28px); letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,.5); z-index: 1; }
     .cover-tag { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 3px; margin-top: 8px; z-index: 1; }
@@ -1293,10 +1321,10 @@
     /* End-of-pack summary */
     .ultra-summary { width: 100%; max-width: 500px; text-align: center; animation: fadeUp .4s ease; }
     .us-title { font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 2px; font-size: clamp(18px, 4vw, 24px); margin-bottom: 14px;
-      background: linear-gradient(90deg, var(--cyan), var(--pink), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      background: linear-gradient(90deg, var(--h1), var(--h-live)); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .us-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .mini-card {
-      background: linear-gradient(160deg, #241043, #120322); border: 2px solid var(--t-common); border-radius: 10px; padding: 8px 4px;
+      background: linear-gradient(160deg, #0d1b29, #060f18); border: 2px solid var(--t-common); border-radius: 10px; padding: 8px 4px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 74px;
     }
     .mini-card .mc-e { font-size: 26px; filter: drop-shadow(0 0 6px currentColor); }
@@ -1315,12 +1343,12 @@
     .rou-pointer {
       position: absolute; top: -4px; left: 50%; transform: translateX(-50%); z-index: 7;
       width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent;
-      border-top: 22px solid var(--yellow); filter: drop-shadow(0 0 7px var(--yellow));
+      border-top: 22px solid var(--h1); filter: drop-shadow(0 0 7px var(--h1));
     }
     .rou-wheel {
       position: absolute; inset: 0; border-radius: 50%;
-      border: 6px solid #d8b25a;
-      box-shadow: 0 0 0 5px #5a3d12, 0 0 38px rgba(255,215,0,0.4), inset 0 0 34px rgba(0,0,0,0.7);
+      border: 6px solid #d8905a;
+      box-shadow: 0 0 0 5px #5a2f12, 0 0 38px rgba(255,159,26,0.4), inset 0 0 34px rgba(0,0,0,0.7);
       transition: transform 5s cubic-bezier(.1,.62,.06,1);
     }
     .rou-num {
@@ -1334,26 +1362,26 @@
     }
     .rou-hub {
       position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; transform: translate(-50%,-50%);
-      border-radius: 50%; z-index: 5; background: radial-gradient(circle at 35% 30%, #fff7d6, #b8860b);
-      box-shadow: 0 0 18px rgba(255,215,0,0.6); display: grid; place-items: center;
-      font-family: 'Orbitron'; font-weight: 900; font-size: 24px; color: #3a2600;
+      border-radius: 50%; z-index: 5; background: radial-gradient(circle at 35% 30%, #ffe9c4, #b06a0b);
+      box-shadow: 0 0 18px rgba(255,159,26,0.6); display: grid; place-items: center;
+      font-family: 'Orbitron'; font-weight: 900; font-size: 24px; color: #3a1c00;
     }
     .rou-panel { width: 100%; max-width: 540px; }
     .rou-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
     .rou-lbl { font-family: 'Orbitron'; font-size: 11px; letter-spacing: 1px; color: var(--ink-dim); min-width: 64px; }
     .rou-chip {
       width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-family: 'Orbitron'; font-weight: 900; font-size: 13px;
-      color: #221c00; background: radial-gradient(circle at 35% 30%, #fff2a8, #e9c33a); border: 2px dashed #8a6e00; transition: .15s;
+      color: #2a1504; background: radial-gradient(circle at 35% 30%, #ffd9a8, #e08a3a); border: 2px dashed #8a4e00; transition: .15s;
     }
     .rou-chip:hover { transform: translateY(-2px); }
-    .rou-chip.active { box-shadow: 0 0 14px var(--yellow); border-color: #fff; transform: translateY(-2px) scale(1.06); }
+    .rou-chip.active { box-shadow: 0 0 14px var(--h1); border-color: #fff; transform: translateY(-2px) scale(1.06); }
     .rou-mode {
       cursor: pointer; padding: 7px 10px; border-radius: 9px; font-weight: 700; font-size: 13px; color: var(--ink);
       background: rgba(255,255,255,0.05); border: 1px solid var(--panel-edge); transition: .15s;
     }
     .rou-mode .pay { color: var(--cyan); font-family: 'Orbitron'; font-size: 11px; }
     .rou-mode:hover { transform: translateY(-2px); }
-    .rou-mode.active { border-color: var(--pink); box-shadow: 0 0 12px rgba(255,27,141,.5); }
+    .rou-mode.active { border-color: var(--h1); box-shadow: 0 0 12px rgba(255,158,44,.4); }
     .rou-mode.quick { border-color: rgba(57,255,20,.4); }
     .rou-status { text-align: center; font-size: 14px; margin: 4px 0 10px; min-height: 20px; }
     .rou-zeros { display: flex; gap: 6px; margin-bottom: 6px; }
@@ -1367,11 +1395,11 @@
     .rou-cell.black { background: linear-gradient(180deg, #2a2a34, #111118); }
     .rou-cell.green { background: linear-gradient(180deg, #28d06a, #0f7a3a); }
     .rou-cell:hover { transform: translateY(-2px); box-shadow: 0 0 12px rgba(255,255,255,.3); }
-    .rou-cell.sel { outline: 3px solid var(--yellow); outline-offset: 1px; box-shadow: 0 0 14px var(--yellow); }
+    .rou-cell.sel { outline: 3px solid var(--h1); outline-offset: 1px; box-shadow: 0 0 14px var(--h1); }
     .cell-chip {
       position: absolute; top: -7px; right: -6px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 999px;
-      background: radial-gradient(circle at 35% 30%, #fff2a8, #e9c33a); color: #221c00; font-size: 11px;
-      font-family: 'Orbitron'; font-weight: 900; display: grid; place-items: center; box-shadow: 0 0 8px var(--yellow);
+      background: radial-gradient(circle at 35% 30%, #ffd9a8, #e08a3a); color: #2a1504; font-size: 11px;
+      font-family: 'Orbitron'; font-weight: 900; display: grid; place-items: center; box-shadow: 0 0 8px var(--h1);
     }
     .rou-slip { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
     .slip-item {
@@ -1388,8 +1416,8 @@
     .reveal-overlay.show { display: grid; animation: fadeUp .25s ease; }
     .reveal-card {
       text-align: center; padding: 30px 34px; border-radius: 22px; max-width: 90vw;
-      background: var(--panel); border: 2px solid var(--gold);
-      box-shadow: 0 0 50px rgba(255,215,0,0.5);
+      background: var(--panel); border: 2px solid var(--h1);
+      box-shadow: 0 0 50px rgba(255,159,26,0.5);
       animation: revealPop .5s cubic-bezier(.2,1.4,.4,1);
     }
     @keyframes revealPop { 0%{transform:scale(.4) rotate(-8deg); opacity:0;} 100%{transform:none; opacity:1;} }
@@ -1423,13 +1451,13 @@
     .sub-head {
       margin: 20px 0 6px; padding-top: 14px; border-top: 1px solid var(--panel-edge);
       font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 13px;
-      letter-spacing: .6px; color: var(--cyan);
+      letter-spacing: .6px; color: var(--h3);
     }
     .redeem-lock { margin-top: 12px; padding: 10px 14px; border-radius: 12px; font-size: 14px;
-      background: rgba(255,27,141,0.1); border: 1px solid rgba(255,27,141,0.4); color: var(--ink); }
+      background: rgba(255,158,44,0.1); border: 1px solid rgba(255,158,44,0.4); color: var(--ink); }
     .happy-badge { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px; letter-spacing: 1px;
-      color: #221c00; background: linear-gradient(180deg, #ffe600, #ffab00); padding: 6px 12px; border-radius: 999px;
-      box-shadow: 0 0 16px rgba(255,230,0,0.7); animation: pop 0.5s ease; }
+      color: #2a1504; background: linear-gradient(180deg, #ffc247, #ff8c1a); padding: 6px 12px; border-radius: 999px;
+      box-shadow: 0 0 16px rgba(255,194,71,0.7); animation: pop 0.5s ease; }
     .set-sep { border: none; border-top: 1px dashed var(--panel-edge); margin: 16px 0 4px; }
     input[type="time"] { font-family: 'Rajdhani', sans-serif; }
     .badge { position: absolute; top: 8px; left: 8px; font-size: 10px; font-family:'Orbitron'; font-weight:900; letter-spacing:1px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
@@ -1487,11 +1515,11 @@
       background: rgba(0,0,0,0.4); border: 1px solid var(--panel-edge); color: var(--ink);
       border-radius: 9px; padding: 8px 10px; outline: none; transition: .15s;
     }
-    input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,240,255,0.4); }
+    input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(255,158,44,0.4); }
     input.emoji-in { width: 52px; text-align: center; font-size: 20px; }
     input.name-in { flex: 1 1 140px; min-width: 120px; }
     input.num-in { width: 72px; }
-    input[type="range"] { accent-color: var(--pink); }
+    input[type="range"] { accent-color: var(--h1); }
     select { cursor: pointer; }
     .del { cursor: pointer; color: var(--pink); font-weight: 900; font-size: 18px; background: none; border: none; padding: 4px 8px; }
     .del:hover { text-shadow: 0 0 10px var(--pink); }
@@ -1512,18 +1540,18 @@
     /* Toast */
     #toast {
       position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(40px);
-      z-index: 80; background: rgba(20,6,42,0.95); border: 1px solid var(--pink);
+      z-index: 80; background: rgba(24,15,6,0.95); border: 1px solid var(--h2);
       color: #fff; padding: 12px 22px; border-radius: 12px; font-weight: 700;
-      box-shadow: 0 0 24px rgba(255,27,141,0.5); opacity: 0; transition: .3s; pointer-events: none;
+      box-shadow: 0 0 24px rgba(255,158,44,0.5); opacity: 0; transition: .3s; pointer-events: none;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     #undoBar {
       position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
       z-index: 81; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
-      background: rgba(20,6,42,0.95); border: 1px solid var(--cyan);
+      background: rgba(24,15,6,0.95); border: 1px solid var(--cyan);
       color: #fff; padding: 8px 8px 8px 16px; border-radius: 12px; font-weight: 700;
-      box-shadow: 0 0 24px rgba(0,240,255,0.45); opacity: 0; transition: .25s; pointer-events: none;
+      box-shadow: 0 0 24px rgba(255,158,44,0.45); opacity: 0; transition: .25s; pointer-events: none;
     }
     #undoBar.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
     .undo-label { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1585,13 +1613,13 @@
       right: 14px; bottom: calc(80px + env(safe-area-inset-bottom));
       flex-direction: column; align-items: center; gap: 1px; cursor: pointer;
       width: 78px; padding: 9px 6px 7px; border-radius: 16px; color: #fff;
-      background: linear-gradient(160deg, #ff1b8d, #b026ff 55%, #00f0ff);
+      background: linear-gradient(160deg, #ff9e2c, #c47a3a 55%, #ff9e2c);
       border: 2px solid rgba(255,255,255,0.7);
-      box-shadow: 0 0 22px rgba(176,38,255,0.7), 0 8px 18px rgba(0,0,0,0.5);
+      box-shadow: 0 0 22px rgba(196,122,58,0.7), 0 8px 18px rgba(0,0,0,0.5);
       animation: passFabPulse 2.4s ease-in-out infinite;
     }
     .pass-fab.show { display: flex; }
-    @keyframes passFabPulse { 50% { box-shadow: 0 0 32px rgba(255,27,141,0.9), 0 8px 18px rgba(0,0,0,0.5); } }
+    @keyframes passFabPulse { 50% { box-shadow: 0 0 32px rgba(255,158,44,0.9), 0 8px 18px rgba(0,0,0,0.5); } }
     .pass-fab:active { transform: scale(0.95); }
     .pf-bolt { font-size: 26px; line-height: 1; filter: drop-shadow(0 0 6px #fff); }
     .pf-txt { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 9px; letter-spacing: .5px; line-height: 1.05; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
@@ -1605,8 +1633,8 @@
       top: env(safe-area-inset-top); width: min(560px, 96vw);
       height: calc(100vh - env(safe-area-inset-top) - 10px); max-height: 880px;
       display: flex; flex-direction: column; overflow: hidden;
-      background: linear-gradient(180deg, #1a0533, #0c0118); border: 1px solid var(--panel-edge);
-      border-radius: 20px; box-shadow: 0 0 60px rgba(176,38,255,0.5);
+      background: linear-gradient(180deg, #261806, #140c05); border: 1px solid var(--panel-edge);
+      border-radius: 20px; box-shadow: 0 0 60px rgba(196,122,58,0.5);
     }
     #passBody, #planBody { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
     .pass-head { flex: 0 0 auto; padding: 14px 14px 8px; border-bottom: 1px solid var(--panel-edge); }
@@ -1614,7 +1642,7 @@
       padding: 12px 14px calc(20px + env(safe-area-inset-bottom)); }
     .pass-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 10px; z-index: 5;
       background: rgba(255,255,255,0.12); border: 1px solid var(--panel-edge); color: #fff; font-size: 18px; cursor: pointer; }
-    .pass-close:hover { box-shadow: 0 0 12px var(--pink); }
+    .pass-close:hover { box-shadow: 0 0 12px var(--h1); }
     /* Goals dropdown */
     .pass-goals-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
     .pg-caret { display: inline-block; transition: transform .2s; font-size: 11px; }
@@ -1623,14 +1651,14 @@
     .pass-banner { display: flex; align-items: center; gap: 12px; padding: 8px 6px 12px; }
     .pass-bolt { font-size: 40px; filter: drop-shadow(0 0 12px var(--purple)); }
     .pass-title { font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 2px; font-size: 24px;
-      background: linear-gradient(90deg, var(--cyan), var(--pink), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      background: linear-gradient(90deg, var(--h1), var(--h-live)); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .pass-sub { font-size: 13px; color: var(--ink-dim); font-weight: 700; }
 
     .pass-levelrow { display: flex; align-items: center; gap: 12px; padding: 4px 4px 14px; }
     .pass-lvl { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--ink-dim); text-align: center; line-height: 1.1; flex: 0 0 auto; }
-    .pass-lvl b { font-size: 26px; color: var(--cyan); text-shadow: 0 0 10px rgba(0,240,255,.7); }
+    .pass-lvl b { font-size: 26px; color: var(--cyan); text-shadow: 0 0 10px rgba(255,158,44,.7); }
     .pass-xpwrap { flex: 1 1 auto; }
-    .pass-xpbar { height: 14px; border-radius: 999px; background: rgba(0,0,0,0.5); overflow: hidden; border: 1px solid rgba(176,38,255,0.4); }
+    .pass-xpbar { height: 14px; border-radius: 999px; background: rgba(0,0,0,0.5); overflow: hidden; border: 1px solid rgba(196,122,58,0.4); }
     .pass-xpfill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--purple), var(--cyan)); box-shadow: 0 0 14px var(--cyan); transition: width .5s cubic-bezier(.2,.9,.2,1); }
     .pass-xptxt { font-size: 12px; color: var(--ink-dim); font-weight: 700; margin-top: 4px; text-align: right; }
 
@@ -1649,37 +1677,37 @@
 
     .pass-proupg { margin: 14px 0 6px; text-align: center; }
     .pass-proupg .btn { width: 100%; }
-    .pass-pro-on { font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 1px; font-size: 13px; color: #221c00;
-      background: linear-gradient(180deg, #ffe600, #ffab00); padding: 10px; border-radius: 12px; box-shadow: 0 0 18px rgba(255,230,0,0.6); }
+    .pass-pro-on { font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 1px; font-size: 13px; color: #2a1504;
+      background: linear-gradient(180deg, #ff9e2c, #c47a3a); padding: 10px; border-radius: 12px; box-shadow: 0 0 18px rgba(255,158,44,0.55); }
 
     /* Reward track (free | tier | pro) */
     .pass-laneshead { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 8px; margin: 12px 2px 6px; text-align: center;
       font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px; letter-spacing: 1px; }
-    .pass-laneshead .lh-free { color: var(--cyan); } .pass-laneshead .lh-tier { color: var(--ink-dim); } .pass-laneshead .lh-pro { color: var(--gold); }
+    .pass-laneshead .lh-free { color: var(--h3); } .pass-laneshead .lh-tier { color: var(--ink-dim); } .pass-laneshead .lh-pro { color: var(--h1); }
     .pass-track { display: flex; flex-direction: column; gap: 8px; }
     .pass-tier { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 8px; align-items: stretch; }
     /* regular tiers = circles; ×10 milestones = diamonds */
     .pt-num { align-self: center; justify-self: center; width: 40px; height: 40px; display: grid; place-items: center;
       font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; color: var(--ink-dim);
       background: rgba(255,255,255,0.05); border: 1.5px solid var(--panel-edge); border-radius: 50%; }
-    .pass-tier.reached .pt-num { color: #fff; background: linear-gradient(160deg, var(--purple), var(--pink)); border-color: transparent; box-shadow: 0 0 12px rgba(176,38,255,.6); }
+    .pass-tier.reached .pt-num { color: #fff; background: linear-gradient(160deg, var(--h2), var(--h1)); border-color: transparent; box-shadow: 0 0 12px rgba(255,158,44,.45); }
     .pt-num.milestone { width: 44px; height: 44px; border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-      font-size: 15px; color: var(--gold); border-color: var(--gold); filter: drop-shadow(0 0 6px rgba(255,215,0,.5)); }
-    .pass-tier.reached .pt-num.milestone { background: linear-gradient(160deg, #ffd700, #ff8a00); color: #2a1500; }
+      font-size: 15px; color: var(--h1); border-color: var(--h1); filter: drop-shadow(0 0 6px rgba(255,158,44,.45)); }
+    .pass-tier.reached .pt-num.milestone { background: linear-gradient(160deg, #ff9e2c, #ffc96b); color: #2a1504; }
     .pass-tier.current .pt-num { filter: drop-shadow(0 0 7px var(--cyan)); border-color: var(--cyan); }
     .pt-cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
       min-height: 60px; padding: 8px 4px; border-radius: 12px; border: 1px solid var(--panel-edge); overflow: hidden; }
-    .pt-cell.free { background: linear-gradient(160deg, rgba(0,240,255,0.10), rgba(20,6,42,0.5)); }
-    .pt-cell.pro  { background: linear-gradient(160deg, rgba(255,171,0,0.12), rgba(20,6,42,0.5)); border-color: rgba(255,200,0,0.35); }
+    .pt-cell.free { background: linear-gradient(160deg, rgba(255,158,44,0.10), rgba(24,15,6,0.5)); }
+    .pt-cell.pro  { background: linear-gradient(160deg, rgba(255,171,0,0.12), rgba(24,15,6,0.5)); border-color: rgba(255,200,0,0.35); }
     .pt-cell.locked, .pt-cell.needpro { filter: grayscale(.7) brightness(.6); opacity: .8; }
     .pt-cell.got { box-shadow: inset 0 0 0 2px rgba(57,255,20,0.5); }
     /* Reached, unpaid — the whole point of "claimable" is that this is the one state
        that visibly asks for a tap, so it gets the pulse the others don't. */
-    .pt-cell.claimable { cursor: pointer; box-shadow: 0 0 0 2px var(--gold), 0 0 14px rgba(255,200,0,.5); animation: ptClaimPulse 1.6s ease-in-out infinite; }
+    .pt-cell.claimable { cursor: pointer; box-shadow: 0 0 0 2px var(--h1), 0 0 14px rgba(255,158,44,.45); animation: ptClaimPulse 1.6s ease-in-out infinite; }
     .pt-cell.claimable:active { transform: scale(.95); }
-    @keyframes ptClaimPulse { 50% { box-shadow: 0 0 0 2px var(--gold), 0 0 24px rgba(255,200,0,.85); } }
+    @keyframes ptClaimPulse { 50% { box-shadow: 0 0 0 2px var(--h1), 0 0 24px rgba(255,158,44,.8); } }
     .pt-claim { position: absolute; top: 4px; right: 5px; font-size: 13px; animation: ptClaimPulse 1.6s ease-in-out infinite; }
-    .pt-cell.wild { background: linear-gradient(135deg, #ff1b8d, #b026ff 50%, #00f0ff); border-color: rgba(255,255,255,0.6); }
+    .pt-cell.wild { background: linear-gradient(135deg, #ff9e2c, #c47a3a 50%, #ff9e2c); border-color: rgba(255,255,255,0.6); }
     .pt-cell.wild .ptc-label, .pt-cell.wild .ptc-emoji { color: #fff !important; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
     .ptc-emoji { font-size: 26px; line-height: 1; }
     .ptc-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 10px; text-align: center; }
@@ -1690,7 +1718,7 @@
     .wild-overlay { position: fixed; inset: 0; z-index: 73; display: none; place-items: center; background: rgba(2,0,8,0.82); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
     .wild-overlay.show { display: grid; animation: fadeUp .25s ease; }
     .wild-modal { width: min(440px, 92vw); max-height: 86vh; overflow-y: auto; text-align: center;
-      background: linear-gradient(180deg, #1a0533, #0c0118); border: 2px solid var(--gold); border-radius: 20px; padding: 20px; box-shadow: 0 0 50px rgba(255,215,0,0.5); }
+      background: linear-gradient(180deg, #261806, #140c05); border: 2px solid var(--h1); border-radius: 20px; padding: 20px; box-shadow: 0 0 50px rgba(255,158,44,0.4); }
     .wild-head { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 17px; margin-bottom: 14px; }
     .wild-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 10px; }
     .wild-pick { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; padding: 14px 8px;
@@ -1707,7 +1735,7 @@
     }
     @media (max-width: 560px) { .logo { white-space: normal; } .ver-badge { margin-left: 4px; } }
     .ver-badge.alpha { color: #04210a; background: var(--green); box-shadow: 0 0 8px rgba(57,255,20,.5); }
-    .ver-badge.beta  { color: #2a1500; background: var(--orange); box-shadow: 0 0 10px rgba(255,107,0,.6); }
+    .ver-badge.beta  { color: #2a1504; background: var(--h2); box-shadow: 0 0 10px rgba(196,122,58,.6); }
     .ver-label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1px; color: var(--cyan); }
     #verName { font-family: 'Orbitron', sans-serif; }
 
@@ -1769,7 +1797,7 @@
       background: var(--gs-card); border: 1px solid var(--gs-edge); transition: .15s;
     }
     .cd-row:hover { border-color: var(--gs-edge-hi); }
-    .cd-row.active { border-color: var(--cyan); background: rgba(0,240,255,.08); }
+    .cd-row.active { border-color: var(--cyan); background: rgba(255,158,44,.08); }
     .cd-main { flex: 1 1 auto; min-width: 0; }
     .cd-name { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .cd-when { font-size: 10px; font-weight: 700; color: var(--ink-dim); margin-top: 1px; }
@@ -1800,10 +1828,10 @@
       display: flex; flex-direction: column; gap: 10px;
     }
     .ai-msg { max-width: 88%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
-    .ai-msg.user { align-self: flex-end; background: rgba(0, 240, 255, .12); border: 1px solid rgba(0, 240, 255, .35); }
-    .ai-msg.assistant { align-self: flex-start; background: rgba(176, 38, 255, .12); border: 1px solid rgba(176, 38, 255, .35); }
+    .ai-msg.user { align-self: flex-end; background: rgba(255, 158, 44, .12); border: 1px solid rgba(255, 158, 44, .35); }
+    .ai-msg.assistant { align-self: flex-start; background: rgba(70, 167, 214, .12); border: 1px solid rgba(70, 167, 214, .35); }
     .ai-msg.thinking { align-self: flex-start; color: var(--ink-dim); border: 1px dashed var(--panel-edge); background: none; }
-    .ai-msg.err { align-self: flex-start; border: 1px solid var(--pink); color: var(--pink); background: rgba(255, 27, 141, .08); }
+    .ai-msg.err { align-self: flex-start; border: 1px solid var(--pink); color: var(--pink); background: rgba(255, 59, 92, .08); }
     .ai-inputrow { display: flex; gap: 8px; padding: 10px 0 2px; border-top: 1px solid var(--panel-edge); flex: 0 0 auto; }
     .ai-inputrow .name-in { flex: 1; }
 
@@ -1812,7 +1840,7 @@
       align-self: stretch; border: 1px solid rgba(57, 255, 20, .4); border-radius: 12px;
       padding: 10px 12px; background: rgba(57, 255, 20, .06); font-size: 13px;
     }
-    .prop-card.tierchange { border-color: rgba(255, 230, 0, .45); background: rgba(255, 230, 0, .05); }
+    .prop-card.tierchange { border-color: rgba(255, 194, 71, .45); background: rgba(255, 194, 71, .05); }
     .prop-card .p-kind { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-dim); }
     .prop-card .p-title { font-weight: 700; margin-top: 2px; }
     .prop-card .p-detail { color: var(--ink-dim); margin-top: 2px; }
@@ -1832,7 +1860,7 @@
     .ctx-badge {
       display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; letter-spacing: .5px;
       padding: 3px 10px; border-radius: 999px; color: var(--cyan);
-      border: 1px solid rgba(0,240,255,.5); background: rgba(0,240,255,.1);
+      border: 1px solid rgba(255,158,44,.5); background: rgba(255,158,44,.1);
     }
     .plan-week-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .plan-week-nav .wk { flex: 1 1 auto; text-align: center; font-weight: 800; font-size: 13px; }
@@ -1848,15 +1876,15 @@
       background: rgba(0,0,0,0.4); border: 1px solid var(--panel-edge); color: var(--ink);
       border-radius: 9px; padding: 8px 10px; outline: none; transition: .15s;
     }
-    .plan-day textarea:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,240,255,0.4); }
+    .plan-day textarea:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(255,158,44,0.4); }
     .plan-props { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
     /* ---- Optional sign-in modal (Settings → ☁️ Cloud Save). Never a boot gate. ---- */
-    .auth-overlay { position: fixed; inset: 0; z-index: 90; display: none; background: radial-gradient(circle at 50% 0%, rgba(176,38,255,0.18), rgba(2,0,8,0.97) 60%); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .auth-overlay { position: fixed; inset: 0; z-index: 90; display: none; background: radial-gradient(circle at 50% 0%, rgba(196,122,58,0.18), rgba(2,0,8,0.97) 60%); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
     .auth-overlay.show { display: flex; align-items: center; justify-content: center; padding: 24px; }
     .auth-card { position: relative; width: min(380px, 92vw); text-align: center; }
     .auth-card .pass-close { top: -6px; right: -6px; }
     .auth-logo { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 14px var(--purple)); }
-    .auth-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 2px; margin: 10px 0 4px; color: var(--cyan); text-shadow: 0 0 14px rgba(0,240,255,.55); }
+    .auth-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 2px; margin: 10px 0 4px; color: var(--cyan); text-shadow: 0 0 14px rgba(255,158,44,.55); }
     .auth-sub { color: var(--ink-dim); font-size: 13px; margin-bottom: 20px; }
     .auth-in { width: 100%; margin-bottom: 8px; text-align: left; }
     .auth-google { width: 100%; background: #fff; color: #1f1f1f; border-color: #fff; font-weight: 800; box-shadow: none; text-shadow: none; }
@@ -1894,14 +1922,14 @@
     .loadout-choice {
       width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
       padding: 12px 14px; border-radius: 12px; cursor: pointer; color: var(--ink); font: 800 16px 'Rajdhani', sans-serif;
-      background: linear-gradient(160deg, rgba(176,38,255,.12), rgba(20,6,42,.72)); border: 1px solid var(--panel-edge);
+      background: linear-gradient(160deg, rgba(196,122,58,.12), rgba(24,15,6,.72)); border: 1px solid var(--panel-edge);
     }
-    .loadout-choice.active { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 14px rgba(0,240,255,.24); }
+    .loadout-choice.active { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 14px rgba(255,158,44,.24); }
     .loadout-copy-groups { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; max-height: 44vh; overflow-y: auto; overflow-x: hidden; }
-    .loadout-copy-group { border: 1px solid var(--panel-edge); border-radius: 12px; background: rgba(20,6,42,.72); overflow: hidden; }
+    .loadout-copy-group { border: 1px solid var(--panel-edge); border-radius: 12px; background: rgba(24,15,6,.72); overflow: hidden; }
     .loadout-copy-group summary { cursor: pointer; padding: 11px 13px; font-weight: 800; color: var(--cyan); }
     .loadout-copy-items { display: flex; flex-direction: column; padding: 0 10px 10px; gap: 6px; }
-    .loadout-copy-item { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 9px; background: rgba(176,38,255,.09); }
+    .loadout-copy-item { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 9px; background: rgba(196,122,58,.09); }
     .loadout-copy-item input { flex: 0 0 auto; accent-color: var(--purple); }
 
     /* One-off tasks are a single vertical phone-width list—never a nested horizontal scroller. */
@@ -1957,6 +1985,73 @@
       --bg1: var(--gs-bg);
       --bg2: var(--gs-panel);
     }
+
+    /* =====================================================================
+       COLOUR HIERARCHY  —  blues carry structure, green means alive
+
+       Every heading and accent used to pick a colour at random: "🎁 Rewards"
+       was gold, "💎 Prize Pool" cyan, "🎯 One-Off Quests" purple, and the
+       Settings panels cycled through all five for no reason. Colour was
+       decoration, so it carried no information.
+
+       Now it does. THREE structural levels, all blue, separated by hue AND
+       glow so the ladder survives on a dim phone screen:
+
+         t1 ... a whole view or game        bright cyan, strong glow
+         t2 ... a panel inside one          azure, soft glow
+         t3 ... a group inside a panel      slate, no glow
+
+       GREEN is spent on one idea only: something is live right now — a
+       running timer, an active winning, the now-marker. It never decorates.
+
+       What deliberately keeps its own colour, because there it MEANS
+       something rather than merely brightening the page:
+         · Eisenhower quadrants (red/amber/blue/teal urgency)
+         · Rarity      (--t-common/rare/epic/legendary)
+         · Difficulty  (TASK_TIERS easy/medium/hard)
+         · Danger      (red/pink: delete, locked, errors, attention dot)
+         · Currency    (gold: tokens, balances, payouts)
+       ===================================================================== */
+    :root {
+      --h1: #ff9e2c;   /* view / game titles */
+      --h2: #c47a3a;   /* panel titles */
+      --h3: #a68a6f;   /* sub-heads, group labels */
+      --h-live: #ffc96b;   /* running right now */
+      /* Cyan was the app's primary accent, so re-pointing it converts every
+         `var(--cyan)` at once. The Rare rarity has its own --t-rare and is
+         unaffected. */
+      --cyan: #ff9e2c;
+      /* Currency joins the family. --gold/--yellow are display-only; the rarity
+         ladder keeps its own --t-* values. */
+      --gold: #ff9f1a;
+      --yellow: #ffc247;
+      /* Purple and orange were pure decoration — no rule anywhere read meaning
+         from either — so re-pointing the tokens converts every use at once. */
+      --purple: #c47a3a;
+      --orange: #c47a3a;
+      /* Muted body text was lavender (#b39ddb), which tinted half the app purple.
+         Same lightness, blue-grey instead, so nothing else has to change. */
+      --ink-dim: #bfa896;
+      /* Danger was magenta (#ff1b8d) — a rainbow colour doing a warning's job.
+         A true red still reads as "stop" and stops competing with the blues. */
+      --ink: #f9f1e8;
+      --pink: #ff3b5c;
+      /* Difficulty is an ordered scale, so it keeps its own colours; pinning Hard
+         here is what stops the danger re-point from swallowing it. */
+      --tier-easy: #39ff14;
+      --tier-medium: #ffb020;
+      --tier-hard: #ff1b8d;
+    }
+    .t1 { color: var(--h1); text-shadow: 0 0 12px rgba(255,158,44,.55); }
+    .t2 { color: var(--h2); text-shadow: 0 0 10px rgba(196,122,58,.30); }
+    .t3 { color: var(--h3); text-shadow: none; font-size: clamp(13px,1.7vw,15px); letter-spacing: 1.2px; }
+    /* The old classes still resolve, in case a title is built somewhere this pass
+       didn't reach — they collapse onto the ladder instead of going rainbow again. */
+    .neon-cyan   { color: var(--h1); text-shadow: 0 0 12px rgba(255,158,44,.55); }
+    .neon-purple,
+    .neon-pink,
+    .neon-gold   { color: var(--h2); text-shadow: 0 0 10px rgba(196,122,58,.30); }
+    .neon-green  { color: var(--h-live); text-shadow: 0 0 10px rgba(255,201,107,.35); }
 
     /* --- bars ------------------------------------------------------------ */
     header { background: var(--gs-bar); border-bottom: 1px solid var(--gs-edge); }
@@ -2060,6 +2155,9 @@
       background: rgba(255,255,255,.10) !important; border-color: var(--gs-edge) !important; box-shadow: none !important;
     }
     .prize-count, .hh-tag { background: var(--gs-lite); color: var(--gs-on-lite); box-shadow: none; border-color: transparent; }
+    /* Bonus marker keeps its gold TEXT (colour is how you spot it) but drops the tinted
+       fill for the same dark chip every other badge wears here. */
+    .prize-stock { background: var(--gs-ctl); border-color: var(--gs-edge-hi); box-shadow: none; }
     .ver-badge, .ver-badge.alpha, .ver-badge.beta {
       background: var(--gs-ctl) !important; color: var(--ink) !important; box-shadow: none !important;
     }
@@ -2379,7 +2477,7 @@
       <div class="habit-group collapsed" id="dailyGroup">
         <div class="daily-banner slim" data-act="toggleGroup" aria-expanded="false">
           <div class="dtext">
-            <div class="section-title neon-green">🗓️ Daily Quests</div>
+            <div class="section-title t2">🗓️ Daily Quests</div>
             <div class="subtle" id="dailyStatus">Complete habits to earn tokens.</div>
             <div class="progress-wrap"><div class="progress-fill" id="dailyFill"></div></div>
             <div class="streak-line" id="dailyStreakInfo"></div>
@@ -2402,7 +2500,7 @@
       <div class="habit-group collapsed" id="extraGroup">
         <div class="daily-banner extra-banner slim" data-act="toggleGroup" aria-expanded="false">
           <div class="dtext">
-            <div class="section-title neon-cyan">✨ Extra Habits</div>
+            <div class="section-title t2">✨ Extra Habits</div>
             <div class="subtle" id="extraStatus">Optional side-quests — their own bar, their own bonus.</div>
             <div class="progress-wrap"><div class="progress-fill extra" id="extraFill"></div></div>
           </div>
@@ -2426,7 +2524,7 @@
     <!-- ===================== TASKS (one-off quests) ===================== -->
     <section class="view" id="view-tasks">
       <div class="oneoff-section">
-        <div class="section-title neon-purple">🎯 One-Off Quests</div>
+        <div class="section-title t1">🎯 One-Off Quests</div>
         <div class="subtle" style="margin-bottom:12px">Add one-off tasks below and check them off when finished. They are shared across every loadout.</div>
         <div class="hh-banner" id="hhBannerTasks"></div>
         <div class="oneoff-layout"><div class="quest-list" id="oneoffGrid"></div></div>
@@ -2483,7 +2581,7 @@
       <div class="game-stage active panel" id="stage-wheel">
         <div class="stage-inner">
           <div class="stage-head">
-            <div class="section-title neon-purple">Wheel of Fortune</div>
+            <div class="section-title t1">Wheel of Fortune</div>
             <div class="subtle">Spin for a weighted prize. The blanks are the thrill.</div>
           </div>
           <div class="wheel-wrap">
@@ -2500,7 +2598,7 @@
       <div class="game-stage panel" id="stage-slots">
         <div class="stage-inner">
           <div class="stage-head">
-            <div class="section-title neon-pink">Neon Slots</div>
+            <div class="section-title t1">Neon Slots</div>
             <div class="subtle">Three of a kind wins. Watch for near-misses…</div>
           </div>
           <div class="slot-machine">
@@ -2519,7 +2617,7 @@
       <div class="game-stage panel" id="stage-dice">
         <div class="stage-inner">
           <div class="stage-head">
-            <div class="section-title neon-cyan">Lucky Dice</div>
+            <div class="section-title t1">Lucky Dice</div>
             <div class="subtle">Roll doubles to win a prize.</div>
           </div>
           <div class="dice-tray" id="diceTray">
@@ -2535,7 +2633,7 @@
       <div class="game-stage panel" id="stage-box">
         <div class="stage-inner">
           <div class="stage-head">
-            <div class="section-title neon-gold">Mystery Box</div>
+            <div class="section-title t1">Mystery Box</div>
             <div class="subtle">Costs more — but always pays out something good.</div>
           </div>
           <div class="mbox" id="mbox"><span class="lid">🎁</span></div>
@@ -2548,7 +2646,7 @@
       <div class="game-stage panel" id="stage-roulette">
         <div class="stage-inner">
           <div class="stage-head">
-            <div class="section-title neon-green">Roulette — Token Doubler</div>
+            <div class="section-title t1">Roulette — Token Doubler</div>
             <div class="subtle">Bet tokens on the board, then spin. Hit it and multiply: Single 35:1 → Dozen 2:1.</div>
           </div>
           <div class="roulette-wrap">
@@ -2604,7 +2702,7 @@
             <button class="btn ghost sm" id="pastQuestionnairesBtn" style="position:absolute;top:0;right:0" title="Past check-ins">🧭 Past</button>
             <div class="chat-titlerow">
               <button class="iconbtn chat-menu" id="chatMenuBtn" title="Conversations" aria-label="Conversations">☰</button>
-              <div class="section-title neon-cyan">💬 AI Chat</div>
+              <div class="section-title t1">💬 AI Chat</div>
             </div>
             <div class="subtle">Your coach already sees every habit, quest, reward and setting plus how you've actually been doing. Ask it to tune payouts or odds, rename or re-tier a reward, change a schedule, or just explain what your data shows.</div>
             <div class="hint" id="aiKeyHint" style="display:none">⚠️ No API key set — add one in <b>Settings → 🤖 AI Coach</b> to start chatting.</div>
@@ -2622,12 +2720,12 @@
     <section class="view" id="view-prizes">
       <!-- Rewards mid-use: countdowns and rep tallies, above everything else. -->
       <div class="panel" id="activeWinsPanel" style="display:none;margin-bottom:16px;border-color:rgba(57,255,20,.45)">
-        <div class="section-title neon-green">⚡ Active Winnings</div>
+        <div class="section-title t2">⚡ Active Winnings</div>
         <div class="subtle">Rewards you're using right now.</div>
         <div id="activeWins" style="margin-top:12px"></div>
       </div>
       <div class="panel">
-        <div class="section-title neon-cyan">💎 Prize Pool</div>
+        <div class="section-title t2">💎 Prize Pool</div>
         <div class="subtle">Everything you can win, by rarity. Lit tiles are ones you're holding — tap to claim. Dim ones you haven't won yet; tap to edit.</div>
         <div id="redeemLock" class="redeem-lock" style="display:none"></div>
         <div id="prizePool" style="margin-top:14px"></div>
@@ -2637,14 +2735,14 @@
 
     <!-- ===================== STATS (analytics) ===================== -->
     <section class="view" id="view-stats">
-      <div class="section-title neon-cyan">📊 Analytics</div>
+      <div class="section-title t1">📊 Analytics</div>
       <div class="subtle" style="margin-bottom:12px">When your habits &amp; quests actually get done — and how hard you're going.</div>
       <div id="statsBody"></div>
     </section>
 
     <!-- ===================== BLOCK SCHEDULE ===================== -->
     <section class="view" id="view-schedule">
-      <div class="section-title neon-purple">📅 Block Schedule</div>
+      <div class="section-title t1">📅 Block Schedule</div>
       <div class="subtle" style="margin-bottom:12px">Past days show what you actually did and how long it took, plus 🎁 when you cashed in a reward. Today lays your best day back over the hours ahead, drawn dashed — the target to beat.</div>
       <!-- No inner scroll container: blocks are percentage-width and fit any screen, so a
            nested overflow-x scroller only fought the page's own vertical scroll on mobile. -->
@@ -2663,7 +2761,7 @@
     <!-- ===================== SETTINGS ===================== -->
     <section class="view" id="view-settings">
       <div class="panel set-section">
-        <div class="section-title neon-green">⚙️ Habits</div>
+        <div class="section-title t2">⚙️ Habits</div>
         <div class="subtle">What earns you tokens, and how many.</div>
         <div class="row" style="margin:8px 0 0"><button class="btn ghost sm" id="sortHabits">⇅ Sort: Daily → Extra</button></div>
         <div class="editor-list" id="habitEditor"></div>
@@ -2674,11 +2772,11 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-purple">🎯 One-Off Quests</div>
+        <div class="section-title t1">🎯 One-Off Quests</div>
         <div class="subtle">Quests live on the 📋 Tasks tab — add them with the quick-add bar and tap one to edit it. Set how many tokens each difficulty tier pays here.</div>
         <div id="tierRewards">
           <div class="row between" style="margin-top:12px">
-            <div><div style="font-weight:700;color:var(--green)">Easy</div><div class="hint">Small wins &amp; quick chores.</div></div>
+            <div><div style="font-weight:700;color:var(--tier-easy)">Easy</div><div class="hint">Small wins &amp; quick chores.</div></div>
             <span class="pill">🪙 <input class="num-in" data-tier-reward="easy" type="number" min="0" max="999"></span>
           </div>
           <div class="row between" style="margin-top:10px">
@@ -2686,14 +2784,14 @@
             <span class="pill">🪙 <input class="num-in" data-tier-reward="medium" type="number" min="0" max="999"></span>
           </div>
           <div class="row between" style="margin-top:10px">
-            <div><div style="font-weight:700;color:var(--pink)">Hard</div><div class="hint">Big, effortful quests.</div></div>
+            <div><div style="font-weight:700;color:var(--tier-hard)">Hard</div><div class="hint">Big, effortful quests.</div></div>
             <span class="pill">🪙 <input class="num-in" data-tier-reward="hard" type="number" min="0" max="999"></span>
           </div>
         </div>
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-gold">🎁 Rewards</div>
+        <div class="section-title t2">🎁 Rewards</div>
         <div class="subtle">Prizes you set for yourself, sorted into rarities. Rarer = harder to win = sweeter.</div>
         <div class="row" style="margin:8px 0 0"><button class="btn ghost sm" id="sortRewards">⇅ Sort: Legendary → Common</button></div>
         <div class="editor-list" id="rewardEditor"></div>
@@ -2712,7 +2810,7 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-cyan">🏷️ Identities</div>
+        <div class="section-title t2">🏷️ Identities</div>
         <div class="subtle">Group habits &amp; tasks around what you're building toward. Identities drive row colors, weekly pass goals, happy hours, and the Habits tab's accordions — assign them in ⚙️ Habits and 🎯 One-Off Quests. Set an identity's purpose ("why") by talking to it in 💬 AI Chat.</div>
         <div class="editor-list" id="categoryList"></div>
         <div class="row" style="gap:8px">
@@ -2722,7 +2820,7 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-purple">⚡ Habit Pass</div>
+        <div class="section-title t2">⚡ Habit Pass</div>
         <div class="subtle">A weekly battle pass. Earn pass XP from habits, tasks &amp; goals; climb tiers for rewards.</div>
         <div class="row between" style="margin-top:10px"><span>Enable Habit Pass</span><label class="toggle"><input type="checkbox" id="passEnabled"><span class="track"></span><span class="knob"></span></label></div>
         <div class="row between"><span>Reset every week</span><label class="toggle"><input type="checkbox" id="passWeekly"><span class="track"></span><span class="knob"></span></label></div>
@@ -2751,13 +2849,13 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-cyan">🧊 Streak Freeze <span class="subtle" style="font-size:12px;letter-spacing:0">· special reward</span></div>
+        <div class="section-title t2">🧊 Streak Freeze <span class="subtle" style="font-size:12px;letter-spacing:0">· special reward</span></div>
         <div class="subtle">A special reward that saves your daily-quest streak when you miss a day. It can't be deleted — only toggled on/off and re-themed. Set its rarity to control how often it drops.</div>
         <div id="streakFreezeEditor" style="margin-top:12px"></div>
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-gold">⏳ Reward Unlock &amp; Happy Hour</div>
+        <div class="section-title t2">⏳ Reward Unlock &amp; Happy Hour</div>
         <div class="subtle">Stop redeeming between tasks — gate rewards behind finishing your day (or a set time), and earn extra during happy hour.</div>
         <div class="row between" style="margin-top:12px">
           <div><div style="font-weight:700">🔒 Reward unlock</div><div class="hint">When you're allowed to redeem your winnings.</div></div>
@@ -2784,20 +2882,20 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-pink">🎰 Casino Odds</div>
+        <div class="section-title t2">🎰 Casino Odds</div>
         <div class="subtle">Tune each game's cost and drop weights. Percentages update live.</div>
         <div id="gameConfigs" style="margin-top:12px"></div>
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-cyan">🧭 Tab bar</div>
+        <div class="section-title t2">🧭 Tab bar</div>
         <div class="subtle">Drag to reorder. The top five get a tab of their own; everything below the line lives behind ⋯ More.</div>
         <div class="tabedit" id="tabEditList"></div>
         <div class="row" style="margin-top:12px"><button class="btn ghost sm" id="tabEditReset">↺ Reset to default</button></div>
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-cyan">🔧 General</div>
+        <div class="section-title t2">🔧 General</div>
         <div class="row between" style="margin-top:12px">
           <div>
             <div style="font-weight:700">🗓️ Daily Quests all-done bonus</div>
@@ -2830,7 +2928,7 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-cyan">🤖 AI Coach</div>
+        <div class="section-title t2">🤖 AI Coach</div>
         <div class="subtle">Bring your own API key. Keys are stored only in this browser's localStorage (separate from your game save) and are sent only to the provider you pick.</div>
         <div class="row between" style="margin-top:12px">
           <div><div style="font-weight:700">Provider</div><div class="hint">Which AI powers the coach.</div></div>
@@ -2863,7 +2961,7 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title neon-purple">💾 Data</div>
+        <div class="section-title t2">💾 Data</div>
         <div class="row" style="margin-top:12px">
           <button class="btn ghost sm" id="exportBtn">⬇ Export save</button>
           <button class="btn ghost sm" id="importBtn">⬆ Import save</button>
@@ -3023,9 +3121,9 @@ const SLOT_POOL = ['🍋', '🍇', '🟢', '🟦', '💎', '🟣', '🪙', '⭐'
 // `reward` here is only the seed/fallback; the live values sit in state.settings.tierRewards
 // (editable in Settings → One-Off Quests) and are read via tierReward().
 const TASK_TIERS = {
-  easy:   { label: 'Easy',   reward: 5,  color: 'var(--green)' },
-  medium: { label: 'Medium', reward: 10, color: 'var(--gold)'  },
-  hard:   { label: 'Hard',   reward: 20, color: 'var(--pink)'  },
+  easy:   { label: 'Easy',   reward: 5,  color: 'var(--tier-easy)' },
+  medium: { label: 'Medium', reward: 10, color: 'var(--tier-medium)'  },
+  hard:   { label: 'Hard',   reward: 20, color: 'var(--tier-hard)'  },
 };
 function tierReward(tier) {
   const t = TASK_TIERS[tier] ? tier : 'medium';
@@ -3034,7 +3132,7 @@ function tierReward(tier) {
 }
 
 // Default per-category accent palette (used to seed state.categoryColors; 'Unsorted' stays neutral).
-const CATEGORY_COLORS = ['#00f0ff', '#39ff14', '#ff6b00', '#ff1b8d', '#ffe600', '#c44dff', '#1ca64c', '#ff5fae'];
+const CATEGORY_COLORS = ['#ff9e2c', '#ffc247', '#c47a3a', '#ffb88a', '#c2601a', '#e8a33d', '#a8551a', '#f2794a'];
 function categoryColor(cat) {
   if (!cat || cat === 'Unsorted') return null;
   const saved = (state.categoryColors || {})[cat];
@@ -3106,6 +3204,7 @@ function defaultState() {
                 // its own rarity in every game once this is on. weightPct is its chance
                 // relative to an ordinary reward at the same tier (50 = half as likely).
                 wildCardsInCasino: true, wildCardCasinoWeightPct: 50,
+                gapCheckinToken: true,   // pay 1 token for answering an idle-gap check-in
                 // Reward unlock window: 'always' | 'allDaily' (all daily quests done) | 'time' (after `time`).
                 // When the window is open, "time" rewards get +timeBonus% extra minutes.
                 redeem: { mode: 'always', time: '18:00', timeBonus: 50 },
@@ -3177,6 +3276,11 @@ function defaultState() {
     // A stocked loadout hands you rewards outright each day instead of making you win
     // every one of them in the casino; casino wins still stack on top.
     loadoutStock: {},
+    // Idle gaps: which stretches have been accounted for (so one is never asked twice),
+    // and what the user has typed into "Other" before — the second list is what turns a
+    // free-text answer into a tap-able option next time a similar hour goes unexplained.
+    gapLog: [],        // { date, startMin, endMin, answer, skipped, loadout, ts }
+    gapAnswers: [],    // { text, loadout, hourBucket, count, lastTs }
     activeLoadout: 'Default',
     contexts: [],         // Planner day contexts such as Travel/School; separate from loadouts
     dayPlans: {},         // 'YYYY-MM-DD' → { raw, context, ts }
@@ -3238,8 +3342,19 @@ function ensureHappyHours(st = state) {
 // Make sure every named category has an accent color (seeded from the default palette).
 function ensureCategoryColors(st = state) {
   const cc = st.categoryColors = st.categoryColors || {};
-  const restoreBright = { '#75a4ab':'#00f0ff', '#7e9f72':'#39ff14', '#ad8263':'#ff6b00', '#bd7896':'#ff1b8d', '#c0b16d':'#ffe600', '#9580aa':'#c44dff', '#6f9278':'#1ca64c', '#b98296':'#ff5fae' };
-  Object.keys(cc).forEach(c => { const k = String(cc[c] || '').toLowerCase(); if (restoreBright[k]) cc[c] = restoreBright[k]; });
+  // Saved category accents get re-pointed onto the current palette: the first row is
+  // the old muted experiment, the second the old rainbow. Neither key appears in the
+  // new palette, so this is a no-op once a save has been migrated — and a colour the
+  // user picked by hand isn't in either map, so it survives untouched.
+  const RECOLOR = {                                                       /*RECOLORMAP*/
+    '#75a4ab':'#ff9e2c', '#7e9f72':'#ffc247', '#ad8263':'#c47a3a', '#bd7896':'#ffb88a',
+    '#c0b16d':'#c2601a', '#9580aa':'#e8a33d', '#6f9278':'#a8551a', '#b98296':'#f2794a',
+    '#ff6b00':'#c47a3a', '#ff1b8d':'#ffb88a', '#ffe600':'#c2601a', '#c44dff':'#e8a33d',
+    '#1ca64c':'#a8551a', '#ff5fae':'#f2794a',
+    '#ff9e2c':'#ff9e2c', '#39ff14':'#ffc247', '#c47a3a':'#c47a3a', '#ffb88a':'#ffb88a',
+    '#c2601a':'#c2601a', '#e8a33d':'#e8a33d', '#a8551a':'#a8551a', '#f2794a':'#f2794a'
+  };
+  Object.keys(cc).forEach(c => { const k = String(cc[c] || '').toLowerCase(); if (RECOLOR[k]) cc[c] = RECOLOR[k]; });
   const named = (st.categories || []).filter(c => c !== 'Unsorted');
   named.forEach((c, i) => { if (!cc[c]) cc[c] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
   Object.keys(cc).forEach(c => { if (!named.includes(c)) delete cc[c]; });
@@ -3514,7 +3629,11 @@ function normalizeStock(v) {
   });
   // Wild cards stay OUT of the stock unless asked for — a daily wild card is a much
   // bigger giveaway than a daily copy of one specific reward.
-  return { on: !!v.on, counts, wild: !!v.wild, lastDate: typeof v.lastDate === 'string' ? v.lastDate : '' };
+  return { on: !!v.on, counts, wild: !!v.wild, lastDate: typeof v.lastDate === 'string' ? v.lastDate : '',
+    // Bonus copies handed back when you leave this loadout. Stored as whole items so
+    // returning the same day restores exactly what you left with — see shelveStock().
+    shelf: Array.isArray(v.shelf) ? v.shelf.filter(x => x && typeof x === 'object') : [],
+    shelfDate: typeof v.shelfDate === 'string' ? v.shelfDate : '' };
 }
 
 // Fill in any missing fields so saves from older versions keep working.
@@ -3635,6 +3754,14 @@ function load(raw) {
     // Loadouts used to be planner contexts with optional universal habits. Migrate every
     // habit into a concrete set and keep planner contexts independent from now on.
     const taggedLoadouts = merged.habits.map(h => h.loadout).filter(Boolean);
+    merged.gapLog = (Array.isArray(parsed.gapLog) ? parsed.gapLog : [])
+      .filter(g => g && typeof g.date === 'string' && Number.isFinite(g.startMin) && Number.isFinite(g.endMin))
+      .slice(-400);
+    merged.gapAnswers = (Array.isArray(parsed.gapAnswers) ? parsed.gapAnswers : [])
+      .filter(a => a && typeof a.text === 'string' && a.text.trim())
+      .map(a => ({ text: String(a.text).slice(0, 80), loadout: a.loadout || 'Default',
+                   hourBucket: clamp(parseInt(a.hourBucket, 10) || 0, 0, 23),
+                   count: Math.max(1, parseInt(a.count, 10) || 1), lastTs: a.lastTs || 0 }));
     merged.loadoutStock = (parsed.loadoutStock && typeof parsed.loadoutStock === 'object' && !Array.isArray(parsed.loadoutStock))
       ? Object.fromEntries(Object.entries(parsed.loadoutStock).map(([k, v]) => [k, normalizeStock(v)]))
       : {};
@@ -3643,6 +3770,16 @@ function load(raw) {
     merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
       : (merged.loadouts.includes(((parsed.dayPlans || {})[todayStr()] || {}).context) ? parsed.dayPlans[todayStr()].context : 'Default');
     merged.habits.forEach(h => { if (!h.loadout || !merged.loadouts.includes(h.loadout)) h.loadout = 'Default'; });
+    // Bonus copies used to be flagged `fromStock: true` with no record of WHICH loadout
+    // handed them out, so they could never be handed back. Adopt those into the loadout
+    // that's active now — the only defensible guess, and it makes them behave from here on.
+    // A shelf naming a loadout that no longer exists would strand its items forever, so
+    // those go back into the pool instead of being dropped.
+    merged.inventory.forEach(w => { if (w && w.fromStock === true) w.fromStock = merged.activeLoadout; });
+    Object.entries(merged.loadoutStock).forEach(([name, cfg]) => {
+      if (!cfg.shelf.length) return;
+      if (!merged.loadouts.includes(name)) { merged.inventory.unshift(...cfg.shelf); cfg.shelf = []; cfg.shelfDate = ''; }
+    });
     const trw = merged.settings.tierRewards = { easy: 5, medium: 10, hard: 20, ...(merged.settings.tierRewards || {}) };
     // Tab bar layout. Repaired rather than trusted: an unknown id, a duplicate or a short
     // list would leave the bar with a hole and a view reachable from nowhere. sanitizeBar
@@ -4043,7 +4180,7 @@ function happyTagHTML(category) {
   const m = happyMult(cat);
   if (m <= 1) return '';
   const e = (state.settings.happyHours || {})[cat] || {};
-  const col = categoryColor(cat) || 'var(--gold)';
+  const col = categoryColor(cat) || 'var(--h2)';
   return `<span class="hh-tag" style="background:${col};box-shadow:0 0 10px ${col}">×${m}<span class="hh-when">${fmtHMshort(e.start || '0:00')}–${fmtHMshort(e.end || '0:00')}</span></span>`;
 }
 function weightedPick(weights) {
@@ -4098,7 +4235,7 @@ sizeCanvas(); addEventListener('resize', sizeCanvas);
 function burst(opts = {}) {
   if (state.settings.reducedMotion) return;
   const n = opts.count || 80;
-  const colors = opts.colors || ['#ff1b8d', '#00f0ff', '#b026ff', '#39ff14', '#ffe600'];
+  const colors = opts.colors || ['#ff9e2c', '#ff9e2c', '#c47a3a', '#39ff14', '#c2601a'];
   const cx = opts.x ?? innerWidth / 2, cy = opts.y ?? innerHeight / 2.4;
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 9;
@@ -4117,7 +4254,7 @@ function coinRain() {
     particles.push({
       x: Math.random() * innerWidth, y: -20 - Math.random() * 200,
       vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 4, g: 0.12,
-      life: 1, size: 10 + Math.random() * 8, color: '#ffd700', rot: 0, vr: 0.3, coin: true,
+      life: 1, size: 10 + Math.random() * 8, color: '#ffb020', rot: 0, vr: 0.3, coin: true,
     });
   }
   if (!rafOn) loop();
@@ -4749,7 +4886,7 @@ function renderArchived() {
   const arch = state.habits.filter(h => h.archived && h.loadout === currentLoadout());
   if (!arch.length) { box.innerHTML = ''; return; }
   box.innerHTML = `
-    <div class="section-title neon-gold" style="margin-top:22px">🎓 Graduated Habits</div>
+    <div class="section-title t2" style="margin-top:22px">🎓 Graduated Habits</div>
     <div class="subtle">Habits you've outgrown — resting here with their history intact.</div>
     <div class="habit-list" style="margin-top:10px">${arch.map(h => {
       const best = h.best || 0;
@@ -4770,7 +4907,7 @@ function renderArchived() {
 function renderHappyBanners() {
   const act = activeHappyHours();
   const el = $('#hhBannerTasks'); if (!el) return;
-  el.innerHTML = act.map(a => `<div>⚡ <span style="color:${categoryColor(a.cat) || 'var(--gold)'};font-weight:800">${escapeHtml(a.cat)}</span> happy hour — ×${a.mult} tokens until ${fmtHM(a.end)}</div>`).join('');
+  el.innerHTML = act.map(a => `<div>⚡ <span style="color:${categoryColor(a.cat) || 'var(--h2)'};font-weight:800">${escapeHtml(a.cat)}</span> happy hour — ×${a.mult} tokens until ${fmtHM(a.end)}</div>`).join('');
   el.style.display = act.length ? 'block' : 'none';
 }
 
@@ -5058,7 +5195,7 @@ function completeOneoff(id, viaSpin, timing) {
     state.oneoffs = state.oneoffs.filter(x => x.id !== id); // completed → vanish
     if (editingOneoffId === id) editingOneoffId = null;
     toast(`✅ Quest complete: ${t.name}! +${amt} 🪙${tags}`, 'var(--gold)');
-    SFX.win(); burst({ count: 90, colors: ['#ffd700', '#39ff14', '#ff1b8d'] });
+    SFX.win(); burst({ count: 90, colors: ['#ff9e2c', '#39ff14', '#c47a3a'] });
   } else {
     toast(`+${amt} 🪙${tags} — ${t.progress}/${t.iterations} done`, 'var(--green)');
   }
@@ -5072,7 +5209,7 @@ function completeOneoff(id, viaSpin, timing) {
   offerUndo(undoSnap, undoName);
 }
 
-const HABIT_WHEEL_COLORS = ['#ff1b8d', '#00f0ff', '#b026ff', '#39ff14', '#ffe600', '#ff6b00', '#c44dff', '#1ca64c'];
+const HABIT_WHEEL_COLORS = ['#ff9e2c', '#ffc247', '#c47a3a', '#f2794a', '#ffb88a', '#c2601a', '#e8a33d', '#a8551a'];
 function buildHabitWheel() {
   const wheel = $('#habitWheel'); if (!wheel || habitSpinning) return;
   habitWheelSegs = state.oneoffs.slice();
@@ -5122,7 +5259,7 @@ function spinHabitWheel() {
 function showHabitSpinResult(task) {
   const el = $('#habitWheelResult');
   el.innerHTML = `🎯 Go do: <b style="color:var(--green)">${escapeHtml(task.emoji)} ${escapeHtml(task.name)}</b> &nbsp;<button class="btn green sm" data-act="spinDone" data-id="${task.id}">✓ Done</button>`;
-  SFX.win(); burst({ count: 55, colors: ['#39ff14', '#ffe600', '#00f0ff'] });
+  SFX.win(); burst({ count: 55, colors: ['#39ff14', '#c2601a', '#ff9e2c'] });
   wheelPickId = task.id;         // highlight its row + "+50%" tag until done or re-spun
   renderOneoffs();
 }
@@ -5877,6 +6014,50 @@ function computeLiveBlocks(dateStr) {
   return out.sort((a, b) => a.startMin - b.startMin);
 }
 
+/* =================================================================
+   IDLE GAPS — the hours the chart has nothing to say about.
+
+   Two hours between one finished thing and the next drew as blank space, which reads as
+   "nothing happened" when what it usually means is "something happened and the app
+   doesn't know what". Marking those and asking turns the blank into data — and because
+   the answers are remembered per loadout and per hour, the same 3pm hole starts offering
+   last week's answer as a single tap.
+
+   INTERIOR gaps only: before the first thing you did and after the last isn't a gap in
+   the day, it's the edge of it. On today, nothing past the current moment — this
+   afternoon hasn't failed to contain anything yet.
+   ================================================================= */
+const GAP_MIN_MINUTES = 120;
+// Answered and waved-off gaps stay gone. Matched by MIDPOINT rather than exact bounds, so
+// logging something new nearby shifts a boundary without resurrecting a gap you already
+// accounted for.
+function gapAnswered(dateStr, startMin, endMin) {
+  const mid = (startMin + endMin) / 2;
+  return (state.gapLog || []).some(g => g.date === dateStr && mid >= g.startMin && mid <= g.endMin);
+}
+function computeGapBlocks(dateStr) {
+  if (daysBetween(todayStr(), dateStr) > 0) return [];      // the future can't have gaps yet
+  const isToday = dateStr === todayStr();
+  const done = computeActualBlocks(dateStr).concat(computeLiveBlocks(dateStr))
+    .sort((a, b) => a.startMin - b.startMin);
+  if (done.length < 2) return [];                           // no interior to have a gap in
+  const limit = isToday ? nowMinutes() : 1440;
+  const out = [];
+  // `reach` is the furthest point already covered, so an item nested inside a longer one
+  // can't open a phantom gap behind it.
+  let reach = done[0].startMin + done[0].durMin;
+  for (let i = 1; i < done.length; i++) {
+    const b = done[i];
+    const start = reach, end = Math.min(b.startMin, limit);
+    if (end - start >= GAP_MIN_MINUTES && !gapAnswered(dateStr, start, end)) {
+      out.push({ name: '?', emoji: '', category: null, startMin: start, endMin: end,
+                 durMin: end - start, kind: 'gap', type: 'gap', gapDate: dateStr });
+    }
+    reach = Math.max(reach, b.startMin + b.durMin);
+  }
+  return out;
+}
+
 // Reward claims for a date, from their own log. A duration reward ran from the moment it
 // was claimed for as long as it granted, so it draws as a real span; a counter or plain
 // treat has no measurable length and becomes a moment mark.
@@ -5984,7 +6165,7 @@ function relayoutLanes(rootSel, px) {
   const root = $(rootSel); if (!root) return;
   const grid = root.querySelector('.sched-grid'); if (!grid) return;
   const loMin = (parseInt(grid.dataset.lo, 10) || 0) * 60;
-  const items = [...root.querySelectorAll('.sched-block')].map(el => ({
+  const items = [...root.querySelectorAll('.sched-block:not(.gap)')].map(el => ({
     el,
     startMin: parseInt(el.dataset.start, 10) || 0,
     durMin: parseInt(el.dataset.dur, 10) || 0,
@@ -6057,6 +6238,12 @@ function schedGridParts(dateStr, opts = {}) {
   blocks.sort((a, b) => a.startMin - b.startMin);
   const px = opts.px || schedPx();
   layoutLanes(blocks, px);
+  // Gaps are laid out separately and drawn FIRST: a gap is the backdrop behind an
+  // unaccounted stretch, so it takes the full width and must never push a real block
+  // into a second lane the way another overlapping block would.
+  const gaps = isFuture ? [] : computeGapBlocks(dateStr);
+  gaps.forEach(g => { g.lane = 0; g.laneCount = 1; });
+  blocks.unshift(...gaps);
 
   // Frame the grid around the day's real span rather than a fixed 5am–11pm window.
   let lo = 7, hi = 21;
@@ -6093,6 +6280,15 @@ function schedGridParts(dateStr, opts = {}) {
   // actually shown is decided by relayoutLanes, because that answer changes with zoom.
   const labelEls = [];
   const blockEls = blocks.map((b, i) => {
+    if (b.kind === 'gap') {
+      const span = `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay(b.endMin)} · ${fmtMins(b.durMin)}`;
+      return `<div class="sched-block gap" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"
+        data-gapstart="${b.startMin}" data-gapend="${b.endMin}" data-gapdate="${b.gapDate}"
+        title="${escapeHtml(`Nothing logged ${span} — tap to say what you were doing`)}"
+        style="top:${at((b.startMin - lo * 60) / 60)};height:${at(b.durMin / 60)};left:0;width:calc(100% - 5px)">
+        <span class="gap-q">?</span>
+      </div>`;
+    }
     const topH = (b.startMin - lo * 60) / 60;
     const top = at(topH);
     // True height, floored only enough to stay visible. No inflation — see BAR_MIN_PX.
@@ -6267,9 +6463,9 @@ function renderDueSoon() {
   // Home supplies its own "DUE NOW" heading, so the gold banner is Habits-only; both get
   // the identical row markup underneath.
   const banner = `
-    <div class="daily-banner slim" style="border-color:rgba(255,215,0,.5)">
+    <div class="daily-banner slim" style="border-color:rgba(196,122,58,.5)">
       <div class="dtext">
-        <div class="section-title neon-gold">⏰ Due Now</div>
+        <div class="section-title t2">⏰ Due Now</div>
         <div class="subtle">${hasRows ? sub : 'Nothing due right now.'}</div>
       </div>
     </div>`;
@@ -6565,7 +6761,7 @@ function checkBonuses() {
     if (state.settings.dailyStreak % 7 === 0) {
       addTokens(state.settings.weeklyBonus);
       toast(`🔥 7-DAY STREAK! +${state.settings.weeklyBonus} TOKENS!`, 'var(--pink)');
-      SFX.jackpot(); screenShake(); burst({ count: 200, colors: ['#ff1b8d', '#ffd700', '#00f0ff', '#39ff14'] }); coinRain();
+      SFX.jackpot(); screenShake(); burst({ count: 200, colors: ['#c47a3a', '#ffb88a', '#ff9e2c', '#39ff14'] }); coinRain();
     }
   }
   const e = sectionStats('extra');
@@ -6573,7 +6769,7 @@ function checkBonuses() {
     state.settings.extraBonusDate = today;
     addTokens(state.settings.extraBonus);
     toast(`✨ ALL EXTRA HABITS DONE! +${state.settings.extraBonus} bonus`, 'var(--cyan)');
-    SFX.jackpot(); burst({ count: 120, colors: ['#00f0ff', '#39ff14', '#b026ff'] }); coinRain();
+    SFX.jackpot(); burst({ count: 120, colors: ['#ff9e2c', '#39ff14', '#c47a3a'] }); coinRain();
   }
   save();
 }
@@ -6656,10 +6852,10 @@ function applyResult(res) {
 // Visual celebration sized to the tier
 function celebrate(res) {
   if (res.type === 'blank') { SFX.lose(); return; }
-  if (res.type === 'tokens') { SFX.coin(); burst({ count: 24, coin: true, colors: ['#ffe600', '#ffd700'] }); return; }
+  if (res.type === 'tokens') { SFX.coin(); burst({ count: 24, coin: true, colors: ['#ffc247', '#ffb020'] }); return; }
   const t = res.tier;
-  if (t === 'legendary') { SFX.jackpot(); screenShake(); burst({ count: 160, colors: ['#ffd700', '#fff'] }); coinRain(); }
-  else if (t === 'epic') { SFX.win(); screenShake(); burst({ count: 110, colors: ['#c44dff', '#ff1b8d'] }); }
+  if (t === 'legendary') { SFX.jackpot(); screenShake(); burst({ count: 160, colors: ['#ffb020', '#fff'] }); coinRain(); }
+  else if (t === 'epic') { SFX.win(); screenShake(); burst({ count: 110, colors: ['#c44dff', '#e0a3ff'] }); }
   else if (t === 'rare') { SFX.win(); burst({ count: 80, colors: ['#00f0ff', '#39ff14'] }); }
   else { SFX.win(); burst({ count: 50 }); }
 }
@@ -7130,7 +7326,7 @@ function rouResolve(win) {
   const staked = rouStaked();
   const net = payout - staked;
   $('#rouHub').textContent = win;
-  $('#rouHub').style.color = col === 'black' ? '#111' : '#3a2600';
+  $('#rouHub').style.color = col === 'black' ? '#111' : '#3a1c00';
 
   const numTag = `<span style="color:${ROU_TEXT[col]}">${win} ${col.toUpperCase()}</span>`;
   if (payout > 0) {
@@ -7138,7 +7334,7 @@ function rouResolve(win) {
     state.stats.tokensWon += Math.max(0, net);
     SFX.win();
     if (payout >= 50 || net >= staked * 5) { SFX.jackpot(); screenShake(); coinRain(); }
-    burst({ count: 90, colors: ['#39ff14', '#ffe600', '#00f0ff'] });
+    burst({ count: 90, colors: ['#39ff14', '#c2601a', '#ff9e2c'] });
     $('#rouResult').innerHTML = `${numTag} — WON <b>+${payout}</b> 🪙 <span class="subtle">(net ${net >= 0 ? '+' : ''}${net})</span>`;
     $('#rouResult').style.color = 'var(--green)';
     toast(`🟢 ${win} ${col} — +${payout} tokens!`, 'var(--green)');
@@ -7279,7 +7475,7 @@ function openUltra() {
   const wrap = $('#packWrapper');
   requestAnimationFrame(() => wrap && wrap.classList.add('opening'));
   setTimeout(() => {
-    SFX.coin(); burst({ count: 70, colors: ['#b026ff', '#00f0ff', '#ffd700', '#ff1b8d'] });
+    SFX.coin(); burst({ count: 70, colors: ['#c47a3a', '#ff9e2c', '#ffb88a', '#39ff14'] });
     ultraView = -1; renderUltra(); // cover card flies in
     busy = false; updateGameButtons();
   }, 850);
@@ -7299,14 +7495,14 @@ function ultraRevealTo(view) {
       SFX.win();
       burst({ count: ti === 'legendary' ? 90 : ti === 'epic' ? 60 : ti === 'rare' ? 40 : 22, colors: [TIERS[ti].hex, '#fff'] });
       if (ti === 'legendary' || ti === 'epic') screenShake();
-    } else { SFX.coin(); burst({ count: 16, coin: true, colors: ['#ffe600', '#ffd700'] }); }
+    } else { SFX.coin(); burst({ count: 16, coin: true, colors: ['#ffc247', '#ffb020'] }); }
   }
   updateGameButtons();
 }
-function ultraPenult() { SFX.win(); screenShake(); flashScreen('rgba(0,240,255,0.25)'); burst({ count: 140, colors: ['#00f0ff', '#b026ff', '#ffd700'] }); }
+function ultraPenult() { SFX.win(); screenShake(); flashScreen('rgba(255,158,44,0.25)'); burst({ count: 140, colors: ['#ff9e2c', '#c47a3a', '#ffb88a'] }); }
 function ultraFinale(res) {
-  SFX.jackpot(); screenShake(); flashScreen('rgba(255,215,0,0.4)');
-  burst({ count: 260, colors: ['#ffd700', '#ff1b8d', '#00f0ff', '#39ff14', '#fff'] }); coinRain();
+  SFX.jackpot(); screenShake(); flashScreen('rgba(255,158,44,0.4)');
+  burst({ count: 260, colors: ['#ffb88a', '#c47a3a', '#ff9e2c', '#39ff14', '#fff'] }); coinRain();
   if (res.type === 'reward' && res.reward && res.reward.special) setTimeout(() => showReveal(res), 450);
 }
 function flashScreen(color) {
@@ -7449,11 +7645,24 @@ function resumeActiveWin(id) {
 function activeWinnings() { return state.inventory.filter(isActiveWin); }
 
 
+// Which loadout handed this item out as a bonus, or '' if it was genuinely won.
+// Legacy saves wrote `fromStock: true` before the name was recorded; load() upgrades
+// those, so anything still boolean here is treated as a real win rather than guessed at.
+function stockOwner(w) { return (w && typeof w.fromStock === 'string') ? w.fromStock : ''; }
+function isStockItem(w) { return !!stockOwner(w); }
+
 // Unclaimed copies of one reward sitting in the inventory. Wild cards included: they
 // carry rewardId 'wildcard-<tier>' and are claimed from their own tile like anything else.
+//
+// Loadout bonus copies sort FIRST. Every consumer takes what it needs off the front
+// (`owned.slice(0, qty)` in claimFromPool/discardFromPool/recycleFromPool), so spending
+// burns the borrowed copies before the ones actually won — those survive the switch.
 function ownedOf(rewardId) {
-  return state.inventory.filter(w => !w.redeemed && w.rewardId === rewardId);
+  return state.inventory.filter(w => !w.redeemed && w.rewardId === rewardId)
+    .sort((a, b) => (isStockItem(b) ? 1 : 0) - (isStockItem(a) ? 1 : 0));
 }
+// How many of those are loadout bonus — drives the pool tile's "n bonus" marker.
+function stockCountOf(rewardId) { return ownedOf(rewardId).filter(isStockItem).length; }
 
 // Claim N copies at once. They collapse into a SINGLE active entry with the amounts
 // multiplied — three 30-minute rewards is 90 minutes of Xbox, not three identical
@@ -7517,7 +7726,7 @@ function applyClaim(item, qty) {
       target.expiredSeen = false;
       toast(`🎉 ${fmtMins(total)} of ${target.name}!${bonus ? ` (+${bonusPct}% window bonus)` : ''}`, bonus ? 'var(--gold)' : 'var(--green)');
     }
-    SFX.win(); burst({ count: 40, colors: ['#39ff14', '#ffe600', '#00f0ff'] });
+    SFX.win(); burst({ count: 40, colors: ['#39ff14', '#c2601a', '#ff9e2c'] });
   } else if (spec.count > 0) {
     const total = spec.count * qty;
     if (into) {
@@ -7591,7 +7800,7 @@ function recycleFromPool(rewardId, qty) {
   state.inventory = state.inventory.filter(x => !ids.has(x.id));
   addTokens(val); SFX.coin();
   toast(`♻ Recycled ${qty}× ${owned[0].name} → +${val} 🪙`, 'var(--gold)');
-  burst({ count: 22, coin: true, colors: ['#ffe600', '#ffd700'] });
+  burst({ count: 22, coin: true, colors: ['#ffc247', '#ffb020'] });
   claimOpenId = null; save(); renderPrizes();
 }
 
@@ -7712,16 +7921,19 @@ function prizeTileHTML(r, ti) {
   const wild = r.special === 'wildCard';
   const n = (r.special && !wild) ? 0 : ownedOf(r.id).length;
   const lit = n > 0;
+  // How many of those are on loan from the current loadout rather than won.
+  const bonus = lit ? stockCountOf(r.id) : 0;
   const redemption = redeemWindow();
   const locked = lit && !redemption.open;
   const title = r.special === 'streakFreeze' ? 'Edit the Streak Freeze in Settings'
     : wild ? (lit ? `${n} held — tap to trade for any ${ti.label} reward` : `Can drop from any ${ti.label} game`)
-    : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim` : 'Not won yet — tap to edit'));
+    : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim${bonus ? ` (${bonus} loadout bonus, spent first)` : ''}` : 'Not won yet — tap to edit'));
   return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
     ${r.special ? '' : `<button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>`}
     ${locked ? `<span class="prize-lock" title="${escapeHtml(redemption.reason)}" aria-label="Reward locked">🔒</span>` : ''}
     ${lit ? `<span class="prize-count">${n}</span>` : ''}
+    ${bonus ? `<span class="prize-stock" title="${bonus} of these are ${escapeHtml(currentLoadout())} bonus — they go back if you switch loadout, and are spent first">${bonus} BONUS</span>` : ''}
     <div class="pe-wrap">
       <div class="pe">${escapeHtml(r.emoji || ti.emoji)}</div>
     </div>
@@ -7749,12 +7961,15 @@ function claimCardHTML(r) {
     : spec.count ? `${spec.count * qty} ${escapeHtml(spec.unit)} total` : `${qty} claimed`;
   const win = redeemWindow();
   const recVal = (RECYCLE_VALUE[r.tier] || 1) * qty;
+  // ownedOf() puts loadout bonus first, so the first `qty` copies are the ones that go.
+  const bonusTaken = owned.slice(0, qty).filter(isStockItem).length;
   return `
   <div class="claim-card" data-rid="${r.id}" style="--pz:${ti.hex}">
     <button class="pass-close" data-act="claimCancel" title="Close">✕</button>
     <div class="cc-head"><span class="cc-e">${escapeHtml(r.emoji || ti.emoji)}</span>
       <div><div class="cc-n">${escapeHtml(r.name)}</div>
-      <div class="subtle">${n} available · ${per}</div></div>
+      <div class="subtle">${n} available · ${per}</div>
+      ${bonusTaken ? `<div class="subtle" style="color:var(--gold)">${bonusTaken} of these ${bonusTaken === 1 ? 'is' : 'are'} ${escapeHtml(currentLoadout())} bonus — spent before anything you won</div>` : ''}</div>
     </div>
     <div class="cc-qty">
       <button class="rstep" data-act="claimMinus" title="Fewer">−</button>
@@ -7838,7 +8053,7 @@ function passTierReward(level, lane) {
   return { type: 'prize', tier: e.tier, rewardId: e.rewardId };
 }
 function passRewardFace(d) {
-  if (d.type === 'tokens') return { emoji: '🪙', label: `${d.amount}`, hex: '#ffe600' };
+  if (d.type === 'tokens') return { emoji: '🪙', label: `${d.amount}`, hex: '#ffc247' };
   if (d.type === 'wild')   return { emoji: '🃏', label: `Wild ${TIERS[d.tier].label}`, hex: TIERS[d.tier].hex };
   if (d.type === 'prize') {
     const r = d.rewardId ? state.rewards.find(x => x.id === d.rewardId) : null;
@@ -7849,11 +8064,14 @@ function passRewardFace(d) {
 }
 
 // Add a wild card to Winnings; redeeming it lets you choose any reward of its tier.
-function addWildCard(tier) {
+function addWildCard(tier, fromStock) {
   // rewardId matches wildCardCasinoReward(tier)'s id, which is what makes a wild card
   // findable by ownedOf() and therefore claimable from its own Prize Pool tile like
   // every other reward — instead of needing a panel of its own above the pool.
-  state.inventory.unshift({ id: uid(), wild: true, rewardId: 'wildcard-' + tier, emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, wonAt: Date.now(), redeemed: false });
+  // `fromStock` (a loadout name) marks it as that loadout's bonus rather than a real win.
+  const w = { id: uid(), wild: true, rewardId: 'wildcard-' + tier, emoji: '🃏', name: `${TIERS[tier].label} Wild Card`, tier, wonAt: Date.now(), redeemed: false };
+  if (fromStock) w.fromStock = fromStock;
+  state.inventory.unshift(w);
 }
 /* Top the current loadout's inventory up to its daily allowance.
 
@@ -7883,9 +8101,9 @@ function applyLoadoutStock() {
     const pool = cfg.wild ? rewardsByTier(tier) : rewardsByTier(tier).filter(r => !r.special);
     pool.filter(r => r.special !== 'streakFreeze').forEach(r => {
       for (let have = ownedOf(r.id).length; have < n; have++) {
-        if (r.special === 'wildCard') addWildCard(tier);
+        if (r.special === 'wildCard') addWildCard(tier, name);
         else state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name,
-          tier: r.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false, fromStock: true });
+          tier: r.tier, minutes: r.minutes || 0, wonAt: Date.now(), redeemed: false, fromStock: name });
         added++;
       }
     });
@@ -7896,6 +8114,68 @@ function applyLoadoutStock() {
   }
   save();
   return added;
+}
+
+/* Loadout bonus is BORROWED, not banked. Leaving a loadout takes back the copies it
+   handed you; coming back the same day returns exactly those same copies.
+
+   A sweep rather than a leave-hook, because `activeLoadout` is written in four places
+   (the picker, loadout creation, load(), and the "Stock now" temp swap) and a hook on
+   each would be one refactor away from leaking bonus items permanently. Reconciling
+   against whatever is active right now can't drift.
+
+   Only UNCLAIMED copies move. Once you've cashed one in it's yours — an Active Winning
+   is never yanked back out from under you mid-use. */
+function reconcileLoadoutStock() {
+  const cur = currentLoadout();
+  const today = todayStr();
+  state.loadoutStock = state.loadoutStock || {};
+
+  // 1. Shelve every unclaimed bonus copy belonging to some OTHER loadout.
+  const keep = [];
+  const shelved = {};
+  state.inventory.forEach(w => {
+    const owner = stockOwner(w);
+    if (owner && owner !== cur && !w.redeemed) (shelved[owner] = shelved[owner] || []).push(w);
+    else keep.push(w);
+  });
+  let took = 0;
+  const tookFrom = [];
+  Object.entries(shelved).forEach(([owner, items]) => {
+    const cfg = stockFor(owner);
+    // A shelf from an earlier day is stale the moment it's touched — that day's
+    // allowance is spent, and tomorrow's stock is granted fresh by applyLoadoutStock().
+    if (cfg.shelfDate !== today) cfg.shelf = [];
+    cfg.shelf = [...cfg.shelf, ...items];
+    cfg.shelfDate = today;
+    took += items.length;
+    tookFrom.push(owner);
+  });
+  if (took) state.inventory = keep;
+
+  // 2. Hand back what this loadout was holding, if it was set aside today.
+  const mine = state.loadoutStock[cur];
+  let gave = 0;
+  if (mine && Array.isArray(mine.shelf) && mine.shelf.length) {
+    if (mine.shelfDate === today) {
+      state.inventory.unshift(...mine.shelf);
+      gave = mine.shelf.length;
+    }
+    mine.shelf = [];
+    mine.shelfDate = '';
+  }
+
+  if (took || gave) {
+    logEvent('loadout_stock_reconciled', { loadout: cur, shelved: took, restored: gave, from: tookFrom, date: today });
+    // Name the loadout each half belongs to — "12 set aside" under the name of the
+    // loadout you just arrived at would read as though THIS one lost them.
+    const bits = [];
+    if (gave) bits.push(`${gave} ${cur} bonus back`);
+    if (took) bits.push(`${took} returned to ${tookFrom.join(' & ')}`);
+    toast(`🗂️ ${bits.join(' · ')}`, 'var(--cyan)');
+    save();
+  }
+  return { shelved: took, restored: gave };
 }
 
 function grantPassReward(d) {
@@ -7921,7 +8201,7 @@ function passClaimTier(level, lane) {
   if (p.claimed[lane].includes(level)) return;                // already collected
   grantPassReward(passTierReward(level, lane));
   p.claimed[lane].push(level);
-  SFX.coin(); burst({ count: 40, colors: lane === 'pro' ? ['#ffd700', '#ff1b8d'] : ['#39ff14', '#00f0ff'] });
+  SFX.coin(); burst({ count: 40, colors: lane === 'pro' ? ['#ff9e2c', '#c47a3a'] : ['#39ff14', '#c2601a'] });
   toast(`🎁 Level ${level} ${lane === 'pro' ? 'PRO' : 'FREE'} reward claimed!`, lane === 'pro' ? 'var(--gold)' : 'var(--green)');
   refreshPassUI(); save();
 }
@@ -7937,7 +8217,7 @@ function passGainXP(amount, source) {
   if (p.level >= PASS_MAX_TIERS) p.xp = Math.min(p.xp, p.xpPerLevel);
   if (leveled) {
     SFX.win(); toast(`⚡ Habit Pass — Level ${p.level}!`, 'var(--purple)');
-    burst({ count: 60, colors: ['#b026ff', '#00f0ff', '#ffd700'] });
+    burst({ count: 60, colors: ['#c47a3a', '#ff9e2c', '#ffb88a'] });
   }
   refreshPassUI(); save();
 }
@@ -8010,7 +8290,7 @@ function passUpgradePro() {
   state.tokens = Math.max(0, state.tokens - p.proCost);
   if (typeof displayTokens !== 'undefined') displayTokens = state.tokens;
   p.proUnlocked = true;
-  SFX.jackpot(); burst({ count: 140, colors: ['#ffd700', '#ff1b8d', '#00f0ff'] });
+  SFX.jackpot(); burst({ count: 140, colors: ['#ffb88a', '#c47a3a', '#ff9e2c'] });
   toast('🌟 Habit Pass PRO unlocked — tap any reached level to collect its reward!', 'var(--gold)');
   renderTopbar(); refreshPassUI(); save();
 }
@@ -8123,7 +8403,7 @@ function pickWildReward(rid) {
    ================================================================= */
 const STAT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const STAT_BUCKETS = ['12a', '3a', '6a', '9a', '12p', '3p', '6p', '9p'];   // 8 × 3-hour blocks
-const INTENSITY_COLORS = { easy: '#39ff14', medium: '#ffe600', hard: '#ff2d2d', plain: 'rgba(176,38,255,.65)' };
+const INTENSITY_COLORS = { easy: '#39ff14', medium: '#ffe600', hard: '#ff2d2d', plain: 'rgba(196,122,58,.65)' };
 function fmtMinOfDay(m) { let h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${String(mm).padStart(2, '0')} ${ap}`; }
 
 function renderStats() {
@@ -8149,8 +8429,8 @@ function renderStats() {
     <div class="hm-grid">
       <div></div>${STAT_BUCKETS.map(b => `<div class="hm-lab">${b}</div>`).join('')}
       ${STAT_DAYS.map((d, di) => `<div class="hm-lab">${d}</div>` + heat[di].map((c, bi) => {
-        const bg = c ? `rgba(176,38,255,${(0.14 + 0.72 * c / heatMax).toFixed(2)})` : 'rgba(255,255,255,0.04)';
-        return `<div class="hm-cell" title="${d} ${STAT_BUCKETS[bi]}–${STAT_BUCKETS[(bi + 1) % 8]} · ${c} done" style="background:${bg}${c === heatMax ? ';box-shadow:0 0 8px rgba(176,38,255,.8)' : ''}"></div>`;
+        const bg = c ? `rgba(255,158,44,${(0.14 + 0.72 * c / heatMax).toFixed(2)})` : 'rgba(255,255,255,0.04)';
+        return `<div class="hm-cell" title="${d} ${STAT_BUCKETS[bi]}–${STAT_BUCKETS[(bi + 1) % 8]} · ${c} done" style="background:${bg}${c === heatMax ? ';box-shadow:0 0 8px rgba(255,158,44,.8)' : ''}"></div>`;
       }).join('')).join('')}
     </div>`;
   const busiest = dayTotals.indexOf(Math.max(...dayTotals));
@@ -8197,17 +8477,17 @@ function renderStats() {
       <span class="stat-chip"><b>${STAT_DAYS[busiest]}</b>busiest day</span>
     </div>
     <div class="panel">
-      <div class="section-title neon-purple">🕒 Weekly rhythm</div>
+      <div class="section-title t2">🕒 Weekly rhythm</div>
       <div class="subtle">When things get done — darker = more completions in that time block.</div>
       ${heatHTML}
     </div>
     <div class="panel" style="margin-top:14px">
-      <div class="section-title neon-pink">🔥 Intensity</div>
+      <div class="section-title t2">🔥 Intensity</div>
       <div class="subtle">Difficulty mix of what you complete each weekday.</div>
       ${barsHTML}
     </div>
     <div class="panel" style="margin-top:14px">
-      <div class="section-title neon-green">⏰ Usual times</div>
+      <div class="section-title t2">⏰ Usual times</div>
       <div class="subtle">Each item's typical completion time.</div>
       ${timesHTML}
     </div>`;
@@ -8394,6 +8674,7 @@ function renderRewardEditor() {
 function renderWildCardSettings() {
   const on = $('#wildCasinoOn'); if (!on) return;
   on.checked = state.settings.wildCardsInCasino !== false;
+  const gt = $('#gapTokenOn'); if (gt) gt.checked = state.settings.gapCheckinToken !== false;
   $('#wildCasinoWeight').value = Number.isFinite(state.settings.wildCardCasinoWeightPct) ? state.settings.wildCardCasinoWeightPct : 50;
   $('#wildCardCounts').innerHTML = REWARD_TIERS.map(t => {
     const n = state.inventory.filter(w => w.wild && !w.redeemed && w.tier === t).length;
@@ -8414,7 +8695,7 @@ function renderStreakFreezeEditor() {
         ${REWARD_TIERS.map(t => `<option value="${t}" ${sf.tier === t ? 'selected' : ''}>${TIERS[t].emoji} ${TIERS[t].label}</option>`).join('')}
       </select>
       <span class="pill">🧊 owned: <b>${state.streakFreezes || 0}</b></span>
-      <span class="pill" style="border-color:rgba(0,240,255,.4);color:var(--cyan)" title="This reward is permanent">🔒 can't be deleted</span>
+      <span class="pill" style="border-color:rgba(255,158,44,.4);color:var(--cyan)" title="This reward is permanent">🔒 can't be deleted</span>
     </div>
     <div class="hint">Each freeze you own covers one missed day, keeping your 7-day streak alive — just like Duolingo.</div>`;
 }
@@ -9980,9 +10261,9 @@ function renderQuestionnaireBanner() {
   if (!pending.length) { box.innerHTML = ''; return; }
   const names = anomalyDetailsFor(pending[0].habitIds).map(a => a.name).join(', ');
   box.innerHTML = `
-    <div class="daily-banner slim" style="border-color:rgba(176,38,255,.4);margin-bottom:10px">
+    <div class="daily-banner slim" style="border-color:rgba(196,122,58,.4);margin-bottom:10px">
       <div class="dtext">
-        <div class="section-title neon-purple">🧭 ${pending.length} quick check-in${pending.length > 1 ? 's' : ''} ready</div>
+        <div class="section-title t2">🧭 ${pending.length} quick check-in${pending.length > 1 ? 's' : ''} ready</div>
         <div class="subtle">${escapeHtml(names || 'A couple things looked off recently')} — answer however's easiest:</div>
         <div class="chip-row" style="margin-top:8px">
           <button class="chip" data-startq="mc">📝 Multiple choice</button>
@@ -10120,6 +10401,8 @@ APP STATE & OBSERVED PATTERNS:
 ${appContext()}`;
 }
 function closeCheckin() {
+  // A gap left unanswered stays unanswered — closing is not skipping, so the ? comes back.
+  if (checkinKind === 'gap') { gapPending = null; checkinKind = 'reflect'; }
   clearVoiceTimer();
   $('#checkinOverlay').classList.remove('show');
   try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
@@ -10185,7 +10468,9 @@ function renderCheckinBody() {
           <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">📝</span><span class="pass-title" style="font-size:19px">CHECK-IN</span></div>
           ${total ? `<span class="subtle">Question ${mcIndex + 1} of ${total}</span>` : ''}
         </div>
-        <div class="pass-sub">Tap the closest answer — or tap <b>Other</b> to say it in your own words.</div>
+        <div class="pass-sub">${checkinKind === 'gap'
+          ? `Nothing was logged here. Tap the closest answer, or <b>Other</b> to say it in your own words${state.settings.gapCheckinToken !== false ? ' — either way it\'s worth <b>1 🪙</b>' : ''}.`
+          : 'Tap the closest answer — or tap <b>Other</b> to say it in your own words.'}</div>
       </div>
       <div class="pass-scroll">
         ${mcBusy || !mcQuestions ? `<div class="ai-msg thinking">🤖 thinking…</div>` : q ? `
@@ -10193,6 +10478,8 @@ function renderCheckinBody() {
           <div class="chip-row" style="margin-top:10px;flex-direction:column;align-items:stretch">
             ${q.options.map((opt, oi) => `<button class="chip mc-opt${isOtherOption(opt) ? ' mc-other' : ''}" data-mcopt="${oi}">${escapeHtml(opt)}${isOtherOption(opt) ? ' \u2026' : ''}</button>`).join('')}
           </div>
+          ${checkinKind === 'gap' && mcOtherIdx !== mcIndex
+            ? `<button class="btn ghost sm" data-act="gapSkip" style="width:100%;margin-top:4px">Skip — don't ask about this again</button>` : ''}
           ${mcOtherIdx === mcIndex ? `
           <div class="mc-otherbox">
             <input class="name-in" id="mcOtherInput" placeholder="So what actually happened?" value="${escapeHtml(mcOtherText[mcIndex] || '')}" autocomplete="off">
@@ -10332,6 +10619,13 @@ function mcCancelOther() {
   renderCheckinBody();
 }
 function finishMC() {
+  if (checkinKind === 'gap') {
+    // mcAnswerText returns the typed text when "Other" was used, otherwise the tapped
+    // option — and only a typed one is worth remembering for next time.
+    const typed = !!(mcOtherText[0] || '').trim();
+    finishGapCheckin(mcAnswerText(0), typed);
+    return;
+  }
   if (checkinKind === 'habitctx') {
     const h = state.habits.find(x => x.id === habitCtxId);
     if (h) {
@@ -10362,6 +10656,133 @@ function finishMC() {
   toast('✓ Saved — thanks!', 'var(--green)');
   setTimeout(() => { $('#checkinOverlay').classList.remove('show'); }, 700);
 }
+/* =================================================================
+   GAP CHECK-IN — one multiple-choice question about an unaccounted stretch.
+
+   Rides the whole MC pipeline the other check-ins use, including the free-text "Other"
+   box, which is the point: a typed answer is remembered against this loadout and this
+   hour, and comes back as a tap-able option the next time a similar hole appears. That
+   loop is what stops the same question being tedious the fifth time.
+
+   Answering pays a token (toggleable) and skipping doesn't — but skipping still closes
+   the gap for good, so the chart never nags about the same afternoon twice.
+   ================================================================= */
+let gapPending = null;     // { date, startMin, endMin, loadout }
+
+// Past answers that fit this hole: same loadout, and a start hour within 2 hours of it.
+// Ranked by how often they've been given, then how recently.
+function learnedGapOptions(startMin, loadout, limit = 3) {
+  const hour = Math.floor(startMin / 60);
+  return (state.gapAnswers || [])
+    .filter(a => a.loadout === loadout && Math.abs(a.hourBucket - hour) <= 2)
+    .sort((a, b) => (b.count - a.count) || (b.lastTs - a.lastTs))
+    .slice(0, limit)
+    .map(a => a.text);
+}
+// Remember a typed answer so it becomes a tap next time. Same text at a similar hour on
+// the same loadout just bumps the count rather than piling up near-duplicates.
+function rememberGapAnswer(text, loadout, startMin) {
+  const t = String(text || '').trim().slice(0, 80);
+  if (!t) return;
+  const hour = Math.floor(startMin / 60);
+  state.gapAnswers = state.gapAnswers || [];
+  const hit = state.gapAnswers.find(a => a.loadout === loadout
+    && a.text.toLowerCase() === t.toLowerCase() && Math.abs(a.hourBucket - hour) <= 2);
+  if (hit) { hit.count++; hit.lastTs = Date.now(); hit.hourBucket = hour; return; }
+  state.gapAnswers.push({ text: t, loadout, hourBucket: hour, count: 1, lastTs: Date.now() });
+  if (state.gapAnswers.length > 120) {
+    state.gapAnswers.sort((a, b) => (b.count - a.count) || (b.lastTs - a.lastTs));
+    state.gapAnswers = state.gapAnswers.slice(0, 100);
+  }
+}
+function gapSystemPrompt(g) {
+  const before = computeActualBlocks(g.date).filter(b => b.startMin + b.durMin <= g.startMin).slice(-2);
+  const after = computeActualBlocks(g.date).filter(b => b.startMin >= g.endMin).slice(0, 2);
+  const list = b => b.map(x => `"${x.name}" at ${fmtMinOfDay(x.startMin)}`).join(', ') || '(nothing)';
+  const day = new Date(g.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long' });
+  return `The user tracks habits in HabitCasinoAI. On ${day} they logged nothing between ${fmtMinOfDay(g.startMin)} and ${fmtMinOfDay(g.endMin)} (${fmtMins(g.endMin - g.startMin)}). You are guessing what they were plausibly doing so they can answer with one tap.
+
+CONTEXT
+- Loadout (the kind of day this is): "${g.loadout}"
+- Logged just before the gap: ${list(before)}
+- Logged just after the gap: ${list(after)}
+- Their habits on this loadout: ${state.habits.filter(h => !h.archived && h.loadout === g.loadout).map(h => `"${h.name}"`).join(', ') || '(none)'}
+
+RULES
+- Give 3-4 SHORT options (under 32 characters each), each a plausible everyday activity for this person, this loadout and this time of day. "Class", "Commuting", "Napping", "Out with friends" — concrete, not categories like "Leisure activity".
+- Use the time of day and the surrounding entries. A gap between a 7am habit and a 6pm one on a "School" loadout is almost certainly school.
+- Do NOT include an "Other" option; the app adds one.
+- No preamble, no explanation.
+
+OUTPUT — ONE JSON object, no fences:
+{"options":["...","...","..."]}`;
+}
+async function openGapCheckin(dateStr, startMin, endMin) {
+  gapPending = { date: dateStr, startMin, endMin, loadout: currentLoadout() };
+  checkinKind = 'gap'; habitCtxId = null; activeQuestionnaire = null;
+  checkinFormat = 'mc'; checkinMessages = []; checkinTurns = 0;
+  mcAnswers = [null]; mcOtherText = ['']; mcIndex = 0; mcOtherIdx = null;
+  mcQuestions = null; mcBusy = true;
+  $('#checkinOverlay').classList.add('show');
+  renderCheckinBody();
+
+  const learned = learnedGapOptions(startMin, gapPending.loadout);
+  let generated = [];
+  // The AI is a bonus, never a requirement: a "?" you can't clear without an API key
+  // would be worse than not marking the gap at all.
+  if (activeKey()) {
+    try {
+      const raw = await callAI(gapSystemPrompt(gapPending), [{ role: 'user', content: 'Give me the options.' }]);
+      const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
+      if (a >= 0 && b > a) {
+        const o = JSON.parse(raw.slice(a, b + 1));
+        if (Array.isArray(o.options)) generated = o.options.map(x => String(x).slice(0, 40)).filter(Boolean);
+      }
+    } catch (e) { /* fall through to whatever we already have */ }
+  }
+  if (!gapPending) return;                    // user closed it while the call was in flight
+  // Learned answers first — they're this user's real words, not a model's guess.
+  const seen = new Set();
+  const options = [...learned, ...generated]
+    .filter(o => { const k = o.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
+    .slice(0, 5);
+  // Pad to three. One remembered answer and nothing else leaves a question with a single
+  // tap-able choice, which pressures the answer instead of offering one.
+  ['Resting', 'Out', 'Busy with something else'].forEach(o => {
+    if (options.length < 3 && !seen.has(o.toLowerCase())) { options.push(o); seen.add(o.toLowerCase()); }
+  });
+  options.push('Other');
+  mcQuestions = [{ text: `What were you doing between ${fmtMinOfDay(startMin)} and ${fmtMinOfDay(endMin)}?`, options }];
+  mcBusy = false;
+  renderCheckinBody();
+}
+// Record the outcome and close. `answer` null = skipped: the gap still stops being asked
+// about, it just doesn't pay.
+function finishGapCheckin(answer, wasTyped) {
+  const g = gapPending; if (!g) return;
+  state.gapLog = Array.isArray(state.gapLog) ? state.gapLog : [];
+  state.gapLog.push({ date: g.date, startMin: g.startMin, endMin: g.endMin,
+    answer: answer || null, skipped: !answer, loadout: g.loadout, ts: Date.now() });
+  if (state.gapLog.length > 400) state.gapLog = state.gapLog.slice(-300);
+  if (answer) {
+    if (wasTyped) rememberGapAnswer(answer, g.loadout, g.startMin);
+    logEvent('gap_answered', { date: g.date, startMin: g.startMin, endMin: g.endMin,
+      minutes: g.endMin - g.startMin, loadout: g.loadout, answer, typed: !!wasTyped });
+    if (state.settings.gapCheckinToken !== false) {
+      addTokens(1);
+      toast(`✓ Logged — +1 🪙`, 'var(--gold)');
+    } else {
+      toast('✓ Logged — thanks!', 'var(--green)');
+    }
+  } else {
+    logEvent('gap_skipped', { date: g.date, startMin: g.startMin, endMin: g.endMin, loadout: g.loadout });
+  }
+  gapPending = null; checkinKind = 'reflect';
+  save();
+  $('#checkinOverlay').classList.remove('show');
+  renderBlockSchedule(); renderHomeNow();
+}
+
 // Browser TTS — free, best-effort; silently does nothing if unsupported.
 function speakText(text) {
   try {
@@ -10411,6 +10832,7 @@ $('#checkinBody').addEventListener('click', e => {
     }
     SFX.click(); startHabitContextQuestionnaire(f); return;
   }
+  if (e.target.closest('[data-act="gapSkip"]')) { SFX.click(); finishGapCheckin(null, false); return; }
   if (e.target.closest('[data-act="mcOtherSave"]')) { SFX.click(); mcSaveOther(); return; }
   if (e.target.closest('[data-act="mcOtherCancel"]')) { SFX.click(); mcCancelOther(); return; }
   const opt = e.target.closest('[data-mcopt]');
@@ -10998,7 +11420,7 @@ function onHabitsClick(e) {
     if (h) {
       h.archived = true;
       editingHabitId = null; editTierPage = null;
-      SFX.win(); burst({ count: 70, colors: ['#ffd700', '#00f0ff', '#b026ff'] });
+      SFX.win(); burst({ count: 70, colors: ['#ffb88a', '#ff9e2c', '#c47a3a'] });
       toast(`🎓 ${h.name} graduated — resting in the archive`, 'var(--gold)');
       save(); renderHabits();
     }
@@ -11638,7 +12060,7 @@ function renderLoadoutMenu() {
     <div class="pass-title">＋ NEW LOADOUT</div>
     <div class="subtle">Name it, then optionally copy habits from any existing loadout. Select none for a blank slate.</div>
     <input class="name-in" id="newLoadoutName" maxlength="32" placeholder="e.g. Workdays, Weekend, Travel" style="width:100%;margin-top:14px">
-    <div class="section-title" style="font-size:14px;margin-top:16px">COPY HABITS (OPTIONAL)</div>
+    <div class="section-title t3" style="margin-top:16px">COPY HABITS (OPTIONAL)</div>
     <div class="loadout-copy-groups">${groups}</div>
     <div class="row" style="gap:8px">
       <button class="btn ghost" data-act="loadoutBack">‹ Back</button>
@@ -11660,6 +12082,7 @@ function createLoadoutFromMenu() {
   state.habits.push(...copies);
   state.activeLoadout = name;
   logEvent('loadout_created', { name, copiedHabitCount: copies.length });
+  reconcileLoadoutStock();                     // the loadout we just left keeps its own bonus
   save(); closeLoadoutMenu(); renderHabits(); renderHabitEditor();
   toast(copies.length ? `${name} created with ${copies.length} copied habit${copies.length === 1 ? '' : 's'}` : `${name} created — blank slate`, 'var(--green)');
 }
@@ -11677,6 +12100,7 @@ $('#loadoutBody').addEventListener('click', e => {
   if (pick) {
     state.activeLoadout = pick.dataset.loadoutPick;
     logEvent('loadout_selected', { name: state.activeLoadout });
+    reconcileLoadoutStock();                   // hand back the old loadout's bonus, reclaim this one's
     applyLoadoutStock();                       // arriving on a stocked loadout stocks it for today
     save(); closeLoadoutMenu(); renderHabits(); renderPrizes(); return;
   }
@@ -11690,6 +12114,9 @@ $('#loadoutBody').addEventListener('click', e => {
     const was = state.activeLoadout; state.activeLoadout = loadoutEditName;
     const n = applyLoadoutStock();
     state.activeLoadout = was;
+    // Stocking a loadout you're not on shouldn't dump its bonus into your live pool —
+    // the sweep parks it on that loadout's shelf until you actually switch there.
+    reconcileLoadoutStock();
     if (!n) toast('Already fully stocked', 'var(--cyan)');
     SFX.click(); save(); renderLoadoutMenu(); renderPrizes();
   }
@@ -12194,6 +12621,7 @@ $('#sortHabits').addEventListener('click', () => {
 
 // ---- Settings: Streak Freeze (special reward) ----
 $('#wildCasinoOn').addEventListener('change', e => { state.settings.wildCardsInCasino = e.target.checked; save(); });
+$('#gapTokenOn').addEventListener('change', e => { state.settings.gapCheckinToken = e.target.checked; save(); });
 $('#wildCasinoWeight').addEventListener('input', e => { state.settings.wildCardCasinoWeightPct = clamp(parseInt(e.target.value) || 0, 0, 500); save(); });
 $('#streakFreezeEditor').addEventListener('input', e => {
   const sf = state.settings.streakFreeze;
@@ -12609,6 +13037,12 @@ $('#view-schedule').addEventListener('click', e => {
   }
   if (act === 'zoomIn')  { schedZoomIdx += 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'zoomOut') { schedZoomIdx -= 1; SFX.click(); applySchedZoom(); return; }
+  const gapEl = e.target.closest('.sched-block.gap');
+  if (gapEl) {
+    SFX.click();
+    openGapCheckin(gapEl.dataset.gapdate, parseInt(gapEl.dataset.gapstart, 10), parseInt(gapEl.dataset.gapend, 10));
+    return;
+  }
   if (act === 'unpin') {
     const el = e.target.closest('.sched-block'); if (!el) return;
     removePlannedBlock(todayStr(schedOffset), el.dataset.ref);
@@ -13142,6 +13576,7 @@ function fullRender() {
 // Boot is synchronous again: the save comes from localStorage, so nothing waits on the
 // network or on an account. The cloud layer attaches later, if and when it loads.
 processClosedDayOutcomes();
+reconcileLoadoutStock();
 applyLoadoutStock();
 fullRender();
 // If load() couldn't read the save, this is the first thing the user sees — before any
