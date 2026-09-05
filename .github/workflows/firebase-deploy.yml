@@ -1,0 +1,38 @@
+# Push to main -> live on Firebase Hosting, no manual upload.
+#
+# Two settings in firebase.json are load-bearing and should not be "tidied up":
+#
+#   cleanUrls: false  - the app reads its own channel from the URL
+#                       (HC_VERSION tests location.pathname for /beta\.html$/).
+#                       Clean URLs would rewrite /beta.html to /beta and every
+#                       build would silently identify itself as alpha.
+#
+#   Cache-Control: no-cache on *.html
+#                     - Firebase Hosting defaults HTML to max-age=3600, so a push
+#                       could take an hour to show up. "no-cache" means revalidate
+#                       every time, not "don't cache": unchanged files still get a
+#                       304 off the CDN, so it stays fast.
+#
+# site: habitcasino-5d08b pins the deploy to this site. The Firebase project also
+# hosts thru-line, which must never be touched by a Habit Casino deploy.
+
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # lets you re-deploy by hand from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to the live channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_HABITCASINO_5D08B }}
+          projectId: habitcasino-5d08b
+          channelId: live

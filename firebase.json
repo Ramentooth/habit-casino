@@ -1,0 +1,24 @@
+{
+  "hosting": {
+    "site": "habitcasino-5d08b",
+    "public": ".",
+    "cleanUrls": false,
+    "trailingSlash": false,
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      ".github/**",
+      "**/.*",
+      "**/node_modules/**",
+      "README.md"
+    ],
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      }
+    ]
+  }
+}
