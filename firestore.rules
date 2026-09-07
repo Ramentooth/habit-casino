@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// Habit Casino stores one save document per signed-in user, keyed by their uid,
+// plus a backups subcollection underneath it.
+//
+// The recursive wildcard is deliberate. A match on a document path does NOT cascade
+// to its subcollections, so `match /users/{uid}` alone leaves users/{uid}/backups/*
+// falling through to the default deny — which is exactly how cloud backups broke.
+// Matching {document=**} under the uid keeps the boundary identical (still only the
+// owner, never another signed-in user) while covering any subcollection added later.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}
