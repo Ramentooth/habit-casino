@@ -867,6 +867,42 @@
       margin: 22px 0 10px;
     }
     .home-rule { height: 1px; background: var(--gs-edge, rgba(255,255,255,.12)); margin: 26px 0 0; }
+    /* The one line that says why these three rows are these three rows. */
+    .duenow-why { font-size: 11px; color: var(--ink-dim); margin: -2px 0 10px; line-height: 1.5; }
+
+    /* ---------- Similar Days (Analytics) ---------- */
+    .sd-refs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+    .sd-ref { font-size: 10px; padding: 3px 7px; border-radius: 999px; letter-spacing: .3px;
+      border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); color: var(--ink-dim); }
+    .sd-ref b { color: var(--gold, #ff9e2c); margin-left: 5px; font-weight: 700; }
+    .sd-stand { margin: 12px 0 6px; font-size: 13px; line-height: 1.5;
+      padding: 9px 11px; border-radius: 10px; border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); }
+    .sd-stand b { font-size: 17px; }
+    .sd-stand.behind { border-color: rgba(255,110,150,.45); }
+    .sd-stand.ahead  { border-color: rgba(90,220,160,.45); }
+    .sd-sub { display: block; font-size: 11px; color: var(--ink-dim); margin-top: 3px; }
+    .sd-rows { margin: 10px 0 6px; }
+    .sd-row { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; font-size: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.05); }
+    .sd-row.done { opacity: .45; }
+    .sd-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sd-time { flex: 0 0 auto; color: var(--gold, #ff9e2c); font-variant-numeric: tabular-nums; }
+    .sd-eff  { flex: 0 0 auto; font-size: 10px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+    .sd-acc  { font-size: 11px; color: var(--ink-dim); margin-top: 8px; line-height: 1.5; }
+    .sd-beliefs { margin: 10px 0 4px; }
+    .sd-belief { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; font-size: 12px;
+      line-height: 1.5; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .sd-btext { flex: 1 1 auto; }
+    .sd-dismiss { flex: 0 0 auto; background: none; border: 0; color: var(--ink-dim);
+      font-size: 12px; cursor: pointer; padding: 0 2px; line-height: 1.4; }
+    .sd-dismiss:hover { color: var(--pink, #ff6e96); }
+    .sd-exp { margin-top: 12px; padding: 11px 12px; border-radius: 10px;
+      border: 1px solid rgba(255,158,44,.4); }
+    .sd-exp.running { border-color: rgba(90,220,160,.4); }
+    .sd-exp-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+    .sd-exp-detail { font-size: 11px; color: var(--ink-dim); line-height: 1.55; }
+    .sd-exp-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .sd-done { margin-top: 10px; }
 
     /* NOW — today's Schedule grid, in a fixed window that scrolls and zooms in place. */
     .now-card { border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); border-radius: 14px; padding: 12px 14px; }
@@ -3311,6 +3347,14 @@ function defaultState() {
     // Reminders. `authorized` is mirrored from the iOS wrapper; the two switches are the
     // user's own and are the only part that survives a reload.
     notify: { rewardEnd: true, habitOverrun: true, authorized: false },
+    // What the Similar Day Engine expected, and what actually happened. One row per
+    // day, graded when the day closes — the feedback loop that lets a prediction be
+    // corrected instead of merely repeated.
+    predictionLog: [],  // { date, ts, basis, confidence, loadout, blocks:[...], result }
+    // What the app thinks it has noticed, always re-derived from the logs — only the
+    // "first seen" date and a dismissal survive here (see BEHAVIORAL BELIEFS).
+    beliefs: [],        // { id, kind, subject, text, n, strength, firstSeen, lastSeen, status }
+    experiments: [],    // { id, beliefId, kind, habitId, change, metric, days, status, baseline, after, outcome }
     activeLoadout: 'Default',
     contexts: [],         // Planner day contexts such as Travel/School; separate from loadouts
     dayPlans: {},         // 'YYYY-MM-DD' → { raw, context, ts }
@@ -3416,6 +3460,9 @@ const BACKUP_INDEX_KEY = 'habitCasino.bakIndex';
 const BACKUP_MAX = 8;              // most recent AUTO copies kept (slots are never pruned)
 const BACKUP_SLOTS = 3;            // manual save slots the user controls
 const BACKUP_BUDGET = 2000000;     // chars across ALL backups — localStorage gives ~5M total
+// Days of graded forecasts kept (see the SIMILAR DAY ENGINE section). Declared up here
+// because load() caps the log on read, and load() runs long before that section does.
+const PREDICTION_LOG_MAX = 120;
 
 // Two kinds share one index, one storage layout and one restore path:
 //   'auto' — taken by the app (boot, daily, before a restore/import/reset). Rotates.
@@ -3855,6 +3902,16 @@ function load(raw) {
     merged.archivedOneoffs = Array.isArray(parsed.archivedOneoffs) ? parsed.archivedOneoffs : [];
     merged.eventLog = (Array.isArray(parsed.eventLog) ? parsed.eventLog : []).filter(e => e && e.eventType && Number.isFinite(e.ts));
     merged.outcomeDatesProcessed = Array.isArray(parsed.outcomeDatesProcessed) ? parsed.outcomeDatesProcessed.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)) : [];
+    merged.predictionLog = (Array.isArray(parsed.predictionLog) ? parsed.predictionLog : [])
+      .filter(r => r && /^\d{4}-\d{2}-\d{2}$/.test(r.date) && Array.isArray(r.blocks))
+      .slice(-PREDICTION_LOG_MAX);
+    // Beliefs are recomputed on every derive, so only the dismissals here actually matter;
+    // keeping the rest just avoids a blank panel on the first render after a reload.
+    merged.beliefs = (Array.isArray(parsed.beliefs) ? parsed.beliefs : [])
+      .filter(b => b && typeof b.id === 'string' && typeof b.text === 'string');
+    merged.experiments = (Array.isArray(parsed.experiments) ? parsed.experiments : [])
+      .filter(e => e && typeof e.id === 'string' && e.change && e.change.habitId)
+      .slice(-30);
     // Old single global happy hour → one entry per category (same window/mult for all).
     if (!(parsed.settings || {}).happyHours) {
       const old = (parsed.settings || {}).happyHour || {};
@@ -4078,6 +4135,8 @@ function processClosedDayOutcomes() {
     logEvent('habit_abandoned', { entityType: 'habit', entityId: h.id, name: h.name, startedAt: h.timer.startedAt, elapsedSecAtClose: Math.round(timerElapsedSec(h.timer)), reason: 'stale_timer' });
     h.timer = null;
   });
+  // The day is genuinely over now, so grade what the engine said this morning.
+  scorePrediction(date);
   state.outcomeDatesProcessed.push(date);
   if (state.outcomeDatesProcessed.length > 120) state.outcomeDatesProcessed = state.outcomeDatesProcessed.slice(-90);
   save();
@@ -5879,20 +5938,36 @@ function computeDayBlocks(dateStr) {
   const isToday = dateStr === todayStr();
   const planned = plannedFor(dateStr);
   const plannedRefs = new Set(planned.map(p => p.refId));
-  // Times come from your record day for this loadout when it has them. Priority is
-  // pinned > record > median: a time you set by hand or the AI pinned still wins, and a
-  // habit the record day never did falls back to the old median so it doesn't vanish.
+  // Priority is pinned > predicted > record > median.
+  //   pinned     a time you set by hand, or the AI pinned. Always wins.
+  //   predicted  the Similar Day Engine, but only when it clears PREDICT_ADOPT_CONF —
+  //              days like this one, timed from how they actually went.
+  //   record     your best day on this loadout, replayed. What this used to be.
+  //   median     the old per-habit median, so a habit neither of the above knows about
+  //              still gets a block instead of vanishing.
+  // The gate matters: under the threshold — a new save, a new loadout, a habit with two
+  // data points — this function behaves exactly as it did before the engine existed.
   const rec = recordFor(loadout);
+  const pred = predictDay(dateStr);
+  const predBlocks = new Map();
+  if (pred.confidence >= PREDICT_ADOPT_CONF) {
+    pred.blocks.forEach(b => { if (b.confidence >= PREDICT_ADOPT_CONF) predBlocks.set(b.habitId, b); });
+  }
   const inferred = state.habits.filter(h => !h.archived && h.section === 'daily'
       && isScheduledOn(h, dateStr) && h.loadout === loadout && !plannedRefs.has(h.id))
     .map(h => {
       const r = rec.blocks.get(h.id);
+      const p = Number.isFinite(h.scheduledMin) ? null : predBlocks.get(h.id);
       return {
       habitId: h.id, refId: h.id, planKind: 'habit',
       name: h.name, emoji: h.emoji, category: h.category,
-      startMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : (r ? r.startMin : habitUsualMinute(h)),
-      durMin: (r && r.durMin) || habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
-      fromRecord: !!r && !Number.isFinite(h.scheduledMin),
+      startMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin
+        : (p ? p.startMin : (r ? r.startMin : habitUsualMinute(h))),
+      durMin: (p && p.durMin) || (r && r.durMin) || habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
+      fromRecord: !!r && !p && !Number.isFinite(h.scheduledMin),
+      fromPrediction: !!p,
+      predConfidence: p ? p.confidence : null,
+      predBasis: p ? pred.basis : null,
       pinned: Number.isFinite(h.scheduledMin),
       // "Complete" only means anything for today; a future day hasn't happened yet.
       complete: isToday ? isComplete(h) : false,
@@ -5986,6 +6061,944 @@ function recordFor(loadout) {
   const day = recordDay(loadout, recordWindowKey());
   recordCache = { key, value: { day, blocks: recordDayBlocks(day) } };
   return recordCache.value;
+}
+
+/* =================================================================
+   SIMILAR DAY ENGINE — the app's model of a DAY, not of a habit.
+
+   Everything above this point predicts one habit at a time: the median minute
+   it usually happens (habitUsualMinute), the median length it usually runs
+   (habitMedianActualMinutes), or a replay of the single best past day
+   (recordFor). None of those know what KIND of day today is. A Tuesday that
+   started at 6:40 with a run and a Tuesday that started at 10:15 with nothing
+   get the identical forecast, because the only thing the schedule knows about
+   "kind of day" is which loadout is switched on — and that's a manual toggle,
+   not an observation.
+
+   This section adds the missing axis: find the past days that most resemble the
+   day in progress, and let THOSE days answer the question. It is pure reading —
+   every number below is derived from logs the app already writes (history,
+   eventLog, paceLog, gapLog, dayPlans). Nothing here stores state, nothing here
+   asks the user anything, and nothing here calls an API.
+
+   Guiding order: OBSERVE when possible, INFER when reasonable, ASK only when
+   necessary. This section is the whole "observe" tier.
+   ================================================================= */
+
+const SIMILAR_DAY_MAX_AGE = 90;    // a day older than this stops counting as evidence
+const SIMILAR_MIN_COVERAGE = 0.40; // two days must share enough FEATURES to compare at all
+
+/* One pass over every log, to per-date facts keyed by 'YYYY-MM-DD'.
+
+   Memoised on the lengths of the two append-only logs plus today's date — the
+   same cache-key shape recordFor() uses. Those three are the only things that
+   can change an answer, and any append changes a length. */
+let _dayIndexCache = null;
+function dayIndex() {
+  const key = `${(state.history || []).length}|${(state.eventLog || []).length}|${todayStr()}`;
+  if (_dayIndexCache && _dayIndexCache.key === key) return _dayIndexCache.map;
+  const map = new Map();
+  const row = d => {
+    let r = map.get(d);
+    if (!r) { r = { date: d, habits: new Map(), tasks: new Set(), missed: new Set(), rewardMin: 0, casino: 0 }; map.set(d, r); }
+    return r;
+  };
+  const minOf = ts => { const x = new Date(ts); return x.getHours() * 60 + x.getMinutes(); };
+
+  (state.history || []).forEach(e => {
+    if (!e || !Number.isFinite(e.ts)) return;
+    const d = dateStrFromTs(e.ts);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    const r = row(d);
+    if (e.kind === 'task') { r.tasks.add(e.id || e.name); return; }
+    if (e.kind !== 'habit') return;
+    const endMin = minOf(e.ts);
+    // A stopwatch run gives a real span; a checkmark only says WHEN it finished.
+    // Untimed rows keep durMin 0 rather than inventing a length — the same rule
+    // computeActualBlocks follows when it draws zero-length "moment" marks.
+    const durMin = Number.isFinite(e.actualElapsedSec) ? Math.round(e.actualElapsedSec / 60) : 0;
+    const startMin = Math.max(0, endMin - durMin);
+    const k = e.id || e.name;
+    const prev = r.habits.get(k);
+    // A repeatable habit logged several times keeps its FIRST sitting, matching
+    // recordDayBlocks: the rhythm question is when you got started, not when you
+    // topped up at 11pm.
+    if (!prev || startMin < prev.startMin) {
+      r.habits.set(k, { key: k, id: e.id || null, name: e.name, category: e.category || null, startMin, endMin, durMin, timed: durMin > 0 });
+    }
+  });
+
+  (state.eventLog || []).forEach(ev => {
+    if (!ev || !ev.eventType) return;
+    // habit_missed is emitted by the NEXT day's sweep, so ev.date is the day the
+    // sweep ran. The day it is about is scheduledForDate — reading ev.date here
+    // would file every miss one day late.
+    if (ev.eventType === 'habit_missed' || ev.eventType === 'habit_skipped_planned') {
+      const d = ev.scheduledForDate;
+      if (d) row(d).missed.add(ev.entityId || ev.name);
+      return;
+    }
+    if (!ev.date) return;
+    if (ev.eventType === 'casino_played') row(ev.date).casino++;
+    else if (ev.eventType === 'reward_redeemed') row(ev.date).rewardMin += (ev.allocatedMinutes || 0);
+  });
+
+  _dayIndexCache = { key, map };
+  return map;
+}
+
+/* One day, described as the handful of things that make days comparable.
+
+   `upToMin` is the whole trick. Today is a half-finished day; every past day is
+   a finished one. Scoring today against complete days would make today look
+   unlike everything, and the resemblance would only "arrive" at bedtime, which
+   is exactly when it stops being useful. So a comparison truncates BOTH sides
+   to the same minute of the day, and the prediction then reads what those days
+   went on to do AFTER that minute. */
+const _dfvCache = new Map();
+function buildDayFeatureVector(dateStr, opts = {}) {
+  const upToMin = Number.isFinite(opts.upToMin) ? opts.upToMin : 1440;
+  const idxKey = `${(state.history || []).length}|${(state.eventLog || []).length}|${todayStr()}`;
+  const ck = `${idxKey}|${dateStr}|${upToMin}`;
+  if (_dfvCache.has(ck)) return _dfvCache.get(ck);
+  if (_dfvCache.size > 400) _dfvCache.clear();
+
+  const r = dayIndex().get(dateStr);
+  const acts = [];
+  if (r) r.habits.forEach(h => { if (h.startMin <= upToMin) acts.push(h); });
+  acts.sort((a, b) => a.startMin - b.startMin);
+
+  const plan = dayPlan(dateStr);
+  const pace = (state.paceLog || {})[dateStr] || null;
+  const d = new Date(dateStr + 'T00:00:00');
+  const full = upToMin >= 1440;
+  const v = {
+    date: dateStr, upToMin, full,
+    dow: d.getDay(),
+    weekend: d.getDay() === 0 || d.getDay() === 6,
+    // dayLoadout() reconstructs a past day's loadout from what got logged on it, so for
+    // TODAY it reads null until the first completion. The live switch is the observed
+    // truth and is available from the first minute — which is the difference between the
+    // engine working at 6am and only waking up once you've ticked something off.
+    loadout: dateStr === todayStr() ? currentLoadout() : dayLoadout(dateStr),
+    context: plan ? (plan.context || null) : null,
+    startMin: acts.length ? acts[0].startMin : null,
+    lastMin: acts.length ? acts[acts.length - 1].endMin : null,
+    order: acts.map(a => a.key),                                 // earliest-started first
+    times: new Map(acts.map(a => [a.key, a.startMin])),
+    durs: new Map(acts.filter(a => a.timed).map(a => [a.key, a.durMin])),
+    acts,
+    n: acts.length,
+    activeMin: acts.reduce((s, a) => s + a.durMin, 0),
+    tasksDone: r ? r.tasks.size : 0,
+    // A miss is an end-of-day verdict, so it only belongs to a FULL-day vector.
+    // On a truncated one it would be claiming the day had already failed at 10am.
+    missed: (full && r) ? [...r.missed] : [],
+    pacePct: (full && pace) ? pacePct(pace) : null,
+    rewardMin: r ? r.rewardMin : 0,
+    casino: r ? r.casino : 0,
+    // What the user TOLD us they were doing in the unexplained stretches. The one
+    // feature here that isn't inferred from taps, and the strongest single signal
+    // there is for "same kind of day".
+    gapAnswers: (state.gapLog || [])
+      .filter(g => g && g.date === dateStr && g.answer && g.startMin < upToMin)
+      .map(g => String(g.answer).trim().toLowerCase()),
+  };
+  _dfvCache.set(ck, v);
+  return v;
+}
+
+function jaccard(a, b) {
+  const A = new Set(a), B = new Set(b);
+  if (!A.size && !B.size) return null;
+  let inter = 0;
+  A.forEach(x => { if (B.has(x)) inter++; });
+  return inter / (A.size + B.size - inter);
+}
+/* Do two days run their shared habits in the same ORDER? Fraction of concordant
+   pairs over the items both days contain. Two days can finish the identical five
+   habits and still be nothing alike if one runs them backwards. */
+function orderAgreement(a, b) {
+  const shared = a.filter(x => b.includes(x));
+  if (shared.length < 2) return null;
+  let agree = 0, total = 0;
+  for (let i = 0; i < shared.length; i++) {
+    for (let j = i + 1; j < shared.length; j++) {
+      total++;
+      if (b.indexOf(shared[i]) < b.indexOf(shared[j])) agree++;
+    }
+  }
+  return total ? agree / total : null;
+}
+
+/* How alike two days are, 0..1, plus WHY — `parts` is what the UI shows instead
+   of an unexplained number.
+
+   Weights are renormalised over the features both days actually have. A day with
+   no gap answers and no planner context isn't penalised for it; its remaining
+   features just carry more of the decision. `coverage` reports how much of the
+   full weight was available, and a comparison under SIMILAR_MIN_COVERAGE is
+   dropped rather than reported as a weak match — two days that share nothing but
+   a day-of-week are not evidence of anything. */
+function scoreDaySimilarity(a, b) {
+  const parts = [];
+  const add = (w, v, label) => { if (v != null && Number.isFinite(v)) parts.push({ w, v, label }); };
+  add(0.28, (a.loadout && b.loadout) ? (a.loadout === b.loadout ? 1 : 0) : null, 'loadout');
+  add(0.07, (a.context || b.context) ? (a.context === b.context ? 1 : 0) : null, 'day context');
+  add(0.10, a.dow === b.dow ? 1 : (a.weekend === b.weekend ? 0.45 : 0), 'weekday');
+  add(0.15, (a.startMin != null && b.startMin != null)
+    ? 1 - Math.min(1, Math.abs(a.startMin - b.startMin) / 120) : null, 'start of day');
+  add(0.25, jaccard(a.order, b.order), 'what got done');
+  add(0.10, orderAgreement(a.order, b.order), 'order of things');
+  add(0.05, (a.gapAnswers.length && b.gapAnswers.length) ? jaccard(a.gapAnswers, b.gapAnswers) : null, 'how the gaps went');
+  const tw = parts.reduce((s, p) => s + p.w, 0);
+  if (!tw) return { score: 0, coverage: 0, parts: [] };
+  return { score: parts.reduce((s, p) => s + p.w * p.v, 0) / tw, coverage: tw, parts };
+}
+
+/* The k past days that most resemble `dateStr` as it stood at `upToMin`.
+
+   Each result carries TWO vectors: `vector` is the truncated one that earned the
+   score, and `full` is the whole day. Prediction reads `full` — the entire point
+   is to learn what days like this one did next. */
+function getSimilarDays(dateStr, opts = {}) {
+  const k = opts.k || 7;
+  const upToMin = Number.isFinite(opts.upToMin) ? opts.upToMin : 1440;
+  const target = opts.target || buildDayFeatureVector(dateStr, { upToMin });
+  const out = [];
+  dayIndex().forEach((r, d) => {
+    if (d >= dateStr) return;                                  // only the past is evidence
+    if (daysBetween(d, dateStr) > (opts.maxAgeDays || SIMILAR_DAY_MAX_AGE)) return;
+    const v = buildDayFeatureVector(d, { upToMin });
+    if (!v.n && !target.n) return;
+    const s = scoreDaySimilarity(target, v);
+    // A comparison is admissible when it either rests on enough total weight, OR knows
+    // the one thing that most defines a day: which loadout it ran on. Before dawn neither
+    // day has done anything yet and every activity feature drops out — but "both were
+    // School days" is still real evidence, and staying silent then would mute the engine
+    // at exactly the hour a forecast is worth the most.
+    const knowsTheDay = s.parts.some(p => p.label === 'loadout');
+    if (s.coverage < SIMILAR_MIN_COVERAGE && !knowsTheDay) return;
+    if (opts.minScore != null && s.score < opts.minScore) return;
+    out.push({ date: d, score: s.score, coverage: s.coverage, parts: s.parts,
+               vector: v, full: buildDayFeatureVector(d) });
+  });
+  return out.sort((a, b) => (b.score - a.score) || (a.date < b.date ? 1 : -1)).slice(0, k);
+}
+
+/* The habitual SHAPE of a day, across all of them rather than the best one. For
+   every habit: how often it happens on a day like this (`p`), when it usually
+   starts, how far that start actually scatters (`spreadMin` — the honest
+   half-width, not a fake precision), and how long it runs.
+
+   `transitions` counts consecutive pairs across days, which is what lets the app
+   notice "you almost always shower straight after the gym" without anyone
+   declaring it. Everything is capped at SIMILAR_DAY_MAX_AGE so a rhythm
+   abandoned two months ago stops outvoting the one in use now.
+
+   `opts.days` scopes the whole computation to an explicit list of dates — that
+   is how the similar-day set gets its own rhythm, rather than the loadout's. */
+let _rhythmCache = null;
+function inferDailyRhythm(loadout, opts = {}) {
+  const today = todayStr();
+  const maxAge = opts.maxAgeDays || SIMILAR_DAY_MAX_AGE;
+  const ck = `${loadout}|${maxAge}|${(state.history || []).length}|${(state.eventLog || []).length}|${today}`;
+  if (!opts.days && _rhythmCache && _rhythmCache.key === ck) return _rhythmCache.value;
+
+  const idx = dayIndex();
+  const dates = opts.days
+    ? opts.days.slice()
+    : [...idx.keys()].filter(d => d < today && daysBetween(d, today) <= maxAge && dayLoadout(d) === loadout);
+
+  const starts = [], per = new Map(), trans = new Map();
+  let nDays = 0;
+  dates.forEach(d => {
+    const v = buildDayFeatureVector(d);
+    if (!v.n) return;
+    nDays++;
+    if (v.startMin != null) starts.push(v.startMin);
+    v.acts.forEach(a => {
+      let p = per.get(a.key);
+      if (!p) { p = { key: a.key, id: a.id, name: a.name, category: a.category, starts: [], durs: [], days: 0 }; per.set(a.key, p); }
+      p.days++; p.starts.push(a.startMin);
+      if (a.timed) p.durs.push(a.durMin);
+    });
+    for (let i = 0; i + 1 < v.order.length; i++) {
+      const tk = v.order[i] + '\u0000' + v.order[i + 1];
+      trans.set(tk, (trans.get(tk) || 0) + 1);
+    }
+  });
+
+  const habits = new Map();
+  per.forEach(p => {
+    const med = medianMinute(p.starts);
+    // Spread = median absolute deviation, in minutes. A habit that lands within
+    // 10 minutes every day and one that wanders three hours both have a median;
+    // only this says which of the two is worth predicting.
+    const spread = p.starts.length > 1 ? medianMinute(p.starts.map(s => Math.abs(s - med))) : null;
+    habits.set(p.key, {
+      key: p.key, id: p.id, name: p.name, category: p.category,
+      days: p.days, p: nDays ? p.days / nDays : 0,
+      startMin: med, spreadMin: spread,
+      durMin: p.durs.length ? medianMinute(p.durs) : null,
+      timedRuns: p.durs.length,
+    });
+  });
+
+  const value = {
+    loadout, days: nDays, dates,
+    startMin: starts.length ? medianMinute(starts) : null,
+    habits, transitions: trans,
+    // "After A, how often does B come next" — the sequence question, as a rate.
+    follows(aKey, bKey) {
+      const h = habits.get(aKey);
+      if (!h || !h.days) return 0;
+      return (trans.get(aKey + '\u0000' + bKey) || 0) / h.days;
+    },
+  };
+  if (!opts.days) _rhythmCache = { key: ck, value };
+  return value;
+}
+
+/* ---- PREDICTED DAY -------------------------------------------------------------------
+   What today is most likely to look like, built from the days it already resembles.
+
+   Three tiers, tried in order, and the tier is always reported so nothing downstream
+   has to guess how much to trust the answer:
+
+     'similar'  enough past days resemble today closely enough to answer on their own.
+                This is the real prediction: the rhythm of THOSE days, not of all days.
+     'rhythm'   not enough close matches, but the loadout has a stable shape. Weaker,
+                and honest about it.
+     'sparse'   too little history to say anything. Returns no blocks at all, and the
+                schedule falls back to exactly what it does today (pinned > record >
+                median). A new save must never be shown a confident guess.
+
+   Nothing here writes state and nothing here calls an API — a Home render can call it
+   on every repaint. (recordPrediction() below is the one function that does write, and
+   it runs once a day.)                                                                */
+
+const PREDICT_MIN_SIMILAR = 3;      // fewer matching days than this and 'similar' is off
+const PREDICT_MIN_SCORE = 0.55;     // a day under this doesn't count as a match
+const PREDICT_MIN_RHYTHM_DAYS = 3;  // fewer days than this and even 'rhythm' is off
+const PREDICT_ADOPT_CONF = 0.45;    // below this the Schedule keeps its old behaviour
+const SEQUENCE_FRESH_MIN = 120;     // how recently X must have happened for "right after X"
+const PREDICT_MIN_P = 0.34;         // a habit that happens on under a third of these days
+                                    // isn't predicted — it's mentioned, not scheduled
+
+/* Per-habit confidence, 0..1, from three independent things:
+     p        how often it happens on a day like this
+     n        how many days that judgement rests on (shrunk, so 1-for-1 isn't "certain")
+     spread   how tightly the start time clusters (a habit that wanders 3 hours has a
+              median, but predicting it to the minute would be a lie)                  */
+function blockConfidence(h, dayScore) {
+  const support = h.days / (h.days + 2);                        // 1 day -> .33, 6 -> .75
+  const tight = h.spreadMin == null ? 0.55 : 1 - Math.min(1, h.spreadMin / 120);
+  return clamp(h.p * support * (0.45 + 0.55 * tight) * (0.55 + 0.45 * dayScore), 0, 1);
+}
+
+/* The signed correction learned from past predictions for one habit: if the app has
+   been saying 7:30 and it keeps happening at 8:10, later predictions move. This is the
+   "correction" half of the prediction log — without it the engine would repeat the same
+   error forever and only ever report it. Needs 3 scored days before it does anything,
+   and is clamped so one strange day can't drag a whole rhythm. */
+function predictionBias(key) {
+  const errs = [];
+  (state.predictionLog || []).forEach(row => {
+    if (!row || !row.result || !Array.isArray(row.result.items)) return;
+    row.result.items.forEach(it => {
+      if (it.key === key && it.happened && Number.isFinite(it.startErr)) errs.push(it.startErr);
+    });
+  });
+  if (errs.length < 3) return 0;
+  return clamp(medianMinute(errs.slice(-10)), -90, 90);
+}
+
+/* computeDayBlocks runs on every repaint of the Schedule, the Home widget and Due Now,
+   so predictDay is memoised like recordFor is. The clock is bucketed to 15 minutes on
+   purpose: the answer should move when you FINISH something (which changes the history
+   length, and so the key), not because a minute ticked over. */
+let _predictCache = null;
+function predictDay(dateStr, opts = {}) {
+  const isToday = dateStr === todayStr();
+  if (!opts.upToMin && !opts.loadout && !opts.k) {
+    const bucket = isToday ? Math.floor(nowMinutes() / 15) : -1;
+    const ck = `${dateStr}|${bucket}|${(state.history || []).length}|${(state.eventLog || []).length}|${currentLoadout()}|${(state.predictionLog || []).length}`;
+    if (_predictCache && _predictCache.key === ck) return _predictCache.value;
+    const value = predictDayUncached(dateStr, opts);
+    _predictCache = { key: ck, value };
+    return value;
+  }
+  return predictDayUncached(dateStr, opts);
+}
+function predictDayUncached(dateStr, opts = {}) {
+  const isToday = dateStr === todayStr();
+  const upToMin = Number.isFinite(opts.upToMin) ? opts.upToMin : (isToday ? nowMinutes() : 1440);
+  const loadout = opts.loadout || (isToday ? currentLoadout() : (dayLoadout(dateStr) || currentLoadout()));
+
+  const similar = getSimilarDays(dateStr, { upToMin, k: opts.k || 8, minScore: PREDICT_MIN_SCORE });
+  let basis, rhythm, dayScore;
+  if (similar.length >= PREDICT_MIN_SIMILAR) {
+    basis = 'similar';
+    rhythm = inferDailyRhythm(loadout, { days: similar.map(s => s.date) });
+    // A 0.9 match resting on two features is a weaker claim than a 0.9 match resting on
+    // six, so coverage tempers the score rather than being reported beside it. Without
+    // this, "same loadout, same weekday" alone would read as near-certainty at 6am.
+    dayScore = similar.reduce((s, x) => s + x.score * (0.6 + 0.4 * (x.coverage || 0)), 0) / similar.length;
+  } else {
+    rhythm = inferDailyRhythm(loadout);
+    if (rhythm.days < PREDICT_MIN_RHYTHM_DAYS) {
+      return { date: dateStr, upToMin, loadout, basis: 'sparse', confidence: 0,
+               similar, rhythm, blocks: [], startMin: null, finishMin: null,
+               why: rhythm.days ? `only ${rhythm.days} day${rhythm.days > 1 ? 's' : ''} of history on ${loadout}` : 'no history yet' };
+    }
+    basis = 'rhythm';
+    // A loadout-wide rhythm is a weaker claim than a set of close matches, and the
+    // confidence has to say so rather than borrowing the similar-day number.
+    dayScore = 0.5;
+  }
+
+  // Only habits that are actually scheduled today can be predicted onto today. The
+  // rhythm may well remember a habit that has since been archived or rescheduled.
+  const live = new Map();
+  state.habits.filter(h => !h.archived && h.loadout === loadout && isScheduledOn(h, dateStr))
+    .forEach(h => { live.set(h.id, h); live.set(h.name, h); });
+
+  const blocks = [];
+  rhythm.habits.forEach(rh => {
+    const h = live.get(rh.key);
+    if (!h) return;
+    if (rh.p < PREDICT_MIN_P) return;
+    const conf = blockConfidence(rh, dayScore);
+    // A pinned time is a decision the user made; prediction never overrules it.
+    const pinned = Number.isFinite(h.scheduledMin);
+    const bias = pinned ? 0 : predictionBias(rh.key);
+    const startMin = clamp(Math.round(pinned ? h.scheduledMin : rh.startMin + bias), 0, 1439);
+    blocks.push({
+      habitId: h.id, key: rh.key, name: h.name, emoji: h.emoji, category: h.category || null,
+      startMin, spreadMin: rh.spreadMin,
+      durMin: rh.durMin || habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
+      p: rh.p, days: rh.days, bias, pinned,
+      confidence: pinned ? Math.max(conf, 0.8) : conf,
+      done: isToday ? isComplete(h) : false,
+    });
+  });
+  blocks.sort((a, b) => a.startMin - b.startMin);
+
+  // Day-level confidence is the average of the blocks it's actually made of, tempered by
+  // how alike the source days were. An empty prediction is 0, never "confidently nothing".
+  const confidence = blocks.length
+    ? clamp(blocks.reduce((s, b) => s + b.confidence, 0) / blocks.length * (basis === 'similar' ? 1 : 0.7), 0, 1)
+    : 0;
+
+  return {
+    date: dateStr, upToMin, loadout, basis, confidence, similar, rhythm, blocks,
+    startMin: blocks.length ? blocks[0].startMin : null,
+    finishMin: blocks.length ? Math.max(...blocks.map(b => b.startMin + b.durMin)) : null,
+    why: basis === 'similar'
+      ? `${similar.length} similar day${similar.length > 1 ? 's' : ''} on ${loadout}`
+      : `your usual ${loadout} rhythm (${rhythm.days} days)`,
+  };
+}
+
+/* ---- Prediction / correction log ------------------------------------------------------
+   The app has never written down what it expected, which is why it has never been able
+   to tell whether it was right. One row per day: what was predicted, and — filled in
+   when the day closes — what actually happened.
+
+   The row is stamped ONCE, early, from the morning's prediction. Re-stamping it later in
+   the day would be grading a forecast made after the fact, which would always look good
+   and would mean nothing.                                                              */
+const PREDICTION_STAMP_MIN = 10 * 60;   // stamp the day's forecast by 10am at the latest
+
+function recordPrediction() {
+  const today = todayStr();
+  state.predictionLog = Array.isArray(state.predictionLog) ? state.predictionLog : [];
+  if (state.predictionLog.some(r => r && r.date === today)) return;   // already stamped
+  const p = predictDay(today);
+  if (p.basis === 'sparse' || !p.blocks.length) return;               // nothing worth grading
+  state.predictionLog.push({
+    date: today, ts: Date.now(), basis: p.basis, confidence: p.confidence,
+    loadout: p.loadout, stampedAtMin: Math.min(nowMinutes(), PREDICTION_STAMP_MIN),
+    similar: p.similar.map(s => ({ date: s.date, score: Math.round(s.score * 100) / 100 })),
+    blocks: p.blocks.map(b => ({ key: b.key, habitId: b.habitId, name: b.name,
+      startMin: b.startMin, durMin: b.durMin, confidence: Math.round(b.confidence * 100) / 100 })),
+    result: null,
+  });
+  if (state.predictionLog.length > PREDICTION_LOG_MAX) {
+    state.predictionLog = state.predictionLog.slice(-PREDICTION_LOG_MAX);
+  }
+  save();
+}
+
+/* Grade one day's prediction against what the day actually did. Called from
+   processClosedDayOutcomes, so it runs exactly once per date and only after the day is
+   genuinely over. `startErr` is SIGNED — positive means it happened later than predicted,
+   which is what predictionBias needs to correct in the right direction. */
+function scorePrediction(dateStr) {
+  const row = (state.predictionLog || []).find(r => r && r.date === dateStr);
+  if (!row || row.result) return;
+  const v = buildDayFeatureVector(dateStr);
+  const items = row.blocks.map(b => {
+    const actStart = v.times.has(b.key) ? v.times.get(b.key) : null;
+    const actDur = v.durs.has(b.key) ? v.durs.get(b.key) : null;
+    return {
+      key: b.key, name: b.name, happened: actStart != null,
+      predStart: b.startMin, actStart,
+      predDur: b.durMin, actDur,
+      startErr: actStart == null ? null : actStart - b.startMin,
+      durErr: actDur == null ? null : actDur - b.durMin,
+    };
+  });
+  const happened = items.filter(i => i.happened);
+  const startErrs = happened.map(i => Math.abs(i.startErr));
+  const durErrs = happened.filter(i => Number.isFinite(i.durErr)).map(i => Math.abs(i.durErr));
+  // Anything the day did that the prediction never mentioned. Missing something entirely
+  // is a different kind of error from mistiming it, and lumping them together would hide it.
+  const predicted = new Set(row.blocks.map(b => b.key));
+  row.result = {
+    n: items.length,
+    hit: happened.length,
+    unpredicted: v.order.filter(k => !predicted.has(k)),
+    startErrMedian: startErrs.length ? medianMinute(startErrs) : null,
+    durErrMedian: durErrs.length ? medianMinute(durErrs) : null,
+    items,
+  };
+}
+
+/* How well the engine has actually been doing, over the scored rows. This is what makes
+   a confidence number reportable rather than decorative — and what the AI is given
+   instead of being allowed to claim the app "knows" the user's day. */
+function predictionAccuracy(opts = {}) {
+  const rows = (state.predictionLog || []).filter(r => r && r.result && r.result.n)
+    .slice(-(opts.days || 30));
+  if (!rows.length) return { days: 0, hitRate: null, startErrMedian: null, durErrMedian: null, missedEntirely: 0 };
+  const se = [], de = [];
+  let n = 0, hit = 0, unpredicted = 0;
+  rows.forEach(r => {
+    n += r.result.n; hit += r.result.hit;
+    unpredicted += (r.result.unpredicted || []).length;
+    if (r.result.startErrMedian != null) se.push(r.result.startErrMedian);
+    if (r.result.durErrMedian != null) de.push(r.result.durErrMedian);
+  });
+  return {
+    days: rows.length,
+    hitRate: n ? hit / n : null,
+    startErrMedian: se.length ? medianMinute(se) : null,
+    durErrMedian: de.length ? medianMinute(de) : null,
+    missedEntirely: unpredicted,
+  };
+}
+
+/* ---- WHERE TODAY STANDS ---------------------------------------------------------------
+   Today, at this minute, against the days it resembles at the SAME minute. This is the
+   comparison the app has never been able to make: the pace bar compares whole days, and a
+   whole-day number at 9am is always "behind" because the day hasn't happened yet.
+
+   Returns null when there isn't enough to say — a number with nothing behind it is worse
+   than no number.                                                                       */
+function compareTodayToSimilarDays(opts = {}) {
+  const today = todayStr();
+  const upToMin = Number.isFinite(opts.upToMin) ? opts.upToMin : nowMinutes();
+  const p = predictDay(today);
+  if (p.basis === 'sparse' || !p.similar.length) return null;
+  const me = buildDayFeatureVector(today, { upToMin });
+  const counts = p.similar.map(s => buildDayFeatureVector(s.date, { upToMin }).n);
+  if (counts.length < PREDICT_MIN_SIMILAR) return null;
+  const typical = medianMinute(counts);
+  // The comparison days' own start time, so "you started an hour later than usual" can be
+  // said without anyone declaring what "usual" is.
+  const starts = p.similar.map(s => buildDayFeatureVector(s.date).startMin).filter(m => m != null);
+  return {
+    days: p.similar.length, basis: p.basis, confidence: p.confidence,
+    doneNow: me.n, typical, delta: me.n - typical,
+    startMin: me.startMin,
+    typicalStartMin: starts.length ? medianMinute(starts) : null,
+    startDelta: (me.startMin != null && starts.length) ? me.startMin - medianMinute(starts) : null,
+  };
+}
+
+/* ---- WHAT TO DO NEXT ------------------------------------------------------------------
+   Due Now used to be a clock filter: anything whose block starts in the next hour, soonest
+   first, top three. It could not tell you which of the three to actually pick, and it had
+   no idea what you had just finished.
+
+   This ranks the same eligible set on four observed signals, and — the part that matters —
+   every candidate carries the REASON it was ranked where it was, so the board can say why
+   instead of just listing things.
+
+   No signal is invented. If none of them fire, the score is the plain clock distance and
+   the board behaves exactly as it always did.                                            */
+function predictNextAction(opts = {}) {
+  const now = Number.isFinite(opts.now) ? opts.now : nowMinutes();
+  const today = todayStr();
+  const loadout = currentLoadout();
+  const dailyClear = sectionStats('daily').allComplete;
+  const eligible = h => !h.archived && h.loadout === loadout && isScheduledToday(h) && !isComplete(h)
+    && (dailyClear || h.section !== 'extra');
+
+  const p = predictDay(today);
+  const predByHabit = new Map(p.blocks.map(b => [b.habitId, b]));
+  const standing = compareTodayToSimilarDays({ upToMin: now });
+  const behind = !!(standing && standing.delta < 0);
+
+  // What was finished most recently today — the anchor for "this usually comes next".
+  const me = buildDayFeatureVector(today, { upToMin: now });
+  const lastAct = me.acts.length ? me.acts[me.acts.length - 1] : null;
+  // "Usually right after X" is only true while X has actually just happened. The run was
+  // at 6:40am; at 6pm that sentence is false, and the bonus that produced it is too.
+  const lastKey = (lastAct && now - lastAct.endMin <= SEQUENCE_FRESH_MIN) ? lastAct.key : null;
+  const rhythm = p.rhythm;
+
+  const hh = new Set(activeHappyHours().map(a => a.cat));
+  const cands = [];
+
+  state.habits.filter(eligible).forEach(h => {
+    const pred = predByHabit.get(h.id);
+    const blockMin = pred ? pred.startMin : habitBlockMinute(h);
+    const durMin = pred ? pred.durMin : (habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 0);
+    const reasons = [];
+    let score = 0;
+
+    if (Number.isFinite(blockMin)) {
+      // Both numbers are minutes of the SAME day, so this is plain subtraction — no
+      // midnight wrap. Wrapping at 12h made a 9pm habit look 10 hours overdue at 6am.
+      const late = Math.max(0, now - blockMin);
+      const ahead = Math.max(0, blockMin - now);
+      if (late > 20) {
+        // Decays to nothing over six hours. Something an hour past its usual time is the
+        // thing to do now; something ten hours past it was skipped, and letting it sit at
+        // the top of the board forever would bury whatever is actually due.
+        const v = 58 * Math.max(0, 1 - late / 360);
+        score += v;
+        if (v > 6) reasons.push(`usually done by ${fmtMinOfDay(blockMin)}`);
+      } else if (ahead <= 90) {
+        score += 55 - ahead / 3;
+        reasons.push(ahead <= 10 ? 'due right now' : `usually around ${fmtMinOfDay(blockMin)}`);
+      } else {
+        score += Math.max(0, 18 - ahead / 40);
+      }
+    }
+
+    // Sequence: on days like this, does this habit usually come straight after the last
+    // thing finished? This is the signal a clock filter can never have.
+    if (lastKey && rhythm && typeof rhythm.follows === 'function') {
+      const key = rhythm.habits.has(h.id) ? h.id : (rhythm.habits.has(h.name) ? h.name : null);
+      if (key) {
+        const pr = rhythm.follows(lastKey, key);
+        if (pr >= 0.5) {
+          score += 25 * pr;
+          const prev = rhythm.habits.get(lastKey);
+          reasons.push(`usually right after ${prev ? prev.name : 'what you just did'}`);
+        }
+      }
+    }
+
+    // Behind the days this one resembles: bias toward the shortest thing that closes the
+    // gap, rather than the next thing on the clock.
+    if (behind && durMin && durMin <= 20) {
+      score += 12;
+      reasons.push(`quick — ${fmtMins(durMin)}`);
+    }
+
+    if (hh.has(h.category || 'Unsorted')) { score += 10; reasons.push('happy hour bonus'); }
+    if (pred) score += 8 * pred.confidence;
+
+    cands.push({ kind: 'habit', h, id: h.id, name: h.name, emoji: h.emoji,
+      startMin: Number.isFinite(blockMin) ? blockMin : null, durMin,
+      score, reasons, confidence: pred ? pred.confidence : 0, predicted: !!pred });
+  });
+
+  // Quests still reach the board only through the Schedule — a quest has no "usual time"
+  // to infer, so an unscheduled one on a board that means NOW would be a to-do dump.
+  ((state.plannedBlocks || {})[today] || [])
+    .filter(b => b && b.kind === 'task' && Number.isFinite(b.startMin))
+    .forEach(b => {
+      const t = (state.oneoffs || []).find(x => x.id === b.refId);
+      if (!t || (t.progress || 0) >= Math.max(1, t.iterations || 1)) return;
+      const until = ((b.startMin - now + 1440) % 1440);
+      const late = until > 720 ? 1440 - until : 0;
+      cands.push({ kind: 'task', t, id: t.id, name: t.name, emoji: t.emoji,
+        startMin: b.startMin, durMin: b.durMin || 0,
+        score: 50 - (late ? Math.min(30, late / 12) : until / 4),
+        reasons: [late > 20 ? `planned for ${fmtMinOfDay(b.startMin)}` : `on today's schedule`],
+        confidence: 0, predicted: false });
+    });
+
+  cands.sort((a, b) => b.score - a.score);
+  return { picks: cands.filter(c => c.score > 0).slice(0, opts.limit || 3), all: cands, standing, basis: p.basis };
+}
+
+/* =================================================================
+   BEHAVIORAL BELIEFS — what the app thinks it has noticed, with the evidence
+   attached and the strength of that evidence stated.
+
+   Every belief here is a CORRELATION and is worded as one. The app can see that
+   two things co-occur; it cannot see that one caused the other, and a tracker
+   that says "skipping breakfast is why you missed the gym" is inventing the most
+   important word in the sentence. So: "on the 6 days you started before 7:30 you
+   finished 4 habits; on the 9 days you started later, 2" — and the reader draws
+   their own conclusion.
+
+   Beliefs are re-derived from the logs, not accumulated by hand: a belief that
+   stops being true stops being produced. `state.beliefs` exists only to remember
+   when one was FIRST seen and whether the user dismissed it — the claim itself
+   is always recomputed.
+
+   Minimum evidence is enforced per kind. Below it the belief is simply not made.
+   ================================================================= */
+
+const BELIEF_MIN_DAYS = 6;        // days of history before any belief is offered
+const BELIEF_MIN_N = 4;           // observations behind a single claim
+const BELIEF_SPLIT_MIN = 3;       // days needed on EACH side of a contrast
+
+// Round a rate for display without implying more precision than the n supports.
+function beliefPct(x) { return Math.round(x * 100); }
+
+function deriveBeliefs(opts = {}) {
+  const loadout = opts.loadout || currentLoadout();
+  const rhythm = inferDailyRhythm(loadout);
+  const out = [];
+  if (rhythm.days < BELIEF_MIN_DAYS) return out;
+
+  const nameOf = key => { const h = rhythm.habits.get(key); return h ? h.name : key; };
+  const dayVectors = rhythm.dates.map(d => buildDayFeatureVector(d)).filter(v => v.n);
+
+  // ---- 1. Sequence: what reliably follows what -----------------------------------
+  rhythm.habits.forEach(a => {
+    if (a.days < BELIEF_MIN_N) return;
+    rhythm.habits.forEach(b => {
+      if (a.key === b.key) return;
+      const rate = rhythm.follows(a.key, b.key);
+      if (rate < 0.7) return;
+      out.push({
+        id: `seq:${a.key}:${b.key}`, kind: 'sequence', subject: b.key, n: a.days,
+        strength: rate * (a.days / (a.days + 3)),
+        text: `${nameOf(b.key)} comes straight after ${nameOf(a.key)} on ${beliefPct(rate)}% of the ${a.days} days you did ${nameOf(a.key)}.`,
+      });
+    });
+  });
+
+  // ---- 2. Start of day, against how much got done --------------------------------
+  // Split the days at their own median start rather than a number someone picked.
+  const withStart = dayVectors.filter(v => v.startMin != null);
+  if (withStart.length >= BELIEF_MIN_DAYS) {
+    const cut = medianMinute(withStart.map(v => v.startMin));
+    const early = withStart.filter(v => v.startMin <= cut);
+    const late = withStart.filter(v => v.startMin > cut);
+    if (early.length >= BELIEF_SPLIT_MIN && late.length >= BELIEF_SPLIT_MIN) {
+      const em = medianMinute(early.map(v => v.n)), lm = medianMinute(late.map(v => v.n));
+      if (em !== lm) {
+        const more = em > lm;
+        out.push({
+          id: 'start:count', kind: 'startEffect', subject: null,
+          n: withStart.length, strength: Math.min(1, Math.abs(em - lm) / 3) * (withStart.length / (withStart.length + 4)),
+          text: `On the ${early.length} days you started by ${fmtMinOfDay(cut)} you finished ${em}; on the ${late.length} days you started later, ${lm}.`
+                + (more ? '' : ' (the later starts did more, which is the opposite of the usual story.)'),
+        });
+      }
+    }
+  }
+
+  // ---- 3. Planned vs actual duration ---------------------------------------------
+  rhythm.habits.forEach(h => {
+    if (h.timedRuns < BELIEF_MIN_N || !h.durMin) return;
+    const live = state.habits.find(x => !x.archived && (x.id === h.key || x.name === h.key));
+    const planned = live ? (habitCurrentMinutes(live) || 0) : 0;
+    if (!planned) return;
+    const ratio = h.durMin / planned;
+    if (ratio > 0.75 && ratio < 1.34) return;                 // close enough to say nothing
+    out.push({
+      id: `dur:${h.key}`, kind: 'duration', subject: h.key, n: h.timedRuns,
+      strength: Math.min(1, Math.abs(ratio - 1)) * (h.timedRuns / (h.timedRuns + 3)),
+      text: `${h.name} is set to ${fmtMins(planned)} but has actually taken about ${fmtMins(h.durMin)} across ${h.timedRuns} timed runs.`,
+    });
+  });
+
+  // ---- 4. Drift: has a habit's time moved? ---------------------------------------
+  rhythm.habits.forEach(h => {
+    if (h.days < BELIEF_MIN_N * 2) return;
+    const runs = [];
+    rhythm.dates.slice().sort().forEach(d => {
+      const v = buildDayFeatureVector(d);
+      if (v.times.has(h.key)) runs.push({ date: d, min: v.times.get(h.key) });
+    });
+    if (runs.length < BELIEF_MIN_N * 2) return;
+    const half = Math.floor(runs.length / 2);
+    const before = medianMinute(runs.slice(0, half).map(r => r.min));
+    const after = medianMinute(runs.slice(half).map(r => r.min));
+    const shift = after - before;
+    if (Math.abs(shift) < 40) return;
+    out.push({
+      id: `drift:${h.key}`, kind: 'drift', subject: h.key, n: runs.length,
+      strength: Math.min(1, Math.abs(shift) / 120) * (runs.length / (runs.length + 4)),
+      text: `${h.name} has moved ${shift > 0 ? 'later' : 'earlier'} — about ${fmtMinOfDay(before)} over the first ${half} of these days, ${fmtMinOfDay(after)} over the last ${runs.length - half}.`,
+    });
+  });
+
+  // ---- 5. What the unexplained stretches are actually spent on ---------------------
+  const gaps = (state.gapLog || []).filter(g => g && g.answer && g.loadout === loadout);
+  if (gaps.length >= BELIEF_MIN_N) {
+    const byAnswer = new Map();
+    gaps.forEach(g => {
+      const k = String(g.answer).trim().toLowerCase();
+      const e = byAnswer.get(k) || { label: String(g.answer).trim(), n: 0, mins: 0 };
+      e.n++; e.mins += Math.max(0, g.endMin - g.startMin);
+      byAnswer.set(k, e);
+    });
+    [...byAnswer.values()].filter(e => e.n >= BELIEF_MIN_N).forEach(e => {
+      out.push({
+        id: `gap:${e.label.toLowerCase()}`, kind: 'gap', subject: null, n: e.n,
+        strength: Math.min(1, e.n / 10),
+        text: `"${e.label}" has accounted for ${e.n} of your unexplained stretches — about ${fmtMins(Math.round(e.mins / e.n))} each time.`,
+      });
+    });
+  }
+
+  // ---- 6. How well the app's own forecasts have held up ---------------------------
+  const acc = predictionAccuracy();
+  if (acc.days >= BELIEF_MIN_N && acc.startErrMedian != null) {
+    out.push({
+      id: 'self:accuracy', kind: 'selfCheck', subject: null, n: acc.days,
+      strength: 0.35,
+      text: `Over ${acc.days} graded days the app's own start times have been off by about ${fmtMins(acc.startErrMedian)}, and ${beliefPct(acc.hitRate)}% of what it predicted actually happened.`,
+    });
+  }
+
+  return out.sort((a, b) => b.strength - a.strength);
+}
+
+/* Merge the freshly derived claims into state.beliefs, keeping only what a rederivation
+   can't know: when it was first noticed, and whether the user has dismissed it. A belief
+   that no longer derives is dropped rather than left standing. */
+function updateBehavioralBeliefs() {
+  const derived = deriveBeliefs();
+  const prev = new Map((state.beliefs || []).map(b => [b.id, b]));
+  const now = Date.now();
+  state.beliefs = derived.map(b => {
+    const old = prev.get(b.id);
+    return { ...b,
+      firstSeen: old ? old.firstSeen : now,
+      lastSeen: now,
+      status: old && old.status === 'dismissed' ? 'dismissed' : 'active',
+      seenCount: old ? (old.seenCount || 1) + 1 : 1 };
+  });
+  return state.beliefs;
+}
+function activeBeliefs(limit) {
+  const list = (state.beliefs || []).filter(b => b.status !== 'dismissed');
+  return limit ? list.slice(0, limit) : list;
+}
+function dismissBelief(id) {
+  const b = (state.beliefs || []).find(x => x.id === id);
+  if (!b) return;
+  b.status = 'dismissed';
+  save();
+}
+
+/* ---- ATOMIC COACHING ------------------------------------------------------------------
+   One change, small enough to be obviously doable, aimed at the single strongest thing
+   the app has actually observed — and with the check written down BEFORE it runs, so the
+   result isn't decided after the fact.
+
+   Deliberately conservative:
+     - at most one experiment live at a time,
+     - it only ever proposes; nothing mutates until the user accepts (the same rule every
+       AI proposal in this app follows),
+     - it needs a belief strong enough to act on, and returns null otherwise. "No advice
+       today" is a valid, honest output and by far the most common one.                  */
+const EXPERIMENT_DAYS = 7;
+const EXPERIMENT_MIN_STRENGTH = 0.45;
+
+function generateAtomicExperiment(opts = {}) {
+  const live = (state.experiments || []).find(e => e && e.status === 'running');
+  if (live && !opts.force) return null;                    // one at a time, always
+
+  const beliefs = activeBeliefs().filter(b => b.strength >= EXPERIMENT_MIN_STRENGTH
+    && !(typeof skippedExperimentIds !== 'undefined' && skippedExperimentIds.has(b.id)));
+  for (const b of beliefs) {
+    // Only some kinds of belief have an obvious atomic move attached. A belief with no
+    // safe small action behind it is left as an observation rather than dressed up as advice.
+    if (b.kind === 'duration' && b.subject) {
+      const h = state.habits.find(x => !x.archived && (x.id === b.subject || x.name === b.subject));
+      const rh = inferDailyRhythm(currentLoadout()).habits.get(b.subject);
+      if (!h || !rh || !rh.durMin) continue;
+      return {
+        id: uid(), beliefId: b.id, kind: 'retime', habitId: h.id, status: 'proposed',
+        title: `Set ${h.name} to ${fmtMins(rh.durMin)}`,
+        detail: `${b.text} Setting it to what it actually takes makes the schedule match the day.`,
+        change: { kind: 'minutes', habitId: h.id, to: rh.durMin, from: habitCurrentMinutes(h) },
+        metric: 'startErrMedian', days: EXPERIMENT_DAYS,
+      };
+    }
+    if (b.kind === 'drift' && b.subject) {
+      const h = state.habits.find(x => !x.archived && (x.id === b.subject || x.name === b.subject));
+      const rh = inferDailyRhythm(currentLoadout()).habits.get(b.subject);
+      if (!h || !rh || rh.startMin == null) continue;
+      return {
+        id: uid(), beliefId: b.id, kind: 'rehome', habitId: h.id, status: 'proposed',
+        title: `Move ${h.name} to ${fmtMinOfDay(rh.startMin)}`,
+        detail: `${b.text} Pinning it where it actually happens stops the schedule arguing with the day.`,
+        change: { kind: 'scheduledMin', habitId: h.id, to: rh.startMin,
+                  from: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null },
+        metric: 'startErrMedian', days: EXPERIMENT_DAYS,
+      };
+    }
+    if (b.kind === 'sequence' && b.subject) {
+      const h = state.habits.find(x => !x.archived && (x.id === b.subject || x.name === b.subject));
+      const rh = inferDailyRhythm(currentLoadout()).habits.get(b.subject);
+      if (!h || !rh || rh.startMin == null || Number.isFinite(h.scheduledMin)) continue;
+      return {
+        id: uid(), beliefId: b.id, kind: 'anchor', habitId: h.id, status: 'proposed',
+        title: `Anchor ${h.name} to ${fmtMinOfDay(rh.startMin)}`,
+        detail: `${b.text} It already runs on a rail — putting that on the schedule means Do Now can point at it.`,
+        change: { kind: 'scheduledMin', habitId: h.id, to: rh.startMin, from: null },
+        metric: 'hitRate', days: EXPERIMENT_DAYS,
+      };
+    }
+  }
+  return null;
+}
+
+/* Accepting is the ONLY thing that mutates a habit, and it records the baseline first so
+   the result can be read against something rather than asserted. */
+function acceptExperiment(exp) {
+  if (!exp || !exp.change) return false;
+  const h = state.habits.find(x => x.id === exp.change.habitId);
+  if (!h) return false;
+  if (exp.change.kind === 'scheduledMin') h.scheduledMin = exp.change.to;
+  else if (exp.change.kind === 'minutes') h.timedMinutes = exp.change.to;
+  else return false;
+  state.experiments = Array.isArray(state.experiments) ? state.experiments : [];
+  state.experiments.push({ ...exp, status: 'running', startedAt: Date.now(),
+    startedOn: todayStr(), endsOn: addDays(todayStr(), exp.days || EXPERIMENT_DAYS),
+    baseline: predictionAccuracy() });
+  if (state.experiments.length > 40) state.experiments = state.experiments.slice(-30);
+  save();
+  return true;
+}
+/* Close out any experiment whose window has passed, comparing the metric it named at the
+   start against the same metric now. No verdict is invented when the window produced too
+   little data to judge — `outcome: 'inconclusive'` is a real and frequent answer. */
+function settleExperiments() {
+  const today = todayStr();
+  let changed = false;
+  (state.experiments || []).forEach(e => {
+    if (!e || e.status !== 'running' || !e.endsOn || today < e.endsOn) return;
+    const after = predictionAccuracy({ days: e.days || EXPERIMENT_DAYS });
+    const key = e.metric || 'startErrMedian';
+    const before = (e.baseline || {})[key], now = after[key];
+    let outcome = 'inconclusive';
+    if (before != null && now != null) {
+      // startErrMedian is better when SMALLER; hitRate is better when larger.
+      const better = key === 'startErrMedian' ? now < before : now > before;
+      const moved = key === 'startErrMedian' ? Math.abs(now - before) >= 5 : Math.abs(now - before) >= 0.1;
+      outcome = moved ? (better ? 'better' : 'worse') : 'no change';
+    }
+    e.status = 'done'; e.finishedOn = today; e.after = after; e.outcome = outcome;
+    changed = true;
+  });
+  if (changed) save();
 }
 
 // ACTUAL blocks for any date, reconstructed from the completion log. A timed run gives a
@@ -6482,10 +7495,25 @@ function renderDueSoon() {
   const due = dueHabits.concat(dueTasks)
     .sort((a, b) => until(a.m) - until(b.m))
     .slice(0, 3);                                         // fewer visible choices, not more
-  // Fallback when nothing is due in the next hour: surface up to 2 habits whose
-  // category happy hour is live right now — do those to grab the token bonus.
+  // The Similar Day Engine ranks the same eligible set on what today actually resembles —
+  // what's overdue, what usually follows what you just finished, and whether you're behind
+  // the days like this one. It only takes over when it has a real basis to rank on; with a
+  // thin history predictNextAction returns nothing usable and the clock filter below runs
+  // exactly as it always has.
+  const next = predictNextAction({ limit: 3 });
   let rows = '', sub = '';
-  if (due.length) {
+  if (next.basis !== 'sparse' && next.picks.length) {
+    rows = next.picks.map(c => (c.kind === 'habit' ? habitCardHTML(c.h, c.startMin) : oneoffCardHTML(c.t))).join('');
+    const top = next.picks[0];
+    const why = (top.reasons || [])[0];
+    const st = next.standing;
+    // One line, and it has to earn itself: the reason the TOP row is the top row, plus
+    // where today stands against the days it looks like — never a motivational sentence.
+    sub = why ? `${escapeHtml(top.emoji || '')} ${escapeHtml(top.name)} — ${escapeHtml(why)}.`
+              : 'Ranked by how days like this one usually go.';
+    if (st && st.delta < 0) sub += ` You're ${-st.delta} behind ${st.days} similar day${st.days > 1 ? 's' : ''} at this hour.`;
+    else if (st && st.delta > 0) sub += ` That's ${st.delta} ahead of ${st.days} similar day${st.days > 1 ? 's' : ''} at this hour.`;
+  } else if (due.length) {
     sub = 'Coming up in your usual routine — knock these out first.';
     rows = due.map(x => (x.h ? habitCardHTML(x.h, x.m) : oneoffCardHTML(x.t))).join('');
   } else {
@@ -6515,7 +7543,11 @@ function renderDueSoon() {
   const body = hasRows
     ? `<div class="habit-list" style="margin-bottom:16px">${rows}</div>`
     : `<div class="empty" style="margin-bottom:16px"><div class="big">☕</div>empty</div>`;
-  mounts.forEach(m => { m.innerHTML = (m.dataset.bare === '1' ? '' : banner) + body; });
+  // Home supplies its own "DUE NOW" heading, so it takes the bare form — but the reason
+  // the top row is the top row is the whole point of the board, so that one line comes
+  // along rather than being dropped with the banner.
+  const bareWhy = hasRows && sub ? `<div class="duenow-why">${sub}</div>` : '';
+  mounts.forEach(m => { m.innerHTML = (m.dataset.bare === '1' ? bareWhy : banner) + body; });
 }
 
 /* =================================================================
@@ -8598,6 +9630,122 @@ const STAT_BUCKETS = ['12a', '3a', '6a', '9a', '12p', '3p', '6p', '9p'];   // 8 
 const INTENSITY_COLORS = { easy: '#39ff14', medium: '#ffe600', hard: '#ff2d2d', plain: 'rgba(196,122,58,.65)' };
 function fmtMinOfDay(m) { let h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${String(mm).padStart(2, '0')} ${ap}`; }
 
+
+/* ---- SIMILAR DAYS panel ---------------------------------------------------------------
+   The engine's own window. Everything on it is derived on the spot from the logs, so it
+   costs one render and never waits on anything.
+
+   The panel is deliberately willing to say it doesn't know. With a thin history it renders
+   one honest line instead of a confident-looking chart of nothing — the same rule the
+   prediction itself follows.                                                             */
+function similarDaysHTML() {
+  const pred = predictDay(todayStr());
+  if (pred.basis === 'sparse') {
+    return `<div class="panel" style="margin-top:14px">
+      <div class="section-title t2">🔍 Similar Days</div>
+      <div class="subtle">Once there are about a week's worth of days on this loadout, this is where the app starts comparing today to the days it resembles. Right now: ${escapeHtml(pred.why)}.</div>
+    </div>`;
+  }
+
+  const standing = compareTodayToSimilarDays();
+  const acc = predictionAccuracy();
+  const conf = Math.round(pred.confidence * 100);
+
+  const refHTML = pred.basis === 'similar' && pred.similar.length
+    ? `<div class="sd-refs">${pred.similar.map(x => `
+        <span class="sd-ref" title="${escapeHtml(x.parts.map(p => p.label + ' ' + Math.round(p.v * 100) + '%').join(' · '))}">
+          ${escapeHtml(fmtPlanDate ? fmtPlanDate(x.date) : x.date)}<b>${Math.round(x.score * 100)}%</b></span>`).join('')}</div>`
+    : `<div class="subtle">Not enough close matches today, so this is your general ${escapeHtml(pred.loadout)} rhythm over ${pred.rhythm.days} days.</div>`;
+
+  const standHTML = standing ? `
+    <div class="sd-stand ${standing.delta < 0 ? 'behind' : standing.delta > 0 ? 'ahead' : 'level'}">
+      <b>${standing.doneNow}</b> done by ${escapeHtml(fmtMinOfDay(nowMinutes()))} ·
+      ${standing.delta === 0 ? 'exactly the usual across'
+        : standing.delta > 0 ? `${standing.delta} ahead of`
+        : `${-standing.delta} behind`}
+      ${standing.days} day${standing.days > 1 ? 's' : ''} like this at the same hour
+      ${standing.startDelta != null && Math.abs(standing.startDelta) >= 20
+        ? `<span class="sd-sub">Started ${Math.abs(standing.startDelta)}m ${standing.startDelta > 0 ? 'later' : 'earlier'} than usual.</span>` : ''}
+    </div>` : '';
+
+  // Every predicted row states its own evidence — how often it happens on these days, and
+  // how much its start time actually wanders. A row with a wide spread is shown as a range,
+  // because quoting it to the minute would be inventing precision.
+  const rowsHTML = pred.blocks.length ? `<div class="sd-rows">${pred.blocks.map(b => {
+    const spread = b.spreadMin;
+    const time = (spread != null && spread >= 25)
+      ? `${fmtMinOfDay(Math.max(0, b.startMin - spread))}–${fmtMinOfDay(Math.min(1439, b.startMin + spread))}`
+      : fmtMinOfDay(b.startMin);
+    return `<div class="sd-row${b.done ? ' done' : ''}">
+      <span class="sd-name">${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}</span>
+      <span class="sd-time">${escapeHtml(time)}</span>
+      <span class="sd-eff">${Math.round(b.p * 100)}% · n=${b.days}${b.bias ? ` · ${b.bias > 0 ? '+' : ''}${b.bias}m` : ''}${b.pinned ? ' · 📌' : ''}</span>
+    </div>`;
+  }).join('')}</div>` : '';
+
+  const accHTML = acc.days ? `
+    <div class="sd-acc">Over ${acc.days} graded day${acc.days > 1 ? 's' : ''}: ${Math.round(acc.hitRate * 100)}% of predictions happened, start times off by ~${escapeHtml(fmtMins(acc.startErrMedian || 0))}${acc.missedEntirely ? `, and ${acc.missedEntirely} thing${acc.missedEntirely > 1 ? 's' : ''} happened that weren't predicted` : ''}.</div>`
+    : `<div class="sd-acc">No graded days yet — the app scores each morning's forecast when the day closes, and reports here how wrong it was.</div>`;
+
+  return `<div class="panel" style="margin-top:14px">
+    <div class="section-title t2">🔍 Similar Days</div>
+    <div class="subtle">Today read against the days it actually resembles — ${conf}% confidence, ${escapeHtml(pred.why)}.</div>
+    ${refHTML}
+    ${standHTML}
+    ${rowsHTML}
+    ${accHTML}
+  </div>`;
+}
+
+/* Observed patterns + the one live experiment. Both are correlational and both say so;
+   the dismiss button exists because a pattern the app noticed is not automatically one
+   the user wants repeated back at them. */
+function beliefsHTML() {
+  const bel = activeBeliefs(6);
+  const running = (state.experiments || []).find(e => e && e.status === 'running');
+  const exp = running || generateAtomicExperiment();
+  shownExperiment = running ? null : exp;   // only a PROPOSAL is acceptable
+  const recent = (state.experiments || []).filter(e => e && e.status === 'done').slice(-2);
+  if (!bel.length && !exp && !recent.length) return '';
+
+  const belHTML = bel.length ? `<div class="sd-beliefs">${bel.map(b => `
+    <div class="sd-belief">
+      <span class="sd-btext">${escapeHtml(b.text)}</span>
+      <button class="sd-dismiss" data-act="dismissBelief" data-id="${escapeHtml(b.id)}" title="Stop showing this">✕</button>
+    </div>`).join('')}</div>`
+    : `<div class="subtle">Nothing stands out yet with enough observations behind it to be worth saying.</div>`;
+
+  const expHTML = exp ? `
+    <div class="sd-exp${exp.status === 'running' ? ' running' : ''}">
+      <div class="sd-exp-title">${exp.status === 'running' ? '⏳ ' : '🧪 '}${escapeHtml(exp.title)}</div>
+      <div class="sd-exp-detail">${escapeHtml(exp.detail)}</div>
+      ${exp.status === 'running'
+        ? `<div class="sd-sub">Running until ${escapeHtml(exp.endsOn)} — watching ${escapeHtml(exp.metric)}.</div>`
+        : `<div class="sd-exp-actions">
+             <button class="btn sm sd-accept" data-act="acceptExperiment">Try it for ${exp.days} days</button>
+             <button class="btn ghost sm" data-act="skipExperiment">Not now</button>
+           </div>`}
+    </div>` : '';
+
+  const doneHTML = recent.length ? `<div class="sd-done">${recent.map(e =>
+    `<div class="sd-sub">${escapeHtml(e.title)} — ${escapeHtml(e.outcome)} (${escapeHtml(e.finishedOn)})</div>`).join('')}</div>` : '';
+
+  return `<div class="panel" style="margin-top:14px">
+    <div class="section-title t2">🧠 What the app has noticed</div>
+    <div class="subtle">Things that happen together. The app can see the pattern; it can't see the reason — that part is yours.</div>
+    ${belHTML}
+    ${expHTML}
+    ${doneHTML}
+  </div>`;
+}
+
+// The proposal the user is currently looking at, so Accept applies exactly what was shown
+// rather than whatever a fresh derivation would produce a second later.
+let shownExperiment = null;
+// "Not now" is session-scoped on purpose: persisting it would quietly turn one tap into
+// "never suggest this again", which is not what the button says.
+const skippedExperimentIds = new Set();
+
 function renderStats() {
   const box = $('#statsBody'); if (!box) return;
   const hist = (Array.isArray(state.history) ? state.history : []).filter(e => e && Number.isFinite(e.ts));
@@ -8682,8 +9830,25 @@ function renderStats() {
       <div class="section-title t2">⏰ Usual times</div>
       <div class="subtle">Each item's typical completion time.</div>
       ${timesHTML}
-    </div>`;
+    </div>
+    ${similarDaysHTML()}
+    ${beliefsHTML()}`;
 }
+$('#statsBody').addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act;
+  if (act === 'dismissBelief') { SFX.click(); dismissBelief(el.dataset.id); renderStats(); }
+  if (act === 'skipExperiment') { SFX.click(); skippedExperimentIds.add(shownExperiment ? shownExperiment.beliefId : ''); renderStats(); }
+  if (act === 'acceptExperiment') {
+    if (!shownExperiment) return;
+    if (acceptExperiment(shownExperiment)) {
+      SFX.win();
+      toast(`🧪 ${shownExperiment.title} — running for ${shownExperiment.days} days`, 'var(--green)');
+      shownExperiment = null;
+      fullRender();
+    }
+  }
+});
 
 /* =================================================================
    SETTINGS VIEW
@@ -9388,7 +10553,44 @@ function appContext() {
   const blocks = computeTodayBlocks();
   if (blocks.length) {
     L.push('', "TODAY'S BLOCK SCHEDULE (habitId, time, duration — 🤖 = already pinned via scheduleBlock):");
-    blocks.forEach(b => L.push(`  - id=${b.habitId} "${b.name}" ${fmtMinOfDay(b.startMin)}, ~${fmtMins(Math.round(b.durMin))}${b.pinned ? ' 🤖 pinned' : ' (inferred)'}${b.complete ? ' · done today' : ''}`));
+    const src = b => b.pinned ? ' 🤖 pinned' : b.fromPrediction ? ` (from days like today, ${Math.round((b.predConfidence || 0) * 100)}% confidence)`
+      : b.fromRecord ? ' (from your record day)' : ' (median of past runs)';
+    blocks.forEach(b => L.push(`  - id=${b.habitId} "${b.name}" ${fmtMinOfDay(b.startMin)}, ~${fmtMins(Math.round(b.durMin))}${src(b)}${b.complete ? ' · done today' : ''}`));
+  }
+
+  // --- The day model: what today resembles, and how well the app has been doing ---
+  const pred = predictDay(todayStr());
+  if (pred.basis !== 'sparse') {
+    L.push('', `TODAY'S PREDICTED DAY (basis: ${pred.basis === 'similar' ? 'the past days most like today' : 'the loadout\'s general rhythm'}, ${Math.round(pred.confidence * 100)}% confidence — ${pred.why}):`);
+    if (pred.basis === 'similar') {
+      L.push(`  Reference days: ${pred.similar.map(x => `${x.date} (${Math.round(x.score * 100)}% alike)`).join(', ')}`);
+    }
+    pred.blocks.forEach(b => L.push(`  - "${b.name}" ~${fmtMinOfDay(b.startMin)} for ${fmtMins(Math.round(b.durMin))}, happens on ${Math.round(b.p * 100)}% of those days (n=${b.days})${b.spreadMin != null ? `, start varies by ±${Math.round(b.spreadMin)}m` : ''}${b.bias ? `, corrected ${b.bias > 0 ? '+' : ''}${b.bias}m from past errors` : ''}${b.done ? ' · DONE today' : ''}`));
+  }
+  const standing = compareTodayToSimilarDays();
+  if (standing) {
+    L.push('', `WHERE TODAY STANDS RIGHT NOW (${fmtMinOfDay(nowMinutes())}) — measured against the same hour on ${standing.days} similar days, NOT against a whole day:`);
+    L.push(`  - ${standing.doneNow} done so far; the typical count by this hour on those days is ${standing.typical} (${standing.delta === 0 ? 'level' : standing.delta > 0 ? `${standing.delta} ahead` : `${-standing.delta} behind`})`);
+    if (standing.startDelta != null && Math.abs(standing.startDelta) >= 20) {
+      L.push(`  - started at ${fmtMinOfDay(standing.startMin)} vs a usual ${fmtMinOfDay(standing.typicalStartMin)} (${standing.startDelta > 0 ? `${standing.startDelta}m later` : `${-standing.startDelta}m earlier`})`);
+    }
+  }
+  const acc = predictionAccuracy();
+  if (acc.days) {
+    L.push('', `HOW RELIABLE THAT PREDICTION HAS BEEN (${acc.days} graded days — quote this rather than implying the app knows the user's day):`);
+    L.push(`  - ${Math.round(acc.hitRate * 100)}% of predicted items actually happened; start times off by ~${fmtMins(acc.startErrMedian || 0)} median${acc.durErrMedian != null ? `, durations off by ~${fmtMins(acc.durErrMedian)}` : ''}${acc.missedEntirely ? `; ${acc.missedEntirely} things happened that were not predicted at all` : ''}`);
+  }
+  const bel = activeBeliefs(8);
+  if (bel.length) {
+    L.push('', 'OBSERVED PATTERNS (correlations only — each carries the number of observations behind it. Never restate one of these as a cause):');
+    bel.forEach(b => L.push(`  - [${b.kind}, n=${b.n}] ${b.text}`));
+  }
+  const runningExp = (state.experiments || []).filter(e => e && e.status === 'running');
+  const doneExp = (state.experiments || []).filter(e => e && e.status === 'done').slice(-3);
+  if (runningExp.length || doneExp.length) {
+    L.push('', 'EXPERIMENTS (one small change at a time, checked against a metric named before it started):');
+    runningExp.forEach(e => L.push(`  - RUNNING since ${e.startedOn}, ends ${e.endsOn}: ${e.title} — watching ${e.metric}`));
+    doneExp.forEach(e => L.push(`  - FINISHED ${e.finishedOn}: ${e.title} — ${e.outcome}`));
   }
 
   // --- Reflection log + today's anomalies (expectation model) ---
@@ -9456,6 +10658,15 @@ HOW YOU DECIDE WHAT TO DO
 - If the request can be solved by EDITING something that already exists — a tier, a token cost, a reward's name, a schedule, a game weight, a bonus amount — do that. That is the default and covers almost everything ("I'm winning too much, tone down payouts", "rename this reward", "why has my cello practice dropped off").
 - Proposing a BRAND-NEW habit or quest is allowed but is NOT the default and must NEVER be your opening move. Only after real back-and-forth — the user has described a problem, you've asked a clarifying question or two and talked it through — may you propose new items, and even then AT MOST 1-2 total across the entire conversation. Never more. When unsure, adjust something existing instead of inventing something new.
 - Ground every observation in the pattern data below, never generic advice: "you've cleared Exercise 5 of the last 7 days but Cello hasn't been touched in 12 days," not "try to stay consistent!". If the data doesn't support a claim, don't make it. When you propose an edit, tie the number to the observation.
+
+HOW TO USE THE DAY MODEL
+The app models the user's DAY, not just isolated habits: it finds past days that resemble today and predicts from those. Several sections below come from that model — TODAY'S PREDICTED DAY, WHERE TODAY STANDS RIGHT NOW, HOW RELIABLE THAT PREDICTION HAS BEEN, OBSERVED PATTERNS, EXPERIMENTS. Rules for all of them:
+- CORRELATION ONLY. The app can see that two things co-occur; it cannot see that one caused the other. Say "on the days you started before 7:30 you finished more" — never "starting late is why you missed it". If the user proposes a cause, you may explore it with them, but do not assert it yourself.
+- ALWAYS CARRY THE N. "3 of the last 4 similar days" is usable; "you always" is not. Every OBSERVED PATTERN line already states its n — keep it when you repeat it.
+- RESPECT THE CONFIDENCE. A 40%-confidence prediction is a guess and must be spoken as one. If HOW RELIABLE says start times are off by 45 minutes, don't quote a predicted time to the minute.
+- IF THE MODEL IS ABSENT, SAY NOTHING ABOUT IT. A save with too little history produces none of those sections. Don't speculate about the user's rhythm from the habit list alone.
+- WHERE TODAY STANDS is measured at the CURRENT HOUR against the same hour on similar days. Never compare a half-finished day to a finished one, and never call the user "behind" on the strength of a whole-day percentage at 9am.
+- ONE SMALL CHANGE AT A TIME. If you suggest an adjustment, make it the smallest one that the data actually points at, and say what you'd expect to see change and by when. Don't stack three suggestions.
 
 OUTPUT FORMAT
 Respond with ONE JSON object, no markdown fences:
@@ -13856,6 +15067,11 @@ function fullRender() {
 // Boot is synchronous again: the save comes from localStorage, so nothing waits on the
 // network or on an account. The cloud layer attaches later, if and when it loads.
 processClosedDayOutcomes();
+// Stamp today's forecast before anything can be completed, so the prediction log
+// grades a real morning forecast rather than one made with the day half-known.
+recordPrediction();
+settleExperiments();      // close out any experiment whose week is up, before beliefs move
+updateBehavioralBeliefs();
 reconcileLoadoutStock();
 applyLoadoutStock();
 fullRender();
