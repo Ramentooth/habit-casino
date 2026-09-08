@@ -2820,6 +2820,12 @@
       </div>
 
       <div class="panel set-section">
+        <div class="section-title t2">🔔 Reminders</div>
+        <div class="subtle">A nudge when a reward's time runs out, and when a habit runs past how long it usually takes you. Both fire from the phone, so they reach you with Habit Casino closed.</div>
+        <div id="remindersBody"></div>
+      </div>
+
+      <div class="panel set-section">
         <div class="section-title t2">📱 Screen Time</div>
         <div class="subtle">Turns a time reward into a real lock. Apps you pick stay blocked until you claim a reward marked 📱 — and the block comes back by itself when the timer ends, whether or not Habit Casino is open.</div>
         <div id="screenTimeBody"></div>
@@ -3302,6 +3308,9 @@ function defaultState() {
     // are mirrored FROM native for display only and are never trusted as the truth —
     // native re-reports them on launch and after every change it makes.
     screenTime: { on: false, authorized: false, pickedCount: 0, shielded: false },
+    // Reminders. `authorized` is mirrored from the iOS wrapper; the two switches are the
+    // user's own and are the only part that survives a reload.
+    notify: { rewardEnd: true, habitOverrun: true, authorized: false },
     activeLoadout: 'Default',
     contexts: [],         // Planner day contexts such as Travel/School; separate from loadouts
     dayPlans: {},         // 'YYYY-MM-DD' → { raw, context, ts }
@@ -3790,6 +3799,9 @@ function load(raw) {
     // every boot: a save restored onto a phone with no wrapper — or one where Screen Time
     // permission has since been revoked — must not claim it still holds a shield.
     merged.screenTime = { ...base.screenTime, on: !!(parsed.screenTime && parsed.screenTime.on) };
+    const pn = parsed.notify || {};
+    merged.notify = { ...base.notify,
+                      rewardEnd: pn.rewardEnd !== false, habitOverrun: pn.habitOverrun !== false };
     merged.loadouts = [...new Set(['Default', ...(Array.isArray(parsed.loadouts) ? parsed.loadouts : []), ...taggedLoadouts]
       .map(x => String(x || '').trim()).filter(Boolean))];
     merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
@@ -5802,6 +5814,9 @@ setInterval(() => {
   // Safety net for the paths that don't repaint Winnings: expiry, day rollover, and a
   // reload that lands mid-reward. syncShield dedupes, so this costs nothing per tick.
   syncShield();
+  // Reminders are always derived here and nowhere else. A second of lag is irrelevant
+  // when what's being scheduled is minutes away, and one call site can't miss a path.
+  syncReminders();
 }, 1000);
 
 /* =================================================================
@@ -7697,7 +7712,10 @@ window.HCNative = {
                                       pickedCount: parseInt(s.picked, 10) || 0,
                                       shielded: !!s.shielded });
     save();
-    if ($('#view-settings') && $('#view-settings').classList.contains('active')) renderScreenTime();
+    if (state.notify) state.notify.authorized = !!s.notifyAuthorized;
+    if ($('#view-settings') && $('#view-settings').classList.contains('active')) {
+      renderScreenTime(); renderReminders();
+    }
   },
   /* The wrapper finished a native Google sign-in and is handing back the ID token.
      Backing out of the Google sheet is not an error — it just lets the form go idle. */
@@ -7716,6 +7734,88 @@ function isScreenTimeWin(w) {
   const def = w.rewardId && (state.rewards || []).find(r => r.id === w.rewardId);
   return def ? def.screenTime === true : w.screenTime === true;
 }
+/* ---- REMINDERS ---------------------------------------------------------
+   Two moments worth interrupting you for: a reward's time running out, and a habit
+   running past how long it usually takes.
+
+   Same shape as the shield: derive the whole plan from `state` every tick and reconcile,
+   rather than trying to schedule and cancel at each of the places a timer can move. And
+   the same division of labour — the page works out WHEN, the OS delivers it, so a reward
+   ending still reaches you with Habit Casino closed.
+
+   In a browser there is nothing to hand it to. Rather than pretend, the overrun surfaces
+   as an in-app toast, which is honest about only working while you're looking at it. */
+const _predCache = new Map();
+function predictedMinutesFor(src, kind) {
+  if (kind === 'task') return src.timedMinutes || 0;
+  const key = src.id + ':' + ((state.history || []).length);
+  if (_predCache.has(key)) return _predCache.get(key);
+  // Same fallback chain the Schedule uses: real runs first, the configured length second.
+  const v = habitMedianActualMinutes(src) || habitCurrentMinutes(src) || 0;
+  _predCache.set(key, v);
+  if (_predCache.size > 60) _predCache.clear();
+  return v;
+}
+// Everything that should fire in the future, keyed by a stable id.
+function reminderPlan() {
+  const out = {}, now = Date.now(), n = state.notify || {};
+  if (n.rewardEnd !== false) {
+    activeWinnings().forEach(w => {
+      // A paused countdown has no end time to name yet, so it gets no reminder.
+      if (w.pausedAt || !Number.isFinite(w.activeUntil) || w.activeUntil <= now) return;
+      out['rw-' + w.id] = { at: w.activeUntil, title: `⌛ ${w.name}`,
+                            body: `Your ${fmtMins(w.activeMinutes || 0)} is up.` };
+    });
+  }
+  if (n.habitOverrun !== false) {
+    const running = [
+      ...state.habits.filter(h => h.timer).map(h => ({ src: h, kind: 'habit' })),
+      ...state.oneoffs.filter(t => t.timer).map(t => ({ src: t, kind: 'task' })),
+    ];
+    running.forEach(({ src, kind }) => {
+      if (src.timer.pausedAt) return;                       // paused: the finish line moves
+      const mins = predictedMinutesFor(src, kind);
+      if (!(mins > 0)) return;                              // nothing predicted, nothing to beat
+      const at = now + (mins * 60 - timerElapsedSec(src.timer)) * 1000;
+      if (at <= now) return;                                // already over — handled below
+      out['ov-' + src.id] = { at, title: `⏱ ${src.name}`,
+                              body: `Past the usual ${fmtMins(mins)}.` };
+    });
+  }
+  return out;
+}
+let lastReminderPlan = '';
+const overrunToasted = new Set();
+function syncReminders() {
+  const plan = reminderPlan();
+
+  // In-app nudge for an overrun happening right now. Works everywhere, once per run.
+  if ((state.notify || {}).habitOverrun !== false) {
+    [...state.habits.filter(h => h.timer).map(h => ({ src: h, kind: 'habit' })),
+     ...state.oneoffs.filter(t => t.timer).map(t => ({ src: t, kind: 'task' }))].forEach(({ src, kind }) => {
+      const mins = predictedMinutesFor(src, kind);
+      const key = src.id + ':' + src.timer.startedAt;
+      if (!(mins > 0) || src.timer.pausedAt || overrunToasted.has(key)) return;
+      if (timerElapsedSec(src.timer) >= mins * 60) {
+        overrunToasted.add(key);
+        if (overrunToasted.size > 40) overrunToasted.clear();
+        toast(`⏱ ${src.name} — past the usual ${fmtMins(mins)}`, 'var(--h1)');
+      }
+    });
+  }
+
+  if (!HCBridge.present) return;                            // nothing to schedule against
+  const key = JSON.stringify(plan);
+  if (key === lastReminderPlan) return;
+  const prev = lastReminderPlan ? JSON.parse(lastReminderPlan) : {};
+  lastReminderPlan = key;
+  Object.keys(prev).forEach(id => { if (!plan[id]) HCBridge.send({ op: 'cancelNotify', id }); });
+  Object.entries(plan).forEach(([id, r]) => {
+    const p = prev[id];
+    if (!p || p.at !== r.at || p.body !== r.body) HCBridge.send({ op: 'notify', id, ...r });
+  });
+}
+
 /* Derive the shield state from `state` rather than hooking the six places a reward's timer
    moves (claim, extend, pause, resume, end early, expire, day-end). One derivation cannot
    miss a path, and it is still correct after a reload with a reward already running.
@@ -8680,6 +8780,7 @@ function renderSettings() {
   renderTierRewards();
   renderRewardEditor();
   renderWildCardSettings();
+  renderReminders();
   renderScreenTime();
   renderStreakFreezeEditor();
   renderCategories();
@@ -8779,6 +8880,22 @@ function renderWildCardSettings() {
     const n = state.inventory.filter(w => w.wild && !w.redeemed && w.tier === t).length;
     return `<span class="pill" style="border-color:${TIERS[t].hex}88;color:${TIERS[t].hex}">${TIERS[t].emoji} ${TIERS[t].label}: <b>${n}</b></span>`;
   }).join('');
+}
+// Settings → 🔔 Reminders. The two switches work everywhere; only the delivery differs,
+// so the panel says which one you're getting rather than implying the phone will buzz.
+function renderReminders() {
+  const box = $('#remindersBody'); if (!box) return;
+  const n = state.notify || {};
+  const row = (id, label, on) => `<div class="row between" style="margin-top:10px"><span>${label}</span><label class="toggle"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>`;
+  box.innerHTML =
+    row('ntRewardEnd', "A reward's timer runs out", n.rewardEnd !== false) +
+    row('ntOverrun', 'A habit passes its usual length', n.habitOverrun !== false) +
+    (HCBridge.present
+      ? `<div class="row" style="margin-top:10px">${n.authorized
+            ? '<span class="pill">✓ Notifications allowed</span>'
+            : '<button class="btn ghost sm" id="ntAuth">Allow notifications</button>'}</div>
+         <div class="hint">A habit's usual length comes from your own finished runs — after two, it's the median of those; before that, the duration set on the habit.</div>`
+      : `<div class="hint">In a browser these show as a message inside the app while it's open. Push notifications need the iOS app — the page can't wake your phone on its own.</div>`);
 }
 // Settings → 📱 Screen Time. Every control is native-only, so with no wrapper attached the
 // panel says so plainly instead of offering switches that quietly do nothing.
@@ -12721,6 +12838,20 @@ $('#addReward').addEventListener('click', () => {
   state.rewards.push({ id: uid(), emoji: '🎁', name: 'New reward', desc: '', tier: 'common', minutes: 0, screenTime: false });
   save(); renderRewardEditor();
   $('#rewardEditor').lastElementChild?.querySelector('.name-in')?.select();
+});
+
+// ---- Settings: 🔔 Reminders ----
+$('#remindersBody').addEventListener('change', e => {
+  const id = e.target.id;
+  if (id !== 'ntRewardEnd' && id !== 'ntOverrun') return;
+  state.notify[id === 'ntRewardEnd' ? 'rewardEnd' : 'habitOverrun'] = e.target.checked;
+  // Deliberately does NOT reset lastReminderPlan. The diff against the previous plan is
+  // exactly what emits the cancels — clearing it would leave the reminders already on the
+  // phone with nothing to withdraw them, so a switch turned off would still fire.
+  save(); syncReminders();
+});
+$('#remindersBody').addEventListener('click', e => {
+  if (e.target.id === 'ntAuth') { SFX.click(); HCBridge.send({ op: 'notifyAuth' }); }
 });
 
 // ---- Settings: 📱 Screen Time ----
