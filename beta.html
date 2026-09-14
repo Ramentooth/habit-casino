@@ -390,11 +390,25 @@
     /* Five-minute lines only at the deepest two stops — the scale where a five-minute
        drag is a visible distance rather than a rounding error. */
     .sched-grid.zoom-13 .sched-sub.fine, .sched-grid.zoom-14 .sched-sub.fine { opacity: .22; }
-    /* Draggable predictions: grab cursor, and touch-action:none so a vertical drag moves
-       the block instead of scrolling the page out from under it. */
-    .sched-block.draggable { cursor: grab; touch-action: none; }
-    .sched-block.draggable:active, .sched-block.dragging { cursor: grabbing; }
+    /* Draggable blocks: touch-action:none so a vertical drag resizes (or, after a hold,
+       moves) the block instead of scrolling the page out from under it. No callout or text
+       selection either — on a phone the hold that lifts a block would otherwise open one. */
+    .sched-block.draggable {
+      cursor: ns-resize; touch-action: none;
+      -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+    }
+    .sched-block.dragging { cursor: grabbing; }
     .sched-block.dragging { box-shadow: 0 6px 20px rgba(0,0,0,.6); border-style: solid; opacity: 1; }
+    /* Lifted by a hold: now it moves. The outline says so before the finger does. */
+    .sched-block.lifted { outline: 2px solid var(--sb); outline-offset: 1px; box-shadow: 0 10px 26px rgba(0,0,0,.7); }
+    /* The live readout while a block is moved or resized, pinned to the edge that's moving,
+       so you always know exactly where it will land. */
+    .sched-tip {
+      position: absolute; right: 4px; z-index: 7; transform: translateY(-50%); pointer-events: none;
+      padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+      font-size: 11px; font-weight: 800; background: var(--gs-lite, #e8e8ec); color: var(--gs-on-lite, #14141a);
+      box-shadow: 0 4px 12px rgba(0,0,0,.5);
+    }
     .sb-unpin {
       position: absolute; top: 2px; right: 3px; width: 18px; height: 18px; padding: 0;
       display: grid; place-items: center; border-radius: 6px; cursor: pointer; font-size: 11px;
@@ -717,10 +731,16 @@
       display: grid; place-items: center; background: var(--gs-ctl); color: var(--ink); border: 1px solid var(--gs-edge);
     }
     .ladder-endlab { font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: .5px; color: var(--ink-dim); text-transform: uppercase; }
-    .ladder-strip { flex: 1 1 auto; display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: thin; }
+    .ladder-strip {
+      flex: 1 1 auto; min-width: 0; display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: thin;
+      scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+    }
     .ladder-strip.dragging { overflow-x: hidden; touch-action: none; }
     .ladder-box {
-      position: relative; flex: 0 0 128px; cursor: grab; user-select: none; touch-action: pan-y;
+      /* pan-x too: a sideways swipe on a tier has to scroll the strip, or on a phone the
+         tiers past the screen edge can't be reached. Reordering waits for a hold (JS). */
+      position: relative; flex: 0 0 128px; cursor: grab; touch-action: pan-x pan-y; scroll-snap-align: start;
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
       padding: 9px 10px 10px; border-radius: 12px;
       background: var(--gs-card); border: 1px solid var(--gs-edge);
       transition: transform .18s cubic-bezier(.22,.9,.3,1);
@@ -2164,9 +2184,9 @@
        greys every rule that reads it without chasing each usage. */
     .prize      { --pz: var(--gs-edge-hi) !important; }
     .aw-row     { --aw: var(--gs-edge-hi) !important; }
-    /* .sb-label rides along: it reads the same --sb its block does, and greying only the
-       block left a grey bar wired to a coloured name. */
-    .sched-block, .sb-label { --sb: #6f6f7a !important; }
+    /* Schedule blocks are the one exemption: their --sb is chosen per block in
+       schedGridParts (category colour for real blocks, greys for predictions and for
+       uncategorised ones), because on the grid colour is how you read the day. */
     .hrow.done, .hrow.arch { background: var(--gs-card) !important; }
     .hrow.done { border-color: var(--gs-edge-hi) !important; }
     .hrow.done .hrow-name { text-decoration-color: var(--gs-edge-hi); }
@@ -7782,6 +7802,9 @@ function computeRewardBlocks(dateStr) {
    moves out to a column on the right, joined back by a leader line. Zoom in and the label
    returns inside the block. */
 const BAR_MIN_PX = 3;         // a bar is never invisible, but never inflated either
+// The schedule's two greys. Predictions keep the darker one (they haven't happened); a real
+// block with no category gets the lighter one, so it can't be mistaken for a prediction.
+const SB_GREY = '#6f6f7a', SB_UNSORTED = '#a9a9b4';
 const LABEL_MIN_PX = 15;      // below this a block cannot hold a legible line of text
 const LABEL_H = 15;           // vertical pitch between two labels in the right column
 function blockFloorPx() { return BAR_MIN_PX; }
@@ -7829,6 +7852,7 @@ let schedZoomIdx = 4;       // Schedule tab — 56px, the old default (index 2 o
 // window a fifth the height. Independent, so zooming one never disturbs the other.
 let homeZoomIdx = 2;        // = 44px
 const SNAP_MIN = 5;         // drags and resizes snap to five minutes
+let schedNextExpiry = Infinity;   // minute-of-day the next on-screen prediction ends (today only)
 function schedPx(idx = schedZoomIdx) { return SCHED_ZOOMS[clamp(idx, 0, SCHED_ZOOMS.length - 1)]; }
 // Zoom without re-rendering: only --ph changes, and CSS transitions carry every block,
 // gridline and the now-marker to their new positions together.
@@ -7925,8 +7949,12 @@ function schedGridParts(dateStr, opts = {}) {
   // rather than stacked on top, so an answered stretch reads as one thing.
   const fillers = isFuture ? [] : computeFillerBlocks(dateStr);
   const inFiller = b => fillers.some(f => b.startMin < f.endMin && b.startMin + Math.max(b.durMin || 0, 1) > f.startMin);
+  // Today, a prediction whose time has fully passed is dropped: it can't happen then any
+  // more, and Due Now still carries anything left undone.
+  const nowM = isToday ? nowMinutes() : -1;
+  const pastPrediction = b => isToday && b.startMin + (b.durMin || 15) <= nowM;
   const blocks = (isToday || isFuture
-    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name) && !inFiller(b)))
+    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name) && !inFiller(b) && !pastPrediction(b)))
     : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
   const px = opts.px || schedPx();
@@ -7997,15 +8025,15 @@ function schedGridParts(dateStr, opts = {}) {
     const top = at(topH);
     // True height, floored only enough to stay visible. No inflation — see BAR_MIN_PX.
     const height = `max(${BAR_MIN_PX}px, ${at(b.durMin / 60)})`;
-    const col = b.type === 'reward'
-      ? (b.tierHex || 'var(--gold)')                 // rewards wear their rarity colour
-      : (categoryColor(b.category) || 'var(--cyan)');
+    // Colour means CATEGORY here — the one place in the greyscale app that it does.
+    const col = (b.kind === 'predicted' || b.type === 'reward') ? SB_GREY
+      : (categoryColor(b.category) || SB_UNSORTED);
     const lanes = Math.max(1, b.laneCount || 1);
     const widthPct = 100 / lanes;
     const timeLabel = b.kind === 'moment'
       ? `✓ ${fmtMinOfDay(b.startMin)}`
       : `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay((b.startMin + b.durMin) % 1440)} · ${fmtMins(Math.round(b.durMin))}`;
-    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted (drag to move)' : (b.hid && !b.live ? 'drag or resize to correct what really happened · ' : '')}${timeLabel}`;
+    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted · drag to change its length, hold to move it · ' : (b.hid && !b.live ? 'drag to change its length, hold to move it — corrects what really happened · ' : '')}${timeLabel}`;
     // Predictions are always draggable — no mode to enter. Anything that already happened
     // stays put: it's a record, not a plan, so moving it would be rewriting history.
     // Predictions move to re-plan; finished blocks move to CORRECT the record. Both use
@@ -8041,7 +8069,11 @@ function schedGridParts(dateStr, opts = {}) {
     </div>`;
   }).join('');
 
-  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture,
+  // When the next prediction on screen runs out — the 30s tick repaints then, not before.
+  const nextExpiry = isToday
+    ? blocks.reduce((m, b) => b.kind === 'predicted' ? Math.min(m, b.startMin + (b.durMin || 15)) : m, Infinity)
+    : Infinity;
+  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture, nextExpiry,
     inner: `${hourLines.join('')}${nowLine}<div class="sched-lanes">${blockEls}</div><div class="sched-labels">${labelEls.join('')}</div>` };
 }
 
@@ -8068,7 +8100,8 @@ function recordBarHTML() {
 function renderBlockSchedule() {
   const box = $('#scheduleBody'); if (!box) return;
   const dateStr = todayStr(schedOffset);
-  const { blocks, lo, hi, isToday, isFuture, inner } = schedGridParts(dateStr);
+  const { blocks, lo, hi, isToday, isFuture, inner, nextExpiry } = schedGridParts(dateStr);
+  schedNextExpiry = nextExpiry;
 
   const label = isToday ? 'Today'
     : schedOffset === -1 ? 'Yesterday'
@@ -8104,7 +8137,7 @@ function renderBlockSchedule() {
     </div>
     <div class="sched-grid zoom-${schedZoomIdx}" data-lo="${lo}" data-hours="${hi - lo}"
          style="--ph:${schedPx()}px;height:calc(var(--ph) * ${hi - lo})">${inner}</div>
-    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a dashed block to say when you'll actually do it, or drag its top/bottom edge to change how long it takes — both snap to 5 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your record time.' : ''}</div>` : ''}
+    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a block up or down to change how long it takes (grab its top third to move its start). To move it to a new time, hold it until it lifts, then drag. Both snap to 5 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your record time.' : ''}</div>` : ''}
     ${!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>${escapeHtml(emptyMsg)}</div>` : ''}`;
   // Which blocks are too short to hold their own name depends on the zoom, so the answer
   // is computed against the live DOM rather than baked into the markup above.
@@ -13783,6 +13816,7 @@ function syncEditSheetHeight() {
 // One dispatch point: route to whichever container handler owns the open editor, so a
 // quest editor never runs the habit branches (or reads a .qrow that isn't there).
 $('#editOverlay').addEventListener('click', e => {
+  if (Date.now() - lastSwipeAt < 400) return;   // a tier swipe that began on a button — not a tap
   if (e.target.id === 'editOverlay' || e.target.closest('[data-act="closeEditor"]')) { SFX.click(); closeEditor(); return; }
   if (e.target.closest('[data-act="editMore"]')) { flushNameSettle(); editMoreOpen = !editMoreOpen; SFX.click(); renderEditSheet(); return; }
   // The ⋯ menu is a popover: while it's up, a tap anywhere else just puts it away.
@@ -14043,7 +14077,7 @@ function renderTierLadder() {
        </div>`;
   body.innerHTML = `
     <div class="pass-title">🪜 DIFFICULTY TIERS</div>
-    <div class="subtle">Same habit, different sizes. Completing any tier counts as one completion — only the payout changes. Drag to reorder; tap a tier to edit it.</div>
+    <div class="subtle">Same habit, different sizes. Completing any tier counts as one completion — only the payout changes. Swipe sideways to see every tier, hold one to drag it into a new order, tap one to edit it.</div>
     <div class="ladder-wrap">
       <div class="ladder-end">
         <button class="ladder-add" data-act="ladderAdd" data-side="easier" title="Add an easier tier">✚</button>
@@ -14130,6 +14164,7 @@ $('#tierOverlay').addEventListener('click', e => {
    drop, which doesn't work on touch at all. The dragged box follows the finger; the
    others slide out of its way with a transition so the gap opens where it'll land. ---- */
 let ladderDrag = null, ladderDragged = false;
+const LADDER_HOLD_MS = 350;
 $('#tierOverlay').addEventListener('pointerdown', e => {
   const box = e.target.closest('.ladder-box');
   const strip = $('#ladderStrip');
@@ -14137,17 +14172,37 @@ $('#tierOverlay').addEventListener('pointerdown', e => {
   const boxes = Array.from(strip.children);
   if (boxes.length < 2) return;
   ladderDragged = false;
-  ladderDrag = {
+  const d = ladderDrag = {
     strip, boxes, box, from: boxes.indexOf(box), to: boxes.indexOf(box),
-    x0: e.clientX, w: box.offsetWidth + 10,   // width + the strip's gap
+    x0: e.clientX, y0: e.clientY, w: box.offsetWidth + 10,   // width + the strip's gap
+    scroll0: strip.scrollLeft, lifted: false, pid: e.pointerId, hold: null,
   };
-  box.setPointerCapture(e.pointerId);
+  // A plain swipe scrolls the strip — that's how the tiers past the edge of a phone screen
+  // come into view. Reordering waits for a short hold, and only then takes the finger.
+  d.hold = setTimeout(() => {
+    if (ladderDrag !== d) return;
+    d.lifted = true;
+    ladderDragged = true;                  // a hold-and-release mustn't also open the tier
+    d.scroll0 = strip.scrollLeft;
+    strip.classList.add('dragging'); box.classList.add('lifted');
+    box.style.transform = 'scale(1.05)';
+    try { box.setPointerCapture(d.pid); } catch (err) {}
+    SFX.click();
+  }, LADDER_HOLD_MS);
 });
 $('#tierOverlay').addEventListener('pointermove', e => {
   const d = ladderDrag; if (!d) return;
-  const dx = e.clientX - d.x0;
-  if (!ladderDragged && Math.abs(dx) < 6) return;
-  if (!ladderDragged) { ladderDragged = true; d.strip.classList.add('dragging'); d.box.classList.add('lifted'); }
+  if (!d.lifted) {
+    // Moving before the hold lands makes it a scroll (or a slip) — never a reorder.
+    if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 8) { clearTimeout(d.hold); ladderDrag = null; }
+    return;
+  }
+  // Near either edge the strip scrolls itself, so a tier can be carried to a slot that
+  // started off-screen. The scroll is folded into dx so the box stays under the finger.
+  const sr = d.strip.getBoundingClientRect();
+  if (e.clientX < sr.left + 28) d.strip.scrollLeft -= 10;
+  else if (e.clientX > sr.right - 28) d.strip.scrollLeft += 10;
+  const dx = e.clientX - d.x0 + (d.strip.scrollLeft - d.scroll0);
   d.box.style.transform = `translateX(${dx}px) scale(1.05)`;
   const to = clamp(d.from + Math.round(dx / d.w), 0, d.boxes.length - 1);
   if (to !== d.to) {
@@ -14163,9 +14218,12 @@ $('#tierOverlay').addEventListener('pointermove', e => {
     SFX.click();
   }
 });
+// While a tier is lifted the finger is carrying it — the strip mustn't scroll as well.
+$('#tierOverlay').addEventListener('touchmove', e => { if (ladderDrag && ladderDrag.lifted) e.preventDefault(); }, { passive: false });
 const endLadderDrag = () => {
   const d = ladderDrag; if (!d) return;
   ladderDrag = null;
+  clearTimeout(d.hold);
   d.strip.classList.remove('dragging');
   d.box.classList.remove('lifted');
   d.boxes.forEach(b => { b.style.transform = ''; });
@@ -14361,7 +14419,11 @@ let swipeStart = null, lastSwipeAt = 0;
 const SWIPE_SLOP = 10;          // px of movement before we decide the gesture is horizontal
 function onHabitPointerDown(e) {
   swipeStart = null;
-  if (e.target.closest('input, select, textarea, button, .day-picker')) return;  // don't hijack controls
+  // Text fields keep their own gestures (caret, selection). On a list row the ✓/▶ buttons
+  // stay tap-only; in the editor sheet nearly every surface IS a button, so a tier swipe may
+  // start on one — the click it would fire is swallowed via lastSwipeAt.
+  const inSheet = !!e.target.closest('#editSheet');
+  if (e.target.closest(inSheet ? 'input, select, textarea, .day-picker' : 'input, select, textarea, button, .day-picker')) return;
   const row = e.target.closest('.hrow[data-id], .hedit[data-id]');
   if (!row) return;
   const isEdit = row.classList.contains('hedit');
@@ -15314,7 +15376,10 @@ let schedPinch = null;
 function touchDistance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
 $('#view-schedule').addEventListener('touchstart', e => {
   if (e.touches.length !== 2 || !e.target.closest('.sched-grid')) return;
-  if (schedDrag) { schedDrag.el.classList.remove('dragging'); schedDrag = null; }
+  if (schedDrag) {
+    clearTimeout(schedDrag.hold); if (schedDrag.tip) schedDrag.tip.remove();
+    schedDrag.el.classList.remove('dragging', 'resizing', 'lifted'); schedDrag = null;
+  }
   schedPinch = { distance: touchDistance(e.touches[0], e.touches[1]) };
 }, { passive: true });
 $('#view-schedule').addEventListener('touchmove', e => {
@@ -15337,37 +15402,65 @@ const endSchedPinch = e => { if (e.touches.length < 2) schedPinch = null; };
 $('#view-schedule').addEventListener('touchend', endSchedPinch, { passive: true });
 $('#view-schedule').addEventListener('touchcancel', () => { schedPinch = null; }, { passive: true });
 
-/* ---- Drag a prediction to re-time it. Always live: no mode to switch on. --------------
-   The block moves with the finger but commits in SNAP_MIN steps, and writes the same
-   h.scheduledMin the AI's scheduleBlock proposal uses, so Due Now and the predicted
-   layout immediately agree with what you dragged.                                       */
+/* ---- Change a block by dragging it. Two gestures, told apart by how the press starts:
+     · press and DRAG          → change its LENGTH. Grab the top third of a tall block to
+                                  move its start, anywhere else to move its end. It starts
+                                  on the first few pixels, so it answers straight away.
+     · press, HOLD, then drag  → MOVE the whole block to a new time. It lifts (outline +
+                                  a tick) the moment the hold registers.
+   Moving used to be the default and resizing needed a 9px grip, so reaching for a length
+   usually shoved the block somewhere else. A readout pinned to the moving edge shows the
+   exact times the whole way through. Predictions write that day's plan; finished blocks
+   rewrite the record (see endSchedDrag).                                                */
+const SCHED_HOLD_MS = 450;
 let schedDrag = null;
+function schedTip(d) {
+  if (!d.tip) { d.tip = document.createElement('div'); d.tip.className = 'sched-tip'; d.el.parentNode.appendChild(d.tip); }
+  const edge = d.mode === 'bot' ? d.min + d.dur : d.min;
+  d.tip.style.top = `calc(var(--ph) * ${((edge - d.lo) / 60).toFixed(4)})`;
+  d.tip.textContent = `${fmtMinOfDay(d.min)}–${fmtMinOfDay((d.min + d.dur) % 1440)} · ${fmtMins(d.dur)}`;
+}
 $('#view-schedule').addEventListener('pointerdown', e => {
   const el = e.target.closest('.sched-block.draggable');
   if (!el || e.target.closest('[data-act]')) return;
   const grid = $('#view-schedule .sched-grid'); if (!grid) return;     // scoped: Home has one too
-  // A grip under the finger means "change how long this takes"; anywhere else on the
-  // block means "change when it happens". Same gesture, decided by where it starts.
-  const grip = e.target.closest('.sb-grip');
   const start = parseInt(el.dataset.start, 10);
   const dur = parseInt(el.dataset.dur, 10) || 15;
-  schedDrag = {
+  // Which edge a plain drag moves: a grip says so outright; otherwise the top third of a
+  // block tall enough to have one means its start, and everything else means its end.
+  const r = el.getBoundingClientRect();
+  const grip = e.target.closest('.sb-grip');
+  const edge = grip ? (grip.dataset.grip === 'top' ? 'top' : 'bot')
+    : (r.height >= 36 && e.clientY - r.top < r.height * 0.3 ? 'top' : 'bot');
+  const d = schedDrag = {
     el, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
     hid: el.dataset.hid || null, segIndex: parseInt(el.dataset.seg, 10) || 0,
-    mode: grip ? (grip.dataset.grip === 'top' ? 'top' : 'bot') : 'move',
-    durMin: dur, start, end: start + dur,
-    lo: parseInt(grid.dataset.lo, 10) * 60, y0: e.clientY,
-    min: start, dur, moved: false,
+    mode: null, edge, durMin: dur, start, end: start + dur,
+    lo: parseInt(grid.dataset.lo, 10) * 60, x0: e.clientX, y0: e.clientY,
+    min: start, dur, moved: false, tip: null, hold: null,
   };
   // Capture keeps the gesture alive if the finger leaves the block; not fatal if refused.
   try { el.setPointerCapture(e.pointerId); } catch (err) {}
-  el.classList.add(grip ? 'resizing' : 'dragging');
+  d.hold = setTimeout(() => {
+    if (schedDrag !== d || d.mode) return;           // already resizing, or let go
+    d.mode = 'move';
+    el.classList.add('dragging', 'lifted');
+    SFX.click();
+    try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
+    schedTip(d);
+  }, SCHED_HOLD_MS);
 });
 $('#view-schedule').addEventListener('pointermove', e => {
-  if (!schedDrag) return;
-  const d = schedDrag;
+  const d = schedDrag; if (!d) return;
   const dy = e.clientY - d.y0;
-  if (!d.moved && Math.abs(dy) < 4) return;              // ignore a plain tap
+  if (!d.mode) {
+    // Still undecided: moving before the hold lands means "change the length".
+    if (Math.hypot(e.clientX - d.x0, dy) < 5) return;
+    clearTimeout(d.hold);
+    d.mode = d.edge;
+    d.el.classList.add('resizing');
+  }
+  if (!d.moved && Math.abs(dy) < 2) return;
   d.moved = true;
   const deltaMin = dy / schedPx() * 60;
   const snap = v => Math.round(v / SNAP_MIN) * SNAP_MIN;
@@ -15379,21 +15472,23 @@ $('#view-schedule').addEventListener('pointermove', e => {
     const end = clamp(snap(d.end + deltaMin), d.start + SNAP_MIN, 1440);
     d.min = d.start; d.dur = end - d.start;
   } else {
-    // The start moves, the END holds — so dragging the top edge shortens from above
-    // rather than sliding the whole block.
+    // The start moves, the END holds — so dragging the top shortens from above rather
+    // than sliding the whole block.
     const st = clamp(snap(d.start + deltaMin), 0, d.end - SNAP_MIN);
     d.min = st; d.dur = d.end - st;
   }
   d.el.style.top = `calc(var(--ph) * ${((d.min - d.lo) / 60).toFixed(4)})`;
   d.el.style.height = `max(${BAR_MIN_PX}px, calc(var(--ph) * ${(d.dur / 60).toFixed(4)}))`;
   const t = d.el.querySelector('.sb-time');
-  if (t) t.textContent = d.mode === 'move' ? fmtMinOfDay(d.min)
-    : `${fmtMinOfDay(d.min)}–${fmtMinOfDay((d.min + d.dur) % 1440)} · ${fmtMins(d.dur)}`;
+  if (t) t.textContent = `${fmtMinOfDay(d.min)}–${fmtMinOfDay((d.min + d.dur) % 1440)} · ${fmtMins(d.dur)}`;
+  schedTip(d);
 });
 function endSchedDrag() {
   if (!schedDrag) return;
   const d = schedDrag; schedDrag = null;
-  d.el.classList.remove('dragging', 'resizing');
+  clearTimeout(d.hold);
+  if (d.tip) d.tip.remove();
+  d.el.classList.remove('dragging', 'resizing', 'lifted');
   if (!d.moved || (d.min === d.start && d.dur === d.durMin)) { renderBlockSchedule(); return; }
   const dateStr = todayStr(schedOffset);
   let name;
@@ -15474,6 +15569,8 @@ function removePlannedBlock(dateStr, refId) {
 }
 $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
+// The hold that lifts a block is also Android's long-press — don't open a context menu on it.
+$('#view-schedule').addEventListener('contextmenu', e => { if (e.target.closest('.sched-block.draggable')) e.preventDefault(); });
 
 /* ---- + button: put a habit or quest onto the day you're looking at ----------------
    Every group opens COLLAPSED, every time. The picker used to remember which sections you
@@ -15862,6 +15959,10 @@ setInterval(() => {
   if ($('#view-home').classList.contains('active') && editingHabitId === null) renderHome();
   if ($('#view-tasks').classList.contains('active') && editingOneoffId === null) renderOneoffs();
   if ($('#view-prizes').classList.contains('active') && editingRewardId === null) renderPrizes();
+  // A prediction's time just ran out: repaint so it drops off (see schedGridParts). Never
+  // mid-drag — that would pull the block out from under the finger.
+  if ($('#view-schedule').classList.contains('active') && !schedDrag && schedOffset === 0
+      && nowMinutes() >= schedNextExpiry) renderBlockSchedule();
 }, 30000);
 </script>
 
