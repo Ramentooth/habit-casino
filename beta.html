@@ -455,6 +455,25 @@
     /* Read-only surfaces (the Home widget) shouldn't invite a tap that does nothing. */
     #homeNow .sched-block.gap { cursor: default; }
     #homeNow .sched-block.gap:hover { border-color: var(--panel-edge); background: rgba(0,0,0,.34); }
+    /* A gap you answered. Deliberately unlike anything the app tracked — a cool slate
+       hatch where habits are solid, an italic note where they're upright — because it's
+       your own account of the time, not a measured block. It sits behind real blocks
+       (z-index 0) like the gap it replaced, and it pushes predictions out of its span
+       entirely (see schedGridParts) so an answered stretch stays uncluttered. */
+    .sched-block.filler {
+      z-index: 0; display: flex; flex-direction: column; gap: 1px; padding: 4px 8px; cursor: pointer;
+      border: 1px solid rgba(143,179,217,.30); border-left: 3px solid #8fb3d9; border-radius: 8px;
+      background: repeating-linear-gradient(45deg,
+        rgba(143,179,217,.11) 0 6px, rgba(143,179,217,.04) 6px 12px), #151b24;
+      color: #cfe0f3;
+    }
+    .sched-block.filler:hover { border-color: rgba(143,179,217,.55); }
+    .filler-name {
+      font-style: italic; font-weight: 600; font-size: 12px; line-height: 1.25; pointer-events: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .filler-time { font-size: 10px; line-height: 1.2; opacity: .65; white-space: nowrap; pointer-events: none; }
+    #homeNow .sched-block.filler { cursor: default; }
 
     /* ---------- Short blocks: honest bars, names in a right-hand column ----------
        A block shorter than LABEL_MIN_PX keeps its TRUE height and drops its text. It used
@@ -2270,6 +2289,142 @@
       font-family: inherit; line-height: 1.4; padding: 8px 10px;
     }
 
+    /* --- TickTick-style editor (habits + quests) ---------------------------------
+       ‹ and a breadcrumb up top, the big levers top-right with ⋯ opening its own menu,
+       and a toolbar along the bottom for what's always one tap away. The greyscale block
+       gives every input a filled box with !important; the title and description here are
+       meant to read as a page, not a form, so they take it back at higher specificity. */
+    .edit-sheet.tt .pass-close { display: none; }
+    /* Every tick of a subtask repaints the sheet; the card's entry fade would flash it. */
+    .edit-sheet.tt .hedit { animation: none; }
+    .tt-wrap { gap: 0; }
+    .tt-head { position: relative; display: flex; align-items: center; gap: 4px; margin: -4px 0 6px; }
+    .tt-spacer { flex: 1 1 auto; }
+    .tt-icon {
+      flex: 0 0 auto; position: relative; min-width: 38px; height: 38px; padding: 0 8px; border-radius: 10px;
+      border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 21px; line-height: 1;
+      cursor: pointer; display: grid; place-items: center;
+    }
+    .tt-icon:active, .tt-icon[aria-expanded="true"] { background: var(--gs-ctl); }
+    .tt-icon i {
+      position: absolute; top: 2px; right: 0; font-style: normal; font-size: 9px; font-weight: 800;
+      min-width: 14px; height: 14px; line-height: 14px; border-radius: 7px; text-align: center;
+      background: var(--gs-lite); color: var(--gs-on-lite);
+    }
+    .tt-flag { color: var(--qf, var(--ink-dim)); }
+    .tt-crumb {
+      min-width: 0; display: flex; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 10px;
+      border: 0; background: transparent; color: var(--ink-dim); font: inherit; font-size: 13px; cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tt-crumb.static { cursor: default; }
+    .tt-caret { opacity: .7; font-size: 11px; }
+    .tt-menu {
+      position: absolute; top: 42px; right: 0; z-index: 6; min-width: 230px; padding: 6px;
+      display: flex; flex-direction: column; background: var(--gs-card); border: 1px solid var(--gs-edge-hi);
+      border-radius: 14px; box-shadow: 0 14px 34px rgba(0,0,0,.6); animation: fadeUp .14s ease;
+    }
+    .tt-menu button {
+      display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 0; border-radius: 9px;
+      background: transparent; color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer;
+    }
+    .tt-menu button:hover, .tt-menu button:active { background: var(--gs-ctl); }
+    .tt-menu button small { margin-left: auto; padding-left: 12px; font-size: 11px; color: var(--ink-dim); }
+    .tt-menu .danger { color: var(--pink); }
+    .tt-menu hr { border: 0; border-top: 1px solid var(--gs-edge); margin: 4px 6px; }
+    .tt-page { gap: 8px; }
+    .tt-check-row { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+    .tt-check {
+      flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 7px; cursor: pointer;
+      border: 2px solid var(--gs-edge-hi); background: transparent; color: var(--gs-on-lite);
+      font: inherit; font-size: 14px; font-weight: 900; display: grid; place-items: center;
+    }
+    .tt-check.on { background: var(--gs-lite); border-color: transparent; }
+    .tt-when {
+      min-width: 0; padding: 6px 2px; border: 0; background: transparent; color: var(--cyan);
+      font: inherit; font-size: 14px; text-align: left; cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tt-when.none, .tt-when.static { color: var(--ink-dim); }
+    .tt-when.static { cursor: default; }
+    .tt-tier { margin-left: auto; font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 1px; font-weight: 900; white-space: nowrap; }
+    .tt-prog { margin-left: auto; font-size: 12px; font-weight: 800; color: var(--ink-dim); }
+    .tt-tier + .tt-prog { margin-left: 8px; }
+    .tt-title-row { display: flex; align-items: center; gap: 6px; }
+    .edit-sheet .tt-wrap input.tt-title, .edit-sheet .tt-wrap input.tt-emoji,
+    .edit-sheet .tt-wrap textarea.tt-desc {
+      background: transparent !important; border: 0 !important; box-shadow: none !important;
+    }
+    .edit-sheet .tt-wrap input.tt-title { flex: 1 1 auto; min-width: 0; font-size: 21px; font-weight: 700; padding: 4px 0; }
+    .edit-sheet .tt-wrap input.tt-emoji { flex: 0 0 34px; width: 34px; min-width: 0; font-size: 22px; text-align: center; padding: 0; }
+    .edit-sheet .tt-wrap textarea.tt-desc { flex: none; width: 100%; min-height: 42px; padding: 0; font-size: 14px; color: var(--ink-dim) !important; }
+    .tt-suggest { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tt-suggest:empty { display: none; }
+    .tt-tray {
+      display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px;
+      background: var(--gs-card); border: 1px solid var(--gs-edge);
+    }
+    .tt-tray-t { font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-dim); }
+    .tt-tray-note { font-size: 11px; line-height: 1.45; color: var(--ink-dim); }
+    .tt-tray-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .tt-lbl { font-size: 13px; color: var(--ink-dim); }
+    .tt-in.num { width: 72px; }
+    .tt-link { border: 0; background: transparent; color: var(--cyan); font: inherit; font-size: 13px; cursor: pointer; padding: 4px 2px; }
+    .tt-toolbar { display: flex; align-items: center; gap: 2px; margin-top: 2px; padding-top: 8px; border-top: 1px solid var(--gs-edge); }
+    .tt-tool {
+      display: flex; align-items: center; gap: 5px; height: 38px; padding: 0 10px; border-radius: 10px; border: 0;
+      background: transparent; color: var(--ink); font: inherit; font-size: 17px; cursor: pointer; min-width: 0;
+    }
+    .tt-tool span { font-size: 12px; color: var(--ink-dim); max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tt-tool span:empty { display: none; }
+    .tt-tool.on, .tt-tool:active { background: var(--gs-ctl); }
+    .tt-tool.end { margin-left: auto; }
+
+    /* --- Subtasks: the parts a habit or quest is made of ------------------------- */
+    .kids { display: flex; flex-direction: column; }
+    .kids-head {
+      display: flex; justify-content: space-between; padding: 4px 0 2px;
+      font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--ink-dim);
+    }
+    .kids-count { letter-spacing: 0; }
+    .kid { display: flex; align-items: center; gap: 8px; min-height: 42px; border-bottom: 1px solid var(--gs-edge); }
+    .kid-check {
+      flex: 0 0 auto; width: 20px; height: 20px; padding: 0; border-radius: 6px; cursor: pointer;
+      border: 2px solid var(--gs-edge-hi); background: transparent; color: var(--gs-on-lite);
+      font: inherit; font-size: 12px; font-weight: 900; display: grid; place-items: center;
+    }
+    .kid.done .kid-check { background: var(--gs-lite); border-color: transparent; }
+    .kid-name {
+      flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 8px; padding: 9px 0; border: 0;
+      background: transparent; color: var(--ink); font: inherit; font-size: 15px; text-align: left; cursor: pointer;
+    }
+    .kid-n { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kid.done .kid-n { text-decoration: line-through; color: var(--ink-dim); }
+    .kid-meta { flex: 0 0 auto; font-size: 11px; color: var(--ink-dim); }
+    .kid-live { font-family: 'Orbitron', sans-serif; font-size: 12px; color: var(--cyan); font-variant-numeric: tabular-nums; }
+    .kid-live.big { font-size: 24px; margin-right: 4px; }
+    .kid-btn {
+      flex: 0 0 auto; min-width: 32px; height: 32px; padding: 0 8px; border-radius: 9px; cursor: pointer;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-ctl); color: var(--cyan);
+      font: inherit; font-size: 13px; font-weight: 800;
+    }
+    .kid-btn.play { color: var(--purple); }
+    .kid-btn.go { color: var(--green); }
+    .kid-btn.dim { color: var(--ink-dim); }
+    .kid-btn.wide { padding: 0 16px; }
+    .kid-add { display: flex; align-items: center; gap: 8px; min-height: 42px; }
+    .kid-plus { flex: 0 0 20px; text-align: center; color: var(--ink-dim); font-size: 16px; }
+    .edit-sheet .kid-add input.kid-add-in {
+      flex: 1 1 auto; min-width: 0; padding: 8px 0; font-size: 15px;
+      background: transparent !important; border: 0 !important; box-shadow: none !important;
+    }
+    .kid-add-go { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9px; border: 0; background: transparent; color: var(--ink-dim); font: inherit; font-size: 15px; cursor: pointer; }
+    .kids-note { font-size: 11px; color: var(--ink-dim); padding-top: 4px; }
+    .kid-timer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .kid-runs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .kid-runs .tt-tray-t, .kid-runs .tt-tray-note { flex-basis: 100%; }
+    .kid-run { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--gs-ctl); color: var(--ink-dim); }
+
     /* --- Schedule: + button and its picker sheet --------------------------- */
     .sched-fab {
       position: fixed; z-index: 44; right: 14px; bottom: calc(80px + env(safe-area-inset-bottom));
@@ -3663,6 +3818,7 @@ let editingRewardId = null;    // reward currently "blown up" into the inline ed
 let claimOpenId = null;        // reward id whose claim panel is expanded in the Prize Pool
 let claimQty = 1;              // quantity chosen in that panel
 let editingHabitId = null;     // habit currently "blown up" into the inline editor on the Habits screen
+let editingChildId = null;     // subtask open as its own page in the editor sheet (see SUBTASKS), or null
 let editTierPage = null;       // which difficulty page the habit editor shows (null = the base habit's page)
 let tierLadderId = null;       // habit whose difficulty ladder is open in the tier popup
 let passGoalsOpen = true;      // Habit Pass "Goals" dropdown open/closed
@@ -3713,6 +3869,33 @@ function normalizeStock(v) {
     shelfDate: typeof v.shelfDate === 'string' ? v.shelfDate : '' };
 }
 
+// Subtasks (see SUBTASKS). A whitelist like everything else in load() — anything not
+// named here is dropped. The caps are junk-data protection, not a product limit.
+function normalizeChildren(list) {
+  if (!Array.isArray(list)) return [];
+  return list.filter(c => c && typeof c === 'object').slice(0, 40).map(c => ({
+    id: c.id ? String(c.id) : uid(),
+    name: c.name != null ? String(c.name).slice(0, 120) : '',
+    minutes: clamp(parseInt(c.minutes) || 0, 0, 999),
+    doneOn: (typeof c.doneOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.doneOn)) ? c.doneOn : null,
+    // Same open-stopwatch shape habits use, so a running part survives a reload.
+    timer: (c.timer && Number.isFinite(c.timer.startedAt))
+      ? { startedAt: c.timer.startedAt,
+          pausedAt: Number.isFinite(c.timer.pausedAt) ? c.timer.pausedAt : null,
+          pausedTotalSec: c.timer.pausedTotalSec || 0, pauseCount: c.timer.pauseCount || 0,
+          segments: normalizeSegments(c.timer.segments, c.timer.startedAt, c.timer.pausedAt) }
+      : null,
+    // Finished sittings: how long this part took, and whether a completion has spent it.
+    runs: (Array.isArray(c.runs) ? c.runs : [])
+      .filter(r => r && Number.isFinite(r.sec) && /^\d{4}-\d{2}-\d{2}$/.test(r.date || '')).slice(-30)
+      .map(r => ({ date: r.date, sec: Math.max(0, Math.round(r.sec)), used: !!r.used,
+        segs: (Array.isArray(r.segs) ? r.segs : []).filter(x => x && Number.isFinite(x.s) && Number.isFinite(x.e)).map(x => ({ s: x.s, e: x.e })) })),
+  }));
+}
+// Copying a habit copies its parts, never their progress: fresh ids, nothing ticked, no runs.
+function cloneChildren(list) {
+  return (Array.isArray(list) ? list : []).map(c => ({ id: uid(), name: c.name || '', minutes: c.minutes || 0, doneOn: null, timer: null, runs: [] }));
+}
 // Fill in any missing fields so saves from older versions keep working.
 function normalizeHabit(h) {
   h = h || {};
@@ -3743,6 +3926,8 @@ function normalizeHabit(h) {
     // What the habit actually involves, in the user's own words — distinct from `why`,
     // which is the motivation. Both are shown to the AI coach.
     desc: h.desc != null ? String(h.desc) : '',
+    // The base level's subtasks. Each extra tier carries its own list below.
+    children: normalizeChildren(h.children),
     // Same deal as emojiAuto: true only while `timedMinutes` is still the number we
     // guessed from the name. Typing a real one clears it for good, and legacy saves
     // have no flag → false → their durations are never rewritten.
@@ -3762,7 +3947,7 @@ function normalizeHabit(h) {
     doneMin: Number.isFinite(h.doneMin) ? h.doneMin : null,
     // difficulty levels: any number of extra variants (easiest → hardest); baseIdx = where
     // the habit itself sits. The slice is junk-data protection, not a product limit.
-    tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 20).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1, minutes: (t && Number.isFinite(t.minutes)) ? t.minutes : 0 })) : [],
+    tiers: Array.isArray(h.tiers) ? h.tiers.slice(0, 20).map(t => ({ name: (t && t.name != null) ? t.name : '', reward: (t && Number.isFinite(t.reward)) ? t.reward : 1, minutes: (t && Number.isFinite(t.minutes)) ? t.minutes : 0, children: normalizeChildren(t && t.children) })) : [],
     // context Modes — an INDEPENDENT axis from `tiers`: keyed by context name, they
     // swap the habit's name/reward/minutes on days the Week Planner flagged.
     // h.modes['Travel'] = { name, reward, minutes, desc, createdBy }
@@ -3878,6 +4063,7 @@ function load(raw) {
         tier, category: t.category || 'Unsorted', reward: (Number.isFinite(parseInt(trw[tier])) ? parseInt(trw[tier]) : TASK_TIERS[tier].reward),
         iterations: Math.max(1, parseInt(t.iterations) || 1), progress: t.progress || 0,
         desc: t.desc != null ? String(t.desc) : '',
+        children: normalizeChildren(t.children),   // subtasks — see SUBTASKS
         // How long this is expected to take. Quests never had this; without it the
         // Schedule gave every one of them a flat 30 minutes.
         timedMinutes: clamp(parseInt(t.timedMinutes) || 0, 0, 999),
@@ -4654,10 +4840,18 @@ function habitCardHTML(h, usualMin) {
   // buttons — which pushed both ends inward and left leveled rows visibly out of line
   // with plain ones. Inside the pane they cost no layout the row wasn't already wasting,
   // and they page themselves: each pane knows its own position in the ladder.
+  // A subtask being timed shows on the row the way the habit's own stopwatch does; if both
+  // happen to be running, the habit's clock is the one shown.
+  const liveKid = h.timer ? null
+    : [h.children, ...(h.tiers || []).map(t => t && t.children)].flatMap(l => l || []).find(c => c && c.timer);
+  const kidChip = liveKid
+    ? `<span class="row-chip live">⏱ ${escapeHtml(clip(liveKid.name, 14))} <b data-timer-elapsed-child="${liveKid.id}">${fmtTimerSec(timerElapsedSec(liveKid.timer))}</b>${liveKid.timer.pausedAt ? ' ⏸' : ''}</span>` : '';
   const paneHTML = (name, reward, minutes, word) => {
     // Chips ride alongside the name, inside .hrow-main, so the row never wraps.
-    const chips = (timerChip || '')
-      + (h.repeatable && !timerChip ? `<span class="row-chip">${dc}/${cap}</span>` : '');
+    const kp = childProgress('habit', h, word ? word.idx : undefined);   // this tier's parts
+    const chips = (timerChip || kidChip)
+      + (h.repeatable && !timerChip ? `<span class="row-chip">${dc}/${cap}</span>` : '')
+      + (kp.total && !kidChip ? `<span class="row-chip">☑${kp.done}/${kp.total}</span>` : '');
     const chevs = word
       ? `<span class="lvl-chevs">${word.idx > 0 ? '<span class="lvl-chev">‹</span>' : ''}${word.idx < word.n - 1 ? '<span class="lvl-chev">›</span>' : ''}</span>`
       : '';
@@ -4691,16 +4885,32 @@ function habitCardHTML(h, usualMin) {
     </div>`;
 }
 
+/* =================================================================
+   EDITOR PAGES — laid out like TickTick's task sheet.
+
+   Header: ‹ back, a breadcrumb of where the item lives, and top-right the one big lever
+   (🎚 difficulty tiers) plus ⋯, which opens its own menu for everything occasional.
+   Body: check · when · title · description · subtasks. Footer: a toolbar of the things
+   worth one tap. Every toolbar button and menu entry opens ONE tray (editSecOpen) — the
+   one-at-a-time rule the old More bars kept, for the same reason: a short sheet.
+
+   A habit's header, and the trays for habit-wide settings, sit OUTSIDE the tier track.
+   Everything that differs per difficulty tier — title, parts, reward, length — is on the
+   page, so swiping between tiers swaps exactly those and nothing else.
+   ================================================================= */
 // Every page of the habit editor at once, in one track offset by -page×100%, so tier
-// pages can slide under the finger exactly like the checklist rows do. Each page carries
+// pages slide under the finger exactly like the checklist rows do. Each page carries
 // data-page so field handlers know which tier they're writing to without consulting the
 // global editTierPage — otherwise an input on an off-screen page would edit the wrong one.
 function habitEditPagesHTML(h) {
   const lvls = habitLevels(h);
-  if (!lvls) return `<div class="hedit-swipe"><div class="hedit-track" data-idx="0" style="transform:translateX(0%)">${habitEditHTML(h)}</div></div>`;
-  const page = clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.findIndex(l => l.base), 0, lvls.length - 1);
-  const pages = lvls.map((l, i) => l.base ? habitEditHTML(h, i) : tierEditHTML(h, i)).join('');
-  return `<div class="hedit-swipe"><div class="hedit-track" data-idx="${page}" style="transform:translateX(${-page * 100}%)">${pages}</div></div>`;
+  const page = lvls ? clamp(Number.isFinite(editTierPage) ? editTierPage : lvls.findIndex(l => l.base), 0, lvls.length - 1) : 0;
+  const pages = lvls ? lvls.map((l, i) => l.base ? habitEditHTML(h, i) : tierEditHTML(h, i)).join('') : habitEditHTML(h);
+  return `
+    <div class="hedit tt-wrap" data-id="${h.id}">
+      ${habitEditHeadHTML(h, lvls)}
+      <div class="hedit-swipe"><div class="hedit-track" data-idx="${page}" style="transform:translateX(${-page * 100}%)">${pages}</div></div>
+    </div>`;
 }
 
 /* The identity <select> shared by the habit and quest editors. The trailing sentinel is
@@ -4712,109 +4922,137 @@ function categoryOptionsHTML(selected) {
     .map(c => `<option value="${escapeHtml(c)}" ${selected === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`)
     .join('') + `<option value="${NEW_CATEGORY_OPT}">＋ New identity…</option>`;
 }
-/* One collapsible bar in the editor's More region: a title, the current value at a
-   glance, and — once opened — a line explaining what the thing does, then the controls.
-   Only one is ever open (editSecOpen), so the sheet stays short.
-   The header is a <button> on purpose: onHabitPointerDown skips buttons, and anything
-   else here would start a tiered habit's carousel swipe instead of opening the bar. */
-function editSecHTML(key, title, summary, blurb, inner) {
-  const open = editSecOpen === key;
-  return `
-    <div class="hsec ${open ? '' : 'collapsed'}">
-      <button class="hsec-head" data-act="editSec" data-sec="${key}" aria-expanded="${open}">
-        <span class="hsec-t">${title}</span>
-        ${summary ? `<span class="hsec-sum" data-sum="${key}">${escapeHtml(summary)}</span>` : ''}
-      </button>
-      <div class="hsec-body"><div class="hsec-blurb">${escapeHtml(blurb)}</div>${inner}</div>
-    </div>`;
-}
-// Enough of a value to recognise it in a collapsed bar, never enough to wrap the row.
+// Enough of a value to recognise it in a crumb or chip, never enough to wrap the row.
 function clip(str, n) {
   const s = String(str || '').trim().replace(/\s+/g, ' ');
   return !s ? '' : (s.length > n ? s.slice(0, n - 1) + '…' : s);
 }
+// One tray under the page. Only the open one renders — see editSecOpen.
+function ttTray(key, title, note, inner) {
+  if (editSecOpen !== key) return '';
+  return `
+      <div class="tt-tray" data-tray="${key}">
+        ${title ? `<div class="tt-tray-t">${escapeHtml(title)}</div>` : ''}
+        ${inner}
+        ${note ? `<div class="tt-tray-note">${escapeHtml(note)}</div>` : ''}
+      </div>`;
+}
+// A toolbar button that opens its tray. `label` is markup — callers escape it.
+function ttToolHTML(key, icon, label, sumKey) {
+  const open = editSecOpen === key;
+  return `<button class="tt-tool${open ? ' on' : ''}" data-act="editSec" data-sec="${key}" aria-expanded="${open}">${icon}<span${sumKey ? ` data-sum="${sumKey}"` : ''}>${label}</span></button>`;
+}
+// "Every day", "Weekdays", "Mon, Wed, Fri" — a habit's version of a due date.
+function daysSummaryText(days) {
+  const d = (Array.isArray(days) && days.length === 7) ? days.map(Boolean) : [true, true, true, true, true, true, true];
+  const n = d.filter(Boolean).length;
+  if (n === 7) return 'Every day';
+  if (!n) return 'No days';
+  if (n === 5 && !d[0] && !d[6]) return 'Weekdays';
+  if (n === 2 && d[0] && d[6]) return 'Weekends';
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].filter((x, i) => d[i]).join(', ');
+}
 
-// Inline "blown-up" habit editor (full create/edit on the Habits screen)
+function habitEditHeadHTML(h, lvls) {
+  const where = `${h.section === 'extra' ? '✨ Extra' : '🗓️ Daily'} · ${h.loadout || currentLoadout()}`;
+  const menu = !editMoreOpen ? '' : `
+        <div class="tt-menu" role="menu">
+          <button data-act="editSec" data-sec="repeats">↻ Repeats<small>${h.repeatable ? `up to ${h.cap}/day` : 'off'}</small></button>
+          <button data-act="editSec" data-sec="why">💭 Why it matters</button>
+          <button data-act="editSec" data-sec="where">🗂️ Section &amp; loadout</button>
+          <button data-act="addTier">🎚 Difficulty tiers<small>${lvls ? lvls.length : 'none'}</small></button>
+          <button data-act="copyHabit">⧉ Copy from another habit</button>
+          <hr>
+          <button data-act="graduate">🎓 Graduate<small>keeps its history</small></button>
+          <button data-act="delHabit" class="danger">🗑 Delete</button>
+        </div>`;
+  return `
+      <div class="tt-head">
+        <button class="tt-icon" data-act="closeEdit" aria-label="Done" title="Done">‹</button>
+        <button class="tt-crumb" data-act="editSec" data-sec="where">${escapeHtml(where)}<span class="tt-caret">⌄</span></button>
+        <span class="tt-spacer"></span>
+        <button class="tt-icon" data-act="addTier" aria-label="Difficulty tiers" title="Difficulty tiers">🎚${lvls ? `<i>${lvls.length}</i>` : ''}</button>
+        <button class="tt-icon" data-act="editMore" aria-label="More" aria-expanded="${editMoreOpen}">⋯</button>
+        ${menu}
+      </div>
+      ${ttTray('where', 'Section & loadout', 'Daily habits are your everyday rotation; Extra ones are optional bonuses that never break a streak. The loadout decides which day-setups this habit shows up in.', `
+        <div class="tt-tray-row">
+          <select class="sect-in" data-f="section" title="Section">
+            <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
+            <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
+          </select>
+          <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
+        </div>`)}
+      ${ttTray('repeats', 'Repeats', 'A repeatable habit can be completed more than once a day and pays out every time, up to the cap. Its subtasks start fresh for each round.', `
+        <div class="tt-tray-row">
+          <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
+          <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
+        </div>`)}
+      ${ttTray('why', 'Why it matters', 'Adds to the identity’s purpose. Your AI coach reads it alongside the description.', `
+        <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional)">`)}`;
+}
+// Check · when · tier · reps — the top line of every habit page.
+function habitCheckRowHTML(h, lvl) {
+  const cap = capOf(h), dc = doneCount(h), done = dc >= cap;
+  const pin = Number.isFinite(h.scheduledMin) ? h.scheduledMin : null;
+  const when = daysSummaryText(h.days) + (pin != null ? ` · ⏰ ${fmtMinOfDay(pin)}` : '');
+  return `
+      <div class="tt-check-row">
+        <button class="tt-check${done ? ' on' : ''}" data-act="editDone" aria-label="${done ? 'Done today' : 'Complete'}">${done ? '✓' : ''}</button>
+        <button class="tt-when" data-act="editSec" data-sec="when">📅 ${escapeHtml(when)}</button>
+        ${lvl ? `<span class="tt-tier" style="color:${lvl.color}">${escapeHtml(lvl.label.toUpperCase())}</span>` : ''}
+        ${h.repeatable ? `<span class="tt-prog">${dc}/${cap}</span>` : ''}
+      </div>`;
+}
+// Days + an optional pinned start time. Habit-wide, so every tier page shows the same tray.
+function habitWhenTrayHTML(h) {
+  const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
+  const pin = Number.isFinite(h.scheduledMin) ? h.scheduledMin : null;
+  const val = pin == null ? '' : `${String(Math.floor(pin / 60)).padStart(2, '0')}:${String(pin % 60).padStart(2, '0')}`;
+  return ttTray('when', 'Repeat on', 'The days this habit is on your list. A start time pins it on the Schedule instead of guessing from your history.', `
+        <span class="day-picker">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>
+        <div class="tt-tray-row">
+          <span class="tt-lbl">⏰ Start at</span>
+          <input class="tt-in" data-f="scheduledTime" type="time" value="${val}">
+          ${pin != null ? `<button class="tt-link" data-act="clearPin">✕ clear</button>` : ''}
+        </div>`);
+}
+
+// The habit's own page (its base level, when it has tiers).
 function habitEditHTML(h, pageIdx) {
-  const sec = editSecHTML;
   const lvls = habitLevels(h);
   const basePage = lvls ? lvls.findIndex(l => l.base) : 0;
   const page = Number.isFinite(pageIdx) ? pageIdx : basePage;
-  const addTierBtn = `<button class="btn ghost sm" data-act="addTier">➕ Add tier</button>
-       <span class="tier-hint">${lvls ? `${lvls.length} tiers · tap to reorder or add` : 'split this habit into easier / harder versions'}</span>`;
-  const baseLvl = lvls ? lvls[basePage] : null;
-  const tierHead = lvls ? `<div class="tier-head"><span style="color:${baseLvl.color}">${baseLvl.label.toUpperCase()}</span> <span class="tier-hint">· the original · ‹ swipe ›</span></div>` : '';
-  const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
-  const dayPicker = `<span class="day-picker">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
+  const lvl = lvls ? lvls[basePage] : null;
   return `
-    <div class="hedit" data-id="${h.id}" data-page="${page}">
-      ${tierHead}
-      <div class="hedit-r">
-        <input class="emoji-in" data-f="emoji" maxlength="4" value="${escapeHtml(h.emoji)}">
-        <input class="name-in" data-f="name" value="${escapeHtml(h.name)}" placeholder="Habit name">
+    <div class="hedit tt-page" data-id="${h.id}" data-page="${page}">
+      ${habitCheckRowHTML(h, lvl)}
+      ${habitWhenTrayHTML(h)}
+      <div class="tt-title-row">
+        <input class="emoji-in tt-emoji" data-f="emoji" maxlength="4" value="${escapeHtml(h.emoji)}" aria-label="Icon">
+        <input class="name-in tt-title" data-f="name" value="${escapeHtml(h.name)}" placeholder="What’s the habit?" enterkeyhint="done">
       </div>
-      <div class="hedit-r">
-        <select class="sect-in" data-f="category" title="Identity (drives Pass goals)">${categoryOptionsHTML(h.category)}</select>
-        <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
-      </div>
-      <div class="hedit-r hedit-days">${dayPicker}</div>
-      ${editMoreOpen ? `
-      <div class="hedit-more">
-        ${sec('where', '🗓️ Section & loadout', `${h.section === 'extra' ? 'Extra' : 'Daily'} · ${h.loadout || currentLoadout()}`,
-          'Daily habits are your everyday rotation; Extra ones are optional bonuses that never break a streak. The loadout decides which day-setups this habit shows up in.', `
-          <div class="hedit-r">
-            <select class="sect-in" data-f="section" title="Section">
-              <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
-              <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
-            </select>
-            <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
-          </div>`)}
-        ${sec('details', '📝 Details', clip(h.desc, 24) || 'none',
-          'Spell out what this habit actually involves, and why it matters to you. Your AI coach reads both when it suggests tiers and modes.', `
-          <div class="hedit-r hedit-tall">
-            <textarea class="name-in desc-in" data-f="desc" rows="2" placeholder="What does this habit actually involve?">${escapeHtml(h.desc || '')}</textarea>
-          </div>
-          <div class="hedit-r">
-            <input class="name-in" data-f="why" value="${escapeHtml(h.why || '')}" placeholder="Why this habit specifically? (optional, adds to the identity's purpose)">
-          </div>`)}
-        ${sec('repeats', '↻ Repeats', h.repeatable ? `up to ${h.cap}/day` : 'off',
-          'A repeatable habit can be completed more than once a day and pays out every time, up to the cap.', `
-          <div class="hedit-r">
-            <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
-            <span class="pill cap-wrap" style="${h.repeatable ? '' : 'display:none'}">cap <input class="num-in" data-f="cap" type="number" min="1" max="99" value="${h.cap}">/day</span>
-          </div>`)}
-        ${sec('duration', '⏱ Expected duration', durationSummary(h),
-          'Roughly how long this takes, used for its length on the Schedule and the “usually ~Xm” hint. Filled in from the name automatically — type over it and it stays put.', `
-          <div class="hedit-r">
-            <span class="pill" title="Estimate only — every habit can be played/finished with ▶ regardless of this number.">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" value="${h.timedMinutes || 0}"> min expected</span>
-            <span class="timer-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0, h.timedAuto)}</span>
-          </div>`)}
-        ${sec('tiers', '🎚️ Difficulty tiers', lvls ? `${lvls.length} tiers` : 'none',
-          'Split one habit into easier and harder versions — then swipe between them on the day, and take the one you can actually do.', `
-          <div class="hedit-r">${addTierBtn}</div>`)}
-        ${sec('copy', '⧉ Copy from another habit', '',
-          'Fill this habit in from one you already have, including habits in your other loadouts. Its schedule and section stay yours.', `
-          <div class="hedit-r">
-            <button class="btn ghost sm" data-act="copyHabit">⧉ Copy from…</button>
-          </div>`)}
-        ${sec('retire', '🗄️ Archive or delete', '',
-          'Graduate retires a habit but keeps its history and streak records. Delete removes it for good.', `
-          <div class="hedit-r">
-            <button class="btn ghost sm" data-act="graduate">🎓 Graduate</button>
-            <button class="btn ghost sm" data-act="delHabit">🗑 Delete</button>
-          </div>`)}
-      </div>` : ''}
-      <div class="hedit-r hedit-actions">
-        <button class="btn green sm" data-act="closeEdit">✓ Done</button>
-        <button class="btn ghost sm edit-more-btn" data-act="editMore" aria-expanded="${editMoreOpen}">${editMoreOpen ? '⌃ Less' : '⋯ More'}</button>
+      <span class="timer-suggest tt-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0, h.timedAuto)}</span>
+      <textarea class="desc-in tt-desc" data-f="desc" rows="2" placeholder="Description">${escapeHtml(h.desc || '')}</textarea>
+      ${childrenSectionHTML('habit', h, lvls ? page : undefined)}
+      ${ttTray('cat', 'Identity', 'Drives Pass goals and happy hours.', `
+        <select class="sect-in" data-f="category" title="Identity">${categoryOptionsHTML(h.category)}</select>`)}
+      ${ttTray('reward', 'Reward', lvls ? 'What this tier pays — each tier has its own.' : '', `
+        <div class="tt-tray-row"><span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" inputmode="numeric" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span></div>`)}
+      ${ttTray('dur', 'Expected length', 'Roughly how long this takes — its length on the Schedule. Filled in from the name; type over it and it stays put.', `
+        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" inputmode="numeric" value="${h.timedMinutes || 0}"> min</span></div>`)}
+      <div class="tt-toolbar">
+        ${ttToolHTML('cat', '🏷', escapeHtml(h.category || 'Unsorted'))}
+        <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
+        ${ttToolHTML('reward', '🪙', String(h.reward))}
+        ${ttToolHTML('dur', '⏱', h.timedMinutes ? fmtMins(h.timedMinutes) : '', 'durShort')}
       </div>
       ${lvls ? tierDotsHTML(lvls, page) : ''}
     </div>`;
 }
 
-
-// Editor page for one of the extra tiers: just a title + token payout.
+// Page for one of the extra tiers: its own title, parts, payout and length.
 function tierEditHTML(h, page) {
   const lvls = habitLevels(h);
   const lvl = lvls[page];
@@ -4822,22 +5060,23 @@ function tierEditHTML(h, page) {
   const baseIdx = lvls.findIndex(l => l.base);
   const flavor = page < baseIdx ? 'lighter version' : 'harder version';
   return `
-    <div class="hedit" data-id="${h.id}" data-page="${page}">
-      <div class="tier-head"><span style="color:${lvl.color}">${lvl.label.toUpperCase()}</span> <span class="tier-hint">‹ swipe ›</span></div>
-      <div class="hedit-r">
-        <input class="name-in" data-tf="name" value="${escapeHtml(t.name)}" placeholder="e.g. ${escapeHtml(h.name)} — ${flavor}">
-        <span class="pill">🪙 <input class="num-in" data-tf="reward" type="number" min="0" max="999" value="${t.reward}"> tokens</span>
+    <div class="hedit tt-page" data-id="${h.id}" data-page="${page}">
+      ${habitCheckRowHTML(h, lvl)}
+      ${habitWhenTrayHTML(h)}
+      <div class="tt-title-row">
+        <input class="name-in tt-title" data-tf="name" value="${escapeHtml(t.name)}" placeholder="${escapeHtml(h.name)} — ${flavor}" enterkeyhint="done">
       </div>
-      <div class="hedit-r">
-        <span class="pill" title="0 = not timed. When set, this tier shows a ▶ timer instead of a checkbox.">⏱ <input class="num-in" data-tf="minutes" type="number" min="0" max="999" value="${t.minutes || 0}"> min timer</span>
-        <span class="timer-suggest">${timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0)}</span>
-      </div>
-      <div class="hedit-r">
-        <button class="btn ghost sm" data-act="addTier">➕ Add tier</button>
-        <button class="btn ghost sm" data-act="removeTier">🗑 Remove tier</button>
-      </div>
-      <div class="hedit-r hedit-actions">
-        <button class="btn green sm" data-act="closeEdit">✓ Done</button>
+      <span class="timer-suggest tt-suggest">${timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0)}</span>
+      ${childrenSectionHTML('habit', h, page)}
+      ${ttTray('reward', 'Reward', 'What this tier pays.', `
+        <div class="tt-tray-row"><span class="pill">🪙 <input class="num-in" data-tf="reward" type="number" min="0" max="999" inputmode="numeric" value="${t.reward}"> tokens</span></div>`)}
+      ${ttTray('dur', 'Expected length', 'How long this version takes.', `
+        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-tf="minutes" type="number" min="0" max="999" inputmode="numeric" value="${t.minutes || 0}"> min</span></div>`)}
+      <div class="tt-toolbar">
+        <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
+        ${ttToolHTML('reward', '🪙', String(t.reward))}
+        ${ttToolHTML('dur', '⏱', t.minutes ? fmtMins(t.minutes) : '')}
+        <button class="tt-tool end" data-act="removeTier" title="Remove this tier">🗑<span>tier</span></button>
       </div>
       ${tierDotsHTML(lvls, page)}
     </div>`;
@@ -5125,7 +5364,11 @@ function oneoffCardHTML(t) {
   }
   // One line, same as habits: chips trail the name instead of a second row. The category
   // still reads off the left border stripe, so its pill is redundant here.
-  const chips = (timerChip || '')
+  const liveKid = t.timer ? null : (t.children || []).find(c => c && c.timer);
+  const kp = childProgress('task', t);
+  const chips = (timerChip || (liveKid
+      ? `<span class="row-chip live">⏱ ${escapeHtml(clip(liveKid.name, 14))} <b data-timer-elapsed-child="${liveKid.id}">${fmtTimerSec(timerElapsedSec(liveKid.timer))}</b>${liveKid.timer.pausedAt ? ' ⏸' : ''}</span>` : ''))
+    + (kp.total && !liveKid ? `<span class="row-chip">☑${kp.done}/${kp.total}</span>` : '')
     + dueChipHTML(t)
     + (iter > 1 ? `<span class="row-chip">${prog}/${iter}</span>` : '')
     + (picked ? `<span class="row-chip spin">🎡+50%</span>` : '');
@@ -5222,37 +5465,62 @@ function renderTaskMatrix() {
     </div>`;
 }
 
-// Inline "blown-up" one-off editor on the Tasks screen (tap a row to open, like habits)
+// The quest editor — same layout as a habit's, minus tiers and days.
 function oneoffEditHTML(t) {
+  const ti = TASK_TIERS[t.tier] || TASK_TIERS.medium;
+  const q = quadrantOf(t);
+  const iter = Math.max(1, t.iterations || 1), prog = t.progress || 0;
+  const menu = !editMoreOpen ? '' : `
+        <div class="tt-menu" role="menu">
+          <button data-act="editSec" data-sec="iter">× Repeat count<small>${iter > 1 ? `${iter} times` : 'once'}</small></button>
+          <button data-act="editSec" data-sec="quad">⚑ Urgency &amp; importance<small>${q ? escapeHtml(q.label) : 'unsorted'}</small></button>
+          <hr>
+          <button data-act="delOneoffEdit" class="danger">🗑 Delete</button>
+        </div>`;
   return `
-    <div class="hedit qedit" data-id="${t.id}">
-      <div class="hedit-r">
-        <input class="name-in" data-of="name" value="${escapeHtml(t.name)}" placeholder="Quest name">
+    <div class="hedit qedit tt-wrap" data-id="${t.id}">
+      <div class="tt-head">
+        <button class="tt-icon" data-act="closeOneoffEdit" aria-label="Done" title="Done">‹</button>
+        <button class="tt-crumb" data-act="editSec" data-sec="qtier">${escapeHtml(ti.label)} · +${tierReward(t.tier)} 🪙<span class="tt-caret">⌄</span></button>
+        <span class="tt-spacer"></span>
+        <button class="tt-icon tt-flag" data-act="editSec" data-sec="quad" aria-label="Urgency and importance" title="${q ? escapeHtml(q.label) : 'Urgency &amp; importance'}" style="--qf:${q ? q.color : 'var(--ink-dim)'}">⚑</button>
+        <button class="tt-icon" data-act="editMore" aria-label="More" aria-expanded="${editMoreOpen}">⋯</button>
+        ${menu}
       </div>
-      <div class="hedit-r">
-        <select class="sect-in" data-of="tier" title="Difficulty tier (sets the token reward)">
-          ${Object.entries(TASK_TIERS).map(([k, ti]) => `<option value="${k}" ${(t.tier || 'medium') === k ? 'selected' : ''}>${ti.label} +${tierReward(k)} 🪙</option>`).join('')}
-        </select>
-        <select class="sect-in" data-of="category" title="Category (drives Pass goals & happy hours)">${categoryOptionsHTML(t.category || 'Unsorted')}</select>
-        <span class="pill">×<input class="num-in" data-of="iterations" type="number" min="1" max="99" value="${t.iterations}"> to finish</span>
+      ${ttTray('qtier', 'Difficulty', 'Sets what the quest pays.', `
+        <select class="sect-in" data-of="tier" title="Difficulty tier">
+          ${Object.entries(TASK_TIERS).map(([k, x]) => `<option value="${k}" ${(t.tier || 'medium') === k ? 'selected' : ''}>${x.label} +${tierReward(k)} 🪙</option>`).join('')}
+        </select>`)}
+      ${ttTray('quad', 'Urgency & importance', '', `
+        <div class="tt-tray-row qgrid-pick">
+          ${EISENHOWER.map(x => `<button class="btn ghost sm quad-btn ${t.quadrant === x.key ? 'sel' : ''}" data-quad="${x.key}" title="${escapeHtml(x.hint)}">${x.icon} ${escapeHtml(x.label)}</button>`).join('')}
+          <button class="btn ghost sm quad-btn ${!t.quadrant ? 'sel' : ''}" data-quad="">— None</button>
+        </div>`)}
+      ${ttTray('iter', 'Repeat count', 'How many times this has to be done before the quest is finished. Each one pays.', `
+        <div class="tt-tray-row"><span class="pill">×<input class="num-in" data-of="iterations" type="number" min="1" max="99" inputmode="numeric" value="${t.iterations}"> to finish</span></div>`)}
+      <div class="tt-check-row">
+        <button class="tt-check" data-act="editDoneQuest" aria-label="Complete"></button>
+        <button class="tt-when${t.due ? '' : ' none'}" data-act="editSec" data-sec="when">📅 ${t.due ? escapeHtml(fmtPlanDate(t.due)) : 'Due date'}</button>
+        ${iter > 1 ? `<span class="tt-prog">${prog}/${iter}</span>` : ''}
       </div>
-      <div class="hedit-r hedit-tall">
-        <textarea class="name-in desc-in" data-of="desc" rows="2" placeholder="What does this quest actually involve? (optional)">${escapeHtml(t.desc || '')}</textarea>
+      ${ttTray('when', 'Due date', '', `
+        <div class="tt-tray-row">
+          <input class="date-in tt-in" data-of="due" type="date" value="${t.due || ''}">
+          ${t.due ? `<button class="tt-link" data-act="clearDue">✕ clear</button>` : ''}
+        </div>`)}
+      <div class="tt-title-row">
+        <input class="name-in tt-title" data-of="name" value="${escapeHtml(t.name)}" placeholder="What’s the quest?" enterkeyhint="done">
       </div>
-      <div class="hedit-r">
-        <span class="pill">📅 <input class="date-in" data-of="due" type="date" value="${t.due || ''}"></span>
-        ${t.due ? `<button class="btn ghost sm" data-act="clearDue" title="Remove the due date">✕ date</button>` : ''}
-        <span class="pill" title="Roughly how long this takes — sets its length on the Schedule. Guessed from the name until you type your own.">⏱ <input class="num-in" data-of="timedMinutes" type="number" min="0" max="999" value="${t.timedMinutes || 0}"> min</span>
-      </div>
-      <div class="hedit-r qgrid-pick">
-        <div class="subtle" style="flex-basis:100%">Urgency &amp; importance</div>
-        ${EISENHOWER.map(q => `
-          <button class="btn ghost sm quad-btn ${t.quadrant === q.key ? 'sel' : ''}" data-quad="${q.key}" title="${escapeHtml(q.hint)}">${q.icon} ${escapeHtml(q.label)}</button>`).join('')}
-        <button class="btn ghost sm quad-btn ${!t.quadrant ? 'sel' : ''}" data-quad="">— None</button>
-      </div>
-      <div class="hedit-r hedit-actions">
-        <button class="btn ghost sm" data-act="delOneoffEdit">🗑 Delete</button>
-        <button class="btn green sm" data-act="closeOneoffEdit">✓ Done</button>
+      <textarea class="desc-in tt-desc" data-of="desc" rows="2" placeholder="Description">${escapeHtml(t.desc || '')}</textarea>
+      ${childrenSectionHTML('task', t)}
+      ${ttTray('cat', 'Identity', 'Drives Pass goals and happy hours.', `
+        <select class="sect-in" data-of="category" title="Identity">${categoryOptionsHTML(t.category || 'Unsorted')}</select>`)}
+      ${ttTray('dur', 'Expected length', 'Roughly how long this takes — its length on the Schedule. Guessed from the name until you type your own.', `
+        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-of="timedMinutes" type="number" min="0" max="999" inputmode="numeric" value="${t.timedMinutes || 0}"> min</span></div>`)}
+      <div class="tt-toolbar">
+        ${ttToolHTML('cat', '🏷', escapeHtml(t.category || 'Unsorted'))}
+        <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
+        ${ttToolHTML('dur', '⏱', t.timedMinutes ? fmtMins(t.timedMinutes) : '', 'durShort')}
       </div>
     </div>`;
 }
@@ -5681,6 +5949,8 @@ function flushNameSettle() {
     if (mi) mi.value = item.timedMinutes || 0;
     const sum = box.querySelector('[data-sum="duration"]');
     if (sum) sum.textContent = durationSummary(item);
+    const ds = box.querySelector('[data-sum="durShort"]');     // the editor toolbar's ⏱ label
+    if (ds) ds.textContent = item.timedMinutes ? fmtMins(item.timedMinutes) : '';
   });
   save();
 }
@@ -5814,9 +6084,361 @@ function finishTimedOneoff(id) {
                               pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0),
                               segments: timerSegments(t).map(s => ({ s: s.s, e: s.e })) });
 }
+/* =================================================================
+   SUBTASKS — a habit or quest made of parts.
+
+   "Cello 30 mins" is really "technique 15" + "repertoire 15". Each part is a child with
+   its own checkbox and its own stopwatch, and finishing every part finishes the whole —
+   so the title stays short and the detail lives where it's used.
+
+   A tiered habit keeps a SEPARATE list per difficulty tier (the easy version of cello is
+   not the hard version with fewer ticks), so the list that counts today is always the
+   current tier's. Children are plain data on the item (see normalizeChildren); which one
+   the editor sheet has open is `editingChildId`, declared beside the other editing ids.
+   ================================================================= */
+
+// The list on one page of an item, WITHOUT creating anything — safe to call from a render.
+function childrenOf(kind, item, page) {
+  if (!item) return [];
+  if (kind === 'task') return Array.isArray(item.children) ? item.children : [];
+  const lvls = habitLevels(item);
+  if (!lvls) return Array.isArray(item.children) ? item.children : [];
+  const lvl = lvls[clamp(Number.isFinite(page) ? page : curLevelIndex(item), 0, lvls.length - 1)];
+  const owner = lvl.base ? item : item.tiers[lvl.tIdx];
+  return owner && Array.isArray(owner.children) ? owner.children : [];
+}
+// Same, but hands back the live array (creating it) so it can be pushed into.
+function childListFor(kind, item, page) {
+  let owner = item;
+  if (kind === 'habit') {
+    const lvls = habitLevels(item);
+    if (lvls) {
+      const lvl = lvls[clamp(Number.isFinite(page) ? page : curLevelIndex(item), 0, lvls.length - 1)];
+      if (!lvl.base) owner = item.tiers[lvl.tIdx];
+    }
+  }
+  if (!Array.isArray(owner.children)) owner.children = [];
+  return owner.children;
+}
+// Every child anywhere, with the context needed to act on it. Children are few, so a scan
+// beats an index that could drift out of step with the save.
+function findChild(id) {
+  for (const h of state.habits) {
+    for (const list of [h.children, ...(h.tiers || []).map(t => t && t.children)]) {
+      const c = (list || []).find(x => x && x.id === id);
+      if (c) return { kind: 'habit', item: h, list, child: c };
+    }
+  }
+  for (const t of state.oneoffs) {
+    const c = (t.children || []).find(x => x && x.id === id);
+    if (c) return { kind: 'task', item: t, list: t.children, child: c };
+  }
+  return null;
+}
+// Which difficulty page a habit child's list sits on (-1 = the habit has no tiers).
+function childPage(f) {
+  const lvls = f.kind === 'habit' ? habitLevels(f.item) : null;
+  if (!lvls) return -1;
+  return lvls.findIndex((l, i) => childrenOf('habit', f.item, i) === f.list);
+}
+// Ticking or timing a part of a tier means that's the version being done today, so the
+// row's difficulty follows — otherwise finishing every part of "easy" while the card sat
+// on "hard" would complete nothing.
+function adoptChildTier(f) {
+  const p = childPage(f);
+  if (p >= 0 && p !== curLevelIndex(f.item)) f.item.curTier = p;
+}
+// A habit's subtask is done for TODAY; a quest's stays done until the quest moves on.
+function childIsDone(kind, c) { return kind === 'habit' ? c.doneOn === todayStr() : !!c.doneOn; }
+function childProgress(kind, item, page) {
+  const list = childrenOf(kind, item, page);
+  return { done: list.filter(c => childIsDone(kind, c)).length, total: list.length };
+}
+// How long this part usually takes: its own timed sittings once there are two, the number
+// typed in until then. The same "real runs first" rule the parent's duration follows.
+function childExpectedMin(c) {
+  const secs = (c.runs || []).map(r => r.sec).filter(s => s > 0).slice(-8);
+  if (secs.length >= 2) return Math.max(1, Math.round(medianMinute(secs) / 60));
+  return c.minutes || 0;
+}
+// Every child stopwatch that exists right now — for the reminders and the 1s readouts.
+function runningChildTimers() {
+  const out = [];
+  const visit = (kind, item, list) => (list || []).forEach(c => { if (c && c.timer) out.push({ kind, item, c }); });
+  state.habits.forEach(h => { visit('habit', h, h.children); (h.tiers || []).forEach(t => visit('habit', h, t && t.children)); });
+  state.oneoffs.forEach(t => visit('task', t, t.children));
+  return out;
+}
+
+/* "technique 15 mins" -> technique / 15,  "rep for 15" -> rep / 15,  "scales" -> scales / 0.
+   A bare number only counts after "for": "Etude 12" and "Chapter 3" are names, not
+   durations, and guessing otherwise would quietly eat the part that identifies them. */
+function parseChildQuickAdd(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return { name: '', minutes: 0 };
+  let s = raw, minutes = detectMinutes(raw);
+  if (minutes) {
+    s = s.replace(/\b(?:for\s+)?\d+(?:\.\d+)?\s*(?:h(?:ou)?rs?|h|min(?:ute)?s?|m)\b/gi, ' ');
+  } else {
+    const bare = /\bfor\s+(\d{1,3})\s*$/i.exec(s);
+    if (bare) { minutes = clamp(parseInt(bare[1], 10), 0, 999); s = s.slice(0, bare.index); }
+  }
+  s = s.replace(/\s+/g, ' ').replace(/[\s\-–—:,]+$/, '').trim();
+  return { name: s || raw, minutes };
+}
+
+function addChild(kind, itemId, page, text) {
+  const item = kind === 'task' ? state.oneoffs.find(x => x.id === itemId) : state.habits.find(x => x.id === itemId);
+  if (!item) return null;
+  const { name, minutes } = parseChildQuickAdd(text);
+  if (!name) return null;
+  const c = { id: uid(), name, minutes, doneOn: null, timer: null, runs: [] };
+  childListFor(kind, item, page).push(c);
+  save();
+  return c;
+}
+// Both list renders repaint their rows AND the open editor sheet (via syncEditorSheet).
+function refreshAfterChild() { renderHabits(); renderOneoffs(); }
+
+function toggleChildDone(id) {
+  const f = findChild(id); if (!f) return;
+  const { kind, item, child: c } = f;
+  if (childIsDone(kind, c)) { c.doneOn = null; SFX.click(); save(); refreshAfterChild(); return; }
+  if (c.timer) { finishChildTimer(id); return; }   // ticking a running part = "done, and here's how long"
+  adoptChildTier(f);
+  c.doneOn = todayStr();
+  logEvent('subtask_completed', { entityType: kind, entityId: item.id, name: item.name,
+    childId: c.id, childName: c.name, completionMethod: 'checkmark' });
+  SFX.click();
+  afterChildDone(f);
+}
+function afterChildDone(f) {
+  save();
+  const list = childrenOf(f.kind, f.item);          // the list that counts today
+  if (list.includes(f.child) && list.length && list.every(c => childIsDone(f.kind, c))) {
+    completeFromChildren(f.kind, f.item, list);
+    return;
+  }
+  refreshAfterChild();
+}
+/* Every part is done, so the whole is. The parent's time is the SUM of its parts' timed
+   sittings — but only when every part was timed. Two stopwatch runs plus a checkmark
+   would report a length the habit never actually had, and the Similar Day Engine would
+   learn it. Each sitting pays into exactly one completion (`used`), so a repeatable
+   habit's second round doesn't count the first round's minutes again. */
+function completeFromChildren(kind, item, list) {
+  const today = todayStr();
+  const pending = c => (c.runs || []).filter(r => !r.used && (kind === 'task' || r.date === today));
+  let timing;
+  if (list.every(c => pending(c).length)) {
+    const runs = list.flatMap(pending);
+    timing = { actualElapsedSec: runs.reduce((s, r) => s + r.sec, 0), pauseCount: 0, totalPausedSec: 0,
+               segments: runs.flatMap(r => r.segs || []).sort((a, b) => a.s - b.s) };
+  }
+  const spent = list.flatMap(pending);
+  if (kind === 'habit') {
+    if (isComplete(item)) { save(); refreshAfterChild(); return; }
+    completeHabit(item.id, timing);
+    // A repeatable habit with reps left starts its next round with a clean list.
+    if (!isComplete(item)) list.forEach(c => { c.doneOn = null; });
+  } else {
+    completeOneoff(item.id, false, timing);
+    // Still here = more iterations to go, and the next one starts unticked.
+    if (state.oneoffs.some(x => x.id === item.id)) list.forEach(c => { c.doneOn = null; });
+  }
+  // Spent AFTER the completion, whose undo snapshot is taken on entry — so undoing it
+  // hands these sittings back for the next time every part gets done.
+  spent.forEach(r => { r.used = true; });
+  save(); refreshAfterChild();
+}
+
+function startChildTimer(id) {
+  const f = findChild(id); if (!f) return;
+  const c = f.child;
+  if (c.timer || childIsDone(f.kind, c)) return;
+  adoptChildTier(f);
+  const now = Date.now();
+  c.timer = { startedAt: now, pausedAt: null, pausedTotalSec: 0, pauseCount: 0, segments: [{ s: now, e: null }] };
+  logEvent('subtask_started', { entityType: f.kind, entityId: f.item.id, name: f.item.name, childId: c.id, childName: c.name });
+  SFX.click(); save(); refreshAfterChild();
+}
+function toggleChildTimerPause(id) {
+  const f = findChild(id); if (!f || !f.child.timer) return;
+  const t = f.child.timer, now = Date.now();
+  // Same segment rules as a habit's own stopwatch — resuming opens a new sitting.
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); }
+  else { t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now); }
+  SFX.click(); save(); refreshAfterChild();
+}
+// "I never meant to start that" — no run, no tick, and the usual 8-second undo.
+function cancelChildTimer(id) {
+  const f = findChild(id); if (!f || !f.child.timer) return;
+  const snap = undoSnapshot();
+  f.child.timer = null;
+  SFX.click(); save(); refreshAfterChild();
+  offerUndo(snap, `↺ ${f.child.name || 'subtask'}`);
+}
+function finishChildTimer(id) {
+  const f = findChild(id); if (!f || !f.child.timer) return;
+  const c = f.child, t = c.timer, now = Date.now();
+  if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; }
+  closeSegment(t, now);
+  const sec = Math.round(timerElapsedSec(t));
+  c.runs = Array.isArray(c.runs) ? c.runs : [];
+  c.runs.push({ date: todayStr(), sec, used: false,
+                segs: timerSegments(t).filter(s => Number.isFinite(s.e)).map(s => ({ s: s.s, e: s.e })) });
+  if (c.runs.length > 30) c.runs = c.runs.slice(-30);
+  c.timer = null;
+  adoptChildTier(f);
+  c.doneOn = todayStr();
+  logEvent('subtask_completed', { entityType: f.kind, entityId: f.item.id, name: f.item.name,
+    childId: c.id, childName: c.name, completionMethod: 'stopwatch', elapsedSec: sec, expectedMin: c.minutes || null });
+  toast(`✓ ${c.name} — ${fmtMins(Math.max(1, Math.round(sec / 60)))}`, 'var(--green)');
+  SFX.click();
+  afterChildDone(f);
+}
+function deleteChild(id) {
+  const f = findChild(id); if (!f) return;
+  const snap = undoSnapshot();
+  const i = f.list.indexOf(f.child);
+  if (i >= 0) f.list.splice(i, 1);
+  if (editingChildId === id) editingChildId = null;
+  SFX.click(); save(); refreshAfterChild();
+  offerUndo(snap, `🗑 ${f.child.name || 'subtask'}`);
+}
+
+/* ---- Subtask markup (lives inside the editor, under the description) ---- */
+function childRowHTML(kind, c) {
+  const done = childIsDone(kind, c);
+  const exp = childExpectedMin(c);
+  const last = (c.runs || []).length ? c.runs[c.runs.length - 1] : null;
+  const meta = c.timer ? ''
+    : (done && last && last.date === todayStr()) ? `took ${fmtMins(Math.max(1, Math.round(last.sec / 60)))}`
+    : (exp ? `~${fmtMins(exp)}` : '');
+  let right = '';
+  if (c.timer) {
+    const paused = !!c.timer.pausedAt;
+    right = `<b class="kid-live" data-timer-elapsed-child="${c.id}">${fmtTimerSec(timerElapsedSec(c.timer))}</b>
+      <button class="kid-btn" data-act="kidPause" aria-label="${paused ? 'Resume' : 'Pause'}">${paused ? '▶' : '⏸'}</button>
+      <button class="kid-btn dim" data-act="kidCancel" aria-label="Undo start" title="Undo start — nothing logged">↺</button>
+      <button class="kid-btn go" data-act="kidFinish" aria-label="Finish">⏹</button>`;
+  } else if (!done) {
+    right = `<button class="kid-btn play" data-act="kidStart" aria-label="Start timer">▶</button>`;
+  }
+  return `
+    <div class="kid${done ? ' done' : ''}${c.timer ? ' live' : ''}" data-kid="${c.id}">
+      <button class="kid-check" data-act="kidToggle" aria-label="${done ? 'Mark not done' : 'Mark done'}">${done ? '✓' : ''}</button>
+      <button class="kid-name" data-act="kidOpen"><span class="kid-n">${escapeHtml(c.name || 'Untitled')}</span>${meta ? `<span class="kid-meta">${escapeHtml(meta)}</span>` : ''}</button>
+      ${right}
+    </div>`;
+}
+function childrenSectionHTML(kind, item, page) {
+  const list = childrenOf(kind, item, page);
+  const done = list.filter(c => childIsDone(kind, c)).length;
+  const head = list.length
+    ? `<div class="kids-head"><span>Subtasks</span><span class="kids-count">${done}/${list.length}</span></div>` : '';
+  return `
+    <div class="kids" data-kind="${kind}" data-page="${Number.isFinite(page) ? page : ''}">
+      ${head}
+      ${list.map(c => childRowHTML(kind, c)).join('')}
+      <div class="kid-add">
+        <span class="kid-plus">＋</span>
+        <input class="kid-add-in" placeholder="${list.length ? 'Add another part' : 'Add a subtask — “technique 15 mins”'}" enterkeyhint="done" autocomplete="off">
+        <button class="kid-add-go" data-act="kidAdd" aria-label="Add subtask">↵</button>
+      </div>
+      ${list.length > 1 ? `<div class="kids-note">Finishing every part finishes the ${kind === 'task' ? 'quest' : 'habit'}.</div>` : ''}
+    </div>`;
+}
+// A subtask's own editor — the sheet swaps to it, and ‹ returns to the parent.
+function childEditHTML(f) {
+  const { kind, item, child: c } = f;
+  const done = childIsDone(kind, c);
+  const secs = (c.runs || []).map(r => r.sec).filter(s => s > 0);
+  const recent = (c.runs || []).slice(-5).reverse();
+  let timer = '';
+  if (c.timer) {
+    const paused = !!c.timer.pausedAt;
+    timer = `<b class="kid-live big" data-timer-elapsed-child="${c.id}">${fmtTimerSec(timerElapsedSec(c.timer))}</b>
+      <button class="kid-btn" data-act="kidPause" data-kid="${c.id}">${paused ? '▶ Resume' : '⏸ Pause'}</button>
+      <button class="kid-btn dim" data-act="kidCancel" data-kid="${c.id}">↺ Undo start</button>
+      <button class="kid-btn go" data-act="kidFinish" data-kid="${c.id}">⏹ Finish</button>`;
+  } else if (!done) {
+    timer = `<button class="kid-btn play wide" data-act="kidStart" data-kid="${c.id}">▶ Start timer</button>`;
+  }
+  return `
+    <div class="hedit tt-wrap kid-edit" data-kid="${c.id}">
+      <div class="tt-head">
+        <button class="tt-icon" data-act="kidBack" aria-label="Back">‹</button>
+        <span class="tt-crumb static">${escapeHtml(item.emoji || '')} ${escapeHtml(item.name || 'Untitled')}</span>
+        <span class="tt-spacer"></span>
+        <button class="tt-icon" data-act="kidDelete" data-kid="${c.id}" aria-label="Delete subtask" title="Delete subtask">🗑</button>
+      </div>
+      <div class="tt-check-row">
+        <button class="tt-check${done ? ' on' : ''}" data-act="kidToggle" data-kid="${c.id}" aria-label="${done ? 'Mark not done' : 'Mark done'}">${done ? '✓' : ''}</button>
+        <span class="tt-when static">${done ? (kind === 'habit' ? 'Done today' : 'Done') : 'Part of ' + escapeHtml(item.name || 'this')}</span>
+      </div>
+      <input class="name-in tt-title" data-kf="name" value="${escapeHtml(c.name)}" placeholder="Name this part">
+      <div class="tt-tray-row">
+        <span class="tt-lbl">Expected</span>
+        <input class="tt-in num" data-kf="minutes" type="number" min="0" max="999" inputmode="numeric" value="${c.minutes || 0}">
+        <span class="tt-lbl">min</span>
+      </div>
+      ${timer ? `<div class="kid-timer">${timer}</div>` : ''}
+      ${recent.length ? `
+      <div class="kid-runs">
+        <div class="tt-tray-t">Timed runs</div>
+        ${recent.map(r => `<span class="kid-run">${escapeHtml(fmtPlanDate(r.date))} · ${escapeHtml(fmtMins(Math.max(1, Math.round(r.sec / 60))))}</span>`).join('')}
+        ${secs.length >= 2 ? `<div class="tt-tray-note">Usually about ${escapeHtml(fmtMins(childExpectedMin(c)))} — its reminder counts against that.</div>` : ''}
+      </div>` : ''}
+    </div>`;
+}
+// Field edits on the subtask page. Only `input` — both fields are plain text/number.
+function onChildField(e) {
+  const kf = e.target.dataset.kf; if (!kf || e.type !== 'input') return;
+  const f = findChild(editingChildId); if (!f) return;
+  if (kf === 'minutes') f.child.minutes = clamp(parseInt(e.target.value, 10) || 0, 0, 999);
+  else if (kf === 'name') f.child.name = String(e.target.value).slice(0, 120);
+  save();
+}
+function focusKidAdd() {
+  const inp = (activeEditPane() || $('#editSheetBody'))?.querySelector('.kid-add-in') || $('#editSheetBody .kid-add-in');
+  if (inp) inp.focus();
+}
+function submitKidAdd(inp) {
+  const text = (inp && inp.value || '').trim(); if (!text) return;
+  const kids = inp.closest('.kids'); if (!kids) return;
+  const kind = kids.dataset.kind === 'task' ? 'task' : 'habit';
+  const itemId = kind === 'task' ? editingOneoffId : editingHabitId;
+  const page = kids.dataset.page === '' ? undefined : parseInt(kids.dataset.page, 10);
+  if (!addChild(kind, itemId, page, text)) return;
+  SFX.click();
+  refreshAfterChild();
+  focusKidAdd();                   // straight back into the box — adding parts is a run of them
+}
+function onKidClick(el) {
+  const act = el.dataset.act;
+  if (act === 'kidFocus') { focusKidAdd(); return; }
+  if (act === 'kidBack') { editingChildId = null; SFX.click(); renderEditSheet(); return; }
+  if (act === 'kidAdd') { submitKidAdd(el.closest('.kid-add')?.querySelector('.kid-add-in')); return; }
+  const id = el.dataset.kid || el.closest('[data-kid]')?.dataset.kid; if (!id) return;
+  if (act === 'kidOpen') { flushNameSettle(); editingChildId = id; editSecOpen = null; editMoreOpen = false; SFX.click(); renderEditSheet(); return; }
+  if (act === 'kidToggle') toggleChildDone(id);
+  else if (act === 'kidStart') startChildTimer(id);
+  else if (act === 'kidPause') toggleChildTimerPause(id);
+  else if (act === 'kidCancel') cancelChildTimer(id);
+  else if (act === 'kidFinish') finishChildTimer(id);
+  else if (act === 'kidDelete') deleteChild(id);
+}
+
 // 1s tick: just refreshes visible elapsed-time readouts in place — no auto-finish,
 // since an open stopwatch has no target to hit. The user always taps Finish themselves.
 setInterval(() => {
+  // Subtask stopwatches can be on screen anywhere — the editor sheet floats over every
+  // view — so their readouts refresh whichever tab is active.
+  $$('[data-timer-elapsed-child]').forEach(el => {
+    const f = findChild(el.dataset.timerElapsedChild);
+    if (f && f.child.timer) el.textContent = fmtTimerSec(timerElapsedSec(f.child.timer));
+  });
   const running = state.habits.some(h => h.timer) || state.oneoffs.some(t => t.timer);
   if (running && $('#view-habits').classList.contains('active')) {
     $$('[data-timer-elapsed]').forEach(el => {
@@ -7113,6 +7735,17 @@ function computeGapBlocks(dateStr) {
   }
   return out;
 }
+// Answered gaps come back as FILLERS: your answer, drawn where the question was, so the
+// day keeps a record of what that time was instead of an unexplained hole. A skipped gap
+// leaves nothing — "rather not say" isn't an entry.
+function computeFillerBlocks(dateStr) {
+  if (daysBetween(todayStr(), dateStr) > 0) return [];
+  return (state.gapLog || [])
+    .filter(g => g && g.date === dateStr && g.answer && !g.skipped
+      && Number.isFinite(g.startMin) && Number.isFinite(g.endMin) && g.endMin > g.startMin)
+    .map(g => ({ name: String(g.answer), emoji: '', category: null, startMin: g.startMin, endMin: g.endMin,
+                 durMin: g.endMin - g.startMin, kind: 'filler', type: 'filler', gapDate: dateStr }));
+}
 
 // Reward claims for a date, from their own log. A duration reward ran from the moment it
 // was claimed for as long as it granted, so it draws as a real span; a counter or plain
@@ -7221,7 +7854,7 @@ function relayoutLanes(rootSel, px) {
   const root = $(rootSel); if (!root) return;
   const grid = root.querySelector('.sched-grid'); if (!grid) return;
   const loMin = (parseInt(grid.dataset.lo, 10) || 0) * 60;
-  const items = [...root.querySelectorAll('.sched-block:not(.gap)')].map(el => ({
+  const items = [...root.querySelectorAll('.sched-block:not(.gap):not(.filler)')].map(el => ({
     el,
     startMin: parseInt(el.dataset.start, 10) || 0,
     durMin: parseInt(el.dataset.dur, 10) || 0,
@@ -7288,8 +7921,12 @@ function schedGridParts(dateStr, opts = {}) {
   // Matched on baseName, not name: a resumed sitting is titled "… (continued)", and its
   // prediction still has to be suppressed by the habit's real name.
   const doneNames = new Set(actual.map(b => b.baseName || b.name));
+  // A filled-in gap owns its span: predictions that would land inside it are dropped
+  // rather than stacked on top, so an answered stretch reads as one thing.
+  const fillers = isFuture ? [] : computeFillerBlocks(dateStr);
+  const inFiller = b => fillers.some(f => b.startMin < f.endMin && b.startMin + Math.max(b.durMin || 0, 1) > f.startMin);
   const blocks = (isToday || isFuture
-    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
+    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name) && !inFiller(b)))
     : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
   const px = opts.px || schedPx();
@@ -7299,7 +7936,8 @@ function schedGridParts(dateStr, opts = {}) {
   // into a second lane the way another overlapping block would.
   const gaps = isFuture ? [] : computeGapBlocks(dateStr);
   gaps.forEach(g => { g.lane = 0; g.laneCount = 1; });
-  blocks.unshift(...gaps);
+  fillers.forEach(g => { g.lane = 0; g.laneCount = 1; });   // same backdrop treatment as a gap
+  blocks.unshift(...gaps, ...fillers);
 
   // Frame the grid around the day's real span rather than a fixed 5am–11pm window.
   let lo = 7, hi = 21;
@@ -7336,6 +7974,16 @@ function schedGridParts(dateStr, opts = {}) {
   // actually shown is decided by relayoutLanes, because that answer changes with zoom.
   const labelEls = [];
   const blockEls = blocks.map((b, i) => {
+    if (b.kind === 'filler') {
+      const s0 = Math.round(b.startMin), e0 = Math.round(b.endMin);
+      const span = `${fmtMinOfDay(s0)}–${fmtMinOfDay(e0)} · ${fmtMins(e0 - s0)}`;
+      return `<div class="sched-block filler" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${s0}"
+        data-gapstart="${b.startMin}" data-gapend="${b.endMin}" data-gapdate="${b.gapDate}"
+        title="${escapeHtml(`${b.name} · ${span} — your answer; tap to change it`)}"
+        style="top:${at((b.startMin - lo * 60) / 60)};height:${at(b.durMin / 60)};left:0;width:calc(100% - 5px)">
+        <span class="filler-name">✎ ${escapeHtml(b.name)}</span><span class="filler-time">${escapeHtml(span)}</span>
+      </div>`;
+    }
     if (b.kind === 'gap') {
       const span = `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay(b.endMin)} · ${fmtMins(b.durMin)}`;
       return `<div class="sched-block gap" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"
@@ -8788,6 +9436,11 @@ function predictedMinutesFor(src, kind) {
   if (_predCache.size > 60) _predCache.clear();
   return v;
 }
+// The instant a running stopwatch crosses `mins`, as a FIXED number. It used to be worked
+// out as now + (what's left), re-derived from a fresh Date.now() every second — and float
+// noise nudged the result by a fraction of a millisecond each time, so the plan could
+// differ from the last one and the same notification got re-sent to the phone every tick.
+function timerCrossesAt(t, mins) { return Math.round(t.startedAt + ((t.pausedTotalSec || 0) + mins * 60) * 1000); }
 // Everything that should fire in the future, keyed by a stable id.
 function reminderPlan() {
   const out = {}, now = Date.now(), n = state.notify || {};
@@ -8808,10 +9461,21 @@ function reminderPlan() {
       if (src.timer.pausedAt) return;                       // paused: the finish line moves
       const mins = predictedMinutesFor(src, kind);
       if (!(mins > 0)) return;                              // nothing predicted, nothing to beat
-      const at = now + (mins * 60 - timerElapsedSec(src.timer)) * 1000;
+      const at = timerCrossesAt(src.timer, mins);
       if (at <= now) return;                                // already over — handled below
       out['ov-' + src.id] = { at, title: `⏱ ${src.name}`,
                               body: `Past the usual ${fmtMins(mins)}.` };
+    });
+    // Each part of a habit or quest has its own stopwatch and its own "usual": its median
+    // timed run once there are two, the minutes typed in until then.
+    runningChildTimers().forEach(({ item, c }) => {
+      if (c.timer.pausedAt) return;
+      const mins = childExpectedMin(c);
+      if (!(mins > 0)) return;
+      const at = timerCrossesAt(c.timer, mins);
+      if (at <= now) return;
+      out['ovc-' + c.id] = { at, title: `⏱ ${item.name} · ${c.name}`,
+                             body: `Past the usual ${fmtMins(mins)} for this part.` };
     });
   }
   return out;
@@ -8832,6 +9496,16 @@ function syncReminders() {
         overrunToasted.add(key);
         if (overrunToasted.size > 40) overrunToasted.clear();
         toast(`⏱ ${src.name} — past the usual ${fmtMins(mins)}`, 'var(--h1)');
+      }
+    });
+    runningChildTimers().forEach(({ item, c }) => {
+      const mins = childExpectedMin(c);
+      const key = c.id + ':' + c.timer.startedAt;
+      if (!(mins > 0) || c.timer.pausedAt || overrunToasted.has(key)) return;
+      if (timerElapsedSec(c.timer) >= mins * 60) {
+        overrunToasted.add(key);
+        if (overrunToasted.size > 40) overrunToasted.clear();
+        toast(`⏱ ${item.name} · ${c.name} — past the usual ${fmtMins(mins)}`, 'var(--h1)');
       }
     });
   }
@@ -12163,8 +12837,14 @@ RULES
 OUTPUT — ONE JSON object, no fences:
 {"options":["...","...","..."]}`;
 }
-async function openGapCheckin(dateStr, startMin, endMin) {
-  gapPending = { date: dateStr, startMin, endMin, loadout: currentLoadout() };
+async function openGapCheckin(dateStr, startMin, endMin, replacing) {
+  // Re-asking an answered gap (its filler was tapped): the new answer replaces the old one
+  // over the SAME span and loadout, rather than being added beside it.
+  const mid = (startMin + endMin) / 2;
+  const prior = replacing ? (state.gapLog || []).find(g => g && g.date === dateStr && g.answer && mid >= g.startMin && mid <= g.endMin) : null;
+  gapPending = prior
+    ? { date: dateStr, startMin: prior.startMin, endMin: prior.endMin, loadout: prior.loadout || currentLoadout(), replacing: true }
+    : { date: dateStr, startMin, endMin, loadout: currentLoadout() };
   checkinKind = 'gap'; habitCtxId = null; activeQuestionnaire = null;
   checkinFormat = 'mc'; checkinMessages = []; checkinTurns = 0;
   mcAnswers = [null]; mcOtherText = ['']; mcIndex = 0; mcOtherIdx = null;
@@ -12207,14 +12887,22 @@ async function openGapCheckin(dateStr, startMin, endMin) {
 function finishGapCheckin(answer, wasTyped) {
   const g = gapPending; if (!g) return;
   state.gapLog = Array.isArray(state.gapLog) ? state.gapLog : [];
+  if (g.replacing) {
+    // Backing out of a change leaves the old answer exactly as it was.
+    if (!answer) { gapPending = null; checkinKind = 'reflect'; $('#checkinOverlay').classList.remove('show'); return; }
+    const mid = (g.startMin + g.endMin) / 2;
+    state.gapLog = state.gapLog.filter(x => !(x && x.date === g.date && mid >= x.startMin && mid <= x.endMin));
+  }
   state.gapLog.push({ date: g.date, startMin: g.startMin, endMin: g.endMin,
     answer: answer || null, skipped: !answer, loadout: g.loadout, ts: Date.now() });
   if (state.gapLog.length > 400) state.gapLog = state.gapLog.slice(-300);
   if (answer) {
     if (wasTyped) rememberGapAnswer(answer, g.loadout, g.startMin);
-    logEvent('gap_answered', { date: g.date, startMin: g.startMin, endMin: g.endMin,
+    logEvent(g.replacing ? 'gap_reanswered' : 'gap_answered', { date: g.date, startMin: g.startMin, endMin: g.endMin,
       minutes: g.endMin - g.startMin, loadout: g.loadout, answer, typed: !!wasTyped });
-    if (state.settings.gapCheckinToken !== false) {
+    if (g.replacing) {
+      toast('✓ Updated', 'var(--green)');         // a correction isn't a second check-in — no token
+    } else if (state.settings.gapCheckinToken !== false) {
       addTokens(1);
       toast(`✓ Logged — +1 🪙`, 'var(--gold)');
     } else {
@@ -12913,8 +13601,12 @@ function onHabitsClick(e) {
   }
   if (act === 'delHabit') {
     const id = e.target.closest('.hedit').dataset.id;
+    const h = state.habits.find(x => x.id === id);
+    // One tap, with the undo bar as the safety net — the same as quests and rewards.
+    const snap = undoSnapshot();
     state.habits = state.habits.filter(x => x.id !== id);
     editingHabitId = null; SFX.click(); save(); renderHabits();
+    if (h) offerUndo(snap, `🗑 ${h.name || 'Habit'}`);
     return;
   }
   const dayBtn = e.target.closest('.day-dot');   // weekday toggle inside the inline editor
@@ -12947,12 +13639,13 @@ function onInlineHabitField(e) {
     else {
       t.name = e.target.value;
       const sug = box.querySelector('.timer-suggest');   // live duration detection as the name is typed
-      if (sug) sug.innerHTML = timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0);
+      if (sug) { sug.innerHTML = timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0); syncEditSheetHeight(); }
     }
     save(); return;
   }
   const f = e.target.dataset.f; if (!f) return;
-  const isToggleOrSelect = (e.target.type === 'checkbox' || e.target.tagName === 'SELECT');
+  // A time picker counts as a select: it lands once, on change, not per keystroke.
+  const isToggleOrSelect = (e.target.type === 'checkbox' || e.target.tagName === 'SELECT' || e.target.type === 'time');
   if (e.type === 'input' && isToggleOrSelect) return;
   if (e.type === 'change' && !isToggleOrSelect) return;
   const box = e.target.closest('.hedit'); if (!box) return;
@@ -12961,7 +13654,12 @@ function onInlineHabitField(e) {
   else if (f === 'cap') h.cap = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'timedMinutes') { h.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999); h.timedAuto = false; }   // a real number — stop guessing
   else if (f === 'category') { if (!pickCategoryInto(h, e.target)) return; }
-  else if (f === 'section') h.section = (e.target.value === 'extra' ? 'extra' : 'daily');
+  else if (f === 'section') { h.section = (e.target.value === 'extra' ? 'extra' : 'daily'); renderHabits(); }   // moves lists, repaints the crumb
+  else if (f === 'scheduledTime') {           // the editor's "⏰ Start at" — same pin a Schedule drag sets
+    const m = /^(\d{1,2}):(\d{2})/.exec(e.target.value || '');
+    h.scheduledMin = m ? clamp(parseInt(m[1], 10) * 60 + parseInt(m[2], 10), 0, 1439) : null;
+    save(); renderBlockSchedule(); renderEditSheet(); return;
+  }
   else if (f === 'loadout') { h.loadout = e.target.value.trim() ? e.target.value.trim() : null; renderHabits(); } // '' = universal
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
   else if (f === 'emoji') { h.emoji = e.target.value; h.emojiAuto = false; }   // a deliberate icon — stop guessing
@@ -12969,7 +13667,7 @@ function onInlineHabitField(e) {
     h[f] = e.target.value;
     if (f === 'name') {
       const sug = box.querySelector('.timer-suggest');   // live duration detection as the name is typed
-      if (sug) sug.innerHTML = timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0, h.timedAuto);
+      if (sug) { sug.innerHTML = timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0, h.timedAuto); syncEditSheetHeight(); }   // the hint adds a line — don't clip it
       scheduleNameSettle('habit', h.id);                 // icon + duration, once you stop typing
     }
   }
@@ -12999,9 +13697,9 @@ function onInlineHabitField(e) {
    #view-tasks / #prizePool, so the same named handlers are re-bound here and
    dispatched by whichever editor is open. Do not duplicate their logic.
    ================================================================= */
-let editMoreOpen = false;   // "More" disclosure inside the habit editor
-/* Which More bar is expanded ('where' | 'details' | 'repeats' | 'duration' | 'tiers' |
-   'copy' | 'retire'), or null for all shut. A module variable rather than a DOM class
+let editMoreOpen = false;   // the ⋯ menu in the editor header is showing
+/* Which tray is open in the editor ('when' | 'cat' | 'reward' | 'dur' off the toolbar;
+   'where' | 'repeats' | 'why' | 'qtier' | 'quad' | 'iter' off the header), or null. A module variable rather than a DOM class
    because every renderHabits() reaches renderEditSheet(), which replaces the sheet's
    innerHTML wholesale — a class toggled on the element would be gone by the next repaint.
    Same reason editMoreOpen is one. */
@@ -13012,7 +13710,7 @@ function openEditor(kind, id) {
   if (kind === 'habit') editingHabitId = id;
   else if (kind === 'oneoff') editingOneoffId = id;
   else editingRewardId = id;
-  editMoreOpen = false; editSecOpen = null;   // a freshly opened editor starts compact
+  editMoreOpen = false; editSecOpen = null; editingChildId = null;   // a freshly opened editor starts compact
   editTierPage = null;
   // Show BEFORE rendering: the sheet measures its active page to set its own height, and
   // a display:none overlay measures 0, which would collapse it to an empty strip.
@@ -13025,7 +13723,7 @@ function openEditor(kind, id) {
 function closeEditor() {
   $('#editOverlay').classList.remove('show');
   editingHabitId = editingOneoffId = editingRewardId = null;
-  editTierPage = null; editMoreOpen = false; editSecOpen = null;
+  editTierPage = null; editMoreOpen = false; editSecOpen = null; editingChildId = null;
   flushNameSettle();                          // a guess pending from the last keystroke still lands
   renderHabits(); renderOneoffs(); renderPrizes();
 }
@@ -13042,7 +13740,14 @@ function syncEditorSheet() {
 function renderEditSheet() {
   const body = $('#editSheetBody'); if (!body) return;
   let html = '';
-  if (editingHabitId) {
+  // A subtask opens as its own page in the same sheet; its ‹ goes back to the parent.
+  if (editingChildId) {
+    const f = findChild(editingChildId);
+    if (f && f.item.id === (editingHabitId || editingOneoffId)) html = childEditHTML(f);
+    else editingChildId = null;                 // deleted, or its parent isn't the one open
+  }
+  if (html) { /* the subtask's page */ }
+  else if (editingHabitId) {
     const h = state.habits.find(x => x.id === editingHabitId);
     html = h ? habitEditPagesHTML(h) : '';   // every tier page in one swipeable track
   } else if (editingOneoffId) {
@@ -13053,6 +13758,8 @@ function renderEditSheet() {
     html = r ? rewardEditCardHTML(r) : '';
   }
   if (!html) { closeEditor(); return; }
+  // Habits and quests use the TickTick-style layout, whose ‹ replaces the corner ✕.
+  $('#editSheet').classList.toggle('tt', !editingRewardId);
   body.innerHTML = html;
   syncEditSheetHeight();
 }
@@ -13077,20 +13784,64 @@ function syncEditSheetHeight() {
 // quest editor never runs the habit branches (or reads a .qrow that isn't there).
 $('#editOverlay').addEventListener('click', e => {
   if (e.target.id === 'editOverlay' || e.target.closest('[data-act="closeEditor"]')) { SFX.click(); closeEditor(); return; }
-  if (e.target.closest('[data-act="editMore"]')) { flushNameSettle(); editMoreOpen = !editMoreOpen; editSecOpen = null; SFX.click(); renderEditSheet(); return; }
-  // One More bar open at a time. Settle any pending name guess first — this re-renders,
+  if (e.target.closest('[data-act="editMore"]')) { flushNameSettle(); editMoreOpen = !editMoreOpen; SFX.click(); renderEditSheet(); return; }
+  // The ⋯ menu is a popover: while it's up, a tap anywhere else just puts it away.
+  const inMenu = !!e.target.closest('.tt-menu');
+  if (editMoreOpen && !inMenu) { editMoreOpen = false; renderEditSheet(); return; }
+  if (inMenu) editMoreOpen = false;
+  // One tray open at a time. Settle any pending name guess first — this re-renders,
   // and a guess landing afterwards would write into a node that no longer exists.
   const secHead = e.target.closest('[data-act="editSec"]');
   if (secHead) { flushNameSettle(); const s = secHead.dataset.sec; editSecOpen = (editSecOpen === s ? null : s); SFX.click(); renderEditSheet(); return; }
+  const kid = e.target.closest('[data-act^="kid"]');
+  if (kid) { onKidClick(kid); return; }
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'editDone') {                       // the big check on a habit page
+    const h = state.habits.find(x => x.id === editingHabitId); if (!h) return;
+    // Checking it off from a tier's page completes THAT tier — it's the version on screen.
+    const pg = parseInt(e.target.closest('[data-page]')?.dataset.page, 10);
+    if (habitLevels(h) && Number.isFinite(pg)) h.curTier = pg;
+    if (isComplete(h)) { SFX.click(); toast('✓ Already done today', 'var(--green)'); return; }
+    completeHabit(h.id); return;
+  }
+  if (act === 'editDoneQuest') { if (editingOneoffId) completeOneoff(editingOneoffId, false); return; }
+  if (act === 'clearPin') {
+    const h = state.habits.find(x => x.id === editingHabitId);
+    if (h) { h.scheduledMin = null; SFX.click(); save(); renderBlockSchedule(); renderEditSheet(); }
+    return;
+  }
+  if (e.target.closest('[data-quad]')) editSecOpen = null;   // picked a box — fold its tray
   if (editingHabitId) onHabitsClick(e);
   else if (editingOneoffId) onTasksClick(e);
   else if (editingRewardId) onPrizePoolClick(e);
+  if (inMenu && editorIsOpen()) renderEditSheet();         // repaint without the menu
 });
+// The reward / length / identity labels on the toolbar follow their tray's input as you
+// type, instead of waiting for the next repaint to catch up.
+function syncToolLabel(e) {
+  const tray = e.target.closest('.tt-tray[data-tray]'); if (!tray) return;
+  const key = tray.dataset.tray;
+  const span = tray.closest('.tt-page, .tt-wrap')?.querySelector(`.tt-tool[data-sec="${key}"] span`); if (!span) return;
+  if (key === 'reward') span.textContent = String(clamp(parseInt(e.target.value) || 0, 0, 999));
+  else if (key === 'dur') { const n = clamp(parseInt(e.target.value) || 0, 0, 999); span.textContent = n ? fmtMins(n) : ''; }
+  else if (key === 'cat' && e.target.tagName === 'SELECT' && e.target.value !== NEW_CATEGORY_OPT) span.textContent = e.target.value;
+}
 const editSheetField = e => {
+  if (editingChildId) { onChildField(e); return; }
+  if (e.type === 'change' && e.target.matches('[data-of="due"]')) editSecOpen = null;   // date picked — fold the tray
   if (editingHabitId) onInlineHabitField(e);
   else if (editingOneoffId) onInlineOneoffField(e);
   else if (editingRewardId) onRewardInlineField(e);
+  if (!editingRewardId && (e.type === 'input' || e.target.tagName === 'SELECT')) syncToolLabel(e);
 };
+// Enter in the subtask box adds that part and keeps you there for the next; Enter in a
+// title just finishes typing — it's a one-line field with nothing to insert.
+$('#editOverlay').addEventListener('keydown', e => {
+  // keyCode too: some phone keyboards report the return key only by its code.
+  if ((e.key !== 'Enter' && e.keyCode !== 13) || e.isComposing) return;
+  if (e.target.classList.contains('kid-add-in')) { e.preventDefault(); submitKidAdd(e.target); return; }
+  if (e.target.classList.contains('tt-title')) { e.preventDefault(); e.target.blur(); }
+});
 $('#editOverlay').addEventListener('input', editSheetField);
 $('#editOverlay').addEventListener('change', editSheetField);
 $('#editOverlay').addEventListener('focusout', flushNameSettle);   // tapping Done still gets the last guess
@@ -13146,7 +13897,8 @@ function copyHabitDefinition(from, into) {
   into.timedMinutes = from.timedMinutes || 0;
   into.scheduledMin = Number.isFinite(from.scheduledMin) ? from.scheduledMin : null;
   // Deep-copied so editing a tier on the copy never reaches back into the original.
-  into.tiers = Array.isArray(from.tiers) ? from.tiers.map(t => ({ name: t.name, reward: t.reward, minutes: t.minutes || 0 })) : [];
+  into.tiers = Array.isArray(from.tiers) ? from.tiers.map(t => ({ name: t.name, reward: t.reward, minutes: t.minutes || 0, children: cloneChildren(t.children) })) : [];
+  into.children = cloneChildren(from.children);  // the parts come along — their progress doesn't
   into.baseIdx = Number.isFinite(from.baseIdx) ? from.baseIdx : null;
   into.curTier = null;
 }
@@ -13340,7 +14092,11 @@ function reorderTiers(h, order) {
   const lvls = habitLevels(h); if (!lvls) return;
   if (order.length !== lvls.length) return;
   const items = order.map(i => lvls[i]);
-  h.tiers = items.filter(l => !l.base).map(l => ({ name: l.name, reward: l.reward, minutes: l.minutes || 0 }));
+  // Each tier's subtasks travel with it: they belong to that version of the habit, not to
+  // whichever slot it lands in.
+  const oldTiers = h.tiers || [];
+  h.tiers = items.filter(l => !l.base).map(l => ({ name: l.name, reward: l.reward, minutes: l.minutes || 0,
+    children: (oldTiers[l.tIdx] && oldTiers[l.tIdx].children) || [] }));
   h.baseIdx = items.findIndex(l => l.base);
   // Both "which tier am I on" and "which page is open" point at positions whose meaning
   // just changed, so neither survives the shuffle.
@@ -13605,7 +14361,7 @@ let swipeStart = null, lastSwipeAt = 0;
 const SWIPE_SLOP = 10;          // px of movement before we decide the gesture is horizontal
 function onHabitPointerDown(e) {
   swipeStart = null;
-  if (e.target.closest('input, select, button, .day-picker')) return;  // don't hijack controls
+  if (e.target.closest('input, select, textarea, button, .day-picker')) return;  // don't hijack controls
   const row = e.target.closest('.hrow[data-id], .hedit[data-id]');
   if (!row) return;
   const isEdit = row.classList.contains('hedit');
@@ -13713,7 +14469,10 @@ function onTasksClick(e) {
   if (act === 'delOneoffEdit') {
     const id = e.target.closest('.qedit').dataset.id;
     const t = state.oneoffs.find(x => x.id === id);
-    if (t && confirm(`Delete quest "${t.name}"?`)) {
+    // Delete now, undo for 8 seconds. A confirm() here was dead inside the iOS app: a
+    // WKWebView with no UI delegate answers every confirm() "cancel" without showing it.
+    if (t) {
+      const snap = undoSnapshot();
       const archivedAt = Date.now();
       state.archivedOneoffs = Array.isArray(state.archivedOneoffs) ? state.archivedOneoffs : [];
       state.archivedOneoffs.push({ ...t, status: 'deleted', archivedAt });
@@ -13723,6 +14482,7 @@ function onTasksClick(e) {
       if (wheelPickId === id) wheelPickId = null;
       const res = $('#habitWheelResult'); if (res && res.querySelector(`[data-id="${id}"]`)) res.innerHTML = '';
       SFX.click(); save(); renderOneoffs(); buildHabitWheel();
+      offerUndo(snap, `🗑 ${t.name || 'Quest'}`);
     }
     return;
   }
@@ -13747,7 +14507,7 @@ function onInlineOneoffField(e) {
   const box = e.target.closest('.qedit'); if (!box) return;
   const t = state.oneoffs.find(x => x.id === box.dataset.id); if (!t) return;
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
-  else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); }
+  else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); save(); renderOneoffs(); return; }   // repaints the crumb's payout
   else if (f === 'category') { if (!pickCategoryInto(t, e.target)) return; }
   else if (f === 'timedMinutes') { t.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999); t.timedAuto = false; }   // a real number — stop guessing
   else if (f === 'due') {
@@ -13887,10 +14647,14 @@ function onPrizePoolClick(e) {
   if (e.target.closest('[data-act="delRewardInline"]')) {
     const id = e.target.closest('.prize-edit').dataset.id;
     const r = state.rewards.find(x => x.id === id);
-    if (r && confirm(`Delete reward "${r.name || 'Untitled'}"?`)) {
+    // The Winnings "delete does nothing" bug: inside the iOS app this confirm() was answered
+    // "cancel" without ever being shown. Delete now, with the 8-second undo bar instead.
+    if (r) {
+      const snap = undoSnapshot();
       state.rewards = state.rewards.filter(x => x.id !== id);
       editingRewardId = null;
       SFX.click(); save(); renderPrizes(); renderRewardEditor();
+      offerUndo(snap, `🗑 ${r.name || 'Reward'}`);
     }
     return;
   }
@@ -14528,10 +15292,12 @@ $('#view-schedule').addEventListener('click', e => {
   }
   if (act === 'zoomIn')  { schedZoomIdx += 1; SFX.click(); applySchedZoom(); return; }
   if (act === 'zoomOut') { schedZoomIdx -= 1; SFX.click(); applySchedZoom(); return; }
-  const gapEl = e.target.closest('.sched-block.gap');
+  // A filler is an answered gap: tapping it asks again, and the new answer replaces it.
+  const gapEl = e.target.closest('.sched-block.gap, .sched-block.filler');
   if (gapEl) {
     SFX.click();
-    openGapCheckin(gapEl.dataset.gapdate, parseInt(gapEl.dataset.gapstart, 10), parseInt(gapEl.dataset.gapend, 10));
+    openGapCheckin(gapEl.dataset.gapdate, parseInt(gapEl.dataset.gapstart, 10), parseInt(gapEl.dataset.gapend, 10),
+                   gapEl.classList.contains('filler'));
     return;
   }
   if (act === 'unpin') {
