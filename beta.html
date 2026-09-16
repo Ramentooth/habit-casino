@@ -2559,6 +2559,60 @@
     .cloud-pending { background: rgba(255,255,255,.04); border-color: var(--gs-edge-hi); }
     .prize-dots { color: var(--ink-dim); background: transparent !important; border-color: transparent !important; }
     .prize-dots:hover { background: rgba(255,255,255,.08) !important; }
+
+    /* ---------- Month calendar (Schedule → tap the day) ---------- */
+    .sched-day[data-act] { cursor: pointer; }
+    .sched-day[data-act]:active { opacity: .65; }
+    .sched-day .sched-cal { font-size: 10px; opacity: .65; vertical-align: 2px; }
+    .pass-modal.cal-modal {
+      top: 50%; transform: translate(-50%, -50%);
+      width: min(360px, 94vw); height: auto; max-height: min(86vh, 620px);
+    }
+    #calBody { overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); }
+    /* The close ✕ floats over its own line so the month header can stay centred in the
+       card with an arrow at each edge, rather than being shoved left to dodge it. */
+    .pass-modal.cal-modal .pass-close { top: 10px; right: 10px; }
+    .cal-head { display: flex; align-items: center; gap: 6px; margin: 34px 0 12px; }
+    .cal-title { flex: 1 1 auto; text-align: center; font-family: 'Orbitron', sans-serif;
+      font-size: 15px; letter-spacing: 1px; color: var(--ink); }
+    .cal-arrow { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; padding: 0;
+      background: transparent; border: 1px solid var(--panel-edge); color: var(--ink-dim);
+      font-size: 18px; line-height: 1; cursor: pointer; }
+    .cal-arrow:active { background: rgba(255,255,255,.10); }
+    .cal-dow, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+    .cal-dow { margin-bottom: 4px; }
+    .cal-dow span { text-align: center; font-size: 11px; letter-spacing: 1px; color: var(--ink-dim); }
+    .cal-day { position: relative; aspect-ratio: 1 / 1; padding: 0; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 1px solid transparent; color: var(--ink);
+      font-size: 14px; font-weight: 700; cursor: pointer; }
+    .cal-day.out { opacity: .38; }
+    /* A dot, not a fill: it says "there's something on this day" without competing with
+       today's marker or the day you're looking at. */
+    .cal-day.has::after { content: ''; position: absolute; bottom: 4px; left: 50%;
+      transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%;
+      background: var(--cyan); opacity: .8; }
+    .cal-day.sel { border-color: var(--cyan); color: var(--cyan); }
+    .cal-day.today { background: var(--ink); border-color: var(--ink); color: #140c05; }
+    .cal-day.today.has::after { background: #140c05; opacity: .6; }
+    .cal-day:active { background: rgba(255,255,255,.14); }
+
+    /* ---------- ⓘ description toggles ---------- */
+    /* The character IS the button — no box, no background, nothing to add weight to a
+       heading it's only there to annotate. */
+    /* Padding with matching negative margin: a thumb-sized tap target around a glyph that
+       still sits on the title's baseline and takes up no extra room. */
+    .info-i { display: inline-block; padding: 6px 7px; margin: -6px 0 -6px 0;
+      font-size: .82em; line-height: 1; vertical-align: 1px;
+      color: var(--ink-dim); opacity: .8; cursor: pointer;
+      font-family: system-ui, -apple-system, sans-serif; text-shadow: none; }
+    .info-i:active { opacity: .45; }
+    .info-i.on { color: var(--cyan); opacity: 1; }
+    .info-desc[hidden] { display: none !important; }
+    /* Opened from a collapsed Settings panel, the line still shows — tapping ⓘ there
+       deliberately does NOT expand the whole section. */
+    #view-settings .panel.collapsed > .info-desc:not([hidden]) { display: block; }
   </style>
 </head>
 <body>
@@ -2699,7 +2753,7 @@
         <div class="daily-banner slim" data-act="toggleGroup" aria-expanded="false">
           <div class="dtext">
             <div class="section-title t2">🗓️ Daily Quests</div>
-            <div class="subtle" id="dailyStatus">Complete habits to earn tokens.</div>
+            <div class="subtle" id="dailyStatus" data-noinfo="1">Complete habits to earn tokens.</div>
             <div class="progress-wrap"><div class="progress-fill" id="dailyFill"></div></div>
             <div class="streak-line" id="dailyStreakInfo"></div>
           </div>
@@ -2722,7 +2776,7 @@
         <div class="daily-banner extra-banner slim" data-act="toggleGroup" aria-expanded="false">
           <div class="dtext">
             <div class="section-title t2">✨ Extra Habits</div>
-            <div class="subtle" id="extraStatus">Optional side-quests — their own bar, their own bonus.</div>
+            <div class="subtle" id="extraStatus" data-noinfo="1">Optional side-quests — their own bar, their own bonus.</div>
             <div class="progress-wrap"><div class="progress-fill extra" id="extraFill"></div></div>
           </div>
           <div class="bonus-chip">
@@ -3253,6 +3307,14 @@
     <div class="pass-modal">
       <button class="pass-close" id="planClose" title="Close">✕</button>
       <div id="planBody"></div>
+    </div>
+  </div>
+
+  <!-- Month calendar for the Block Schedule (same shell, sized down to a card) -->
+  <div class="pass-overlay" id="calOverlay">
+    <div class="pass-modal cal-modal">
+      <button class="pass-close" id="calClose" title="Close">✕</button>
+      <div id="calBody"></div>
     </div>
   </div>
 
@@ -6459,8 +6521,10 @@ setInterval(() => {
     const f = findChild(el.dataset.timerElapsedChild);
     if (f && f.child.timer) el.textContent = fmtTimerSec(timerElapsedSec(f.child.timer));
   });
+  // Not gated on the Habits tab any more: a running stopwatch now rides the Due Now board,
+  // which Home paints as well, so a readout can be on screen wherever you are.
   const running = state.habits.some(h => h.timer) || state.oneoffs.some(t => t.timer);
-  if (running && $('#view-habits').classList.contains('active')) {
+  if (running) {
     $$('[data-timer-elapsed]').forEach(el => {
       const h = state.habits.find(x => x.id === el.dataset.timerElapsed);
       if (h && h.timer) el.textContent = fmtTimerSec(timerElapsedSec(h.timer));
@@ -8115,8 +8179,8 @@ function renderBlockSchedule() {
   box.innerHTML = `
     <div class="sched-nav">
       <button class="btn ghost sm" data-act="schedPrev">‹</button>
-      <div class="sched-day">
-        <b>${escapeHtml(label)}</b>
+      <div class="sched-day" data-act="schedCal" role="button" tabindex="0" title="Pick a day">
+        <b>${escapeHtml(label)} <span class="sched-cal">▾</span></b>
         <span class="subtle">${escapeHtml(new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</span>
       </div>
       <button class="btn ghost sm" data-act="schedNext">›</button>
@@ -8156,6 +8220,27 @@ function renderDueSoon() {
   const dailyClear = sectionStats('daily').allComplete;
   const eligible = h => !h.archived && h.loadout === currentLoadout() && isScheduledToday(h) && !isComplete(h)
     && (dailyClear || h.section !== 'extra');
+  // Anything with a stopwatch already running IS what you're doing right now, so it leads
+  // the board no matter what the clock or the engine would otherwise have picked. A part
+  // counts for its parent: timing "technique 15" means the cello habit is in progress.
+  const inProgress = [];
+  const runningKeys = new Set();
+  const addRunning = (kind, item) => {
+    if (!item || item.archived) return;
+    const key = `${kind}:${item.id}`;
+    if (runningKeys.has(key)) return;
+    const finished = kind === 'habit' ? isComplete(item)
+      : (item.progress || 0) >= Math.max(1, item.iterations || 1);
+    if (finished) return;
+    runningKeys.add(key);
+    inProgress.push(kind === 'habit' ? { h: item } : { t: item });
+  };
+  state.habits.forEach(h => { if (h.timer) addRunning('habit', h); });
+  (state.oneoffs || []).forEach(t => { if (t.timer) addRunning('task', t); });
+  runningChildTimers().forEach(r => addRunning(r.kind, r.item));
+  const notRunning = x => !runningKeys.has(x.h ? `habit:${x.h.id}` : `task:${x.t.id}`);
+  // Still three rows in total, so a long stopwatch can't bury everything else.
+  const room = Math.max(0, 3 - inProgress.length);
   const dueHabits = state.habits
     .filter(eligible)
     .map(h => ({ h, m: habitBlockMinute(h) }))   // same blocks the Schedule tab draws — Due Now always agrees with it
@@ -8175,29 +8260,37 @@ function renderDueSoon() {
     .filter(x => x.t && (x.t.progress || 0) < Math.max(1, x.t.iterations || 1));
   const due = dueHabits.concat(dueTasks)
     .sort((a, b) => until(a.m) - until(b.m))
-    .slice(0, 3);                                         // fewer visible choices, not more
+    .filter(notRunning)
+    .slice(0, room);                                      // fewer visible choices, not more
   // The Similar Day Engine ranks the same eligible set on what today actually resembles —
   // what's overdue, what usually follows what you just finished, and whether you're behind
   // the days like this one. It only takes over when it has a real basis to rank on; with a
   // thin history predictNextAction returns nothing usable and the clock filter below runs
   // exactly as it always has.
   const next = predictNextAction({ limit: 3 });
-  let rows = '', sub = '';
-  if (next.basis !== 'sparse' && next.picks.length) {
-    rows = next.picks.map(c => (c.kind === 'habit' ? habitCardHTML(c.h, c.startMin) : oneoffCardHTML(c.t))).join('');
-    const top = next.picks[0];
+  const picks = next.picks.filter(notRunning).slice(0, room);
+  // What's running is the board's first row, always — whatever follows is "next", not "now".
+  let rows = inProgress.map(x => (x.h ? habitCardHTML(x.h) : oneoffCardHTML(x.t))).join('');
+  let sub = inProgress.length
+    ? `\u23F1 In progress: ${escapeHtml(inProgress.map(x => (x.h ? x.h.name : x.t.name)).join(', '))}.`
+    : '';
+  if (next.basis !== 'sparse' && picks.length) {
+    rows += picks.map(c => (c.kind === 'habit' ? habitCardHTML(c.h, c.startMin) : oneoffCardHTML(c.t))).join('');
+    const top = picks[0];
     const why = (top.reasons || [])[0];
     const st = next.standing;
     // One line, and it has to earn itself: the reason the TOP row is the top row, plus
     // where today stands against the days it looks like — never a motivational sentence.
-    sub = why ? `${escapeHtml(top.emoji || '')} ${escapeHtml(top.name)} — ${escapeHtml(why)}.`
-              : 'Ranked by how days like this one usually go.';
-    if (st && st.delta < 0) sub += ` You're ${-st.delta} behind ${st.days} similar day${st.days > 1 ? 's' : ''} at this hour.`;
-    else if (st && st.delta > 0) sub += ` That's ${st.delta} ahead of ${st.days} similar day${st.days > 1 ? 's' : ''} at this hour.`;
+    let line = why ? `${escapeHtml(top.emoji || '')} ${escapeHtml(top.name)} — ${escapeHtml(why)}.`
+                   : 'Ranked by how days like this one usually go.';
+    if (st && st.delta < 0) line += ` You're ${-st.delta} behind ${st.days} similar day${st.days > 1 ? 's' : ''} at this hour.`;
+    else if (st && st.delta > 0) line += ` That's ${st.delta} ahead of ${st.days} similar day${st.days > 1 ? 's' : ''} at this hour.`;
+    sub = sub ? `${sub} Then: ${line}` : line;
   } else if (due.length) {
-    sub = 'Coming up in your usual routine — knock these out first.';
-    rows = due.map(x => (x.h ? habitCardHTML(x.h, x.m) : oneoffCardHTML(x.t))).join('');
-  } else {
+    const line = 'Coming up in your usual routine — knock these out first.';
+    sub = sub ? `${sub} Then: ${line}` : line;
+    rows += due.map(x => (x.h ? habitCardHTML(x.h, x.m) : oneoffCardHTML(x.t))).join('');
+  } else if (!inProgress.length) {
     const active = new Set(activeHappyHours().map(a => a.cat));
     const hh = active.size
       ? state.habits.filter(h => eligible(h) && active.has(h.category || 'Unsorted')).slice(0, 2)
@@ -8218,7 +8311,7 @@ function renderDueSoon() {
     <div class="daily-banner slim" style="border-color:rgba(196,122,58,.5)">
       <div class="dtext">
         <div class="section-title t2">⏰ Due Now</div>
-        <div class="subtle">${hasRows ? sub : 'Nothing due right now.'}</div>
+        <div class="subtle" data-noinfo="1">${hasRows ? sub : 'Nothing due right now.'}</div>
       </div>
     </div>`;
   const body = hasRows
@@ -10396,7 +10489,7 @@ function similarDaysHTML() {
 
   return `<div class="panel" style="margin-top:14px">
     <div class="section-title t2">🔍 Similar Days</div>
-    <div class="subtle">Today read against the days it actually resembles — ${conf}% confidence, ${escapeHtml(pred.why)}.</div>
+    <div class="subtle" data-noinfo="1">Today read against the days it actually resembles — ${conf}% confidence, ${escapeHtml(pred.why)}.</div>
     ${refHTML}
     ${standHTML}
     ${rowsHTML}
@@ -12417,7 +12510,7 @@ function renderQuestionnaireBanner() {
     <div class="daily-banner slim" style="border-color:rgba(196,122,58,.4);margin-bottom:10px">
       <div class="dtext">
         <div class="section-title t2">🧭 ${pending.length} quick check-in${pending.length > 1 ? 's' : ''} ready</div>
-        <div class="subtle">${escapeHtml(names || 'A couple things looked off recently')} — answer however's easiest:</div>
+        <div class="subtle" data-noinfo="1">${escapeHtml(names || 'A couple things looked off recently')} — answer however's easiest:</div>
         <div class="chip-row" style="margin-top:8px">
           <button class="chip" data-startq="mc">📝 Multiple choice</button>
           <button class="chip" data-startq="text">💬 Text chat</button>
@@ -15342,11 +15435,80 @@ $('#authOverlay').addEventListener('click', async e => {
   }
 });
 
+/* ---- Month calendar. The day label on the Schedule is the button: tap it and pick any
+   day of any month instead of stepping one ‹ at a time. Days the app knows something
+   about — anything logged, anything planned — carry a dot, so scrolling back through
+   months shows where there is something to look at. ---- */
+let calCursor = null;                       // 'YYYY-MM' the grid is drawing
+
+function openSchedCal() {
+  calCursor = todayStr(schedOffset).slice(0, 7);
+  renderSchedCal();
+  $('#calOverlay').classList.add('show');
+}
+function closeSchedCal() { $('#calOverlay').classList.remove('show'); }
+function calShiftMonth(n) {
+  const [y, m] = calCursor.split('-').map(Number);
+  const d = new Date(y, m - 1 + n, 1);
+  calCursor = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  renderSchedCal();
+}
+// Days worth opening: something was logged, or something is planned.
+function calMarkedDays() {
+  const marked = new Set();
+  const planned = state.plannedBlocks || {};
+  Object.keys(planned).forEach(k => { if ((planned[k] || []).length) marked.add(k); });
+  (state.history || []).forEach(e => { if (e && e.ts) marked.add(dateStrFromTs(e.ts)); });
+  return marked;
+}
+function renderSchedCal() {
+  const box = $('#calBody'); if (!box) return;
+  const [y, m] = calCursor.split('-').map(Number);
+  const first = new Date(y, m - 1, 1);
+  const today = todayStr(), viewing = todayStr(schedOffset);
+  const marked = calMarkedDays();
+  // Monday-first, the way the week reads on the Schedule. getDay() is Sunday-first, so
+  // Sunday's 0 becomes the seventh column rather than the first.
+  const lead = (first.getDay() + 6) % 7;
+  let cells = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(y, m - 1, 1 - lead + i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const cls = ['cal-day'];
+    if (d.getMonth() !== m - 1) cls.push('out');
+    if (marked.has(ds)) cls.push('has');
+    if (ds === viewing) cls.push('sel');
+    if (ds === today) cls.push('today');
+    cells += `<button class="${cls.join(' ')}" data-act="calPick" data-date="${ds}">${d.getDate()}</button>`;
+  }
+  box.innerHTML = `
+    <div class="cal-head">
+      <button class="cal-arrow" data-act="calPrev" aria-label="Previous month">‹</button>
+      <div class="cal-title">${escapeHtml(first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }))}</div>
+      <button class="cal-arrow" data-act="calNext" aria-label="Next month">›</button>
+    </div>
+    <div class="cal-dow">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(x => `<span>${x}</span>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>
+    <div class="hint" data-noinfo="1">A dot marks a day with something logged or planned.</div>`;
+}
+$('#calOverlay').addEventListener('click', e => {
+  if (e.target.id === 'calOverlay' || e.target.closest('#calClose')) { closeSchedCal(); return; }
+  const hit = e.target.closest('[data-act]'); if (!hit) return;
+  const act = hit.dataset.act;
+  if (act === 'calPrev') { SFX.click(); calShiftMonth(-1); return; }
+  if (act === 'calNext') { SFX.click(); calShiftMonth(1); return; }
+  if (act === 'calPick') {
+    schedOffset = daysBetween(todayStr(), hit.dataset.date);
+    SFX.click(); closeSchedCal(); renderBlockSchedule();
+  }
+});
+
 // Block Schedule day stepper. Forward stops at today — nothing models a future day.
 $('#view-schedule').addEventListener('click', e => {
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'schedPrev') { schedOffset -= 1; SFX.click(); renderBlockSchedule(); return; }
   if (act === 'schedNext') { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
+  if (act === 'schedCal') { SFX.click(); openSchedCal(); return; }
   if (act === 'recWin') {
     const w = e.target.closest('[data-act="recWin"]').dataset.win;
     if (RECORD_WINDOWS.some(x => x.key === w)) { state.settings.recordWindow = w; SFX.click(); save(); renderBlockSchedule(); renderHabits(); }
@@ -15863,7 +16025,7 @@ function renderRecover() {
     : `<div class="subtle">No backups were found on this device${cloudOn ? ' or in the cloud' : ''}.</div>`;
   modal.innerHTML = `
     <div class="pass-title" style="color:var(--pink)">⚠️ SAVE PROBLEM</div>
-    <div class="subtle" style="margin-bottom:10px">
+    <div class="subtle" data-noinfo="1" style="margin-bottom:10px">
       ${salvaged
         ? `This version couldn't finish reading your save, so it was loaded in recovery mode. Your habits and tokens are here, but something in it didn't survive — restoring a backup is the safer option.`
         : `This version couldn't read your save. <b>Nothing has been overwritten</b> — your old save is still on this device, untouched, and the app won't write over it until you choose below.`}
@@ -15948,6 +16110,57 @@ $('#view-settings').addEventListener('click', e => {
   const panel = title.closest('.panel'); if (panel) { panel.classList.toggle('collapsed'); SFX.click(); }
 });
 $$('#view-settings .panel.set-section').forEach(p => p.classList.add('collapsed'));
+
+/* ---- ⓘ — a title's description folds behind the little circle at the end of it. -------
+   Nearly every panel explains itself in a line under its heading. That line is useful
+   once and then permanent clutter, so it hides and the ⓘ brings it back. Done as one
+   pass over the DOM rather than by editing three dozen templates: descriptions are
+   rendered from JS all over the app, and the observer catches every repaint without each
+   renderX() having to remember. A line carrying LIVE information — Due Now's reason, the
+   check-in's names, the save-problem detail — opts out with data-noinfo. ---- */
+const INFO_TITLES = '.section-title, .pass-title, .home-sec-title';
+const infoOpen = new Set();                 // titles whose description is showing, by text
+function infoize() {
+  $$(INFO_TITLES).forEach(t => {
+    if (t.querySelector('.info-i')) return;
+    const d = t.nextElementSibling;
+    if (!d || d.hasAttribute('data-noinfo')) return;
+    if (!d.classList.contains('subtle') && !d.classList.contains('hint')) return;
+    const key = (t.textContent || '').trim().slice(0, 60);
+    if (!key) return;
+    d.classList.add('info-desc');
+    d.hidden = !infoOpen.has(key);
+    const i = document.createElement('span');
+    i.className = 'info-i' + (d.hidden ? '' : ' on');
+    i.textContent = 'ⓘ';
+    i.dataset.info = key;
+    i.setAttribute('role', 'button');
+    i.setAttribute('tabindex', '0');
+    i.setAttribute('aria-label', 'What this does');
+    t.appendChild(i);
+  });
+}
+// Capture phase: plenty of these titles are their own toggle — every Settings panel
+// collapses when its heading is tapped — so the ⓘ has to swallow the tap first.
+document.addEventListener('click', e => {
+  const i = e.target.closest && e.target.closest('.info-i'); if (!i) return;
+  e.preventDefault(); e.stopPropagation();
+  const t = i.closest(INFO_TITLES), d = t && t.nextElementSibling;
+  if (!d) return;
+  const show = d.hidden;
+  d.hidden = !show;
+  if (show) infoOpen.add(i.dataset.info); else infoOpen.delete(i.dataset.info);
+  i.classList.toggle('on', show);
+  SFX.click();
+}, true);
+let infoQueued = false;
+new MutationObserver(() => {
+  if (infoQueued) return;
+  infoQueued = true;                        // one pass per frame, not one per node added
+  requestAnimationFrame(() => { infoQueued = false; infoize(); });
+}).observe(document.body, { childList: true, subtree: true });
+infoize();
+
 
 // Refresh time-gated UI (happy hour badge/banners/row tags, reward-unlock state) as the clock moves.
 setInterval(() => {
