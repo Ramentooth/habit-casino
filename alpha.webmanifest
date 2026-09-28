@@ -1,0 +1,17 @@
+{
+  "id": "/alpha.html",
+  "name": "Habit Casino \u03b1",
+  "short_name": "HabitCasino \u03b1",
+  "description": "A habit tracker that pays out in tokens, prizes and a weekly pass.",
+  "start_url": "/alpha.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08000f",
+  "theme_color": "#08000f",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

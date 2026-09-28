@@ -1,0 +1,18 @@
+name = "habit-casino-push"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Every minute. A reminder therefore lands between 0 and 60 seconds after its moment —
+# the price of the web having no way to schedule a notification on the phone itself.
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+SITE_URL = "https://habitcasino-5d08b.firebaseapp.com/"
+
+# Secrets are NOT set here — they go in with `wrangler secret put`:
+#   GCP_SERVICE_ACCOUNT   the service-account JSON (one line)
+#   VAPID_PRIVATE_KEY     from vapid.json, never committed
+#   VAPID_PUBLIC_KEY      the same key the app subscribes with
+#   VAPID_SUBJECT         mailto: address, so a push service can reach you
+#   RUN_KEY               guards /health, /run and /test

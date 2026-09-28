@@ -1,0 +1,10 @@
+{
+  "name": "habit-casino-push-worker",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node test/webpush.test.mjs && node test/tick.test.mjs && node test/sw.test.mjs",
+    "deploy": "wrangler deploy"
+  }
+}

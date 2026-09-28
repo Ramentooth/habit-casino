@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+# Never commit a key. The private half lives outside the repo, next to the app's
+# working file at ~/Downloads/ALL_HABIT_CASINO/vapid.json.
+vapid.json
+*-sa.json
