@@ -33,7 +33,7 @@
         ]
       },
       {
-        "source": "/app.webmanifest",
+        "source": "**/*.webmanifest",
         "headers": [
           {
             "key": "Cache-Control",
