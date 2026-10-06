@@ -1297,6 +1297,11 @@
       background: rgba(255,255,255,0.05); border: 1px solid var(--panel-edge); transition: .12s;
     }
     .day-dot:hover { color: #fff; transform: translateY(-1px); }
+    /* In the loadout modal the picker IS the feature, not a trailing control on a dense
+       editor row, so its dots get a real tap target instead of the habit editor's 24px.
+       7×38 + 6×6 = 302px, inside the 347px the modal leaves at 375. */
+    .loadout-modal .day-picker { gap: 6px; }
+    .loadout-modal .day-dot { width: 38px; height: 38px; font-size: 13px; border-radius: 9px; }
     .day-dot.active { color: #04210a; background: linear-gradient(180deg, var(--green), #1f9e0a); border-color: var(--green); box-shadow: 0 0 8px rgba(57,255,20,.5); }
 
     /* Daily 7-day streak indicator */
@@ -3614,6 +3619,13 @@ function defaultState() {
     beliefs: [],        // { id, kind, subject, text, n, strength, firstSeen, lastSeen, status }
     experiments: [],    // { id, beliefId, kind, habitId, change, metric, days, status, baseline, after, outcome }
     activeLoadout: 'Default',
+    // 🔁 Auto load. `loadoutDays` is name → [Sun…Sat] booleans; a loadout with no days
+    // set never auto-loads, so the whole feature stays inert until one is opted in.
+    // `autoLoadStamp` is the date auto load last settled — it is also how "I re-armed the
+    // switch today, so keep today's pick" is remembered, because turning it on stamps today.
+    autoLoad: true,
+    loadoutDays: {},
+    autoLoadStamp: '',
     contexts: [],         // Planner day contexts such as Travel/School; separate from loadouts
     dayPlans: {},         // 'YYYY-MM-DD' → { raw, context, ts }
     pass: defaultPass(),
@@ -4146,6 +4158,17 @@ function load(raw) {
     merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
       : (merged.loadouts.includes(((parsed.dayPlans || {})[todayStr()] || {}).context) ? parsed.dayPlans[todayStr()].context : 'Default');
     merged.habits.forEach(h => { if (!h.loadout || !merged.loadouts.includes(h.loadout)) h.loadout = 'Default'; });
+    // Auto load defaults ON so an existing save picks it up, which is harmless: with no
+    // loadout claiming a weekday it does nothing. Day arrays are pinned to exactly 7
+    // booleans and to loadouts that still exist, so a stale name can't claim a weekday.
+    merged.autoLoad = parsed.autoLoad !== false;
+    merged.autoLoadStamp = typeof parsed.autoLoadStamp === 'string' ? parsed.autoLoadStamp : '';
+    const srcDays = (parsed.loadoutDays && typeof parsed.loadoutDays === 'object' && !Array.isArray(parsed.loadoutDays)) ? parsed.loadoutDays : {};
+    merged.loadoutDays = {};
+    merged.loadouts.forEach(n => {
+      const raw = Array.isArray(srcDays[n]) ? srcDays[n] : [];
+      merged.loadoutDays[n] = Array.from({ length: 7 }, (_, i) => raw[i] === true);
+    });
     // Bonus copies used to be flagged `fromStock: true` with no record of WHICH loadout
     // handed them out, so they could never be handed back. Adopt those into the loadout
     // that's active now — the only defensible guess, and it makes them behave from here on.
@@ -10282,6 +10305,51 @@ function stockFor(name) {
   if (!state.loadoutStock[name]) state.loadoutStock[name] = normalizeStock({});
   return state.loadoutStock[name];
 }
+/* ---- 🔁 AUTO LOAD ---------------------------------------------------------------
+   A loadout can claim weekdays, and on a new day the first one claiming today becomes
+   active. Two rules stop it fighting the user:
+     · picking a loadout by hand switches auto load OFF, because the point of picking is
+       that today is different and tomorrow's switch would quietly undo it;
+     · switching it back ON stamps today, so today's pick stands and auto load resumes
+       tomorrow.
+   One date carries both: `autoLoadStamp` answers "has today already been decided?", set
+   either when a day is settled or when the switch is re-armed. */
+function loadoutDaysFor(name) {
+  if (!state.loadoutDays || typeof state.loadoutDays !== 'object') state.loadoutDays = {};
+  const cur = state.loadoutDays[name];
+  if (!Array.isArray(cur) || cur.length !== 7) {
+    state.loadoutDays[name] = Array.from({ length: 7 }, (_, i) => Array.isArray(cur) && cur[i] === true);
+  }
+  return state.loadoutDays[name];
+}
+// Which loadout owns a weekday. First match in list order wins, so a day claimed twice
+// always resolves the same way instead of by whatever order the keys happen to be in.
+function loadoutForDay(dow) {
+  return (state.loadouts || []).find(n => loadoutDaysFor(n)[dow]) || null;
+}
+// Everything a loadout change has to do, shared by the menu and by auto load so the two
+// can't drift. Returns whether the active loadout actually moved.
+function activateLoadout(name) {
+  if (!(state.loadouts || []).includes(name)) return false;
+  const changed = state.activeLoadout !== name;
+  state.activeLoadout = name;
+  reconcileLoadoutStock();   // hand back the old loadout's bonus, reclaim this one's
+  applyLoadoutStock();       // arriving on a stocked loadout stocks it for today
+  return changed;
+}
+/* Returns true when it moved the stamp, i.e. when there is something worth saving.
+   Deliberately does NOT save() itself: at boot this runs before the unreadable-save
+   warning, where a write would land on top of whatever is still down there. */
+function runAutoLoad() {
+  if (!state.autoLoad) return false;
+  const today = todayStr();
+  if (state.autoLoadStamp === today) return false;
+  const name = loadoutForDay(new Date().getDay());
+  if (!name) return false;            // nothing claims today — leave the user where they are
+  state.autoLoadStamp = today;
+  if (activateLoadout(name)) logEvent('loadout_autoloaded', { name });
+  return true;
+}
 function applyLoadoutStock() {
   const name = currentLoadout();
   const cfg = (state.loadoutStock || {})[name];
@@ -14551,19 +14619,42 @@ function openLoadoutMenu(screen = 'list') {
   $('#loadoutOverlay').classList.add('show');
 }
 function closeLoadoutMenu() { $('#loadoutOverlay').classList.remove('show'); }
+// Short label for a loadout's days on the list row: "every day", "Mo We Fr", or nothing.
+function loadoutDaysLabel(name) {
+  const d = loadoutDaysFor(name);
+  if (!d.some(Boolean)) return '';
+  if (d.every(Boolean)) return 'every day';
+  return d.map((on, i) => on ? PLAN_DOW[i].slice(0, 2) : null).filter(Boolean).join(' ');
+}
+/* The switch alone can't say why nothing is happening — off, no days set, nothing claiming
+   today and "re-armed, so tomorrow" all look identical from the outside. */
+function autoLoadHintHTML() {
+  if (!state.autoLoad) return 'Paused — nothing switches on its own. Picking a loadout by hand pauses it for you.';
+  if (!(state.loadouts || []).some(n => loadoutDaysFor(n).some(Boolean)))
+    return 'No loadout has days yet — open ⋯ on one to choose which days it runs.';
+  const target = loadoutForDay(new Date().getDay());
+  if (!target) return "Nothing claims today, so you stay on the loadout you're using.";
+  if (target !== currentLoadout() && state.autoLoadStamp === todayStr())
+    return `Staying on ${escapeHtml(currentLoadout())} today — ${escapeHtml(target)} takes over tomorrow.`;
+  return `${escapeHtml(target)} runs today.`;
+}
 function renderLoadoutMenu() {
   const body = $('#loadoutBody'); if (!body) return;
   if (loadoutScreen === 'list') {
     body.innerHTML = `
       <div class="pass-title">🗂️ LOADOUTS</div>
       <div class="subtle">Each loadout has its own complete set of Daily and Extra habits.</div>
+      <div class="row between" style="margin-top:14px"><span>🔁 Auto load</span>
+        <label class="toggle"><input type="checkbox" id="autoLoadOn" ${state.autoLoad ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
+      <div class="hint">${autoLoadHintHTML()}</div>
       <div class="loadout-list">${(state.loadouts || ['Default']).map(name => {
         const count = state.habits.filter(h => !h.archived && h.loadout === name).length;
         const st = (state.loadoutStock || {})[name];
+        const dayLabel = loadoutDaysLabel(name);
         return `<div class="loadout-row">
           <button class="loadout-choice ${name === currentLoadout() ? 'active' : ''}" data-loadout-pick="${escapeHtml(name)}">
             <span>${name === currentLoadout() ? '✓ ' : ''}${escapeHtml(name)}</span>
-            <span class="subtle">${count} habit${count === 1 ? '' : 's'}${st && st.on ? ' · 🎁 stocked' : ''}</span>
+            <span class="subtle">${count} habit${count === 1 ? '' : 's'}${st && st.on ? ' · 🎁 stocked' : ''}${dayLabel ? ' · 🔁 ' + escapeHtml(dayLabel) : ''}</span>
           </button>
           <button class="loadout-dots" data-act="loadoutEdit" data-loadout="${escapeHtml(name)}" title="Edit ${escapeHtml(name)}" aria-label="Edit ${escapeHtml(name)}">⋯</button>
         </div>`;
@@ -14574,6 +14665,17 @@ function renderLoadoutMenu() {
   if (loadoutScreen === 'edit') {
     const name = loadoutEditName;
     const cfg = stockFor(name);
+    const days = loadoutDaysFor(name);
+    const runsOn = days.map((on, i) => on ? PLAN_DOW[i] : null).filter(Boolean).join(', ');
+    // A day two loadouts both claim is decided by list order, which is invisible unless
+    // it's said out loud — otherwise one of them silently never runs.
+    const clashes = days.map((on, i) => (on && loadoutForDay(i) !== name)
+      ? `${PLAN_DOW[i]} (${loadoutForDay(i)})` : null).filter(Boolean);
+    const daysNote = !runsOn
+      ? '<div class="hint">No days picked.</div>'
+      : clashes.length
+        ? `<div class="hint" style="color:var(--pink)">Another loadout claims these first, so this one won't run on them: ${escapeHtml(clashes.join(', '))}.</div>`
+        : `<div class="hint">Runs on ${escapeHtml(runsOn)}.${state.autoLoad ? '' : ' Auto load is switched off right now, so nothing happens until you turn it back on.'}</div>`;
     // Spell out what the numbers mean for the rewards that actually exist — "5 common"
     // is meaningless until you know how many common rewards you've defined.
     const lines = REWARD_TIERS.map(t => {
@@ -14593,6 +14695,11 @@ function renderLoadoutMenu() {
     body.innerHTML = `
       <div class="pass-title">⋯ ${escapeHtml(name)}</div>
       <div class="subtle">Settings for this loadout only.</div>
+      <div class="sub-head">🔁 Auto load</div>
+      <div class="subtle">The days this loadout switches itself on. Leave them all off and it only ever loads when you pick it.</div>
+      <span class="day-picker" style="margin-top:12px">${DOW_LETTERS.map((d, i) =>
+        `<button class="day-dot ${days[i] ? 'active' : ''}" data-loadout-day="${i}" title="${PLAN_DOW[i]}" aria-label="${PLAN_DOW[i]}">${d}</button>`).join('')}</span>
+      ${daysNote}
       <div class="sub-head">🎁 Daily reward stock</div>
       <div class="subtle">Hands you a set number of <b>every</b> reward at each rarity, once a day, instead of making you win each one. Tops up to the amounts below — leftovers don't pile up — and anything you win in the casino still stacks on top.</div>
       <div class="row between" style="margin-top:12px"><span>Stock this loadout daily</span>
@@ -14660,13 +14767,25 @@ $('#loadoutBody').addEventListener('click', e => {
     loadoutEditName = dots.dataset.loadout;
     loadoutScreen = 'edit'; SFX.click(); renderLoadoutMenu(); return;
   }
+  const dayDot = e.target.closest('[data-loadout-day]');
+  if (dayDot && loadoutEditName) {
+    const i = parseInt(dayDot.dataset.loadoutDay, 10);
+    const days = loadoutDaysFor(loadoutEditName);
+    days[i] = !days[i];
+    SFX.click(); save(); renderLoadoutMenu(); return;
+  }
   const pick = e.target.closest('[data-loadout-pick]');
   if (pick) {
-    state.activeLoadout = pick.dataset.loadoutPick;
-    logEvent('loadout_selected', { name: state.activeLoadout });
-    reconcileLoadoutStock();                   // hand back the old loadout's bonus, reclaim this one's
-    applyLoadoutStock();                       // arriving on a stocked loadout stocks it for today
-    save(); closeLoadoutMenu(); renderHabits(); renderPrizes(); return;
+    const name = pick.dataset.loadoutPick;
+    // Picking by hand parks auto load — see the AUTO LOAD note. Announced, because a
+    // switch flipping itself without a word is how you lose track of why nothing changes.
+    const wasAuto = state.autoLoad;
+    state.autoLoad = false;
+    activateLoadout(name);
+    logEvent('loadout_selected', { name, autoLoadPaused: wasAuto });
+    save(); closeLoadoutMenu(); renderHabits(); renderPrizes();
+    if (wasAuto) toast('🔁 Auto load paused — turn it back on any time', 'var(--cyan)');
+    return;
   }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'loadoutNew') { loadoutScreen = 'create'; renderLoadoutMenu(); }
@@ -14687,6 +14806,14 @@ $('#loadoutBody').addEventListener('click', e => {
 });
 // Stock settings write straight through — no Save button, same as every other toggle.
 $('#loadoutBody').addEventListener('change', e => {
+  // Before the edit-screen guard: this switch lives on the list, where there is no
+  // loadout being edited. Re-arming stamps today so today's pick survives until tomorrow.
+  if (e.target.id === 'autoLoadOn') {
+    state.autoLoad = e.target.checked;
+    if (state.autoLoad) state.autoLoadStamp = todayStr();
+    logEvent('auto_load_toggled', { on: state.autoLoad });
+    save(); renderLoadoutMenu(); return;
+  }
   if (!loadoutEditName) return;
   const cfg = stockFor(loadoutEditName);
   if (e.target.id === 'stockOn') { cfg.on = e.target.checked; save(); renderLoadoutMenu(); return; }
@@ -16325,6 +16452,7 @@ processClosedDayOutcomes();
 recordPrediction();
 settleExperiments();      // close out any experiment whose week is up, before beliefs move
 updateBehavioralBeliefs();
+runAutoLoad();            // before the stock sweep: it decides WHICH loadout gets stocked
 reconcileLoadoutStock();
 applyLoadoutStock();
 fullRender();
@@ -16395,6 +16523,9 @@ infoize();
 
 // Refresh time-gated UI (happy hour badge/banners/row tags, reward-unlock state) as the clock moves.
 setInterval(() => {
+  // A day can turn over with the app still sitting open, so auto load gets a look here
+  // too — not just at boot. Skipped mid-edit, where a full repaint would yank the sheet.
+  if (runAutoLoad()) { save(); if (!editorIsOpen()) fullRender(); }
   renderTopbar();
   renderHappyBanners();
   if ($('#view-habits').classList.contains('active') && editingHabitId === null) renderHabits(); // ×N tags come/go
