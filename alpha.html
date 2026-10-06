@@ -1594,10 +1594,17 @@
 
     /* 📱 Screen Time. Own class names on purpose — the late !important greyscale block
        flattens .chip / .btn.ghost / .tier-chip, and these need to stay readable as on/off. */
-    .st-tog { background: transparent; border: 1px solid var(--panel-edge); border-radius: 8px;
-              padding: 4px 7px; font-size: 15px; line-height: 1; cursor: pointer;
-              opacity: .3; filter: grayscale(1); transition: opacity .15s, filter .15s, border-color .15s; }
-    .st-tog.on { opacity: 1; filter: none; border-color: var(--h1); box-shadow: 0 0 8px rgba(255,158,44,.35); }
+    /* Labelled on purpose. As a bare 📱 this was the one control in Settings that went
+       unfound, and it can't fade to .3 the way an icon could — words have to stay legible
+       while off, so "off" is carried by colour and greyscale instead of near-invisibility. */
+    .st-tog { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+              background: transparent; border: 1px solid var(--panel-edge); border-radius: 8px;
+              padding: 10px 12px; min-height: 38px; font-family: 'Rajdhani', sans-serif;
+              font-size: 13px; font-weight: 700; line-height: 1; color: var(--ink-dim); cursor: pointer;
+              filter: grayscale(1); transition: color .15s, filter .15s, border-color .15s; }
+    .st-tog .st-ico { font-size: 14px; }
+    .st-tog.on { filter: none; color: var(--h1); border-color: var(--h1); box-shadow: 0 0 8px rgba(255,158,44,.35); }
+    .st-tog:disabled { cursor: default; opacity: .45; }
     .st-status { margin-top: 10px; font-weight: 700; font-size: 13px; }
     .st-status.locked { color: var(--h1); }
     .st-status.open { color: var(--ink-dim); }
@@ -10199,6 +10206,7 @@ function rewardEditCardHTML(r) {
       </select>
       <span class="pill" title="If > 0, this is a time reward (gets the unlock-window bonus). Leave at 0 to read the duration out of the name.">⏱ <input class="num-in" data-rf="minutes" type="number" min="0" max="999" value="${r.minutes || 0}"> min</span>
     </div>
+    <div class="hedit-r">${stButtonHTML(r)}</div>
     <div class="hedit-r hedit-tall">
       <textarea class="name-in desc-in" data-rf="desc" rows="2" placeholder="What exactly is this reward? (optional)">${escapeHtml(r.desc || '')}</textarea>
     </div>
@@ -10984,6 +10992,15 @@ function renderHabitEditor() {
 function rewardHasDuration(r) {
   return (r.minutes || 0) > 0 || ((detectRewardSpec(r.name) || {}).minutes || 0) > 0;
 }
+/* A reward with no duration keeps the button and greys it with the reason, rather than
+   hiding it: an absent control reads as a missing feature, not as "set a duration first". */
+function stButtonHTML(r) {
+  if (!rewardHasDuration(r)) {
+    return `<button class="st-tog" data-act="togScreenTime" disabled title="Give this reward some minutes first — unlocking your apps needs a deadline to re-lock at."><span class="st-ico">📱</span>Connect to Screen Time</button>`;
+  }
+  const on = r.screenTime === true;
+  return `<button class="st-tog${on ? ' on' : ''}" data-act="togScreenTime" title="${on ? 'Claiming this reward unlocks your blocked apps — tap to disconnect' : 'Make claiming this reward unlock your blocked apps'}"><span class="st-ico">📱</span>${on ? 'Connected to Screen Time' : 'Connect to Screen Time'}</button>`;
+}
 function renderRewardEditor() {
   const box = $('#rewardEditor');
   box.innerHTML = state.rewards.map(r => `
@@ -10994,7 +11011,7 @@ function renderRewardEditor() {
         ${REWARD_TIERS.map(t => `<option value="${t}" ${r.tier === t ? 'selected' : ''}>${TIERS[t].emoji} ${TIERS[t].label}</option>`).join('')}
       </select>
       <span class="pill" title="If > 0, this is a time reward (gets the unlock-window bonus)">⏱ <input class="num-in" data-f="minutes" type="number" min="0" max="999" value="${r.minutes || 0}"> min</span>
-      ${rewardHasDuration(r) ? `<button class="st-tog${r.screenTime ? ' on' : ''}" data-act="togScreenTime" title="${r.screenTime ? 'Claiming this unlocks your blocked apps' : 'Make claiming this unlock your blocked apps'}">📱</button>` : ''}
+      ${stButtonHTML(r)}
       <button class="del" data-act="delReward" title="Delete">✕</button>
     </div>`).join('') || `<div class="hint">No rewards yet — add one below.</div>`;
 }
@@ -11073,7 +11090,7 @@ function renderScreenTime() {
       <button class="btn ghost sm" id="stPick">${st.pickedCount ? `Blocking ${st.pickedCount} app${st.pickedCount === 1 ? '' : 's'} — change` : 'Choose apps to block'}</button>
     </div>
     <div class="st-status ${st.shielded ? 'locked' : 'open'}">${st.shielded ? '🔒 Apps are blocked right now' : '🔓 Apps are unlocked right now'}</div>
-    <div class="hint">${marked ? `${marked} reward${marked === 1 ? '' : 's'} marked 📱.` : 'No rewards marked 📱 yet — tap the 📱 beside a timed reward above to make claiming it unlock your apps.'} Apple never tells this app which apps you picked, only how many. Deleting the app removes every block instantly.</div>`;
+    <div class="hint">${marked ? `${marked} reward${marked === 1 ? '' : 's'} connected.` : 'No rewards connected yet — open 🎁 Rewards above and tap “Connect to Screen Time” on a timed reward to make claiming it unlock your apps.'} Apple never tells this app which apps you picked, only how many. Deleting the app removes every block instantly.</div>`;
 }
 function renderStreakFreezeEditor() {
   const sf = state.settings.streakFreeze; if (!sf) return;
@@ -15007,6 +15024,18 @@ function onPrizePoolClick(e) {
     }
     return;
   }
+  // Same control as Settings → 🎁 Rewards. It lives here as well because the edit sheet
+  // hands a reward edit straight to this function — the card is not inside #prizePool.
+  if (e.target.closest('[data-act="togScreenTime"]')) {
+    const box = e.target.closest('.prize-edit'); if (!box) return;
+    const r = state.rewards.find(x => x.id === box.dataset.id); if (!r) return;
+    r.screenTime = !r.screenTime;
+    SFX.click(); save();
+    // renderPrizes re-derives the shield, so un-marking one that is running right now puts
+    // the block straight back — and it repaints this sheet through syncEditorSheet().
+    renderPrizes(); renderRewardEditor(); renderScreenTime();
+    return;
+  }
   // Claim panel actions (it replaces the tile in place).
   const claim = e.target.closest('.claim-card');
   if (claim) {
@@ -15065,7 +15094,7 @@ $('#prizePool').addEventListener('click', onPrizePoolClick);
 $('#prizePool').addEventListener('input', onRewardInlineField);
 $('#prizePool').addEventListener('change', onRewardInlineField);
 $('#addRewardInline').addEventListener('click', () => {
-  const r = { id: uid(), emoji: '🎁', name: '', desc: '', tier: 'common', minutes: 0 };
+  const r = { id: uid(), emoji: '🎁', name: '', desc: '', tier: 'common', minutes: 0, screenTime: false };
   state.rewards.push(r); editingRewardId = r.id;
   SFX.click(); save(); renderPrizes(); renderRewardEditor();
   setTimeout(() => $('#prizePool .prize-edit .name-in')?.focus(), 30);
