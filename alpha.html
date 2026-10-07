@@ -169,11 +169,6 @@
     .balance.pop { animation: pop 0.4s ease; }
     @keyframes pop { 0%{transform:scale(1);} 40%{transform:scale(1.18);} 100%{transform:scale(1);} }
 
-    .level { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
-    .level .lvlrow { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; color: var(--ink-dim); letter-spacing: 1px; }
-    .level .lvlrow b { color: var(--cyan); text-shadow: 0 0 8px rgba(255,158,44,0.6); }
-    .xpbar { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; border: 1px solid rgba(255,158,44,0.25); }
-    .xpfill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--purple)); box-shadow: 0 0 12px var(--cyan); transition: width 0.6s cubic-bezier(.2,.9,.2,1); }
 
     .spacer { flex: 1 1 auto; }
 
@@ -674,8 +669,6 @@
     .habit .top { display: flex; align-items: center; gap: 12px; }
     .habit .emoji { font-size: 34px; filter: drop-shadow(0 0 8px rgba(255,255,255,.3)); }
     .habit .hname { font-weight: 700; font-size: 18px; line-height: 1.1; }
-    .habit .streak { font-size: 13px; color: var(--h2); font-weight: 700; }
-    .habit .streak.cold { color: var(--ink-dim); }
     .habit .reward-tag {
       display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
       background: rgba(255,194,71,0.12); border: 1px solid rgba(255,194,71,0.4);
@@ -825,11 +818,6 @@
     .hrow-name { font-weight: 700; font-size: 14px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hrow-sub { font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 1px; }
     .hrow-sub.hot { color: var(--orange); }
-    /* Streak leads the name; it's the one number worth reading before the label itself. */
-    .row-streak {
-      flex: 0 0 auto; font-size: 11px; font-weight: 800; color: var(--orange);
-      white-space: nowrap; letter-spacing: -.3px;
-    }
     /* Everything else the second line used to hold. Shrink-to-nothing before the name
        does, so a long name never pushes chips off the row. */
     .row-chip {
@@ -906,9 +894,6 @@
     .habit-group.collapsed .group-caret { transform: rotate(-90deg); }
     .habit-group.collapsed .daily-banner { margin-bottom: 0; }
     .habit-group.collapsed .habit-group-body { display: none; }
-    .bonus-chip { flex: 0 0 auto; text-align: center; }
-    .bonus-chip .subtle { font-size: 10px; }
-    .bonus-chip .bonus-amt { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 17px; }
 
     /* ---------- Home ----------------------------------------------------------------
        Deliberately quieter than the rest of the app: hairline borders, no glow, one
@@ -992,24 +977,6 @@
 
     /* TODAY — the one-line "N of M done" tally under the board. */
     .home-tally { text-align: center; font-size: 14px; color: var(--ink-dim); margin-top: 4px; font-variant-numeric: tabular-nums; }
-
-    /* PACE — filled portion solid, the remainder a dotted ghost of what's left. */
-    .pace-row { display: flex; align-items: center; gap: 14px; }
-    .pace-bar {
-      flex: 1 1 auto; height: 22px; border-radius: 4px; overflow: hidden; display: flex;
-      border: 1px solid var(--gs-edge-hi, rgba(255,255,255,.28));
-    }
-    .pace-fill { background: var(--ink); transition: width .5s cubic-bezier(.2,.8,.2,1); }
-    .pace-rest {
-      flex: 1 1 auto;
-      background-image: radial-gradient(currentColor .8px, transparent .9px);
-      background-size: 4px 4px; color: var(--ink-dim); opacity: .6;
-    }
-    .pace-pct { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; flex: 0 0 auto; min-width: 52px; }
-    .pace-hist { margin-top: 20px; display: grid; grid-template-columns: auto auto; gap: 6px 26px; justify-content: start; }
-    .pace-hist .ph-k { color: var(--ink-dim); font-size: 15px; }
-    .pace-hist .ph-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .pace-hist .ph-v.none { font-weight: 400; color: var(--ink-dim); }
 
     /* ---------- Casino ---------- */
     #view-casino { padding-bottom: 88px; }
@@ -1305,14 +1272,6 @@
     .day-dot.active { color: #04210a; background: linear-gradient(180deg, var(--green), #1f9e0a); border-color: var(--green); box-shadow: 0 0 8px rgba(57,255,20,.5); }
 
     /* Daily 7-day streak indicator */
-    .streak-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; }
-    .streak-count { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; color: var(--orange); }
-    .pips { display: inline-flex; gap: 4px; }
-    .pip-dot { width: 13px; height: 13px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); transition: .2s; }
-    .pip-dot.on { background: var(--orange); box-shadow: 0 0 8px var(--orange); border-color: var(--orange); }
-    .pip-dot.gold { border-color: rgba(255,158,44,0.5); }
-    .pip-dot.gold.on { background: var(--h1); box-shadow: 0 0 12px var(--h1); border-color: var(--h1); }
-    .streak-goal { color: var(--ink-dim); font-weight: 700; }
 
     /* Quantity stepper in the claim panel. Was scoped to `.recycle-menu .rstep`, a
        wrapper only the deleted Wild Cards grid ever emitted — so the claim panel's own
@@ -1323,12 +1282,7 @@
     }
     .rstep:hover { box-shadow: 0 0 10px var(--h1); border-color: var(--h1); }
 
-    /* Streak Freeze count tag + special prize marker */
-    .freeze-tag {
-      display: inline-flex; align-items: center; gap: 2px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px;
-      color: var(--cyan); background: rgba(255,158,44,0.1); border: 1px solid rgba(255,158,44,0.4);
-      padding: 2px 9px; border-radius: 999px; box-shadow: 0 0 8px rgba(255,158,44,0.25);
-    }
+    /* Special prize marker — Wild Cards. */
     .prize.special { border-color: var(--cyan) !important; box-shadow: 0 0 14px rgba(255,158,44,0.35); position: relative; }
     .special-tag {
       margin-top: 4px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 9px; letter-spacing: 1px;
@@ -1692,9 +1646,7 @@
       .balance { padding: 5px 10px; gap: 6px; }
       .balance .coin { font-size: 18px; }
       .balance .amount { font-size: 17px; }
-      .spacer { display: none; }                 /* let the level bar absorb the slack instead */
-      .level { flex: 1 1 auto; min-width: 64px; }
-      .level .lvlrow { font-size: 11px; }
+      .spacer { display: none; }
       .iconbtn { width: 38px; height: 38px; }
 
       /* roomy, finger-friendly casino game tabs */
@@ -2255,15 +2207,11 @@
     .game-tab.active { background: rgba(255,255,255,.10) !important; border-color: var(--gs-edge-hi) !important; }
 
     /* --- bars, meters and small badges ------------------------------------ */
-    .progress-wrap, .xpbar { background: rgba(255,255,255,.06); border-color: var(--gs-edge); }
-    .progress-fill, .progress-fill.extra, .xpbar > * {
+    .progress-wrap { background: rgba(255,255,255,.06); border-color: var(--gs-edge); }
+    .progress-fill, .progress-fill.extra {
       background: var(--gs-edge-hi) !important; box-shadow: none !important;
     }
     #balance, .balance { background: var(--gs-card) !important; border-color: var(--gs-edge) !important; box-shadow: none !important; }
-    .streak-count { border-color: var(--gs-edge) !important; }
-    .pip-dot, .pip-dot.on, .pip-dot.full {
-      background: rgba(255,255,255,.10) !important; border-color: var(--gs-edge) !important; box-shadow: none !important;
-    }
     .prize-count, .hh-tag { background: var(--gs-lite); color: var(--gs-on-lite); box-shadow: none; border-color: transparent; }
     /* Bonus marker keeps its gold TEXT (colour is how you spot it) but drops the tinted
        fill for the same dark chip every other badge wears here. */
@@ -2652,13 +2600,8 @@
       <span class="coin">🪙</span>
       <span class="amount" id="tokenAmt">0</span>
     </div>
-    <div class="level">
-      <div class="lvlrow"><span>LVL <b id="lvlNum">1</b></span><span id="xpText">0/100</span></div>
-      <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
-    </div>
     <span class="happy-badge" id="happyBadge" style="display:none">🎉 HAPPY HOUR ×2</span>
     <div class="spacer"></div>
-    <button class="iconbtn" id="soundBtn" title="Toggle sound">🔊</button>
   </header>
 
   <!-- Editor sheet: habits, quests and rewards all edit here, sliding up from the bottom. -->
@@ -2761,15 +2704,11 @@
       <div class="home-sec-title">DUE NOW</div>
       <div class="duenow-mount" id="homeDue" data-bare="1"></div>
       <div id="homeToday"></div>
-      <div class="home-rule"></div>
-      <div class="home-sec-title">TODAY'S PACE</div>
-      <div id="homePace"></div>
     </section>
 
     <!-- ===================== HABITS ===================== -->
     <section class="view" id="view-habits">
       <div class="plan-cta">
-        <button class="btn ghost sm" data-act="openPlanner">📅 Plan My Week</button>
         <span id="todayCtxBadge"></span>
         <button class="loadout-button" id="loadoutSwitch" type="button" title="Choose or create a habit loadout"></button>
       </div>
@@ -2780,11 +2719,6 @@
             <div class="section-title t2">🗓️ Daily Quests</div>
             <div class="subtle" id="dailyStatus" data-noinfo="1">Complete habits to earn tokens.</div>
             <div class="progress-wrap"><div class="progress-fill" id="dailyFill"></div></div>
-            <div class="streak-line" id="dailyStreakInfo"></div>
-          </div>
-          <div class="bonus-chip">
-            <div class="subtle">All&nbsp;done</div>
-            <div class="neon-gold bonus-amt" id="dailyBonusLabel">+10 🪙</div>
           </div>
           <span class="group-caret" aria-hidden="true">▾</span>
         </div>
@@ -2801,12 +2735,8 @@
         <div class="daily-banner extra-banner slim" data-act="toggleGroup" aria-expanded="false">
           <div class="dtext">
             <div class="section-title t2">✨ Extra Habits</div>
-            <div class="subtle" id="extraStatus" data-noinfo="1">Optional side-quests — their own bar, their own bonus.</div>
+            <div class="subtle" id="extraStatus" data-noinfo="1">Optional side-quests — their own bar.</div>
             <div class="progress-wrap"><div class="progress-fill extra" id="extraFill"></div></div>
-          </div>
-          <div class="bonus-chip">
-            <div class="subtle">All&nbsp;done</div>
-            <div class="neon-cyan bonus-amt" id="extraBonusLabel">+8 🪙</div>
           </div>
           <span class="group-caret" aria-hidden="true">▾</span>
         </div>
@@ -3161,12 +3091,6 @@
       </div>
 
       <div class="panel set-section">
-        <div class="section-title t2">🧊 Streak Freeze <span class="subtle" style="font-size:12px;letter-spacing:0">· special reward</span></div>
-        <div class="subtle">A special reward that saves your daily-quest streak when you miss a day. It can't be deleted — only toggled on/off and re-themed. Set its rarity to control how often it drops.</div>
-        <div id="streakFreezeEditor" style="margin-top:12px"></div>
-      </div>
-
-      <div class="panel set-section">
         <div class="section-title t2">⏳ Reward Unlock &amp; Happy Hour</div>
         <div class="subtle">Stop redeeming between tasks — gate rewards behind finishing your day (or a set time), and earn extra during happy hour.</div>
         <div class="row between" style="margin-top:12px">
@@ -3208,27 +3132,6 @@
 
       <div class="panel set-section">
         <div class="section-title t2">🔧 General</div>
-        <div class="row between" style="margin-top:12px">
-          <div>
-            <div style="font-weight:700">🗓️ Daily Quests all-done bonus</div>
-            <div class="hint">Tokens when you clear every Daily habit in a day.</div>
-          </div>
-          <input class="num-in" type="number" min="0" id="dailyBonusInput">
-        </div>
-        <div class="row between" style="margin-top:14px">
-          <div>
-            <div style="font-weight:700">✨ Extra Habits all-done bonus</div>
-            <div class="hint">A separate payout when you clear every Extra habit.</div>
-          </div>
-          <input class="num-in" type="number" min="0" id="extraBonusInput">
-        </div>
-        <div class="row between" style="margin-top:14px">
-          <div>
-            <div style="font-weight:700">🔥 7-day daily-quest streak bonus</div>
-            <div class="hint">Big payout for completing all Daily Quests 7 days in a row.</div>
-          </div>
-          <input class="num-in" type="number" min="0" id="weeklyBonusInput">
-        </div>
         <div class="row between" style="margin-top:14px">
           <div><div style="font-weight:700">Sound effects</div><div class="hint">Neon blips, coins & jackpots.</div></div>
           <label class="toggle"><input type="checkbox" id="soundToggle"><span class="track"></span><span class="knob"></span></label>
@@ -3466,7 +3369,6 @@ let uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 function defaultState() {
   return {
     tokens: 25,
-    xp: 0,
     habits: [
       // section: 'daily' (Daily Quests) | 'extra' (Extra Habits) — each fills its own bar/bonus.
       // repeatable habits can be completed up to `cap` times/day, paying `reward` each rep.
@@ -3517,9 +3419,11 @@ function defaultState() {
                card9:  { common: 55, rare: 30, epic: 12, legendary: 3 },
                card10: { rare: 60, epic: 30, legendary: 10 } },
     },
-    settings: { sound: true, reducedMotion: false, dailyBonus: 10, dailyBonusDate: '', extraBonus: 8, extraBonusDate: '',
-                weeklyBonus: 100, dailyStreak: 0, dailyStreakDate: '',
-                streakFreeze: { enabled: true, tier: 'epic', emoji: '🧊', name: 'Streak Freeze' },
+    settings: { sound: true, reducedMotion: false,
+                // Stamped the first time every Daily Quest is clear on a given day. The
+                // all-done token bonus it used to gate is gone; the Habit Pass "clear all
+                // dailies" goal still needs it, because passGoalProgress() counts calls.
+                allDailyDate: '',
                 // Casino Wild Cards: a "pick any reward of this rarity" token, rollable at
                 // its own rarity in every game once this is on. weightPct is its chance
                 // relative to an ordinary reward at the same tier (50 = half as likely).
@@ -3542,7 +3446,6 @@ function defaultState() {
                 barViews: ['home', 'casino', 'tasks', 'habits', 'prizes'],
                 // Reflection check-in: which input mode was last used — 'text' | 'browser' | 'realtime'.
                 voiceMode: 'text' },
-    streakFreezes: 0, // how many Streak Freezes the player currently owns
     stats: { plays: 0, wins: 0, tokensWon: 0, rouletteSpins: 0, ultraPacks: 0 },
     categories: ['Exercise', 'Intellect', 'Unsorted'],
     categoryColors: {},   // per-category accent colors (seeded by ensureCategoryColors, editable in Settings)
@@ -4027,8 +3930,6 @@ function normalizeHabit(h) {
     repeatable: !!h.repeatable,
     cap: Math.max(1, parseInt(h.cap) || 1),
     lastDone: h.lastDone || '',
-    streak: h.streak || 0,
-    best: h.best || 0,
     dayDate: h.dayDate || '',
     dayCount: h.dayCount || 0,
     days: (Array.isArray(h.days) && h.days.length === 7) ? h.days.map(Boolean) : [true, true, true, true, true, true, true],
@@ -4702,7 +4603,6 @@ function screenShake() {
    ================================================================= */
 function addTokens(n, fromEl) {
   state.tokens += n;
-  state.xp += Math.max(0, n);
   save(); renderTopbar();
   const bal = $('#balance'); bal.classList.remove('pop'); void bal.offsetWidth; bal.classList.add('pop');
   if (n > 0 && !state.settings.reducedMotion) floatToken(`+${n}`, fromEl);
@@ -4783,12 +4683,6 @@ function renderTopbar() {
   };
   step();
 
-  const level = Math.floor(state.xp / 100) + 1;
-  const into = state.xp % 100;
-  $('#lvlNum').textContent = level;
-  $('#xpText').textContent = `${into}/100`;
-  $('#xpFill').style.width = into + '%';
-  $('#soundBtn').textContent = state.settings.sound ? '🔊' : '🔇';
   const hb = $('#happyBadge');
   if (hb) {
     const act = activeHappyHours();
@@ -4883,29 +4777,6 @@ function isComplete(h) { return doneCount(h) >= capOf(h); }
    TOLD US about going in, so missing it costs nothing — no broken streak, no
    Streak Freeze spent. Grace is unconditional: it applies to every flagged day,
    whether or not a Mode ended up being used on it. ---- */
-// How many days in the gap (lastDate, today) exclusive were NOT flagged.
-function unflaggedMissedDays(lastDate, today) {
-  const total = daysBetween(lastDate, today) - 1;
-  let unflagged = 0;
-  for (let i = 1; i <= total; i++) if (!dayPlan(addDays(lastDate, i))) unflagged++;
-  return unflagged;
-}
-// True when today continues a run: either lastDate was yesterday, or every day
-// skipped in between was flagged.
-function streakContinues(lastDate, today) {
-  if (!lastDate) return false;
-  const gap = daysBetween(lastDate, today);
-  if (!Number.isFinite(gap) || gap < 1) return false;
-  if (gap === 1) return true;                            // yesterday — always continuous
-  if (gap > 366) return false;                           // don't walk a pathological gap
-  return unflaggedMissedDays(lastDate, today) === 0;
-}
-function currentStreak(h) {
-  const today = todayStr();
-  if (h.lastDone === today || streakContinues(h.lastDone, today)) return h.streak;
-  return 0; // streak broken
-}
-
 // Progress + completion roll-up for one section ('daily' | 'extra').
 // A habit shows today only if its weekday is enabled (default: every day).
 function isScheduledToday(h) {
@@ -4927,12 +4798,11 @@ function dailyLoadoutHabits() { return sectionStats('daily').list; }
 // Compact checklist row: tap the CHECKBOX (data-act="done") to complete;
 // tap anywhere else (data-act="editHabit") to "blow up" the inline editor.
 function habitCardHTML(h, usualMin) {
-  const cap = capOf(h), dc = doneCount(h), complete = dc >= cap, s = currentStreak(h);
+  const cap = capOf(h), dc = doneCount(h), complete = dc >= cap;
   // ONE LINE. The old second line carried streak / progress / "usually ~8:00" and made
   // every row ~58px; the streak now leads the name as a chip and the rest are micro-chips
   // that follow it. The "usually" and "~Xm" hints are dropped from the row on purpose —
   // they still drive Due Now and the Block Schedule, which is where they're actionable.
-  const streakChip = s > 0 ? `<span class="row-streak">🔥${s}</span>` : '';
   const lvls = habitLevels(h);
   const li = lvls ? curLevelIndex(h) : -1;
   const lvl = lvls ? lvls[li] : null;
@@ -5009,7 +4879,6 @@ function habitCardHTML(h, usualMin) {
     <div class="hrow ${complete ? 'done' : ''}${lvls ? ' leveled' : ''}" data-id="${h.id}" data-act="editHabit">
       ${hhTag}
       <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
-      ${streakChip}
       ${body}
       ${rightBits}
     </div>`;
@@ -5248,7 +5117,6 @@ function renderDailyIdentities() {
   $('#dailyStatus').innerHTML = st.list.length
     ? `<b class="neon-green">${st.done}/${st.cap}</b> done today` + (st.allComplete ? ' — 🎉 all clear!' : '')
     : 'Add habits in Settings to begin.';
-  const b = $('#dailyBonusLabel'); if (b) b.textContent = `+${state.settings.dailyBonus} 🪙`;
 }
 
 /* Habits in this loadout + section that the board is NOT showing today. Computed as a
@@ -5307,7 +5175,7 @@ $('#inactivePickSheet').addEventListener('click', e => {
   SFX.click(); closeInactivePicker(); openEditor('habit', row.dataset.inactive);
 });
 
-function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt) {
+function renderHabitSection(section, gridId, fillId, statusId) {
   const st = sectionStats(section);
   const grid = $(gridId);
   // Auto-sort: incomplete first (in routine order = usual completion time-of-day),
@@ -5329,7 +5197,6 @@ function renderHabitSection(section, gridId, fillId, statusId, bonusId, bonusAmt
   $(statusId).innerHTML = st.list.length
     ? `<b class="${section === 'extra' ? 'neon-cyan' : 'neon-green'}">${st.done}/${st.cap}</b> done today` + (st.allComplete ? ' — 🎉 all clear!' : '')
     : 'Add habits in Settings to begin.';
-  const b = $(bonusId); if (b) b.textContent = `+${bonusAmt} 🪙`;
 }
 
 function renderHabits() {
@@ -5337,9 +5204,8 @@ function renderHabits() {
   renderTodayContext();
   renderDueSoon();
   renderDailyIdentities();
-  renderHabitSection('extra', '#extraGrid', '#extraFill', '#extraStatus', '#extraBonusLabel', state.settings.extraBonus);
+  renderHabitSection('extra', '#extraGrid', '#extraFill', '#extraStatus');
   renderInactiveButtons();
-  updateDailyStreakInfo();
   renderArchived();
   renderHappyBanners();
   renderHomeExtras();   // Home shares this view's Due Now board — keep its rail and pace in step
@@ -5354,13 +5220,11 @@ function renderArchived() {
     <div class="section-title t2" style="margin-top:22px">🎓 Graduated Habits</div>
     <div class="subtle">Habits you've outgrown — resting here with their history intact.</div>
     <div class="habit-list" style="margin-top:10px">${arch.map(h => {
-      const best = h.best || 0;
       return `
       <div class="hrow arch" data-id="${h.id}">
         <span class="hrow-emoji">${escapeHtml(h.emoji || '⭐')}</span>
         <div class="hrow-main">
           <span class="hrow-name">${escapeHtml(h.name)}</span>
-          <span class="row-chip">🏆${best}d best</span>
         </div>
         <button class="btn ghost sm" data-act="unGraduate">↩ Restore</button>
       </div>`;
@@ -5758,25 +5622,6 @@ function showHabitSpinResult(task) {
   renderOneoffs();
 }
 
-// 7-pip indicator tracking progress toward the every-7-consecutive-days bonus.
-function updateDailyStreakInfo() {
-  const el = $('#dailyStreakInfo'); if (!el) return;
-  const today = todayStr(), yest = todayStr(-1);
-  const sd = state.settings.dailyStreakDate;
-  const alive = (sd === today || sd === yest) ? (state.settings.dailyStreak || 0) : 0; // broken if older
-  const intoWeek = alive > 0 ? ((alive - 1) % 7) + 1 : 0; // 1..7 within the current run
-  let pips = '';
-  for (let i = 1; i <= 7; i++) pips += `<span class="pip-dot ${i <= intoWeek ? 'on' : ''}${i === 7 ? ' gold' : ''}"></span>`;
-  const goal = (alive > 0 && intoWeek === 7)
-    ? `✓ +${state.settings.weeklyBonus}🪙!`
-    : `${7 - intoWeek} to +${state.settings.weeklyBonus}🪙`;
-  const sf = state.settings.streakFreeze;
-  const freezeTag = (sf && sf.enabled)
-    ? `<span class="freeze-tag" title="Streak Freezes — each one saves your streak from a missed day">${escapeHtml(sf.emoji || '🧊')} ×${state.streakFreezes || 0}</span>`
-    : '';
-  el.innerHTML = `<span class="streak-count">🔥 ${alive}-day streak</span><span class="pips">${pips}</span><span class="streak-goal">${goal}</span>${freezeTag}`;
-}
-
 function completeHabit(id, timing) {
   const h = state.habits.find(x => x.id === id);
   if (!h) return;
@@ -5788,12 +5633,7 @@ function completeHabit(id, timing) {
   const today = todayStr();
   if (h.dayDate !== today) { h.dayDate = today; h.dayCount = 0; } // new day resets the counter
   if (h.dayCount >= cap) return; // already maxed for today
-  if (h.dayCount === 0) { // streak ticks up on the FIRST rep of the day
-    // streakContinues() also forgives gaps made entirely of Week-Planner-flagged days
-    h.streak = streakContinues(h.lastDone, today) ? h.streak + 1 : 1;
-    h.lastDone = today;
-    h.best = Math.max(h.best || 0, h.streak);
-  }
+  if (h.dayCount === 0) h.lastDone = today;   // first rep of the day
   h.dayCount += 1;
   h.doneAt = finishedAt; h.doneMin = nowMinutes();   // for auto-sort: completed sink to bottom; routine order persists
   SFX.coin();
@@ -5832,7 +5672,7 @@ function completeHabit(id, timing) {
     completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt });
   toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.label}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
   renderHabits();
-  checkBonuses();
+  checkAllDailyGoal();
   passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
   passGoalProgress('habit', { category: h.category || 'Unsorted' });
   save();
@@ -8505,53 +8345,6 @@ function recordPaceToday() {
 }
 function pacePct(e) { return e && e.total ? Math.round(e.done / e.total * 100) : null; }
 
-/* Past days that belong to the SAME loadout as today, newest first, today excluded.
-
-   Comparing a "School day" against a weekend is comparing two different lists of habits —
-   a 60% on a 12-habit school day and a 60% on a 3-habit weekend say completely different
-   things. Scoping the history to the loadout is what makes the number mean something. */
-function paceHistory() {
-  const lo = currentLoadout(), today = todayStr(), log = state.paceLog || {};
-  return Object.keys(log)
-    .filter(d => d < today && (log[d].loadout || 'Default') === lo)
-    .sort().reverse()
-    .map(d => ({ date: d, pct: pacePct(log[d]) }))
-    .filter(x => x.pct != null);
-}
-function renderHomePace() {
-  const box = $('#homePace'); if (!box) return;
-  const p = paceToday();
-  const lo = currentLoadout();
-  const hist = paceHistory();
-  const last = hist[0] || null;
-  const week = hist.slice(0, 7);                 // the 7 most recent CLOSED days on this loadout
-  const avg = week.length ? Math.round(week.reduce((s, x) => s + x.pct, 0) / week.length) : null;
-  // Name the row after the day it actually found, since with loadouts the most recent
-  // comparable day is often not yesterday. "Yesterday" would quietly be a lie otherwise.
-  const lastLabel = !last ? 'Last time'
-    : last.date === todayStr(-1) ? 'Yesterday'
-    : `Last ${new Date(last.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' })}`;
-  // Only mention the loadout once there's more than one in play — for a single-loadout
-  // user the name is noise on every row.
-  const manyLoadouts = new Set(Object.values(state.paceLog || {}).map(e => e.loadout || 'Default')).size > 1;
-  const avgLabel = manyLoadouts ? `${lo} average` : '7-day average';
-  const val = (v, suffix = '') => v == null
-    ? `<span class="ph-v none">no data yet</span>`
-    : `<span class="ph-v">${v}%${suffix}</span>`;
-  box.innerHTML = `
-    <div class="pace-row">
-      <span class="pace-bar">
-        <span class="pace-fill" style="width:${p.pct}%"></span>
-        <span class="pace-rest"></span>
-      </span>
-      <span class="pace-pct">${p.pct}%</span>
-    </div>
-    <div class="pace-hist">
-      <span class="ph-k">${escapeHtml(lastLabel)}</span>${val(last && last.pct)}
-      <span class="ph-k">${escapeHtml(avgLabel)}</span>${val(avg, week.length && week.length < 7 ? ` <span class="ph-v none">(${week.length}d)</span>` : '')}
-    </div>
-    ${manyLoadouts ? `<div class="hint" style="margin-top:10px">Compared against your other 🗂️ ${escapeHtml(lo)} days only.</div>` : ''}`;
-}
 function renderHomeTally() {
   const box = $('#homeToday'); if (!box) return;
   const p = paceToday();
@@ -8564,9 +8357,9 @@ function renderHomeTally() {
 // load can't be written over by a render.
 function renderHomeExtras() {
   renderHomeNow();
-  renderHomeTally();
-  recordPaceToday();     // log before painting the bar so today's row is the fresh one
-  renderHomePace();
+  // The pace panel is gone, but the log it fed is not: dayLoadout() reads paceLog to work
+  // out which loadout a past day belonged to, which the Similar Day Engine depends on.
+  recordPaceToday();
 }
 function renderHome() { renderDueSoon(); renderHomeExtras(); }
 
@@ -8615,58 +8408,14 @@ $('#homeNow').addEventListener('touchmove', e => {
 $('#homeNow').addEventListener('touchend', e => { if (e.touches.length < 2) homePinch = null; }, { passive: true });
 $('#homeNow').addEventListener('touchcancel', () => { homePinch = null; }, { passive: true });
 
-// Fire the "all done" bonus for each section independently (once per day each).
-function checkBonuses() {
+// The Habit Pass "clear all dailies" goal, once a day. This used to be the all-done token
+// bonus; the payout, the consecutive-day streak and the 7-day jackpot are all gone, but the
+// goal still has to fire exactly once, because passGoalProgress() counts every call.
+function checkAllDailyGoal() {
   const today = todayStr();
-  const d = sectionStats('daily');
-  if (d.allComplete && state.settings.dailyBonusDate !== today) {
-    state.settings.dailyBonusDate = today;
-    addTokens(state.settings.dailyBonus);
-    toast(`🎉 ALL DAILY QUESTS DONE! +${state.settings.dailyBonus} bonus`, 'var(--gold)');
-    SFX.jackpot(); burst({ count: 120 }); coinRain();
-    passGoalProgress('allDaily', {});                      // Habit Pass: "clear all dailies" goal
-    // Consecutive-day streak, with Streak Freezes covering missed days.
-    const yest = todayStr(-1);
-    const sd = state.settings.dailyStreakDate;
-    const sf = state.settings.streakFreeze;
-    if (!sd) {
-      state.settings.dailyStreak = 1;
-    } else if (sd === yest) {
-      state.settings.dailyStreak = (state.settings.dailyStreak || 0) + 1; // continuous
-    } else {
-      // Days the Week Planner flagged don't count as misses at all — the user told us
-      // about them going in. Only the UNflagged remainder needs Streak Freezes.
-      const missed = unflaggedMissedDays(sd, today);
-      const flagged = (daysBetween(sd, today) - 1) - missed;
-      if (missed === 0) {
-        state.settings.dailyStreak = (state.settings.dailyStreak || 0) + 1; // every gap day was planned → continuous
-        if (flagged > 0) {
-          SFX.coin();
-          toast(`📅 ${flagged} planned day${flagged > 1 ? 's' : ''} skipped — ${state.settings.dailyStreak}-day streak intact`, 'var(--cyan)');
-        }
-      } else if (sf && sf.enabled && missed <= 30 && (state.streakFreezes || 0) >= missed) {
-        state.streakFreezes -= missed;                                     // spend freezes to bridge the gap
-        state.settings.dailyStreak = (state.settings.dailyStreak || 0) + 1;
-        SFX.coin();
-        toast(`🧊 Streak Freeze used${missed > 1 ? ' ×' + missed : ''} — ${state.settings.dailyStreak}-day streak saved!`, 'var(--cyan)');
-      } else {
-        state.settings.dailyStreak = 1;                                    // not enough freezes → streak breaks
-      }
-    }
-    state.settings.dailyStreakDate = today;
-    // Every 7th day in a row pays the big bonus. A missed day breaks it (resets to 1 above).
-    if (state.settings.dailyStreak % 7 === 0) {
-      addTokens(state.settings.weeklyBonus);
-      toast(`🔥 7-DAY STREAK! +${state.settings.weeklyBonus} TOKENS!`, 'var(--pink)');
-      SFX.jackpot(); screenShake(); burst({ count: 200, colors: ['#c47a3a', '#ffb88a', '#ff9e2c', '#39ff14'] }); coinRain();
-    }
-  }
-  const e = sectionStats('extra');
-  if (e.allComplete && state.settings.extraBonusDate !== today) {
-    state.settings.extraBonusDate = today;
-    addTokens(state.settings.extraBonus);
-    toast(`✨ ALL EXTRA HABITS DONE! +${state.settings.extraBonus} bonus`, 'var(--cyan)');
-    SFX.jackpot(); burst({ count: 120, colors: ['#ff9e2c', '#39ff14', '#c47a3a'] }); coinRain();
+  if (sectionStats('daily').allComplete && state.settings.allDailyDate !== today) {
+    state.settings.allDailyDate = today;
+    passGoalProgress('allDaily', {});
   }
   save();
 }
@@ -8674,10 +8423,6 @@ function checkBonuses() {
 /* =================================================================
    REWARD RESOLUTION (shared by all games)
    ================================================================= */
-function streakFreezeReward() {
-  const sf = state.settings.streakFreeze;
-  return { id: 'streakfreeze', special: 'streakFreeze', emoji: sf.emoji || '🧊', name: sf.name || 'Streak Freeze', tier: sf.tier };
-}
 // A casino-won Wild Card: same "pick any reward of this rarity" token the Habit Pass
 // can pay out, now also a possible spin outcome at its own rarity — gated by a Settings
 // toggle (default on) and drawn at half the weight of an ordinary reward by default
@@ -8689,8 +8434,6 @@ function wildCardCasinoReward(tier) {
 }
 function rewardsByTier(tier) {
   const list = state.rewards.filter(r => r.tier === tier);
-  const sf = state.settings.streakFreeze;
-  if (sf && sf.enabled && sf.tier === tier) list.push(streakFreezeReward()); // special reward joins its rarity pool
   if (state.settings.wildCardsInCasino !== false) list.push(wildCardCasinoReward(tier));
   return list;
 }
@@ -8729,9 +8472,7 @@ function applyResult(res) {
     state.stats.tokensWon += res.amount;
   } else if (res.type === 'reward') {
     state.stats.wins++;
-    if (res.reward.special === 'streakFreeze') {
-      state.streakFreezes = (state.streakFreezes || 0) + 1; // banked, not added to redeemable inventory
-    } else if (res.reward.special === 'wildCard') {
+    if (res.reward.special === 'wildCard') {
       addWildCard(res.reward.tier);   // straight into Winnings as a wild card, same as a Pass payout
       logEvent('reward_won', { entityType: 'wildcard', entityId: 'wildcard-' + res.reward.tier, name: res.reward.name, tier: res.reward.tier, wonAt: Date.now() });
     } else {
@@ -8767,9 +8508,7 @@ function showReveal(res) {
     $('#revealEmoji').style.color = ti.hex;
     $('#revealName').textContent = res.reward.name;
     $('#revealName').style.textShadow = `0 0 16px ${ti.hex}`;
-    $('#revealSub').textContent = res.reward.special === 'streakFreeze'
-      ? `🧊 Banked! Protects your daily streak from a missed day.`
-      : res.reward.special === 'wildCard'
+    $('#revealSub').textContent = res.reward.special === 'wildCard'
       ? `🃏 Banked! Redeem it for any ${ti.label} reward from Winnings.`
       : `${ti.label} reward — added to your Winnings 🏆`;
     $('#revealCard').style.borderColor = ti.hex;
@@ -10143,8 +9882,7 @@ function prizeTileHTML(r, ti) {
   const bonus = lit ? stockCountOf(r.id) : 0;
   const redemption = redeemWindow();
   const locked = lit && !redemption.open;
-  const title = r.special === 'streakFreeze' ? 'Edit the Streak Freeze in Settings'
-    : wild ? (lit ? `${n} held — tap to trade for any ${ti.label} reward` : `Can drop from any ${ti.label} game`)
+  const title = wild ? (lit ? `${n} held — tap to trade for any ${ti.label} reward` : `Can drop from any ${ti.label} game`)
     : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim${bonus ? ` (${bonus} loadout bonus, spent first)` : ''}` : 'Not won yet — tap to edit'));
   return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
@@ -10278,7 +10016,6 @@ function passRewardFace(d) {
     const r = d.rewardId ? state.rewards.find(x => x.id === d.rewardId) : null;
     return { emoji: (r && r.emoji) || TIERS[d.tier].emoji, label: TIERS[d.tier].label, hex: TIERS[d.tier].hex };
   }
-  if (d.type === 'powerup') return { emoji: '🧊', label: 'Freeze', hex: '#00f0ff' };
   return { emoji: '❔', label: '', hex: '#fff' };
 }
 
@@ -10363,7 +10100,7 @@ function applyLoadoutStock() {
     if (!n) return;
     // EVERY reward at that rarity, each to its own count — not n items shared between them.
     const pool = cfg.wild ? rewardsByTier(tier) : rewardsByTier(tier).filter(r => !r.special);
-    pool.filter(r => r.special !== 'streakFreeze').forEach(r => {
+    pool.forEach(r => {
       for (let have = ownedOf(r.id).length; have < n; have++) {
         if (r.special === 'wildCard') addWildCard(tier, name);
         else state.inventory.unshift({ id: uid(), rewardId: r.id, emoji: r.emoji, name: r.name,
@@ -10446,7 +10183,6 @@ function reconcileLoadoutStock() {
 function grantPassReward(d) {
   if (d.type === 'tokens') { addTokens(d.amount); }
   else if (d.type === 'wild') { if (state.pass.wildCardsEnabled !== false) addWildCard(d.tier); }
-  else if (d.type === 'powerup') { state.streakFreezes = (state.streakFreezes || 0) + 1; }
   else if (d.type === 'prize') {
     let r = d.rewardId ? state.rewards.find(x => x.id === d.rewardId) : null;
     if (!r) { const pool = rewardsByTier(d.tier); r = pool.length ? pick(pool) : null; }
@@ -10988,13 +10724,9 @@ function renderSettings() {
   renderWildCardSettings();
   renderReminders();
   renderScreenTime();
-  renderStreakFreezeEditor();
   renderCategories();
   renderPassSettings();
   renderGameConfigs();
-  $('#dailyBonusInput').value = state.settings.dailyBonus;
-  $('#extraBonusInput').value = state.settings.extraBonus;
-  $('#weeklyBonusInput').value = state.settings.weeklyBonus;
   $('#soundToggle').checked = state.settings.sound;
   $('#motionToggle').checked = state.settings.reducedMotion;
   syncTimingSettings();
@@ -11159,24 +10891,6 @@ function renderScreenTime() {
     </div>
     <div class="st-status ${st.shielded ? 'locked' : 'open'}">${st.shielded ? '🔒 Apps are blocked right now' : '🔓 Apps are unlocked right now'}</div>
     <div class="hint">${marked ? `${marked} reward${marked === 1 ? '' : 's'} connected.` : 'No rewards connected yet — open 🎁 Rewards above and tap “Connect to Screen Time” on a timed reward to make claiming it unlock your apps.'} Apple never tells this app which apps you picked, only how many. Deleting the app removes every block instantly.</div>`;
-}
-function renderStreakFreezeEditor() {
-  const sf = state.settings.streakFreeze; if (!sf) return;
-  $('#streakFreezeEditor').innerHTML = `
-    <div class="row between">
-      <div><div style="font-weight:700">Enabled</div><div class="hint">When on, it can drop in the casino and auto-protects your streak.</div></div>
-      <label class="toggle"><input type="checkbox" id="sfEnabled" ${sf.enabled ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label>
-    </div>
-    <div class="editrow" style="margin-top:10px;${sf.enabled ? '' : 'opacity:.45'}">
-      <input class="emoji-in" id="sfEmoji" maxlength="4" value="${escapeHtml(sf.emoji)}">
-      <input class="name-in" id="sfName" value="${escapeHtml(sf.name)}" placeholder="Streak Freeze">
-      <select class="sect-in" id="sfTier" title="Rarity it drops at">
-        ${REWARD_TIERS.map(t => `<option value="${t}" ${sf.tier === t ? 'selected' : ''}>${TIERS[t].emoji} ${TIERS[t].label}</option>`).join('')}
-      </select>
-      <span class="pill">🧊 owned: <b>${state.streakFreezes || 0}</b></span>
-      <span class="pill" style="border-color:rgba(255,158,44,.4);color:var(--cyan)" title="This reward is permanent">🔒 can't be deleted</span>
-    </div>
-    <div class="hint">Each freeze you own covers one missed day, keeping your 7-day streak alive — just like Duolingo.</div>`;
 }
 const OUTCOME_ORDER = ['blank', 'tokens', 'common', 'rare', 'epic', 'legendary'];
 function renderGameConfigs() {
@@ -11561,11 +11275,11 @@ function appContext() {
     const sched = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
     const age = daysAgo(firstSeen[h.name]), last = daysAgo(lastSeen[h.name]);
     const tmins = habitCurrentMinutes(h);
-    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` on tier ${lvl.idx + 1}/${lvl.n}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk, streak ${currentStreak(h)} (best ${h.best || 0})${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
+    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` on tier ${lvl.idx + 1}/${lvl.n}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
   });
   if (archived.length) {
     L.push('RECENTLY GRADUATED (archived — history intact, can be restored):');
-    archived.slice(-6).forEach(h => L.push(`  - id=${h.id} "${h.name}" (best streak ${h.best || 0})`));
+    archived.slice(-6).forEach(h => L.push(`  - id=${h.id} "${h.name}"`));
   }
 
   // --- Week Planner: kinds of day + the habit Modes that adapt to them ---
@@ -11706,14 +11420,11 @@ function appContext() {
   const rewards = (state.rewards || []).map(r => `id=${r.id} ${r.emoji} "${r.name}" [${r.tier}${r.minutes ? `, ${r.minutes}m` : ''}]`).join('; ') || 'none';
   L.push('', 'EDITABLE ECONOMY (current values — change these with settingsChange / rewardEdit):');
   L.push(`  - settings.tierRewards: easy=${tierReward('easy')}, medium=${tierReward('medium')}, hard=${tierReward('hard')} (one-off quest payouts)`);
-  L.push(`  - Bonuses: settings.dailyBonus=${state.settings.dailyBonus}, settings.extraBonus=${state.settings.extraBonus}, settings.weeklyBonus=${state.settings.weeklyBonus}`);
   L.push(`  - Happy hours (settings.happyHours.<Category>.{start,end,mult,enabled}): ${hh}`);
   L.push(`  - Habit Pass (state.pass): xpPerLevel=${state.pass.xpPerLevel}, proCost=${state.pass.proCost}, perXP.daily=${state.pass.perXP.daily}, perXP.task=${state.pass.perXP.task}, xpSources={dailies:${state.pass.xpSources.dailies !== false}, tasks:${state.pass.xpSources.tasks !== false}, goals:${state.pass.xpSources.goals !== false}}`);
   L.push(`  - Wheel game (state.games.wheel): cost=${g.cost}, tokenWin=[${g.tokenWin[0]},${g.tokenWin[1]}], weights=${JSON.stringify(g.weights)}`);
   L.push(`  - Rewards (edit in place with rewardEdit, never recreate): ${rewards}`);
   L.push(`  - Categories (rename/delete with categoryRename/categoryDelete; "Unsorted" is fixed): ${(state.categories || []).join(', ')} · Tokens on hand: ${state.tokens}`);
-  const sf = state.settings.streakFreeze || {};
-  L.push(`  - Streak Freeze (settings.streakFreeze.{enabled,tier,emoji,name}): enabled=${!!sf.enabled}, tier=${sf.tier}, emoji=${sf.emoji}, name="${sf.name}" · ${state.streakFreezes || 0} owned`);
   const gds = (state.pass.goalDefs || []).map(d => `id=${d.id} "${goalDefLabel(d)}" +${d.xp}xp`).join('; ') || 'none';
   L.push(`  - Pass weekly goals (add/edit/remove with goalDef proposals): ${gds}`);
   const poolDesc = pk => REWARD_TIERS.map(tier => {
@@ -11754,7 +11465,7 @@ Nothing is applied until the user taps Apply on each proposal card — propose, 
 
 PROPOSAL SHAPES (omit any field you're not setting):
 Editing existing things — PREFER THESE:
-- {"type":"settingsChange","path":"settings.tierRewards.easy","to":<value>,"reason":"..."}  dot-path into state. Allowed paths: settings.tierRewards.{easy,medium,hard}, settings.dailyBonus, settings.extraBonus, settings.weeklyBonus, settings.happyHours.<Category>.{start,end,mult,enabled}, settings.streakFreeze.{enabled,tier,emoji,name} (enabled=true|false, tier=common|rare|epic|legendary, emoji/name=short strings), pass.xpPerLevel, pass.proCost, pass.perXP.{daily,task}, games.wheel.cost, games.wheel.tokenWin.0, games.wheel.tokenWin.1, games.wheel.weights.{blank,tokens,common,rare,epic,legendary}. Sound & reduced-motion settings are NOT editable — never propose changes to them.
+- {"type":"settingsChange","path":"settings.tierRewards.easy","to":<value>,"reason":"..."}  dot-path into state. Allowed paths: settings.tierRewards.{easy,medium,hard}, settings.happyHours.<Category>.{start,end,mult,enabled}, pass.xpPerLevel, pass.proCost, pass.perXP.{daily,task}, games.wheel.cost, games.wheel.tokenWin.0, games.wheel.tokenWin.1, games.wheel.weights.{blank,tokens,common,rare,epic,legendary}. Sound & reduced-motion settings are NOT editable — never propose changes to them.
 - {"type":"rewardEdit","id":"<existing reward id>","name":"...","emoji":"...","tier":"common|rare|epic|legendary","minutes":0}  edits a reward in place; include only fields you're changing; NEVER creates one
 - {"type":"tierChange","targetKind":"habit|quest","id":"<id>","to":"<value>","reason":"..."}  quests: easy|medium|hard. Habits with a difficulty ladder: the tier NUMBER (1 = easiest, counting up) — the ladder can be any height, see "on tier N/M" in the habit list. Habits with no ladder: a token number.
 - {"type":"scheduleChange","id":"<habit id>","days":[7 booleans Sun..Sat],"reason":"..."}
@@ -11794,9 +11505,6 @@ const SETTINGS_PATHS = {
   'settings.tierRewards.easy':   { num: [0, 999], read: () => tierReward('easy'),   write: tierRewardWrite('easy') },
   'settings.tierRewards.medium': { num: [0, 999], read: () => tierReward('medium'), write: tierRewardWrite('medium') },
   'settings.tierRewards.hard':   { num: [0, 999], read: () => tierReward('hard'),   write: tierRewardWrite('hard') },
-  'settings.dailyBonus':  { num: [0, 9999],   read: () => state.settings.dailyBonus,  write: v => state.settings.dailyBonus = v },
-  'settings.extraBonus':  { num: [0, 9999],   read: () => state.settings.extraBonus,  write: v => state.settings.extraBonus = v },
-  'settings.weeklyBonus': { num: [0, 999999], read: () => state.settings.weeklyBonus, write: v => state.settings.weeklyBonus = v },
   'pass.xpPerLevel': { num: [1, 999],   read: () => state.pass.xpPerLevel, write: v => state.pass.xpPerLevel = v },
   'pass.proCost':    { num: [0, 99999], read: () => state.pass.proCost,    write: v => state.pass.proCost = v },
   'pass.perXP.daily': { num: [0, 99], read: () => state.pass.perXP.daily, write: v => state.pass.perXP.daily = v },
@@ -11813,14 +11521,6 @@ const SETTINGS_PATHS = {
 // Streak Freeze config: bool/enum/string fields, so each gets its own parse() validator
 // instead of the numeric clamp path. parse returns undefined = reject the proposal.
 const parseBool = v => (typeof v === 'boolean') ? v : (v === 'true' ? true : v === 'false' ? false : undefined);
-SETTINGS_PATHS['settings.streakFreeze.enabled'] = { parse: parseBool,
-  read: () => !!state.settings.streakFreeze.enabled, write: v => state.settings.streakFreeze.enabled = v };
-SETTINGS_PATHS['settings.streakFreeze.tier'] = { parse: v => REWARD_TIERS.includes(v) ? v : undefined,
-  read: () => state.settings.streakFreeze.tier, write: v => state.settings.streakFreeze.tier = v };
-SETTINGS_PATHS['settings.streakFreeze.name'] = { parse: v => { v = String(v == null ? '' : v).trim(); return v ? v.slice(0, 40) : undefined; },
-  read: () => state.settings.streakFreeze.name, write: v => state.settings.streakFreeze.name = v };
-SETTINGS_PATHS['settings.streakFreeze.emoji'] = { parse: v => { v = String(v == null ? '' : v).trim(); return v ? v.slice(0, 4) : undefined; },
-  read: () => state.settings.streakFreeze.emoji, write: v => state.settings.streakFreeze.emoji = v };
 // Happy-hour paths are validated dynamically (path depends on the category name).
 function happyHourField(path) {
   const m = /^settings\.happyHours\.(.+)\.(start|end|mult|enabled)$/.exec(path);
@@ -13898,13 +13598,6 @@ function switchVersion() {
 }
 $('#switchVersion').addEventListener('click', () => { SFX.click(); switchVersion(); });
 
-// Sound toggle (header)
-$('#soundBtn').addEventListener('click', () => {
-  state.settings.sound = !state.settings.sound; save(); renderTopbar();
-  if (state.settings.sound) { ac(); SFX.coin(); }
-  toast(state.settings.sound ? '🔊 Sound on' : '🔇 Muted', 'var(--cyan)');
-});
-
 // Habit completion (delegated) — whole compact row is the tap target
 function onHabitsClick(e) {
   if (Date.now() - lastSwipeAt < 400) return;   // a tier swipe just ended — don't treat it as a tap
@@ -15381,18 +15074,6 @@ $('#sortHabits').addEventListener('click', () => {
 $('#wildCasinoOn').addEventListener('change', e => { state.settings.wildCardsInCasino = e.target.checked; save(); });
 $('#gapTokenOn').addEventListener('change', e => { state.settings.gapCheckinToken = e.target.checked; save(); });
 $('#wildCasinoWeight').addEventListener('input', e => { state.settings.wildCardCasinoWeightPct = clamp(parseInt(e.target.value) || 0, 0, 500); save(); });
-$('#streakFreezeEditor').addEventListener('input', e => {
-  const sf = state.settings.streakFreeze;
-  if (e.target.id === 'sfEmoji') sf.emoji = e.target.value;
-  else if (e.target.id === 'sfName') sf.name = e.target.value;
-  else return;
-  save();
-});
-$('#streakFreezeEditor').addEventListener('change', e => {
-  const sf = state.settings.streakFreeze;
-  if (e.target.id === 'sfEnabled') { sf.enabled = e.target.checked; save(); renderStreakFreezeEditor(); renderHabits(); renderPrizes(); }
-  else if (e.target.id === 'sfTier') { sf.tier = e.target.value; save(); renderPrizes(); }
-});
 
 // ---- Settings: game configs ----
 $('#gameConfigs').addEventListener('input', e => {
@@ -15438,9 +15119,6 @@ $('#gameConfigs').addEventListener('input', e => {
 });
 
 // ---- Settings: general ----
-$('#dailyBonusInput').addEventListener('input', e => { state.settings.dailyBonus = clamp(parseInt(e.target.value) || 0, 0, 9999); save(); renderHabits(); });
-$('#extraBonusInput').addEventListener('input', e => { state.settings.extraBonus = clamp(parseInt(e.target.value) || 0, 0, 9999); save(); renderHabits(); });
-$('#weeklyBonusInput').addEventListener('input', e => { state.settings.weeklyBonus = clamp(parseInt(e.target.value) || 0, 0, 999999); save(); renderHabits(); });
 $('#soundToggle').addEventListener('change', e => { state.settings.sound = e.target.checked; save(); renderTopbar(); if (e.target.checked) { ac(); SFX.coin(); } });
 $('#motionToggle').addEventListener('change', e => { state.settings.reducedMotion = e.target.checked; document.body.classList.toggle('reduced', e.target.checked); save(); });
 
