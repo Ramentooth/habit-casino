@@ -60,6 +60,9 @@
       --orange: #ff6b00;
       --gold: #ffb020;
 
+      /* The token coin. Inlined because the app is one file with no asset pipeline;
+         96px webp so it stays crisp at 3x on the 22px balance and costs ~7KB. */
+      --tok: url("data:image/webp;base64,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");
       --t-blank: #5a6473;
       --t-tokens: #ffe600;
       --t-common: #9fb0c3;
@@ -1224,6 +1227,18 @@
     .qadd-more-btn { margin-top: 8px; }
 
     /* Stats / analytics view */
+    /* Sized in em so it tracks whatever text it sits in, from the 22px balance down to
+       the 11px reward chips, without a size rule per site. */
+    .tok {
+      display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -.16em;
+      background: var(--tok) center/contain no-repeat; flex: 0 0 auto;
+    }
+    .lo-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .dup-group { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--panel-edge); border-radius: 12px; background: rgba(0,0,0,0.22); }
+    .dup-name { font-weight: 700; margin-bottom: 6px; }
+    .dup-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .dup-meta { font-size: 13px; font-weight: 700; color: var(--ink-dim); }
+    .lo-chip { font-size: 12px; padding: 6px 10px; }
     .stats-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
     .stat-chip {
       display: inline-flex; flex-direction: column; align-items: center; gap: 1px; min-width: 86px;
@@ -1247,6 +1262,108 @@
     }
     .time-name { font-weight: 700; }
     .time-when { font-weight: 700; color: var(--cyan); font-size: 13px; }
+
+    /* ---- Weekly Comparison -------------------------------------------------------------
+       Three channels carrying three values, and nothing else in here gets a colour:
+       ORANGE is this week, GREY is the usual week, CHARCOAL is the normal range. The panel
+       sits deliberately outside the app's neon palette — everywhere else colour is there to
+       make you want something, and on this one it has to make you read something.
+
+       The band is a LIFT off the near-black card rather than a dark fill: on #141417 a
+       "near-black charcoal" would simply be invisible. Same intent, inverted substrate.   */
+    .wc-panel {
+      --wc-now: #ff9e2c;                     /* this week — the app's own accent orange */
+      --wc-now-soft: rgba(255,158,44,.20);
+      --wc-avg: #8b949e;                     /* your average week */
+      --wc-band: rgba(255,255,255,.055);     /* typical range */
+      --wc-band-edge: rgba(255,255,255,.10);
+      --wc-grid: rgba(255,255,255,.07);
+      --wc-ink: #e9ecf1;
+      --wc-dim: #8b949e;
+    }
+    .wc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; }
+    .wc-head > div:first-child { min-width: 0; flex: 1 1 220px; }
+    .wc-controls { display: flex; gap: 8px; flex-wrap: wrap; flex: 0 0 auto; }
+    .wc-range { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700; flex: 0 0 auto;
+                padding: 7px 10px; border-radius: 9px; max-width: 46vw; }
+    .wc-chip {
+      display: inline-block; margin-top: 6px; padding: 3px 9px; border-radius: 999px;
+      border: 1px solid var(--wc-band-edge); background: var(--wc-band);
+      font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--wc-dim);
+    }
+    .wc-mount { position: relative; margin-top: 12px; }
+    .wc-chart { display: block; width: 100%; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+    .wc-chart text { font-family: 'Rajdhani', sans-serif; font-weight: 700; fill: var(--wc-dim); }
+    .wc-ylab { font-size: 11px; }
+    .wc-xlab { font-size: 12px; }
+    .wc-xlab.sel { fill: var(--wc-ink); }
+    .wc-ytitle { font-size: 11px; opacity: .8; letter-spacing: .4px; }
+    .wc-grid-line { stroke: var(--wc-grid); stroke-width: 1; shape-rendering: crispEdges; }
+    .wc-base { stroke: var(--wc-band-edge); stroke-width: 1; shape-rendering: crispEdges; }
+    .wc-band-fill { fill: var(--wc-band); stroke: var(--wc-band-edge); stroke-width: 1; }
+    .wc-avg-line { fill: none; stroke: var(--wc-avg); stroke-width: 1.6; stroke-dasharray: 5 4; stroke-linecap: round; }
+    .wc-avg-dot { fill: var(--wc-avg); }
+    .wc-now-line { fill: none; stroke: var(--wc-now); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .wc-now-dot { fill: var(--wc-now); stroke: var(--gs-panel, #141417); stroke-width: 1.6; }
+    .wc-now-dot.out { stroke: var(--wc-now); stroke-width: 2; }
+    .wc-halo { fill: var(--wc-now-soft); }
+    .wc-flag { fill: var(--wc-now); opacity: .85; }
+    .wc-colhl { fill: #fff; opacity: 0; transition: opacity .14s; pointer-events: none; }
+    .wc-colhl.sel { opacity: .05; }
+    .wc-vline { stroke: var(--wc-band-edge); stroke-width: 1; opacity: 0; transition: opacity .14s; pointer-events: none; }
+    .wc-vline.sel { opacity: 1; }
+    .wc-hit { fill: transparent; cursor: pointer; outline: none; }
+
+    /* Docked above the plot, laid out across. min-height holds the box steady so the
+       chart underneath doesn't hop a few pixels every time you slide onto a day whose
+       note runs to a second line. */
+    .wc-card {
+      margin: 0 0 10px; padding: 10px 13px; border-radius: 13px; min-height: 68px;
+      background: #17171b; border: 1px solid rgba(255,255,255,.12);
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .wc-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 18px; flex-wrap: wrap; }
+    .wc-card h4 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: .3px; color: var(--wc-ink); }
+    .wc-today {
+      margin-left: 7px; padding: 2px 7px; border-radius: 999px; vertical-align: 2px;
+      background: var(--wc-now-soft); color: var(--wc-now);
+      font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
+    }
+    .wc-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+    .wc-stat { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--wc-dim); }
+    .wc-stat b { color: var(--wc-ink); font-variant-numeric: tabular-nums; }
+    .wc-sep { margin: 0 7px; opacity: .4; }
+    .wc-sw { width: 11px; flex: 0 0 auto; }
+    .wc-sw.now { height: 11px; border-radius: 50%; background: var(--wc-now); }
+    .wc-sw.avg { height: 0; border-top: 2px dashed var(--wc-avg); }
+    .wc-sw.band { height: 11px; border-radius: 3px; background: var(--wc-band); border: 1px solid var(--wc-band-edge); }
+    .wc-note { margin-top: 7px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.07);
+               font-size: 12px; font-weight: 700; line-height: 1.4; color: var(--wc-dim); }
+    .wc-note .tag { letter-spacing: .5px; text-transform: uppercase; color: var(--wc-now); }
+    .wc-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px;
+                 font-size: 12px; font-weight: 700; color: var(--wc-dim); }
+    .wc-legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .wc-foot { margin-top: 8px; font-size: 12px; font-weight: 600; line-height: 1.4; color: var(--wc-dim); opacity: .85; }
+
+    @keyframes wcFade { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes wcDraw { from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 } }
+    /* Load order is the sentence the chart reads as: here is normal, here is your usual
+       line through it, and THEN here is this week drawn over the top. */
+    .wc-anim .wc-band-fill { animation: wcFade .26s ease both; }
+    .wc-anim .wc-avg-line, .wc-anim .wc-avg-dot { animation: wcFade .26s .10s ease both; }
+    .wc-anim .wc-now-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: wcDraw .5s .18s cubic-bezier(.22,.61,.36,1) both; }
+    .wc-anim .wc-now-dot, .wc-anim .wc-halo, .wc-anim .wc-flag { animation: wcFade .3s .5s ease both; }
+    @media (prefers-reduced-motion: reduce) {
+      .wc-anim .wc-band-fill, .wc-anim .wc-avg-line, .wc-anim .wc-avg-dot,
+      .wc-anim .wc-now-line, .wc-anim .wc-now-dot, .wc-anim .wc-halo, .wc-anim .wc-flag {
+        animation: none !important; stroke-dashoffset: 0 !important; }
+    }
+    @media (max-width: 560px) {
+      .wc-ytitle.wc-long { display: none; }
+      .wc-stats { gap: 6px 14px; }
+      .wc-card { min-height: 0; }
+    }
+    @media (min-width: 561px) { .wc-ytitle.wc-short { display: none; } }
 
     /* Live per-category happy-hour banner (Habits + Tasks tabs) */
     .hh-banner {
@@ -2597,7 +2714,7 @@
     <div class="logo"><span class="bolt">⚡</span> HABIT&nbsp;CASINO</div>
     <span class="ver-badge" id="verBadge"></span>
     <div class="balance" id="balance">
-      <span class="coin">🪙</span>
+      <span class="coin"><i class="tok"></i></span>
       <span class="amount" id="tokenAmt">0</span>
     </div>
     <span class="happy-badge" id="happyBadge" style="display:none">🎉 HAPPY HOUR ×2</span>
@@ -2820,7 +2937,7 @@
             <div class="wheel-hub">🎯</div>
           </div>
           <div class="result-banner" id="wheelResult"></div>
-          <button class="btn gold cost" id="spinWheel">SPIN <span class="c" id="wheelCost">🪙 3</span></button>
+          <button class="btn gold cost" id="spinWheel">SPIN <span class="c" id="wheelCost"><i class="tok"></i> 3</span></button>
         </div>
       </div>
 
@@ -2839,7 +2956,7 @@
             </div>
           </div>
           <div class="result-banner" id="slotsResult"></div>
-          <button class="btn pink cost" id="pullSlots">PULL <span class="c" id="slotsCost">🪙 5</span></button>
+          <button class="btn pink cost" id="pullSlots">PULL <span class="c" id="slotsCost"><i class="tok"></i> 5</span></button>
         </div>
       </div>
 
@@ -2855,7 +2972,7 @@
             <div class="die" id="die2"></div>
           </div>
           <div class="result-banner" id="diceResult"></div>
-          <button class="btn cyan cost" id="rollDice">ROLL <span class="c" id="diceCost">🪙 2</span></button>
+          <button class="btn cyan cost" id="rollDice">ROLL <span class="c" id="diceCost"><i class="tok"></i> 2</span></button>
         </div>
       </div>
 
@@ -2868,7 +2985,7 @@
           </div>
           <div class="mbox" id="mbox"><span class="lid">🎁</span></div>
           <div class="result-banner" id="boxResult"></div>
-          <button class="btn green cost" id="openBox">OPEN <span class="c" id="boxCost">🪙 8</span></button>
+          <button class="btn green cost" id="openBox">OPEN <span class="c" id="boxCost"><i class="tok"></i> 8</span></button>
         </div>
       </div>
 
@@ -2893,7 +3010,7 @@
             <div id="rouSlip"></div>
             <div class="row" style="justify-content:center;gap:10px;margin-top:8px">
               <button class="btn ghost sm" data-act="rouClear">✕ Clear bets</button>
-              <button class="btn green cost" id="rouSpinBtn" data-act="rouSpin">SPIN <span class="c" id="rouStake">🪙 0</span></button>
+              <button class="btn green cost" id="rouSpinBtn" data-act="rouSpin">SPIN <span class="c" id="rouStake"><i class="tok"></i> 0</span></button>
             </div>
           </div>
         </div>
@@ -2908,7 +3025,7 @@
           </div>
           <div class="ultra-stage" id="ultraStage"></div>
           <div class="result-banner" id="ultraResult"></div>
-          <button class="btn cost" id="openUltra">OPEN PACK <span class="c" id="ultraCost">🪙 25</span></button>
+          <button class="btn cost" id="openUltra">OPEN PACK <span class="c" id="ultraCost"><i class="tok"></i> 25</span></button>
         </div>
       </div>
     </section>
@@ -2995,6 +3112,7 @@
         <div class="subtle">What earns you tokens, and how many.</div>
         <div class="row" style="margin:8px 0 0"><button class="btn ghost sm" id="sortHabits">⇅ Sort: Daily → Extra</button></div>
         <div class="editor-list" id="habitEditor"></div>
+        <div id="habitDupes"></div>
         <div class="row" style="gap:8px">
           <input class="name-in" id="quickHabit" placeholder="Quick-add a habit — type &amp; press Enter">
           <button class="btn ghost sm" id="addHabit">+ Add</button>
@@ -3007,15 +3125,15 @@
         <div id="tierRewards">
           <div class="row between" style="margin-top:12px">
             <div><div style="font-weight:700;color:var(--tier-easy)">Easy</div><div class="hint">Small wins &amp; quick chores.</div></div>
-            <span class="pill">🪙 <input class="num-in" data-tier-reward="easy" type="number" min="0" max="999"></span>
+            <span class="pill"><i class="tok"></i> <input class="num-in" data-tier-reward="easy" type="number" min="0" max="999"></span>
           </div>
           <div class="row between" style="margin-top:10px">
             <div><div style="font-weight:700;color:var(--gold)">Medium</div><div class="hint">The everyday default.</div></div>
-            <span class="pill">🪙 <input class="num-in" data-tier-reward="medium" type="number" min="0" max="999"></span>
+            <span class="pill"><i class="tok"></i> <input class="num-in" data-tier-reward="medium" type="number" min="0" max="999"></span>
           </div>
           <div class="row between" style="margin-top:10px">
             <div><div style="font-weight:700;color:var(--tier-hard)">Hard</div><div class="hint">Big, effortful quests.</div></div>
-            <span class="pill">🪙 <input class="num-in" data-tier-reward="hard" type="number" min="0" max="999"></span>
+            <span class="pill"><i class="tok"></i> <input class="num-in" data-tier-reward="hard" type="number" min="0" max="999"></span>
           </div>
         </div>
       </div>
@@ -3036,7 +3154,7 @@
 
         <div class="sub-head">🧭 Gap check-ins</div>
         <div class="subtle">When two hours or more go by with nothing logged, the Schedule marks it with a “?”. Answering what you were doing is optional and always skippable.</div>
-        <div class="row between" style="margin-top:10px"><span>Pay 1 🪙 for answering one</span><label class="toggle"><input type="checkbox" id="gapTokenOn"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row between" style="margin-top:10px"><span>Pay 1 <i class="tok"></i> for answering one</span><label class="toggle"><input type="checkbox" id="gapTokenOn"><span class="track"></span><span class="knob"></span></label></div>
       </div>
 
       <div class="panel set-section">
@@ -3073,7 +3191,7 @@
         <div class="row between"><span>🏅 Goal completions</span><label class="toggle"><input type="checkbox" id="passSrcGoals"><span class="track"></span><span class="knob"></span></label></div>
         <hr class="set-sep">
         <div class="row"><span>XP per level</span><input class="num-in" id="passXpPerLevel" type="number" min="1" max="999"></div>
-        <div class="row"><span>🪙 PRO unlock cost</span><input class="num-in" id="passProCost" type="number" min="0" max="99999"></div>
+        <div class="row"><span><i class="tok"></i> PRO unlock cost</span><input class="num-in" id="passProCost" type="number" min="0" max="99999"></div>
         <hr class="set-sep">
         <div class="row between"><span>Grant tier rewards</span><label class="toggle"><input type="checkbox" id="passRewardsOn"><span class="track"></span><span class="knob"></span></label></div>
         <div class="row between"><span>🃏 Wild Cards (every 10 levels)</span><label class="toggle"><input type="checkbox" id="passWildOn"><span class="track"></span><span class="knob"></span></label></div>
@@ -3420,6 +3538,13 @@ function defaultState() {
                card10: { rare: 60, epic: 30, legendary: 10 } },
     },
     settings: { sound: true, reducedMotion: false,
+                // Analytics → Weekly Comparison: how many COMPLETED weeks feed the
+                // weekday averages and the typical range. One of the WC_RANGES widths.
+                weekCmpWeeks: 12,
+                // Which loadout's days the same chart counts. '' means "never chosen",
+                // which resolves at read time to whatever loadout is active now; 'all' is
+                // an explicit choice and is left alone. See wcLoadout().
+                weekCmpLoadout: '',
                 // Stamped the first time every Daily Quest is clear on a given day. The
                 // all-done token bonus it used to gate is gone; the Habit Pass "clear all
                 // dailies" goal still needs it, because passGoalProgress() counts calls.
@@ -3870,8 +3995,14 @@ function normalizeSegments(segs, startedAt, pausedAt) {
 
 // One loadout's daily reward allowance, sanitized. Counts are PER REWARD at that
 // rarity, not a total: two common rewards at 5 each means five of both.
-const STOCK_DEFAULTS = { common: 5, rare: 3, epic: 1, legendary: 0 };
 function normalizeStock(v) {
+  /* Declared INSIDE the function on purpose. normalizeStock() is reached from load(),
+     which runs from `let state = load(bootRaw)` far above this line — so as a top-level
+     `const` this was in its temporal dead zone and threw "Cannot access STOCK_DEFAULTS
+     before initialization" for every save that had any loadout stock, sending it through
+     load()'s salvage path (a blanket spread with none of the migrations) on every single
+     boot. Found 2026-10-06 by tests/boot-order.test.js. */
+  const STOCK_DEFAULTS = { common: 5, rare: 3, epic: 1, legendary: 0 };
   v = v || {};
   const counts = {};
   REWARD_TIERS.forEach(t => {
@@ -3917,6 +4048,26 @@ function cloneChildren(list) {
 // Fill in any missing fields so saves from older versions keep working.
 function normalizeHabit(h) {
   h = h || {};
+  /* A habit used to belong to exactly ONE loadout, so the same habit in three loadouts was
+     three objects with three ids — editing one edited one. It now carries a SET of them.
+     `loadout` stays as a mirror of the first entry: alpha is a build behind beta, and its
+     load() reads h.loadout and would otherwise sweep every habit into Default. */
+  const one = (h.loadout != null && String(h.loadout).trim()) ? String(h.loadout).trim() : 'Default';
+  const rawLo = Array.isArray(h.loadouts) ? h.loadouts.map(x => String(x == null ? '' : x).trim()).filter(Boolean) : [];
+  const loadouts = rawLo.length ? [...new Set(rawLo)] : [one];
+  // Which tier this habit was last left on, PER loadout — "hard cello on Wednesdays, easy
+  // on Thursdays" is the whole point of sharing one habit between them.
+  const tierByLoadout = (() => {
+    const src = (h.tierByLoadout && typeof h.tierByLoadout === 'object' && !Array.isArray(h.tierByLoadout)) ? h.tierByLoadout : {};
+    const out = {};
+    Object.keys(src).forEach(k => {
+      const v = parseInt(src[k]), name = String(k).trim();
+      if (name && Number.isFinite(v)) out[name] = v;
+    });
+    // A pre-split save has one loadout and one curTier, and that pairing IS the memory.
+    if (!Object.keys(out).length && Number.isFinite(h.curTier)) out[one] = h.curTier;
+    return out;
+  })();
   return {
     id: h.id || uid(),
     emoji: (h.emoji != null ? h.emoji : '⭐'),
@@ -3937,7 +4088,9 @@ function normalizeHabit(h) {
     // Loadout tag: null = universal (shows under every loadout); otherwise must name
     // one of `state.contexts` at render time (validated there, not here, since contexts
     // can change independently) — here we just preserve whatever string was saved.
-    loadout: (h.loadout != null && String(h.loadout).trim()) ? String(h.loadout).trim() : 'Default',
+    loadouts,
+    tierByLoadout,
+    loadout: loadouts.includes(one) ? one : loadouts[0],   // legacy mirror — see above
     why: h.why != null ? String(h.why) : '',
     // What the habit actually involves, in the user's own words — distinct from `why`,
     // which is the motivation. Both are shown to the AI coach.
@@ -3989,6 +4142,94 @@ function normalizeHabit(h) {
     createdBy: h.createdBy === 'ai' ? 'ai' : undefined,
   };
 }
+/* Is this habit part of `name`'s set? Everything that used to read h.loadout === X goes
+   through here, so a habit in three loadouts shows up in all three. */
+function habitInLoadout(h, name) {
+  if (!h) return false;
+  const list = (Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default'];
+  return list.includes(name);
+}
+/* Everything that DEFINES a habit, as one comparable string. Per-copy runtime state is
+   stripped: two copies that disagree only on when they were last done are the same habit,
+   and two that disagree on their reward or tier ladder are not. */
+/* A hoisted function, NOT a const — and that is not a style choice. load() is called from
+   `let state = load(bootRaw)` near the top of this script, thousands of lines above here,
+   so a `const` at this point is in its temporal dead zone when load() reaches it: the
+   migration throws, the catch fires, and the save comes back through the salvage path.
+   The same trap is called out above defaultState(), where it once wiped two real saves. */
+function habitDefSkip() {
+  return habitDefSkip._s || (habitDefSkip._s = new Set(['id', 'loadout', 'loadouts',
+    'tierByLoadout', 'lastDone', 'dayDate', 'dayCount', 'doneAt', 'doneMin', 'timer',
+    'curTier', 'archived', 'context', 'contextAsked', 'emojiAuto', 'createdBy']));
+}
+function habitDefKey(h) {
+  const skip = habitDefSkip(), o = {};
+  Object.keys(h).sort().forEach(k => { if (!skip.has(k)) o[k] = h[k]; });
+  o.name = String(o.name || '').trim().toLowerCase();
+  return JSON.stringify(o);
+}
+/* Fold copies of the same habit into one shared habit.
+
+   ONLY copies whose definitions match exactly are folded. A "Practice Cello" whose reward
+   or tier ladder drifted between loadouts stays its own habit and is listed in Settings
+   for the user to resolve, because collapsing it would throw away one of two real
+   configurations and nothing here can tell which one was wanted.
+
+   That strictness is also what makes the per-loadout tier memory sound: identical ladders
+   are the reason a saved tier INDEX means the same thing in every loadout it is kept for.
+
+   Two copies sitting in the SAME loadout are an accidental duplicate, not one habit shared
+   between days, so they are left alone too. Archived (graduated) habits never fold. */
+function mergeHabitCopies(habits, activeLoadout) {
+  const byKey = new Map(), out = [], remap = new Map();
+  (habits || []).forEach(h => {
+    if (h.archived) { out.push(h); return; }
+    const k = habitDefKey(h);
+    const list = byKey.get(k) || [];
+    const keep = list.find(x => !x.loadouts.some(n => h.loadouts.includes(n)));
+    if (!keep) { list.push(h); byKey.set(k, list); out.push(h); return; }
+    remap.set(h.id, keep.id);
+    keep.loadouts = [...new Set([...keep.loadouts, ...h.loadouts])];
+    Object.keys(h.tierByLoadout).forEach(lo => {
+      if (!Object.prototype.hasOwnProperty.call(keep.tierByLoadout, lo)) keep.tierByLoadout[lo] = h.tierByLoadout[lo];
+    });
+    if ((h.lastDone || '') > (keep.lastDone || '')) keep.lastDone = h.lastDone;
+    // Today's progress and any running stopwatch belong to whichever copy was the live one.
+    if (h.loadouts.includes(activeLoadout)) {
+      keep.dayDate = h.dayDate; keep.dayCount = h.dayCount;
+      keep.doneAt = h.doneAt; keep.doneMin = h.doneMin; keep.timer = h.timer;
+    }
+    if (h.context.length > keep.context.length) { keep.context = h.context; keep.contextAsked = h.contextAsked; }
+  });
+  return { habits: out, remap };
+}
+/* Point everything that referenced a folded-away copy at the survivor. The append-only
+   logs follow too: the id in a history row is a reference to the habit, and that habit is
+   now the survivor — leaving it would orphan a copy's entire completion history from the
+   habit that absorbed it, and with it every "usual time" and duration the app infers. */
+function remapHabitIds(st, remap) {
+  if (!remap || !remap.size) return 0;
+  const fix = id => (typeof id === 'string' && remap.has(id)) ? remap.get(id) : id;
+  Object.values(st.plannedBlocks || {}).forEach(rows =>
+    (rows || []).forEach(b => { if (b && b.kind === 'habit') b.refId = fix(b.refId); }));
+  if (st.aiMeta) {
+    st.aiMeta.habits = [...new Set((st.aiMeta.habits || []).map(fix))];
+    (st.aiMeta.modes || []).forEach(m => { if (m && m.habitId) m.habitId = fix(m.habitId); });
+  }
+  (st.reflections || []).forEach(r => {
+    if (!r) return;
+    if (r.habitId) r.habitId = fix(r.habitId);
+    if (Array.isArray(r.habitIds)) r.habitIds = [...new Set(r.habitIds.map(fix))];
+  });
+  (st.questionnaires || []).forEach(q => {
+    if (q && Array.isArray(q.habitIds)) q.habitIds = [...new Set(q.habitIds.map(fix))];
+  });
+  (st.experiments || []).forEach(x => { if (x && x.change && x.change.habitId) x.change.habitId = fix(x.change.habitId); });
+  (st.history || []).forEach(e => { if (e && e.kind === 'habit' && e.id) e.id = fix(e.id); });
+  (st.eventLog || []).forEach(e => { if (e && e.entityType === 'habit' && e.entityId) e.entityId = fix(e.entityId); });
+  return remap.size;
+}
+
 // Takes ONE serialized save (a JSON string) and merges it over defaultState() so older
 // or partial saves keep working. The string now arrives from Firestore instead of
 // localStorage — this function deliberately doesn't know or care which, so the
@@ -4031,7 +4272,7 @@ function load(raw) {
     merged.habits = (Array.isArray(parsed.habits) ? parsed.habits : base.habits).map(normalizeHabit);
     // Loadouts used to be planner contexts with optional universal habits. Migrate every
     // habit into a concrete set and keep planner contexts independent from now on.
-    const taggedLoadouts = merged.habits.map(h => h.loadout).filter(Boolean);
+    const taggedLoadouts = merged.habits.flatMap(h => (Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout]).filter(Boolean);
     merged.gapLog = (Array.isArray(parsed.gapLog) ? parsed.gapLog : [])
       .filter(g => g && typeof g.date === 'string' && Number.isFinite(g.startMin) && Number.isFinite(g.endMin))
       .slice(-400);
@@ -4058,7 +4299,12 @@ function load(raw) {
       .map(x => String(x || '').trim()).filter(Boolean))];
     merged.activeLoadout = merged.loadouts.includes(parsed.activeLoadout) ? parsed.activeLoadout
       : (merged.loadouts.includes(((parsed.dayPlans || {})[todayStr()] || {}).context) ? parsed.dayPlans[todayStr()].context : 'Default');
-    merged.habits.forEach(h => { if (!h.loadout || !merged.loadouts.includes(h.loadout)) h.loadout = 'Default'; });
+    merged.habits.forEach(h => {
+      h.loadouts = h.loadouts.filter(n => merged.loadouts.includes(n));
+      if (!h.loadouts.length) h.loadouts = ['Default'];
+      if (!h.loadouts.includes(h.loadout)) h.loadout = h.loadouts[0];
+      Object.keys(h.tierByLoadout).forEach(n => { if (!merged.loadouts.includes(n)) delete h.tierByLoadout[n]; });
+    });
     // Auto load defaults ON so an existing save picks it up, which is harmless: with no
     // loadout claiming a weekday it does nothing. Day arrays are pinned to exactly 7
     // booleans and to loadouts that still exist, so a stale name can't claim a weekday.
@@ -4235,6 +4481,11 @@ function load(raw) {
         ? merged.pass.goals.map(g => ({ id: g.id, kind: g.kind, target: g.target, category: g.category, types: g.types, tier: g.tier || 'any', xp: g.xp }))
         : defaultGoalDefs(cats);
     }
+    // Fold identical copies of a habit across loadouts into one shared habit. Last, because
+    // the id remap has to reach plannedBlocks, reflections and the logs — all built above.
+    const folded = mergeHabitCopies(merged.habits, merged.activeLoadout);
+    merged.habits = folded.habits;
+    remapHabitIds(merged, folded.remap);
     return merged;
   } catch (e) {
     // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
@@ -4343,7 +4594,7 @@ function processClosedDayOutcomes() {
   const closeTs = new Date(date + 'T23:59:59').getTime();
   if ((state.analyticsStartedAt || Date.now()) > closeTs) { save(); return; }
   const planned = !!dayPlan(date);
-  state.habits.filter(h => !h.archived && h.loadout === currentLoadout() && isScheduledOn(h, date)).forEach(h => {
+  state.habits.filter(h => !h.archived && habitInLoadout(h, currentLoadout()) && isScheduledOn(h, date)).forEach(h => {
     if (habitCompletedOn(h, date)) return;
     logEvent(planned ? 'habit_skipped_planned' : 'habit_missed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', scheduledForDate: date, scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null, dayContext: planned ? (dayPlan(date).context || null) : null });
   });
@@ -4397,7 +4648,7 @@ function habitCompletedOn(h, dateStr) {
   return (state.history || []).some(e => e && e.kind === 'habit' && e.id === h.id && dateStrFromTs(e.ts) === dateStr);
 }
 function historyMatchesHabit(e, h) {
-  return e && h && (e.id ? e.id === h.id : (e.name === h.name && (!e.loadout || e.loadout === h.loadout)));
+  return e && h && (e.id ? e.id === h.id : (e.name === h.name && (!e.loadout || habitInLoadout(h, e.loadout))));
 }
 // Expectation model: habits that broke from an established pattern on `dateStr`
 // (normally yesterday — the most recently "closed" day). Reused by appContext()
@@ -4580,8 +4831,10 @@ function loop() {
     p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= 0.008;
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = Math.max(0, p.life);
     if (p.coin) {
-      ctx.font = `${p.size + 10}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('🪙', 0, 0);
+      const sz = p.size + 10;
+      // Until the data URI has decoded (the first burst of a cold load) the glyph stands in.
+      if (TOK_IMG.complete && TOK_IMG.naturalWidth) ctx.drawImage(TOK_IMG, -sz / 2, -sz / 2, sz, sz);
+      else { ctx.font = `${sz}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🪙', 0, 0); }
     } else {
       ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 12;
       ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
@@ -4609,7 +4862,7 @@ function addTokens(n, fromEl) {
 }
 function spendTokens(n) { state.tokens = Math.max(0, state.tokens - n); save(); renderTopbar(); }
 function floatToken(text, fromEl) {
-  const el = document.createElement('div'); el.className = 'float-token'; el.textContent = `${text} 🪙`;
+  const el = document.createElement('div'); el.className = 'float-token'; el.innerHTML = `${escapeHtml(text)} ${TOK_ICON}`;
   const target = fromEl || $('#balance');
   const r = target.getBoundingClientRect();
   el.style.left = (r.left + r.width / 2 - 20) + 'px';
@@ -4618,8 +4871,22 @@ function floatToken(text, fromEl) {
   setTimeout(() => el.remove(), 1000);
 }
 
+/* The token glyph survives in plain strings — toasts, AI prompts, proposal details — so
+   the swap to the coin image happens once, here, on the way into the DOM. Escaping runs
+   FIRST and the thing substituted in is a fixed literal, so tokify(escapeHtml(x)) is safe
+   on anything, including a habit name the user typed. */
+const TOK_ICON = '<i class="tok"></i>';
+function tokify(html) { return String(html).split('\u{1FA99}').join(TOK_ICON); }
+// The confetti coin is drawn on a canvas, which can't use the CSS background. Pull the
+// same data URI back out of the custom property rather than inlining a second copy of it.
+const TOK_IMG = new Image();
+try {
+  const m = /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(document.documentElement).getPropertyValue('--tok'));
+  if (m) TOK_IMG.src = m[1];
+} catch (e) { /* no asset — burst() falls back to the glyph below */ }
+
 function toast(msg, color = 'var(--pink)') {
-  const t = $('#toast'); t.textContent = msg; t.style.borderColor = color; t.style.boxShadow = `0 0 24px ${color}`;
+  const t = $('#toast'); t.innerHTML = tokify(escapeHtml(msg)); t.style.borderColor = color; t.style.boxShadow = `0 0 24px ${color}`;
   t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
@@ -4735,7 +5002,43 @@ function habitCurrentMinutes(h) {
 function curLevelIndex(h) {
   const lv = habitLevels(h); if (!lv) return -1;
   const def = lv.findIndex(l => l.base);                 // default to the original habit's level
-  return clamp(Number.isFinite(h.curTier) ? h.curTier : def, 0, lv.length - 1);
+  const t = habitTier(h);
+  return clamp(Number.isFinite(t) ? t : def, 0, lv.length - 1);
+}
+/* Which tier this habit sits on IN THE LOADOUT CURRENTLY ACTIVE.
+
+   This is the point of sharing one habit between loadouts: hard cello on the Wednesday
+   set, easy cello on the Thursday set, one habit, one tier ladder, two remembered
+   positions. The index is only meaningful because mergeHabitCopies refuses to fold copies
+   whose ladders differ — so position 2 is the same rung whichever loadout asks.
+
+   Falls back to the flat curTier for a habit that has never been switched since the split,
+   and that same field is kept in step on every write so a save still reads correctly in
+   the previous build. */
+function habitTier(h) {
+  const m = h && h.tierByLoadout, lo = currentLoadout();
+  if (m && Object.prototype.hasOwnProperty.call(m, lo) && Number.isFinite(m[lo])) return m[lo];
+  // Once ANY loadout has a remembered tier, the map is the whole truth: a loadout with no
+  // entry means "never chosen here", which is the habit's own level. Falling through to
+  // curTier at this point would hand Thursday whatever Wednesday last picked — the exact
+  // leak per-loadout memory exists to stop. curTier is only a bridge for a habit that has
+  // not been switched since the split, and normalizeHabit seeds the map for those.
+  if (m && Object.keys(m).length) return null;
+  return Number.isFinite(h && h.curTier) ? h.curTier : null;
+}
+function setHabitTier(h, i) {
+  if (!h) return;
+  h.tierByLoadout = h.tierByLoadout || {};
+  const lo = currentLoadout(), ok = Number.isFinite(i);
+  if (ok) h.tierByLoadout[lo] = i; else delete h.tierByLoadout[lo];
+  h.curTier = ok ? i : null;
+}
+// The ladder itself moved, so every remembered position now points at a different rung.
+function clearHabitTiers(h) { if (h) { h.tierByLoadout = {}; h.curTier = null; } }
+// "Default", "Default · Work", or "Default +3 more" once the list stops fitting.
+function habitLoadoutLabel(h) {
+  const list = (h && Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [(h && h.loadout) || currentLoadout()];
+  return list.length > 2 ? `${list[0]} +${list.length - 1} more` : list.join(' · ');
 }
 /* ---- Context Modes: the SECOND axis, independent of the difficulty ladder above.
    Difficulty = how much energy you have right now (switched in the moment).
@@ -4786,7 +5089,7 @@ function isScheduledToday(h) {
 function sectionStats(section) {
   let list = state.habits.filter(h => h.section === section && !h.archived && isScheduledToday(h));
   // Every habit belongs to exactly one loadout; both Daily and Extra switch together.
-  list = list.filter(h => h.loadout === currentLoadout());
+  list = list.filter(h => habitInLoadout(h, currentLoadout()));
   const done = list.reduce((s, h) => s + doneCount(h), 0);
   const cap = list.reduce((s, h) => s + capOf(h), 0);
   const allComplete = list.length > 0 && list.every(isComplete);
@@ -4863,8 +5166,8 @@ function habitCardHTML(h, usualMin) {
         </div>
         ${chevs}
         ${word
-          ? `<span class="hrow-reward lvl">+${reward} 🪙<i class="lvl-word" style="color:${word.color}">${word.label}</i></span>`
-          : `<span class="hrow-reward">+${reward} 🪙</span>`}
+          ? `<span class="hrow-reward lvl">+${reward} <i class="tok"></i><i class="lvl-word" style="color:${word.color}">${word.label}</i></span>`
+          : `<span class="hrow-reward">+${reward} <i class="tok"></i></span>`}
       </div>`;
   };
   // Leveled habits get every tier rendered up front in a track offset by -index×100%.
@@ -4953,7 +5256,7 @@ function daysSummaryText(days) {
 }
 
 function habitEditHeadHTML(h, lvls) {
-  const where = `${h.section === 'extra' ? '✨ Extra' : '🗓️ Daily'} · ${h.loadout || currentLoadout()}`;
+  const where = `${h.section === 'extra' ? '✨ Extra' : '🗓️ Daily'} · ${habitLoadoutLabel(h)}`;
   const menu = !editMoreOpen ? '' : `
         <div class="tt-menu" role="menu">
           <button data-act="editSec" data-sec="repeats">↻ Repeats<small>${h.repeatable ? `up to ${h.cap}/day` : 'off'}</small></button>
@@ -4980,8 +5283,12 @@ function habitEditHeadHTML(h, lvls) {
             <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
             <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
           </select>
-          <span class="pill">🗂️ Loadout: <b>${escapeHtml(h.loadout || currentLoadout())}</b></span>
-        </div>`)}
+        </div>
+        <div class="lo-chips">${(state.loadouts || []).map(n => `
+          <button class="chip lo-chip${habitInLoadout(h, n) ? ' sel' : ''}" data-act="togHabitLoadout" data-lo="${escapeHtml(n)}"
+            title="${habitInLoadout(h, n) ? `Remove from ${escapeHtml(n)}` : `Also do this on ${escapeHtml(n)}`}">🗂️ ${escapeHtml(n)}</button>`).join('')}
+        </div>
+        <div class="hint">One habit, many loadouts — editing it here changes it everywhere, and each loadout keeps its own tier.</div>`)}
       ${ttTray('repeats', 'Repeats', 'A repeatable habit can be completed more than once a day and pays out every time, up to the cap. Its subtasks start fresh for each round.', `
         <div class="tt-tray-row">
           <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
@@ -5038,13 +5345,13 @@ function habitEditHTML(h, pageIdx) {
       ${ttTray('cat', 'Identity', 'Drives Pass goals and happy hours.', `
         <select class="sect-in" data-f="category" title="Identity">${categoryOptionsHTML(h.category)}</select>`)}
       ${ttTray('reward', 'Reward', lvls ? 'What this tier pays — each tier has its own.' : '', `
-        <div class="tt-tray-row"><span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" inputmode="numeric" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span></div>`)}
+        <div class="tt-tray-row"><span class="pill"><i class="tok"></i> <input class="num-in" data-f="reward" type="number" min="0" max="999" inputmode="numeric" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span></div>`)}
       ${ttTray('dur', 'Expected length', 'Roughly how long this takes — its length on the Schedule. Filled in from the name; type over it and it stays put.', `
         <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" inputmode="numeric" value="${h.timedMinutes || 0}"> min</span></div>`)}
       <div class="tt-toolbar">
         ${ttToolHTML('cat', '🏷', escapeHtml(h.category || 'Unsorted'))}
         <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
-        ${ttToolHTML('reward', '🪙', String(h.reward))}
+        ${ttToolHTML('reward', '<i class="tok"></i>', String(h.reward))}
         ${ttToolHTML('dur', '⏱', h.timedMinutes ? fmtMins(h.timedMinutes) : '', 'durShort')}
       </div>
       ${lvls ? tierDotsHTML(lvls, page) : ''}
@@ -5068,12 +5375,12 @@ function tierEditHTML(h, page) {
       <span class="timer-suggest tt-suggest">${timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0)}</span>
       ${childrenSectionHTML('habit', h, page)}
       ${ttTray('reward', 'Reward', 'What this tier pays.', `
-        <div class="tt-tray-row"><span class="pill">🪙 <input class="num-in" data-tf="reward" type="number" min="0" max="999" inputmode="numeric" value="${t.reward}"> tokens</span></div>`)}
+        <div class="tt-tray-row"><span class="pill"><i class="tok"></i> <input class="num-in" data-tf="reward" type="number" min="0" max="999" inputmode="numeric" value="${t.reward}"> tokens</span></div>`)}
       ${ttTray('dur', 'Expected length', 'How long this version takes.', `
         <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-tf="minutes" type="number" min="0" max="999" inputmode="numeric" value="${t.minutes || 0}"> min</span></div>`)}
       <div class="tt-toolbar">
         <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
-        ${ttToolHTML('reward', '🪙', String(t.reward))}
+        ${ttToolHTML('reward', '<i class="tok"></i>', String(t.reward))}
         ${ttToolHTML('dur', '⏱', t.minutes ? fmtMins(t.minutes) : '')}
         <button class="tt-tool end" data-act="removeTier" title="Remove this tier">🗑<span>tier</span></button>
       </div>
@@ -5127,7 +5434,7 @@ function renderDailyIdentities() {
 function inactiveHabits(section) {
   const shown = new Set(sectionStats(section).list.map(h => h.id));
   return state.habits.filter(h => h.section === section && !h.archived
-    && h.loadout === currentLoadout() && !shown.has(h.id));
+    && habitInLoadout(h, currentLoadout()) && !shown.has(h.id));
 }
 const DOW_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 function renderInactiveButtons() {
@@ -5214,7 +5521,7 @@ function renderHabits() {
 // Graduated habits: resting out of rotation with their history intact, one tap to restore.
 function renderArchived() {
   const box = $('#archivedSection'); if (!box) return;
-  const arch = state.habits.filter(h => h.archived && h.loadout === currentLoadout());
+  const arch = state.habits.filter(h => h.archived && habitInLoadout(h, currentLoadout()));
   if (!arch.length) { box.innerHTML = ''; return; }
   box.innerHTML = `
     <div class="section-title t2" style="margin-top:22px">🎓 Graduated Habits</div>
@@ -5315,7 +5622,7 @@ function addQuickQuest() {
   // of same-shaped quests is still just tap-tap-tap, one open per quest.
   questAddOpen = false; questAddMoreOpen = false;
   renderOneoffs(); buildHabitWheel(); renderQuestAdd();
-  toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} 🪙`, TASK_TIERS[tier].color);
+  toast(`🎯 Quest added — ${TASK_TIERS[tier].label} +${tierReward(tier)} <i class="tok"></i>`, TASK_TIERS[tier].color);
 }
 // One quest row. Shared by the Tasks list and the Due Now board so the two can't drift.
 /* ---- Due dates. A quest may carry `due` as 'YYYY-MM-DD' (or null). Everything is
@@ -5374,7 +5681,7 @@ function oneoffCardHTML(t) {
           <span class="hrow-name">${escapeHtml(t.name)}</span>
           ${chips}
         </div>
-        <span class="hrow-reward" style="color:${ti.color};border-color:${ti.color};background:rgba(0,0,0,0.25)">+${tierReward(t.tier)} 🪙</span>
+        <span class="hrow-reward" style="color:${ti.color};border-color:${ti.color};background:rgba(0,0,0,0.25)">+${tierReward(t.tier)} <i class="tok"></i></span>
       </div>`;
 }
 /* =================================================================
@@ -5475,7 +5782,7 @@ function oneoffEditHTML(t) {
     <div class="hedit qedit tt-wrap" data-id="${t.id}">
       <div class="tt-head">
         <button class="tt-icon" data-act="closeOneoffEdit" aria-label="Done" title="Done">‹</button>
-        <button class="tt-crumb" data-act="editSec" data-sec="qtier">${escapeHtml(ti.label)} · +${tierReward(t.tier)} 🪙<span class="tt-caret">⌄</span></button>
+        <button class="tt-crumb" data-act="editSec" data-sec="qtier">${escapeHtml(ti.label)} · +${tierReward(t.tier)} <i class="tok"></i><span class="tt-caret">⌄</span></button>
         <span class="tt-spacer"></span>
         <button class="tt-icon tt-flag" data-act="editSec" data-sec="quad" aria-label="Urgency and importance" title="${q ? escapeHtml(q.label) : 'Urgency &amp; importance'}" style="--qf:${q ? q.color : 'var(--ink-dim)'}">⚑</button>
         <button class="tt-icon" data-act="editMore" aria-label="More" aria-expanded="${editMoreOpen}">⋯</button>
@@ -5483,7 +5790,7 @@ function oneoffEditHTML(t) {
       </div>
       ${ttTray('qtier', 'Difficulty', 'Sets what the quest pays.', `
         <select class="sect-in" data-of="tier" title="Difficulty tier">
-          ${Object.entries(TASK_TIERS).map(([k, x]) => `<option value="${k}" ${(t.tier || 'medium') === k ? 'selected' : ''}>${x.label} +${tierReward(k)} 🪙</option>`).join('')}
+          ${Object.entries(TASK_TIERS).map(([k, x]) => `<option value="${k}" ${(t.tier || 'medium') === k ? 'selected' : ''}>${x.label} +${tierReward(k)} <i class="tok"></i></option>`).join('')}
         </select>`)}
       ${ttTray('quad', 'Urgency & importance', '', `
         <div class="tt-tray-row qgrid-pick">
@@ -5552,10 +5859,10 @@ function completeOneoff(id, viaSpin, timing) {
     state.archivedOneoffs.push({ ...t, status: 'completed', completedAt, archivedAt: completedAt });
     state.oneoffs = state.oneoffs.filter(x => x.id !== id); // completed → vanish
     if (editingOneoffId === id) editingOneoffId = null;
-    toast(`✅ Quest complete: ${t.name}! +${amt} 🪙${tags}`, 'var(--gold)');
+    toast(`✅ Quest complete: ${t.name}! +${amt} <i class="tok"></i>${tags}`, 'var(--gold)');
     SFX.win(); burst({ count: 90, colors: ['#ff9e2c', '#39ff14', '#c47a3a'] });
   } else {
-    toast(`+${amt} 🪙${tags} — ${t.progress}/${t.iterations} done`, 'var(--green)');
+    toast(`+${amt} <i class="tok"></i>${tags} — ${t.progress}/${t.iterations} done`, 'var(--green)');
   }
   if (wheelPickId === id) wheelPickId = null;
   const res = $('#habitWheelResult'); if (res && res.querySelector(`[data-id="${id}"]`)) res.innerHTML = '';
@@ -5651,7 +5958,7 @@ function completeHabit(id, timing) {
   // `level` stays a coarse easy/medium/hard band so the Stats intensity chart keeps
   // working across any ladder height (and alongside rows written before numeric tiers);
   // tierIndex/tierCount carry the exact position for anything that wants it.
-  const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.band : null, reward: amt,
+  const entry = { ts: finishedAt, kind: 'habit', id: h.id, name: h.name, emoji: h.emoji, category: h.category || 'Unsorted', loadout: currentLoadout(), level: lvl ? lvl.band : null, reward: amt,
     tierIndex: lvl ? lvl.idx : null, tierCount: lvl ? lvl.n : null,
     scheduledForDate: today, scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null, expectedDurationMin: expectedMinutes,
     completionMethod: timing ? 'stopwatch' : 'checkmark' };
@@ -5664,13 +5971,13 @@ function completeHabit(id, timing) {
     if (Array.isArray(timing.segments) && timing.segments.length > 1) entry.segments = timing.segments;
   }
   logCompletion(entry);
-  logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: h.loadout || currentLoadout(), level: lvl ? lvl.band : null,
+  logEvent('habit_completed', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', loadout: currentLoadout(), level: lvl ? lvl.band : null,
     tierIndex: lvl ? lvl.idx : null, tierCount: lvl ? lvl.n : null,
     scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
     actualStartTs: timerSnapshot ? timerSnapshot.startedAt : null, actualEndTs: finishedAt,
     actualElapsedSec: timing ? timing.actualElapsedSec : null, pauseCount: timing ? timing.pauseCount : null, totalPausedSec: timing ? timing.totalPausedSec : null,
     completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt });
-  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.label}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' 🪙'}`, 'var(--green)');
+  toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.label}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' <i class="tok"></i>'}`, 'var(--green)');
   renderHabits();
   checkAllDailyGoal();
   passGainXP(state.pass.perXP.daily, 'dailies');          // Habit Pass XP per completion
@@ -6116,7 +6423,7 @@ function childPage(f) {
 // on "hard" would complete nothing.
 function adoptChildTier(f) {
   const p = childPage(f);
-  if (p >= 0 && p !== curLevelIndex(f.item)) f.item.curTier = p;
+  if (p >= 0 && p !== curLevelIndex(f.item)) setHabitTier(f.item, p);
 }
 // A habit's subtask is done for TODAY; a quest's stays done until the quest moves on.
 function childIsDone(kind, c) { return kind === 'habit' ? c.doneOn === todayStr() : !!c.doneOn; }
@@ -6548,7 +6855,7 @@ function computeDayBlocks(dateStr) {
     pred.blocks.forEach(b => { if (b.confidence >= PREDICT_ADOPT_CONF) predBlocks.set(b.habitId, b); });
   }
   const inferred = state.habits.filter(h => !h.archived && h.section === 'daily'
-      && isScheduledOn(h, dateStr) && h.loadout === loadout && !plannedRefs.has(h.id))
+      && isScheduledOn(h, dateStr) && habitInLoadout(h, loadout) && !plannedRefs.has(h.id))
     .map(h => {
       const r = rec.blocks.get(h.id);
       const p = Number.isFinite(h.scheduledMin) ? null : predBlocks.get(h.id);
@@ -7055,7 +7362,7 @@ function predictDayUncached(dateStr, opts = {}) {
   // Only habits that are actually scheduled today can be predicted onto today. The
   // rhythm may well remember a habit that has since been archived or rescheduled.
   const live = new Map();
-  state.habits.filter(h => !h.archived && h.loadout === loadout && isScheduledOn(h, dateStr))
+  state.habits.filter(h => !h.archived && habitInLoadout(h, loadout) && isScheduledOn(h, dateStr))
     .forEach(h => { live.set(h.id, h); live.set(h.name, h); });
 
   const blocks = [];
@@ -7228,7 +7535,7 @@ function predictNextAction(opts = {}) {
   const today = todayStr();
   const loadout = currentLoadout();
   const dailyClear = sectionStats('daily').allComplete;
-  const eligible = h => !h.archived && h.loadout === loadout && isScheduledToday(h) && !isComplete(h)
+  const eligible = h => !h.archived && habitInLoadout(h, loadout) && isScheduledToday(h) && !isComplete(h)
     && (dailyClear || h.section !== 'extra');
 
   const p = predictDay(today);
@@ -8106,7 +8413,7 @@ function renderDueSoon() {
   // Extra habits are side-quests: they stay out of Due Now until every daily quest is
   // done, so the board never points at optional work while the core routine is unfinished.
   const dailyClear = sectionStats('daily').allComplete;
-  const eligible = h => !h.archived && h.loadout === currentLoadout() && isScheduledToday(h) && !isComplete(h)
+  const eligible = h => !h.archived && habitInLoadout(h, currentLoadout()) && isScheduledToday(h) && !isComplete(h)
     && (dailyClear || h.section !== 'extra');
   // Anything with a stopwatch already running IS what you're doing right now, so it leads
   // the board no matter what the clock or the engine would otherwise have picked. A part
@@ -8338,9 +8645,11 @@ function recordPaceToday() {
   // loadout you ENDED the day on. Switching mid-day re-attributes the whole day to where
   // you finished, which is the only reading that keeps one day in exactly one bucket.
   state.paceLog[today] = { done: p.done, total: p.total, loadout: lo };
-  // Keep roughly two months. The 7-day window only ever reads the tail.
+  // Keep roughly half a year. Weekly Comparison's longest range looks 26 weeks back, and
+  // a row pruned today can never be rebuilt (see the comment above paceToday) — so the cap
+  // is the real limit on how far that chart can ever see. ~55 bytes a row: 190 is ~10KB.
   const keys = Object.keys(state.paceLog).sort();
-  if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete state.paceLog[k]);
+  if (keys.length > 190) keys.slice(0, keys.length - 190).forEach(k => delete state.paceLog[k]);
   save();
 }
 function pacePct(e) { return e && e.total ? Math.round(e.done / e.total * 100) : null; }
@@ -8504,7 +8813,7 @@ function showReveal(res) {
     const ti = TIERS[res.tier];
     $('#revealTier').textContent = ti.label.toUpperCase();
     $('#revealTier').style.color = ti.hex;
-    $('#revealEmoji').textContent = res.reward.emoji || ti.emoji;
+    $('#revealEmoji').innerHTML = tokify(escapeHtml(res.reward.emoji || ti.emoji));
     $('#revealEmoji').style.color = ti.hex;
     $('#revealName').textContent = res.reward.name;
     $('#revealName').style.textShadow = `0 0 16px ${ti.hex}`;
@@ -8521,7 +8830,7 @@ $('#revealClose').onclick = () => { SFX.click(); $('#revealOverlay').classList.r
 
 function bannerFor(res, el) {
   if (res.type === 'blank') { el.textContent = '💨 So close — nothing this time'; el.style.color = 'var(--ink-dim)'; }
-  else if (res.type === 'tokens') { el.textContent = `🪙 +${res.amount} tokens!`; el.style.color = 'var(--yellow)'; }
+  else if (res.type === 'tokens') { el.innerHTML = `${TOK_ICON} +${res.amount} tokens!`; el.style.color = 'var(--yellow)'; }
   else { const ti = TIERS[res.tier]; el.innerHTML = `${ti.emoji} ${ti.label.toUpperCase()}: ${escapeHtml(res.reward.name)}`; el.style.color = ti.hex; }
 }
 
@@ -8529,7 +8838,7 @@ function bannerFor(res, el) {
 function startPlay(gameKey) {
   if (busy) return null;
   const g = state.games[gameKey];
-  if (state.tokens < g.cost) { toast('Not enough tokens — go complete a habit! 🪙', 'var(--pink)'); SFX.lose(); return null; }
+  if (state.tokens < g.cost) { toast('Not enough tokens — go complete a habit! <i class="tok"></i>', 'var(--pink)'); SFX.lose(); return null; }
   busy = true;
   const balanceBefore = state.tokens;
   const startedAt = Date.now();
@@ -8859,15 +9168,15 @@ function renderRoulette() {
     <button class="rou-mode quick" data-quick="d2">2nd 12 <span class="pay">2:1</span></button>
     <button class="rou-mode quick" data-quick="d3">3rd 12 <span class="pay">2:1</span></button>`;
   $('#rouControls').innerHTML = `
-    <div class="rou-row"><span class="rou-lbl">Chip 🪙</span>${chips}</div>
+    <div class="rou-row"><span class="rou-lbl">Chip <i class="tok"></i></span>${chips}</div>
     <div class="rou-row"><span class="rou-lbl">Inside bet</span>${modes}</div>
     <div class="rou-row"><span class="rou-lbl">Quick bet</span>${quick}</div>`;
 
   // --- status line ---
   const d = BET_TYPES[rouMode];
   $('#rouStatus').innerHTML = d.n === 1
-    ? `Click any number for a <b>${rouChip}</b>🪙 <b>Single</b> bet (35:1). Switch the bet type to combine numbers.`
-    : `<b>${d.label}</b> — pick <b>${d.n}</b> numbers · <b class="neon-cyan">${rouSel.length}/${d.n}</b> selected · chip <b>${rouChip}</b>🪙`;
+    ? `Click any number for a <b>${rouChip}</b><i class="tok"></i> <b>Single</b> bet (35:1). Switch the bet type to combine numbers.`
+    : `<b>${d.label}</b> — pick <b>${d.n}</b> numbers · <b class="neon-cyan">${rouSel.length}/${d.n}</b> selected · chip <b>${rouChip}</b><i class="tok"></i>`;
 
   // --- board (with chip badges + selection highlight) ---
   const stakeOn = {};
@@ -8890,7 +9199,7 @@ function renderRoulette() {
       const dd = BET_TYPES[b.type];
       return `<div class="slip-item">
         <span>${dd.label} <span class="subtle">[${b.numbers.join(', ')}]</span></span>
-        <span class="pill">${b.amount}🪙 → ${b.pay}:1</span>
+        <span class="pill">${b.amount}<i class="tok"></i> → ${b.pay}:1</span>
         <button class="del" data-act="rouRemoveBet" data-bet="${b.id}" title="Remove">✕</button>
       </div>`;
     }).join('') + `</div>`;
@@ -8900,13 +9209,13 @@ function renderRoulette() {
 
 function updateRouletteSpinBtn() {
   const staked = rouStaked();
-  const stakeEl = $('#rouStake'); if (stakeEl) stakeEl.textContent = `🪙 ${staked}`;
+  const stakeEl = $('#rouStake'); if (stakeEl) stakeEl.innerHTML = `${TOK_ICON} ${staked}`;
   const btn = $('#rouSpinBtn'); if (btn) btn.disabled = staked <= 0 || staked > state.tokens;
 }
 
 function rouPlace(type, numbers) {
   const def = BET_TYPES[type];
-  if (rouStaked() + rouChip > state.tokens) { toast('Not enough tokens for that bet 🪙', 'var(--pink)'); SFX.lose(); return; }
+  if (rouStaked() + rouChip > state.tokens) { toast('Not enough tokens for that bet <i class="tok"></i>', 'var(--pink)'); SFX.lose(); return; }
   rouBets.push({ id: uid(), type, numbers: numbers.slice(), amount: rouChip, pay: def.pay });
   SFX.click(); renderRoulette();
 }
@@ -8930,7 +9239,7 @@ function rouQuick(q) {
 function rouSpin() {
   if (busy) return;
   const staked = rouStaked();
-  if (staked <= 0) { toast('Place a bet first 🪙', 'var(--pink)'); return; }
+  if (staked <= 0) { toast('Place a bet first <i class="tok"></i>', 'var(--pink)'); return; }
   if (staked > state.tokens) { toast('Not enough tokens for your bets', 'var(--pink)'); SFX.lose(); return; }
   busy = true;
   rouPlayMeta = { startedAt: Date.now(), balanceBefore: state.tokens, cost: staked };
@@ -8972,12 +9281,12 @@ function rouResolve(win) {
     SFX.win();
     if (payout >= 50 || net >= staked * 5) { SFX.jackpot(); screenShake(); coinRain(); }
     burst({ count: 90, colors: ['#39ff14', '#c2601a', '#ff9e2c'] });
-    $('#rouResult').innerHTML = `${numTag} — WON <b>+${payout}</b> 🪙 <span class="subtle">(net ${net >= 0 ? '+' : ''}${net})</span>`;
+    $('#rouResult').innerHTML = `${numTag} — WON <b>+${payout}</b> <i class="tok"></i> <span class="subtle">(net ${net >= 0 ? '+' : ''}${net})</span>`;
     $('#rouResult').style.color = 'var(--green)';
     toast(`🟢 ${win} ${col} — +${payout} tokens!`, 'var(--green)');
   } else {
     SFX.lose();
-    $('#rouResult').innerHTML = `${numTag} — no hit. <span class="subtle">−${staked} 🪙</span>`;
+    $('#rouResult').innerHTML = `${numTag} — no hit. <span class="subtle">−${staked} <i class="tok"></i></span>`;
     $('#rouResult').style.color = 'var(--ink-dim)';
   }
   state.stats.rouletteSpins = (state.stats.rouletteSpins || 0) + 1;
@@ -9017,7 +9326,7 @@ function ultraCardHTML(res, idx) {
   return `<div class="ucard ${tier} ${cls}" id="ultraCurrent">
       <div class="ucard-foil"></div>
       <div class="ucard-rare">${label}</div>
-      <div class="ucard-emoji">${escapeHtml(emoji)}</div>
+      <div class="ucard-emoji">${tokify(escapeHtml(emoji))}</div>
       <div class="ucard-name">${escapeHtml(name)}</div>
     </div>`;
 }
@@ -9073,14 +9382,14 @@ function renderUltraSummary() {
     if (res.type === 'tokens') { tier = 'tokens'; emoji = '🪙'; name = `+${res.amount}`; }
     else if (res.type === 'reward') { tier = res.tier; emoji = res.reward.emoji || TIERS[tier].emoji; name = res.reward.name; }
     else { tier = 'common'; emoji = '✨'; name = 'Bonus'; }
-    return `<div class="mini-card ${tier} ${i === 9 ? 'last' : ''}"><div class="mc-e">${escapeHtml(emoji)}</div><div class="mc-n">${escapeHtml(name)}</div></div>`;
+    return `<div class="mini-card ${tier} ${i === 9 ? 'last' : ''}"><div class="mc-e">${tokify(escapeHtml(emoji))}</div><div class="mc-n">${escapeHtml(name)}</div></div>`;
   };
   stage.innerHTML = `
     <div class="ultra-summary">
       <div class="us-title">✨ YOUR PULL ✨</div>
       <div class="us-grid">${ultraCards.map(mini).join('')}</div>
       <div class="us-stats">
-        ${tokensTotal > 0 ? `<span class="pill">🪙 +${tokensTotal} tokens</span>` : ''}
+        ${tokensTotal > 0 ? `<span class="pill"><i class="tok"></i> +${tokensTotal} tokens</span>` : ''}
         ${rewardCards.length ? `<span class="pill">🎁 ${rewardCards.length} reward${rewardCards.length !== 1 ? 's' : ''}</span>` : ''}
         ${best ? `<span class="pill" style="border-color:${TIERS[best.tier].hex};color:${TIERS[best.tier].hex}">${TIERS[best.tier].emoji} Best: ${escapeHtml(best.reward.name)}</span>` : ''}
       </div>
@@ -9091,7 +9400,7 @@ function renderUltraSummary() {
 function openUltra() {
   if (busy) return;
   const g = state.games.ultra;
-  if (state.tokens < g.cost) { toast('Not enough tokens for an Ultra Pack 🪙', 'var(--pink)'); SFX.lose(); return; }
+  if (state.tokens < g.cost) { toast('Not enough tokens for an Ultra Pack <i class="tok"></i>', 'var(--pink)'); SFX.lose(); return; }
   flushUltra();
   const balanceBefore = state.tokens;
   busy = true;
@@ -9194,11 +9503,11 @@ function updateGameButtons() {
     // grey state if an animation callback arrived out of order.
     btn.disabled = state.tokens < g.cost;
   });
-  $('#wheelCost').textContent = `🪙 ${state.games.wheel.cost}`;
-  $('#slotsCost').textContent = `🪙 ${state.games.slots.cost}`;
-  $('#diceCost').textContent = `🪙 ${state.games.dice.cost}`;
-  $('#boxCost').textContent = `🪙 ${state.games.box.cost}`;
-  $('#ultraCost').textContent = `🪙 ${state.games.ultra.cost}`;
+  $('#wheelCost').innerHTML = `${TOK_ICON} ${state.games.wheel.cost}`;
+  $('#slotsCost').innerHTML = `${TOK_ICON} ${state.games.slots.cost}`;
+  $('#diceCost').innerHTML = `${TOK_ICON} ${state.games.dice.cost}`;
+  $('#boxCost').innerHTML = `${TOK_ICON} ${state.games.box.cost}`;
+  $('#ultraCost').innerHTML = `${TOK_ICON} ${state.games.ultra.cost}`;
 }
 
 /* =================================================================
@@ -9753,7 +10062,7 @@ function recycleFromPool(rewardId, qty) {
   const ids = new Set(owned.slice(0, qty).map(x => x.id));
   state.inventory = state.inventory.filter(x => !ids.has(x.id));
   addTokens(val); SFX.coin();
-  toast(`♻ Recycled ${qty}× ${owned[0].name} → +${val} 🪙`, 'var(--gold)');
+  toast(`♻ Recycled ${qty}× ${owned[0].name} → +${val} <i class="tok"></i>`, 'var(--gold)');
   burst({ count: 22, coin: true, colors: ['#ffc247', '#ffb020'] });
   claimOpenId = null; save(); renderPrizes();
 }
@@ -9858,7 +10167,7 @@ function renderPrizes() {
     <div class="tier-row">
       <div class="tier-head">
         <span class="tier-chip" style="color:${ti.hex}">${ti.emoji} ${ti.label}</span>
-        <span class="subtle">${items.length} reward${items.length !== 1 ? 's' : ''} · ♻ ${RECYCLE_VALUE[tier]}🪙 each</span>
+        <span class="subtle">${items.length} reward${items.length !== 1 ? 's' : ''} · ♻ ${RECYCLE_VALUE[tier]}<i class="tok"></i> each</span>
       </div>
       <div class="prize-cards">
         ${items.map(r => {
@@ -9937,7 +10246,7 @@ function claimCardHTML(r) {
       ${win.open
         ? `<button class="btn green sm" data-act="claimDo">🎁 Claim ${qty}</button>`
         : `<button class="btn green sm" disabled title="${escapeHtml(win.reason)}">🔒 ${escapeHtml(win.reason)}</button>`}
-      <button class="btn gold sm" data-act="claimRecycle" title="Trade for tokens">♻ +${recVal}🪙</button>
+      <button class="btn gold sm" data-act="claimRecycle" title="Trade for tokens">♻ +${recVal}<i class="tok"></i></button>
       <button class="del" data-act="claimDiscard" title="Discard ${qty} without recycling">🗑</button>
     </div>
   </div>`;
@@ -10010,7 +10319,7 @@ function passTierReward(level, lane) {
   return { type: 'prize', tier: e.tier, rewardId: e.rewardId };
 }
 function passRewardFace(d) {
-  if (d.type === 'tokens') return { emoji: '🪙', label: `${d.amount}`, hex: '#ffc247' };
+  if (d.type === 'tokens') return { emoji: TOK_ICON, label: `${d.amount}`, hex: '#ffc247' };
   if (d.type === 'wild')   return { emoji: '🃏', label: `Wild ${TIERS[d.tier].label}`, hex: TIERS[d.tier].hex };
   if (d.type === 'prize') {
     const r = d.rewardId ? state.rewards.find(x => x.id === d.rewardId) : null;
@@ -10287,7 +10596,7 @@ function passEnsureWeek() {
 function passUpgradePro() {
   const p = state.pass;
   if (p.proUnlocked) return;
-  if (state.tokens < p.proCost) { toast(`Need 🪙 ${p.proCost} to unlock PRO`, 'var(--pink)'); SFX.lose(); return; }
+  if (state.tokens < p.proCost) { toast(`Need <i class="tok"></i> ${p.proCost} to unlock PRO`, 'var(--pink)'); SFX.lose(); return; }
   state.tokens = Math.max(0, state.tokens - p.proCost);
   if (typeof displayTokens !== 'undefined') displayTokens = state.tokens;
   p.proUnlocked = true;
@@ -10339,7 +10648,7 @@ function renderPass() {
   }
   const proCtl = p.proUnlocked
     ? `<div class="pass-pro-on">🌟 PRO UNLOCKED — tap 🎁 on any reached level to collect it</div>`
-    : `<button class="btn gold" data-act="passUpgrade">⬆ Unlock PRO — 🪙 ${p.proCost}</button>`;
+    : `<button class="btn gold" data-act="passUpgrade">⬆ Unlock PRO — <i class="tok"></i> ${p.proCost}</button>`;
   const goalsDone = (p.goals || []).filter(g => g.done).length, goalsTot = (p.goals || []).length;
   // Head (banner + level + Goals dropdown) stays pinned; only .pass-scroll scrolls.
   $('#passBody').innerHTML = `
@@ -10523,11 +10832,436 @@ let shownExperiment = null;
 // "never suggest this again", which is not what the button says.
 const skippedExperimentIds = new Set();
 
+/* ---- WEEKLY COMPARISON ----------------------------------------------------------------
+   "How did this week compare with my usual week, and where do I keep dropping off?"
+
+   The metric is the one Home already records: the share of the day's PLANNED things that
+   got done. state.paceLog holds { done, total } per date, written AS the day happens,
+   because a past day's denominator cannot be rebuilt afterwards — finished quests are
+   deleted outright and the habit list moves underneath you (see the comment above
+   paceToday). So nothing in here recomputes anything. It only reads what was logged.
+
+   Two behaviours fall straight out of that, and both are the point rather than a limit:
+     · A day with nothing planned was never written, so it has no point on the chart and
+       reads "No planned items". A rest day must not look like a 0% failure.
+     · A day the app wasn't opened on has no row either, and stays a gap rather than being
+       guessed at. Gaps are drawn as gaps; the line simply doesn't span them.
+
+   Everything down to weeklyComparisonData() is pure — no DOM, no state writes — and the
+   renderer below takes the finished object. That split is what makes the numbers testable
+   without a browser.                                                                     */
+const WC_DOW  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WC_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const WC_RANGES = [
+  { w: 4,  label: 'Last 4 weeks' },
+  { w: 8,  label: 'Last 8 weeks' },
+  { w: 12, label: 'Last 12 weeks' },
+  { w: 26, label: 'Last 6 months' },
+];
+// A difference smaller than this is noise dressed as a finding, so the card says "about
+// your usual" instead of putting a number on it.
+const WC_NOTABLE = 5;
+// Below three observations the 25th–75th percentile is just the numbers themselves wearing
+// a statistic's clothes, so the band is withheld rather than drawn thin and confident.
+const WC_MIN_BAND = 3;
+const WC_MIN_AVG  = 2;
+// The typical range is an INTERQUARTILE range, so by construction half of all days fall
+// outside it. It describes "where you usually land" well, and it is useless as a test for
+// "unusual" — keying the ▲▼ flags off it marked three or four days every week, which is a
+// coin flip wearing a warning label. Flags use the 10th/90th percentile instead: the real
+// tails, about one day a week, and self-scaling to how variable the person actually is.
+// That needs more history behind it than a band does, hence the higher floor.
+const WC_MIN_FLAG = 5;
+
+// Monday of the week containing dateStr. getDay() is 0=Sun, and the chart runs Mon→Sun.
+function wcWeekStart(dateStr) {
+  return addDays(dateStr, -((new Date(dateStr + 'T00:00:00').getDay() + 6) % 7));
+}
+function wcWeeks() {
+  const w = parseInt((state.settings || {}).weekCmpWeeks);
+  return WC_RANGES.some(r => r.w === w) ? w : 12;
+}
+// '' means the filter was never chosen, and resolves to the loadout that is active right
+// now — open the chart and you are already looking at the setup you are on today. 'all' is
+// a deliberate choice and is never overridden, and a name whose loadout has since been
+// deleted falls back rather than filtering every day away.
+function wcLoadout() {
+  const list = Array.isArray(state.loadouts) ? state.loadouts : [];
+  const saved = (state.settings || {}).weekCmpLoadout;
+  if (saved === 'all') return 'all';
+  if (typeof saved === 'string' && list.includes(saved)) return saved;
+  const cur = currentLoadout();
+  return list.includes(cur) ? cur : 'all';
+}
+
+/* getDailyCompletionPercentage — one day, or null when that day had no planned items.
+
+   `loadout` narrows it to days spent on one set. paceLog stamps the loadout each day ENDED
+   on (switching mid-day re-attributes the whole day to where you finished), so one day is
+   in exactly one bucket and the filter can't double-count. Read straight off the row rather
+   than through dayLoadout(): load() guarantees every row carries a name, and dayLoadout's
+   fallback scans state.history, which would turn one render into ~180 scans.              */
+function dayCompletionPct(dateStr, loadout) {
+  const row = (state.paceLog || {})[dateStr];
+  if (!row || !row.total) return null;
+  if (loadout && loadout !== 'all' && row.loadout !== loadout) return null;
+  return { pct: Math.round(row.done / row.total * 100), done: row.done, total: row.total };
+}
+
+// getTypicalRange — 25th/75th percentile, linearly interpolated. Min/max would let one
+// catastrophic Tuesday widen "normal" until nothing could ever fall outside it.
+function percentileRange(vals, lo = 0.25, hi = 0.75) {
+  const v = vals.slice().sort((a, b) => a - b);
+  const at = p => {
+    const idx = p * (v.length - 1), f = Math.floor(idx), c = Math.ceil(idx);
+    return v[f] + (v[c] - v[f]) * (idx - f);
+  };
+  return { low: Math.round(at(lo)), high: Math.round(at(hi)) };
+}
+
+// getHistoricalWeekdayStats — indexed Mon..Sun, built only from COMPLETED weeks before
+// `thisWeekStart`. The current week is excluded on purpose: comparing a week against an
+// average it is itself inside drags the average toward whatever is being judged.
+function weekdayHistoryStats(weeks, thisWeekStart, loadout) {
+  const buckets = Array.from({ length: 7 }, () => []);
+  for (let w = 1; w <= weeks; w++) {
+    const start = addDays(thisWeekStart, -7 * w);
+    for (let i = 0; i < 7; i++) {
+      const d = dayCompletionPct(addDays(start, i), loadout);
+      if (d) buckets[i].push(d.pct);
+    }
+  }
+  return buckets.map(vals => {
+    const n = vals.length;
+    const r = n >= WC_MIN_BAND ? percentileRange(vals) : null;          // drawn as the band
+    const o = n >= WC_MIN_FLAG ? percentileRange(vals, 0.10, 0.90) : null;  // flagged, not drawn
+    return {
+      n,
+      avg: n >= WC_MIN_AVG ? Math.round(vals.reduce((s, v) => s + v, 0) / n) : null,
+      low: r ? r.low : null,
+      high: r ? r.high : null,
+      outLow: o ? o.low : null,
+      outHigh: o ? o.high : null,
+    };
+  });
+}
+
+// getWeeklyComparisonData — the whole chart as one object.
+function weeklyComparisonData(weeks, loadout) {
+  const today = todayStr(), start = wcWeekStart(today);
+  const hist = weekdayHistoryStats(weeks, start, loadout);
+  const days = WC_DOW.map((label, i) => {
+    const date = addDays(start, i), cur = dayCompletionPct(date, loadout), h = hist[i];
+    return {
+      i, label, full: WC_FULL[i], date,
+      future: date > today,
+      isToday: date === today,
+      cur, hist: h,
+      delta: (cur && h.avg != null) ? cur.pct - h.avg : null,
+      state: (!cur || h.outLow == null) ? 'normal'
+           : cur.pct > h.outHigh ? 'above'
+           : cur.pct < h.outLow  ? 'below' : 'normal',
+    };
+  });
+  // How many of the compared weeks actually carried anything. This is the honest
+  // denominator behind every average on the chart: without it the footnote would claim
+  // 12 weeks of history to a save that only holds five.
+  let weeksWithData = 0;
+  for (let w = 1; w <= weeks; w++) {
+    const s = addDays(start, -7 * w);
+    for (let i = 0; i < 7; i++) if (dayCompletionPct(addDays(s, i), loadout)) { weeksWithData++; break; }
+  }
+  return { weeks, weeksWithData, weekStart: start, days, loadout: loadout || 'all',
+           hasCurrent: days.some(d => d.cur), hasHistory: days.some(d => d.hist.n >= WC_MIN_AVG) };
+}
+
+/* ---- the drawing ---------------------------------------------------------------------
+   Hand-rolled SVG: there is no build step here and no chart library to reach for, and a
+   seven-point line with one band does not justify shipping one.
+
+   The viewBox is measured from the container every render so one user unit is one CSS
+   pixel. A fixed viewBox scaled by CSS would have rendered 11px axis labels at 5px on a
+   phone and 17px on a desktop — the single reason this measures instead of scaling.     */
+let wcSel = -1, wcPinned = -1, wcUserPicked = false, wcData = null, wcLastSig = '', wcResizeWired = false;
+
+function wcGeom(W) {
+  const narrow = W < 420;
+  const padL = narrow ? 44 : 58, padR = 12, padT = 14, padB = 30;
+  const H = narrow ? 236 : 292;
+  const plotW = Math.max(60, W - padL - padR), plotH = Math.max(60, H - padT - padB);
+  return { W, H, padL, padR, padT, padB, plotW, plotH, narrow,
+           slot: plotW / 7,
+           x: i => padL + plotW / 7 * (i + 0.5),
+           y: p => padT + (1 - clamp(p, 0, 100) / 100) * plotH };
+}
+
+// Cardinal spline with every control point clamped inside its own segment's y-range. An
+// unclamped spline overshoots after a sharp drop — it would draw a dip the data never had,
+// which on a chart someone is reading for a number is simply wrong.
+function wcCurve(pts, move = true) {
+  if (!pts.length) return '';
+  let d = move ? `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}` : '';
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || pts[i + 1];
+    const t = 0.18, lo = Math.min(p1.y, p2.y), hi = Math.max(p1.y, p2.y);
+    const c1x = p1.x + (p2.x - p0.x) * t, c1y = clamp(p1.y + (p2.y - p0.y) * t, lo, hi);
+    const c2x = p2.x - (p3.x - p1.x) * t, c2y = clamp(p2.y - (p3.y - p1.y) * t, lo, hi);
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+// Consecutive days that each satisfy `ok`. A missing day breaks the run instead of being
+// bridged, so the chart never draws a line across a day it knows nothing about.
+function wcRuns(days, ok) {
+  const runs = []; let run = [];
+  days.forEach(d => { if (ok(d)) run.push(d); else { if (run.length) runs.push(run); run = []; } });
+  if (run.length) runs.push(run);
+  return runs;
+}
+
+function wcDeltaLine(d) {
+  if (!d.cur || d.hist.avg == null) return '';
+  const n = Math.abs(d.delta);
+  if (n < WC_NOTABLE) return `About your usual ${d.full}.`;
+  return `${n} percentage point${n === 1 ? '' : 's'} ${d.delta > 0 ? 'above' : 'below'} your usual ${d.full}.`;
+}
+// Spoken form of a column, for screen readers and for the title attribute.
+function wcDayLabel(d) {
+  const bits = [d.full + '.'];
+  bits.push(d.cur ? `This week ${d.cur.pct} percent, ${d.cur.done} of ${d.cur.total} planned things done.`
+          : d.future ? 'Still to come.' : 'No planned items.');
+  if (d.hist.avg != null) bits.push(`Your average ${d.hist.avg} percent.`);
+  if (d.hist.low != null) bits.push(`Typical range ${d.hist.low} to ${d.hist.high} percent.`);
+  const dl = wcDeltaLine(d); if (dl) bits.push(dl);
+  return bits.join(' ');
+}
+
+/* The annotation sits ABOVE the plot rather than floating over it. Anchored to its column
+   it looked tidier and covered three days' worth of chart to describe one of them, and
+   flipping sides only moved which three. Docked, it costs ~70px of height and hides
+   nothing. Laid out across rather than down for the same reason.                         */
+function wcCardHTML(d) {
+  if (!d) return '';
+  const stat = (cls, label, val) =>
+    `<span class="wc-stat">${cls ? `<i class="wc-sw ${cls}"></i>` : ''}${label}<b>${val}</b></span>`;
+  const stats = [stat('now', 'This week', d.cur ? d.cur.pct + '%' : d.future ? '—' : 'None planned')];
+  if (d.hist.avg != null) stats.push(stat('avg', 'Your average', d.hist.avg + '%'));
+  if (d.hist.low != null) stats.push(stat('band', 'Typical range', `${d.hist.low}–${d.hist.high}%`));
+  if (d.hist.avg == null && d.hist.low == null)
+    stats.push(stat('', 'History', `${d.hist.n} day${d.hist.n === 1 ? '' : 's'}`));
+
+  const tag = d.state === 'above' ? '▲ Strong day' : d.state === 'below' ? '▼ Below normal' : '';
+  const line = d.cur ? wcDeltaLine(d)
+             : d.future ? 'Still to come this week.'
+             : 'Nothing was planned for this day, so it is left out of the comparison.';
+  const bits = [];
+  if (tag) bits.push(`<span class="tag">${tag}</span>`);
+  if (line) bits.push(escapeHtml(line));
+  if (d.cur) bits.push(`${d.cur.done} of ${d.cur.total} planned things completed`);
+  return `<div class="wc-card" id="wcCard" role="status" aria-live="polite">
+    <div class="wc-card-head">
+      <h4>${d.full}${d.isToday ? '<span class="wc-today">Today</span>' : ''}</h4>
+      <div class="wc-stats">${stats.join('')}</div>
+    </div>
+    <div class="wc-note">${bits.join('<span class="wc-sep">·</span>')}</div>
+  </div>`;
+}
+
+// Opens on today. The most unusual day of the week is the more interesting answer, and on
+// arrival the question is "how am I doing right now" — so the obvious day wins. A day the
+// user actually clicks overrides this and survives re-renders (wcUserPicked).
+function wcAutoPick(data) {
+  const i = data.days.findIndex(d => d.isToday);
+  return i >= 0 ? i : 0;
+}
+
+function wcChartSVG(data, g) {
+  const days = data.days, parts = [];
+  // grid + y labels
+  [0, 25, 50, 75, 100].forEach(p => {
+    const y = g.y(p).toFixed(1);
+    parts.push(`<line class="${p === 0 ? 'wc-base' : 'wc-grid-line'}" x1="${g.padL}" y1="${y}" x2="${g.padL + g.plotW}" y2="${y}"/>`);
+    parts.push(`<text class="wc-ylab" x="${g.padL - 8}" y="${y}" text-anchor="end" dominant-baseline="middle">${p}%</text>`);
+  });
+  const midY = (g.padT + g.plotH / 2).toFixed(1), tx = g.narrow ? 11 : 14;
+  parts.push(`<text class="wc-ytitle wc-long" transform="rotate(-90 ${tx} ${midY})" x="${tx}" y="${midY}" text-anchor="middle">% of planned things completed</text>`);
+  parts.push(`<text class="wc-ytitle wc-short" transform="rotate(-90 ${tx} ${midY})" x="${tx}" y="${midY}" text-anchor="middle">Things completed</text>`);
+  // column highlights (also the visible focus indicator for keyboard users)
+  days.forEach(d => parts.push(
+    `<rect class="wc-colhl" data-wc-hl="${d.i}" x="${(g.padL + g.slot * d.i).toFixed(1)}" y="${g.padT}" width="${g.slot.toFixed(1)}" height="${g.plotH}" rx="6"/>`));
+  // typical range
+  wcRuns(days, d => d.hist.low != null).forEach(run => {
+    if (run.length === 1) {
+      const d = run[0], yh = g.y(d.hist.high), yl = g.y(d.hist.low);
+      parts.push(`<rect class="wc-band-fill" x="${(g.x(d.i) - 9).toFixed(1)}" y="${yh.toFixed(1)}" width="18" height="${Math.max(1.5, yl - yh).toFixed(1)}" rx="3"/>`);
+    } else {
+      const top = run.map(d => ({ x: g.x(d.i), y: g.y(d.hist.high) }));
+      const bot = run.slice().reverse().map(d => ({ x: g.x(d.i), y: g.y(d.hist.low) }));
+      parts.push(`<path class="wc-band-fill" d="${wcCurve(top)} L ${bot[0].x.toFixed(1)} ${bot[0].y.toFixed(1)}${wcCurve(bot, false)} Z"/>`);
+    }
+  });
+  days.forEach(d => parts.push(
+    `<line class="wc-vline" data-wc-vl="${d.i}" x1="${g.x(d.i).toFixed(1)}" y1="${g.padT}" x2="${g.x(d.i).toFixed(1)}" y2="${(g.padT + g.plotH).toFixed(1)}"/>`));
+  // your average week
+  wcRuns(days, d => d.hist.avg != null).forEach(run => {
+    if (run.length > 1) parts.push(`<path class="wc-avg-line" d="${wcCurve(run.map(d => ({ x: g.x(d.i), y: g.y(d.hist.avg) })))}"/>`);
+  });
+  days.forEach(d => { if (d.hist.avg != null)
+    parts.push(`<circle class="wc-avg-dot" cx="${g.x(d.i).toFixed(1)}" cy="${g.y(d.hist.avg).toFixed(1)}" r="2.8"/>`); });
+  // this week — drawn last so it sits over everything
+  wcRuns(days, d => !!d.cur).forEach(run => {
+    if (run.length > 1) parts.push(`<path class="wc-now-line" pathLength="1" d="${wcCurve(run.map(d => ({ x: g.x(d.i), y: g.y(d.cur.pct) })))}"/>`);
+  });
+  days.forEach(d => {
+    if (!d.cur) return;
+    const x = g.x(d.i).toFixed(1), y = g.y(d.cur.pct).toFixed(1), out = d.state !== 'normal';
+    if (out) {
+      parts.push(`<circle class="wc-halo" cx="${x}" cy="${y}" r="10"/>`);
+      // A small flag rather than a second colour: direction without a new hue to decode.
+      const up = d.state === 'above', fy = up ? +y - 16 : +y + 16;
+      parts.push(`<path class="wc-flag" d="${up ? `M ${+x - 4} ${fy + 3} L ${+x + 4} ${fy + 3} L ${x} ${fy - 3} Z`
+                                               : `M ${+x - 4} ${fy - 3} L ${+x + 4} ${fy - 3} L ${x} ${fy + 3} Z`}"/>`);
+    }
+    parts.push(`<circle class="wc-now-dot${out ? ' out' : ''}" cx="${x}" cy="${y}" r="${out ? 6 : 4.8}"/>`);
+  });
+  // x labels + hit targets
+  days.forEach(d => {
+    parts.push(`<text class="wc-xlab" data-wc-xl="${d.i}" x="${g.x(d.i).toFixed(1)}" y="${(g.padT + g.plotH + 19).toFixed(1)}" text-anchor="middle">${d.label}</text>`);
+    parts.push(`<rect class="wc-hit" data-wc-day="${d.i}" x="${(g.padL + g.slot * d.i).toFixed(1)}" y="${g.padT}" width="${g.slot.toFixed(1)}" height="${(g.plotH + g.padB).toFixed(1)}" tabindex="0" role="button" aria-label="${escapeHtml(wcDayLabel(d))}"/>`);
+  });
+  return `<svg class="wc-chart" id="wcChart" viewBox="0 0 ${g.W} ${g.H}" style="height:${g.H}px" role="group" aria-label="Weekly comparison: percentage of planned things completed, this week against your usual week" preserveAspectRatio="xMidYMid meet">${parts.join('')}</svg>`;
+}
+
+function wcSelect(i, pin) {
+  if (!wcData) return;
+  const d = wcData.days[i]; if (!d) return;
+  wcSel = i; if (pin) wcPinned = i;
+  const host = $('#wcCardHost'); if (host) host.innerHTML = wcCardHTML(d);
+  $$('#wcChart [data-wc-hl]').forEach(el => el.classList.toggle('sel', +el.dataset.wcHl === i));
+  $$('#wcChart [data-wc-vl]').forEach(el => el.classList.toggle('sel', +el.dataset.wcVl === i));
+  $$('#wcChart [data-wc-xl]').forEach(el => el.classList.toggle('sel', +el.dataset.wcXl === i));
+}
+
+function renderWeeklyComparison() {
+  const panel = $('#wcPanel'); if (!panel) return;
+  const weeks = wcWeeks(), lo = wcLoadout();
+  const names = Array.isArray(state.loadouts) ? state.loadouts : [];
+  // One loadout means the filter can only ever be a no-op, so it isn't drawn at all.
+  const multi = names.length > 1;
+  const data = wcData = weeklyComparisonData(weeks, lo);
+  const limited = data.weeksWithData < WC_MIN_BAND;
+  const filtered = multi && lo !== 'all';
+  panel.innerHTML = `
+    <div class="wc-head">
+      <div>
+        <div class="section-title t2">📈 Weekly Comparison</div>
+        <div class="subtle">See how this week compares with your usual pattern.</div>
+        ${limited ? `<span class="wc-chip">Limited history</span>` : ''}
+      </div>
+      <div class="wc-controls">
+        ${multi ? `<select class="wc-range" id="wcLoadout" aria-label="Which loadout's days to count">
+          <option value="all"${lo === 'all' ? ' selected' : ''}>All loadouts</option>
+          ${names.map(n => `<option value="${escapeHtml(n)}"${n === lo ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('')}
+        </select>` : ''}
+        <select class="wc-range" id="wcRange" aria-label="How far back to compare">
+          ${WC_RANGES.map(r => `<option value="${r.w}"${r.w === weeks ? ' selected' : ''}>${r.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="wc-mount" id="wcMount"></div>`;
+
+  const sel = $('#wcRange');
+  if (sel) sel.addEventListener('change', () => {
+    state.settings.weekCmpWeeks = WC_RANGES.some(r => r.w === +sel.value) ? +sel.value : 12;
+    save(); SFX.click(); renderWeeklyComparison();
+  });
+  const lsel = $('#wcLoadout');
+  if (lsel) lsel.addEventListener('change', () => {
+    const v = lsel.value;
+    // Written explicitly even when it equals the active loadout, so that picking it is a
+    // CHOICE that sticks rather than a '' that would re-resolve the next time you switch.
+    state.settings.weekCmpLoadout = (v === 'all' || names.includes(v)) ? v : 'all';
+    save(); SFX.click(); renderWeeklyComparison();
+  });
+
+  const mount = $('#wcMount');
+  // Hidden view: clientWidth is 0 and any geometry built now would be nonsense. switchView
+  // re-renders Stats on arrival, which is when the real width exists.
+  const W = Math.round(mount.clientWidth);
+  if (W < 160) return;
+
+  if (!data.hasCurrent && !data.hasHistory) {
+    mount.innerHTML = `<div class="subtle">${filtered
+      ? `No days logged on the ${escapeHtml(lo)} loadout yet. Switch the filter to “All loadouts” to see every day.`
+      : `Nothing to compare yet. Each day you open the app with things planned, that day's share gets logged — after a week or two this fills in with your usual pattern.`}</div>`;
+    return;
+  }
+  const g = wcGeom(W);
+  // Replay the entry animation only when the picture actually changed, not on every
+  // incidental renderStats() — a chart that redraws itself while you read it is noise.
+  const sig = weeks + '|' + lo + '|' + W + '|' + data.days.map(d => d.cur ? d.cur.pct : '-').join(',');
+  const anim = sig !== wcLastSig && !state.settings.reducedMotion;
+  wcLastSig = sig;
+
+  const n = data.weeksWithData;
+  mount.innerHTML = `<div id="wcCardHost"></div>` + wcChartSVG(data, g);
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="wc-legend">
+      <span><i class="wc-sw now"></i>This week</span>
+      <span><i class="wc-sw avg"></i>Your average</span>
+      <span><i class="wc-sw band"></i>Typical range</span>
+    </div>
+    <div class="wc-foot">${n ? `Compared with your last ${n} completed week${n === 1 ? '' : 's'}.` : 'No completed weeks logged yet.'}${
+      filtered ? ` Only days you ended on the ${escapeHtml(lo)} loadout.` : ''}${
+      limited ? ' A weekday needs 3 logged days behind it before its typical range is drawn.' : ''} Days with nothing planned are left out rather than counted as 0%.</div>`);
+  if (anim) $('#wcChart').classList.add('wc-anim');
+
+  // A day the user chose survives a re-render; an auto-pick does not, because changing
+  // the range changes which day is the unusual one.
+  const def = (wcUserPicked && data.days[wcPinned]) ? wcPinned : wcAutoPick(data);
+  wcPinned = def;
+  if (def >= 0) wcSelect(def, true);
+
+  const svg = $('#wcChart');
+  svg.addEventListener('pointerover', e => {
+    const h = e.target.closest('[data-wc-day]'); if (h) wcSelect(+h.dataset.wcDay, false);
+  });
+  svg.addEventListener('pointerleave', () => { if (wcPinned >= 0) wcSelect(wcPinned, false); });
+  svg.addEventListener('focusin', e => {
+    const h = e.target.closest('[data-wc-day]'); if (h) { wcUserPicked = true; wcSelect(+h.dataset.wcDay, true); }
+  });
+  svg.addEventListener('click', e => {
+    const h = e.target.closest('[data-wc-day]'); if (!h) return;
+    SFX.click(); wcUserPicked = true; wcSelect(+h.dataset.wcDay, true);
+  });
+  svg.addEventListener('keydown', e => {
+    const d = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    const next = clamp((wcSel < 0 ? 0 : wcSel) + d, 0, 6);
+    const el = $(`#wcChart [data-wc-day="${next}"]`); if (el) el.focus();
+  });
+
+  if (!wcResizeWired) {
+    wcResizeWired = true;
+    let t = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(t);
+      t = setTimeout(() => { if ($('#wcPanel') && $('#view-stats').classList.contains('active')) renderWeeklyComparison(); }, 160);
+    });
+  }
+}
+
 function renderStats() {
   const box = $('#statsBody'); if (!box) return;
   const hist = (Array.isArray(state.history) ? state.history : []).filter(e => e && Number.isFinite(e.ts));
   if (!hist.length) {
-    box.innerHTML = `<div class="empty"><div class="big">📊</div>No data yet — complete habits and quests and your patterns will show up here.</div>`;
+    // Weekly Comparison reads paceLog, not the completion log, so it can have something to
+    // say on a save where things were planned and none of them got done — which is the
+    // week you would most want to look at it.
+    box.innerHTML = `<div class="panel wc-panel" id="wcPanel"></div>
+      <div class="empty"><div class="big">📊</div>No data yet — complete habits and quests and your patterns will show up here.</div>`;
+    renderWeeklyComparison();
     return;
   }
   const now = Date.now(), weekAgo = now - 7 * 86400000;
@@ -10593,7 +11327,8 @@ function renderStats() {
       <span class="stat-chip"><b>${thisWeek}</b>this week</span>
       <span class="stat-chip"><b>${STAT_DAYS[busiest]}</b>busiest day</span>
     </div>
-    <div class="panel">
+    <div class="panel wc-panel" id="wcPanel"></div>
+    <div class="panel" style="margin-top:14px">
       <div class="section-title t2">🕒 Weekly rhythm</div>
       <div class="subtle">When things get done — darker = more completions in that time block.</div>
       ${heatHTML}
@@ -10610,6 +11345,8 @@ function renderStats() {
     </div>
     ${similarDaysHTML()}
     ${beliefsHTML()}`;
+  // Measures its own container, so it can only run once the markup above is in the DOM.
+  renderWeeklyComparison();
 }
 $('#statsBody').addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
@@ -10707,7 +11444,7 @@ function renderPassPools() {
       const n = items.filter(r => poolHasReward(poolKey, tier, r.id)).length;
       return `<details class="pool-rarity"><summary style="color:${TIERS[tier].hex}">${TIERS[tier].emoji} ${TIERS[tier].label} <span class="subtle">(${n}/${items.length})</span></summary><div class="pool-items">${checks}</div></details>`;
     }).join('');
-    const tokens = `<label class="pool-item strong"><input type="checkbox" data-pool="${poolKey}" data-tokens ${state.pass.pools[poolKey].tokens !== false ? 'checked' : ''}> <span>🪙 Tokens</span></label>`;
+    const tokens = `<label class="pool-item strong"><input type="checkbox" data-pool="${poolKey}" data-tokens ${state.pass.pools[poolKey].tokens !== false ? 'checked' : ''}> <span><i class="tok"></i> Tokens</span></label>`;
     const wild = withWild ? `<div class="pool-wild"><div class="subtle">🃏 Wild cards</div>${REWARD_TIERS.map(t => `<label class="pool-item inline"><input type="checkbox" data-pool="${poolKey}" data-wild="${t}" ${(state.pass.pools[poolKey].wild && state.pass.pools[poolKey].wild[t]) ? 'checked' : ''}> <span style="color:${TIERS[t].hex}">${TIERS[t].label}</span></label>`).join('')}</div>` : '';
     return `<details class="pool-group"><summary>${title}</summary><div class="pool-body"><div class="hint">${hint}</div>${rarities}${tokens}${wild}</div></details>`;
   };
@@ -10760,10 +11497,91 @@ function renderHappyHours() {
 function renderTierRewards() {
   $$('#tierRewards [data-tier-reward]').forEach(inp => { inp.value = tierReward(inp.dataset.tierReward); });
 }
+/* Same-named habits that are STILL separate objects. The merge on load folds only copies
+   whose definitions match exactly; these are the ones that disagree somewhere, and folding
+   them would silently throw away one of two real configurations with no way to tell from
+   here which was wanted. So they get listed, with what differs, and the user chooses. */
+function habitDupGroups() {
+  const by = new Map();
+  (state.habits || []).filter(h => !h.archived && String(h.name || '').trim()).forEach(h => {
+    const k = String(h.name).trim().toLowerCase();
+    if (!by.has(k)) by.set(k, []);
+    by.get(k).push(h);
+  });
+  return [...by.values()].filter(g => g.length > 1);
+}
+const HABIT_LADDER_KEY = h => JSON.stringify(h.tiers || []) + '|' + h.baseIdx;
+// What differs, named the way the user would name it rather than by field.
+const HABIT_DIFF_FIELDS = [
+  [h => h.reward, 'tokens'], [h => h.timedMinutes || 0, 'duration'],
+  [h => h.section, 'section'], [h => (h.repeatable ? h.cap : 1), 'repeats'],
+  [HABIT_LADDER_KEY, 'tier ladder'], [h => (h.days || []).join(''), 'weekdays'],
+  [h => h.category, 'category'], [h => h.emoji, 'icon'],
+  [h => JSON.stringify(h.children || []), 'subtasks'],
+  [h => h.scheduledMin, 'start time'], [h => h.desc || '', 'description'],
+  [h => h.why || '', 'why'], [h => JSON.stringify(h.modes || {}), 'modes'],
+];
+function habitGroupDiffs(g) {
+  return HABIT_DIFF_FIELDS.filter(([get]) => new Set(g.map(get)).size > 1).map(([, label]) => label);
+}
+/* Make `winnerId` the single shared habit for its whole name-group. Irreversible, so it
+   only ever runs from a deliberate second tap. */
+function mergeHabitGroupInto(winnerId) {
+  const win = state.habits.find(h => h.id === winnerId); if (!win) return 0;
+  const group = habitDupGroups().find(g => g.some(h => h.id === winnerId)); if (!group) return 0;
+  const losers = group.filter(h => h.id !== winnerId);
+  if (!losers.length) return 0;
+  const remap = new Map();
+  win.loadouts = (Array.isArray(win.loadouts) && win.loadouts.length) ? win.loadouts : [win.loadout || 'Default'];
+  win.tierByLoadout = win.tierByLoadout || {};
+  losers.forEach(h => {
+    remap.set(h.id, win.id);
+    win.loadouts = [...new Set([...win.loadouts, ...((Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default'])])];
+    // A remembered tier is an INDEX into a ladder. Carry it over only when the losing copy
+    // had the same ladder; otherwise it would point at a different rung, so those loadouts
+    // start again on the winner's own level rather than on a confidently wrong one.
+    if (HABIT_LADDER_KEY(h) === HABIT_LADDER_KEY(win)) {
+      Object.keys(h.tierByLoadout || {}).forEach(lo => {
+        if (!Object.prototype.hasOwnProperty.call(win.tierByLoadout, lo)) win.tierByLoadout[lo] = h.tierByLoadout[lo];
+      });
+    }
+    if ((h.lastDone || '') > (win.lastDone || '')) win.lastDone = h.lastDone;
+    if ((h.context || []).length > (win.context || []).length) { win.context = h.context; win.contextAsked = h.contextAsked; }
+  });
+  state.habits = state.habits.filter(h => !remap.has(h.id));
+  remapHabitIds(state, remap);
+  if (!win.loadouts.includes(win.loadout)) win.loadout = win.loadouts[0];
+  logEvent('habits_merged', { kept: win.id, name: win.name, folded: losers.length });
+  return losers.length;
+}
+let dupArmedId = '';          // first tap arms, second merges — no confirm() in a WKWebView
+function renderHabitDupes() {
+  const box = $('#habitDupes'); if (!box) return;
+  const groups = habitDupGroups();
+  if (!groups.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `
+    <div class="sub-head">🔗 Same name, separate habits</div>
+    <div class="hint">These share a name but not a definition, so they were left alone. Pick the version to keep: the others fold into it and their loadouts come along, but their own settings don't.</div>
+    ${groups.map(g => `
+      <div class="dup-group">
+        <div class="dup-name">${escapeHtml(g[0].emoji || '')} ${escapeHtml(g[0].name)}
+          <span class="subtle">· ${g.length} copies · differ on ${escapeHtml(habitGroupDiffs(g).join(', ') || 'nothing visible')}</span></div>
+        ${g.map(h => `
+          <div class="dup-row">
+            <span class="dup-meta"><b>${escapeHtml(habitLoadoutLabel(h))}</b> · +${h.reward}<i class="tok"></i>${
+              h.timedMinutes ? ` · ${h.timedMinutes}m` : ''}${
+              (h.tiers || []).length ? ` · ${h.tiers.length + 1} tiers` : ''} · ${h.section === 'extra' ? 'extra' : 'daily'}</span>
+            <button class="btn ${dupArmedId === h.id ? 'gold' : 'ghost'} sm" data-act="dupKeep" data-id="${h.id}">${
+              dupArmedId === h.id ? 'Tap again to merge' : 'Keep this one'}</button>
+          </div>`).join('')}
+      </div>`).join('')}`;
+}
+
 function renderHabitEditor() {
+  renderHabitDupes();
   const box = $('#habitEditor');
   const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
-  box.innerHTML = state.habits.filter(h => !h.archived && h.loadout === currentLoadout()).map(h => {
+  box.innerHTML = state.habits.filter(h => !h.archived && habitInLoadout(h, currentLoadout())).map(h => {
     const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
     const dayPicker = `<span class="day-picker" title="Days this habit appears (default: every day)">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
     return `
@@ -10777,7 +11595,7 @@ function renderHabitEditor() {
       <select class="sect-in" data-f="category" title="Category (drives Habit Pass goals)">
         ${(state.categories || ['Unsorted']).map(c => `<option value="${escapeHtml(c)}" ${h.category === c ? 'selected' : ''}>🏷️ ${escapeHtml(c)}</option>`).join('')}
       </select>
-      <span class="pill">🪙 <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
+      <span class="pill"><i class="tok"></i> <input class="num-in" data-f="reward" type="number" min="0" max="999" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span>
       <label class="pill rep-toggle" title="Allow completing this multiple times per day">
         <input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable
       </label>
@@ -10903,7 +11721,7 @@ function renderGameConfigs() {
     <div class="game-config" data-game="${key}">
       <div class="row between">
         <div style="font-family:'Orbitron';font-weight:700;letter-spacing:1px">${GAME_META[key]}</div>
-        <span class="pill">Cost 🪙 <input class="num-in" data-cf="cost" type="number" min="0" max="999" value="${g.cost}"></span>
+        <span class="pill">Cost <i class="tok"></i> <input class="num-in" data-cf="cost" type="number" min="0" max="999" value="${g.cost}"></span>
       </div>
       <div class="weights-grid" style="margin-top:10px">
         ${OUTCOME_ORDER.map(k => {
@@ -10920,7 +11738,7 @@ function renderGameConfigs() {
       </div>
       <div class="hint">Token-win range when "Tokens" hits:
         <input class="num-in" data-cf="twlo" type="number" min="0" value="${g.tokenWin[0]}"> –
-        <input class="num-in" data-cf="twhi" type="number" min="0" value="${g.tokenWin[1]}"> 🪙
+        <input class="num-in" data-cf="twhi" type="number" min="0" value="${g.tokenWin[1]}"> <i class="tok"></i>
       </div>
     </div>`;
   }).join('') + ultraConfigHTML();
@@ -10944,14 +11762,14 @@ function ultraConfigHTML() {
     <div class="game-config" data-game="ultra" style="border-color:var(--purple)">
       <div class="row between">
         <div style="font-family:'Orbitron';font-weight:700;letter-spacing:1px">🃏 Ultra Pack <span class="subtle" style="font-size:11px">· 10 cards</span></div>
-        <span class="pill">Cost 🪙 <input class="num-in" data-ucf="cost" type="number" min="0" max="9999" value="${g.cost}"></span>
+        <span class="pill">Cost <i class="tok"></i> <input class="num-in" data-ucf="cost" type="number" min="0" max="9999" value="${g.cost}"></span>
       </div>
       <div class="hint" style="margin-top:8px">⏱ Hold to reveal — card 9 after
         <input class="num-in" data-ucf="hold9" type="number" min="0" max="20" step="0.5" value="${g.hold9}">s,
         card 10 after <input class="num-in" data-ucf="hold10" type="number" min="0" max="20" step="0.5" value="${g.hold10}">s</div>
       <div class="hint" style="margin-top:6px">Token-win range:
         <input class="num-in" data-ucf="twlo" type="number" min="0" value="${g.tokenWin[0]}"> –
-        <input class="num-in" data-ucf="twhi" type="number" min="0" value="${g.tokenWin[1]}"> 🪙</div>
+        <input class="num-in" data-ucf="twhi" type="number" min="0" value="${g.tokenWin[1]}"> <i class="tok"></i></div>
       ${slot('first8', 'Cards 1–8 · guaranteed (mostly tokens & common)', ['tokens', 'common', 'rare', 'epic', 'legendary'])}
       ${slot('card9', 'Card 9 · 2nd-to-last (common or higher)', ['common', 'rare', 'epic', 'legendary'])}
       ${slot('card10', 'Card 10 · the last card (rare or higher)', ['rare', 'epic', 'legendary'])}
@@ -11266,8 +12084,8 @@ function appContext() {
   });
 
   // --- Habits (active + recently graduated) ---
-  const active = state.habits.filter(h => !h.archived && h.loadout === currentLoadout());
-  const archived = state.habits.filter(h => h.archived && h.loadout === currentLoadout());
+  const active = state.habits.filter(h => !h.archived && habitInLoadout(h, currentLoadout()));
+  const archived = state.habits.filter(h => h.archived && habitInLoadout(h, currentLoadout()));
   L.push('ACTIVE HABITS:');
   if (!active.length) L.push('  (none)');
   active.forEach(h => {
@@ -11685,7 +12503,7 @@ function applyProposal(p) {
       repeatable: !!p.repeatable, cap: clamp(parseInt(p.cap) || 1, 1, 99),
       lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0,
       days: (Array.isArray(p.days) && p.days.length === 7) ? p.days.map(Boolean) : [true, true, true, true, true, true, true],
-      category: ensureAICategory(p.category), loadout: currentLoadout(), doneAt: 0, doneMin: null,
+      category: ensureAICategory(p.category), loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, doneAt: 0, doneMin: null,
       context: [], contextAsked: false,
       createdBy: 'ai' };
     state.habits.push(h); state.aiMeta.habits.push(h.id);
@@ -11734,7 +12552,7 @@ function applyProposal(p) {
       let i = Number.isFinite(num) ? num - 1
         : (p.to === 'easy' ? 0 : p.to === 'hard' ? n - 1 : p.to === 'medium' ? Math.floor((n - 1) / 2) : -1);
       if (!(i >= 0 && i < n)) return false;
-      h.curTier = i; return true;
+      setHabitTier(h, i); return true;
     }
     const n = parseInt(p.to); if (!Number.isFinite(n)) return false;
     h.reward = clamp(n, 0, 999); return true;
@@ -11809,7 +12627,7 @@ function applyProposal(p) {
                  minutes: clamp(parseInt(p.minutes) || 0, 0, 999) };
     if (harder) { h.tiers.push(nt); h.baseIdx = curBase; }        // new hardest → base keeps its slot
     else { h.tiers.unshift(nt); h.baseIdx = curBase + 1; }        // new easiest → base shifts up a label
-    h.curTier = null;                                            // back to the habit's own level
+    clearHabitTiers(h);                                          // every remembered rung moved
     return true;
   }
   // --- Reflection system: AI-proposed reason chip, and identity/habit purpose text. ---
@@ -11930,7 +12748,7 @@ function renderChat() {
       out += `<div class="${cls}" data-mi="${mi}" data-pi="${pi}">
         <div class="p-kind">${escapeHtml(d.kind)}</div>
         <div class="p-title">${escapeHtml(d.title)}</div>
-        ${d.detail ? `<div class="p-detail">${escapeHtml(d.detail)}</div>` : ''}
+        ${d.detail ? `<div class="p-detail">${tokify(escapeHtml(d.detail))}</div>` : ''}
         ${st
           ? `<div class="p-status" style="color:${st === 'applied' ? 'var(--green)' : 'var(--ink-dim)'}">${st === 'applied' ? '✓ Applied' : '✕ Dismissed'}</div>`
           : `<div class="p-actions"><button class="btn green sm" data-act="propApply">✓ Apply</button><button class="btn ghost sm" data-act="propDismiss">✕ Dismiss</button></div>`}
@@ -12127,7 +12945,7 @@ function planResultHTML() {
     return `<div class="${cls}" data-pi="${i}">
       <div class="p-kind">${escapeHtml(d.kind)}</div>
       <div class="p-title">${escapeHtml(d.title)}</div>
-      ${d.detail ? `<div class="p-detail">${escapeHtml(d.detail)}</div>` : ''}
+      ${d.detail ? `<div class="p-detail">${tokify(escapeHtml(d.detail))}</div>` : ''}
       ${row.status
         ? `<div class="p-status" style="color:${row.status === 'applied' ? 'var(--green)' : 'var(--ink-dim)'}">${row.status === 'applied' ? '✓ Applied' : '✕ Dismissed'}</div>`
         : `<div class="p-actions"><button class="btn green sm" data-act="propApply">✓ Apply</button><button class="btn ghost sm" data-act="propDismiss">✕ Dismiss</button></div>`}
@@ -12185,7 +13003,7 @@ function habitContextLines(h) {
   return bits;
 }
 function habitPlanSummary() {
-  const rows = state.habits.filter(h => !h.archived && h.loadout === currentLoadout()).map(h => {
+  const rows = state.habits.filter(h => !h.archived && habitInLoadout(h, currentLoadout())).map(h => {
     const lvls = habitLevels(h);
     const easiest = lvls ? lvls[0] : null;
     const bits = [];
@@ -12694,7 +13512,7 @@ function renderCheckinBody() {
           ${total ? `<span class="subtle">Question ${mcIndex + 1} of ${total}</span>` : ''}
         </div>
         <div class="pass-sub">${checkinKind === 'gap'
-          ? `Nothing was logged here. Tap the closest answer, or <b>Other</b> to say it in your own words${state.settings.gapCheckinToken !== false ? ' — either way it\'s worth <b>1 🪙</b>' : ''}.`
+          ? `Nothing was logged here. Tap the closest answer, or <b>Other</b> to say it in your own words${state.settings.gapCheckinToken !== false ? ' — either way it\'s worth <b>1 <i class="tok"></i></b>' : ''}.`
           : 'Tap the closest answer — or tap <b>Other</b> to say it in your own words.'}</div>
       </div>
       <div class="pass-scroll">
@@ -12748,7 +13566,7 @@ function renderCheckinBody() {
       out += `<div class="prop-card${st ? ' done' : ''}" data-cmi="${mi}" data-cpi="${pi}">
         <div class="p-kind">${escapeHtml(d.kind)}</div>
         <div class="p-title">${escapeHtml(d.title)}</div>
-        ${d.detail ? `<div class="p-detail">${escapeHtml(d.detail)}</div>` : ''}
+        ${d.detail ? `<div class="p-detail">${tokify(escapeHtml(d.detail))}</div>` : ''}
         ${st
           ? `<div class="p-status" style="color:${st === 'applied' ? 'var(--green)' : 'var(--ink-dim)'}">${st === 'applied' ? '✓ Applied' : '✕ Dismissed'}</div>`
           : `<div class="p-actions"><button class="btn green sm" data-act="checkinPropApply">✓ Apply</button><button class="btn ghost sm" data-act="checkinPropDismiss">✕ Dismiss</button></div>`}
@@ -12931,7 +13749,7 @@ CONTEXT
 - Loadout (the kind of day this is): "${g.loadout}"
 - Logged just before the gap: ${list(before)}
 - Logged just after the gap: ${list(after)}
-- Their habits on this loadout: ${state.habits.filter(h => !h.archived && h.loadout === g.loadout).map(h => `"${h.name}"`).join(', ') || '(none)'}
+- Their habits on this loadout: ${state.habits.filter(h => !h.archived && habitInLoadout(h, g.loadout)).map(h => `"${h.name}"`).join(', ') || '(none)'}
 
 RULES
 - Give 3-4 SHORT options (under 32 characters each), each a plausible everyday activity for this person, this loadout and this time of day. "Class", "Commuting", "Napping", "Out with friends" — concrete, not categories like "Leisure activity".
@@ -13009,7 +13827,7 @@ function finishGapCheckin(answer, wasTyped) {
       toast('✓ Updated', 'var(--green)');         // a correction isn't a second check-in — no token
     } else if (state.settings.gapCheckinToken !== false) {
       addTokens(1);
-      toast(`✓ Logged — +1 🪙`, 'var(--gold)');
+      toast(`✓ Logged — +1 <i class="tok"></i>`, 'var(--gold)');
     } else {
       toast('✓ Logged — thanks!', 'var(--green)');
     }
@@ -13679,6 +14497,25 @@ function onHabitsClick(e) {
     const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
     SFX.click(); openCopyPicker(id); return;
   }
+  if (act === 'togHabitLoadout') {
+    const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
+    const h = state.habits.find(x => x.id === id); if (!h) return;
+    const name = e.target.closest('[data-lo]').dataset.lo;
+    const set = new Set((Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']);
+    if (set.has(name)) {
+      // A habit with no loadout at all would vanish from every screen with no way back.
+      if (set.size === 1) { toast('A habit has to be in at least one loadout', 'var(--pink)'); return; }
+      set.delete(name);
+      if (h.tierByLoadout) delete h.tierByLoadout[name];   // that loadout's remembered tier goes with it
+    } else set.add(name);
+    h.loadouts = [...set];
+    if (!h.loadouts.includes(h.loadout)) h.loadout = h.loadouts[0];
+    SFX.click(); save();
+    // Dropping the loadout you are standing in takes the habit off this screen, so the
+    // sheet it was being edited in has to go with it.
+    if (!habitInLoadout(h, currentLoadout())) { editingHabitId = null; editTierPage = null; renderHabits(); return; }
+    renderHabits(); syncEditorSheet(); return;
+  }
   if (act === 'removeTier') {
     const box = e.target.closest('.hedit'); if (!box) return;
     const h = state.habits.find(x => x.id === box.dataset.id);
@@ -13691,7 +14528,7 @@ function onHabitsClick(e) {
   }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
-    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', desc: '', section, category: 'Unsorted', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, timedMinutes: 0, timedAuto: true, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
+    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', desc: '', section, category: 'Unsorted', loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, loadouts: [currentLoadout()], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, timedMinutes: 0, timedAuto: true, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
     // openEditor, not a bare editingHabitId — only it raises the sheet, and a brand-new
     // habit with no name is useless until you can type into it.
     state.habits.push(nh); SFX.click(); save(); renderHabits(); openEditor('habit', nh.id);
@@ -13758,7 +14595,6 @@ function onInlineHabitField(e) {
     h.scheduledMin = m ? clamp(parseInt(m[1], 10) * 60 + parseInt(m[2], 10), 0, 1439) : null;
     save(); renderBlockSchedule(); renderEditSheet(); return;
   }
-  else if (f === 'loadout') { h.loadout = e.target.value.trim() ? e.target.value.trim() : null; renderHabits(); } // '' = universal
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
   else if (f === 'emoji') { h.emoji = e.target.value; h.emojiAuto = false; }   // a deliberate icon — stop guessing
   else {
@@ -13899,7 +14735,7 @@ $('#editOverlay').addEventListener('click', e => {
     const h = state.habits.find(x => x.id === editingHabitId); if (!h) return;
     // Checking it off from a tier's page completes THAT tier — it's the version on screen.
     const pg = parseInt(e.target.closest('[data-page]')?.dataset.page, 10);
-    if (habitLevels(h) && Number.isFinite(pg)) h.curTier = pg;
+    if (habitLevels(h) && Number.isFinite(pg)) setHabitTier(h, pg);
     if (isComplete(h)) { SFX.click(); toast('✓ Already done today', 'var(--green)'); return; }
     completeHabit(h.id); return;
   }
@@ -13999,7 +14835,7 @@ function copyHabitDefinition(from, into) {
   into.tiers = Array.isArray(from.tiers) ? from.tiers.map(t => ({ name: t.name, reward: t.reward, minutes: t.minutes || 0, children: cloneChildren(t.children) })) : [];
   into.children = cloneChildren(from.children);  // the parts come along — their progress doesn't
   into.baseIdx = Number.isFinite(from.baseIdx) ? from.baseIdx : null;
-  into.curTier = null;
+  clearHabitTiers(into);
 }
 function openCopyPicker(id) {
   copyPickForId = id;
@@ -14026,14 +14862,14 @@ function renderCopyPicker() {
     syncCopyApply(); return;
   }
   const cur = currentLoadout();
-  const loadouts = [...new Set(all.map(h => h.loadout || 'Default'))]
+  const loadouts = [...new Set(all.flatMap(h => (h.loadouts && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']))]
     .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));   // current loadout first
   // One drop-down per loadout, same two-level shape the Schedule's ＋ picker uses, and
   // like that one every group starts SHUT — an open group pushes the rest off-screen, so
   // opening the sheet on a wall of habits is worse than one tap to the loadout you want.
   // The current loadout is still sorted first and still labelled; only the collapse differs.
   body.innerHTML = loadouts.map(lo => {
-    const list = all.filter(h => (h.loadout || 'Default') === lo);
+    const list = all.filter(h => habitInLoadout(h, lo));
     return `
       <div class="pick-group pick-lo collapsed">
         <div class="pick-sub" data-act="pickToggle">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}
@@ -14043,7 +14879,7 @@ function renderCopyPicker() {
             <span class="pick-check${copyPicked.has(h.id) ? ' on' : ''}">${copyPicked.has(h.id) ? '✓' : ''}</span>
             <span class="pick-e">${escapeHtml(h.emoji || '⭐')}</span>
             <span class="pick-n">${escapeHtml(h.name)}</span>
-            <span class="subtle">${h.archived ? 'graduated' : (h.section === 'extra' ? 'extra' : 'daily')} · +${h.reward}🪙</span>
+            <span class="subtle">${h.archived ? 'graduated' : (h.section === 'extra' ? 'extra' : 'daily')} · +${h.reward}<i class="tok"></i></span>
           </button>`).join('')}</div>
       </div>`;
   }).join('');
@@ -14130,14 +14966,14 @@ function renderTierLadder() {
       <div class="ladder-box${l.base ? ' base' : ''}" data-page="${l.idx}">
         <div class="lb-tier" style="color:${l.color}">${l.label}</div>
         <div class="lb-name">${escapeHtml(l.name || h.name || 'Untitled')}</div>
-        <div class="lb-reward">+${l.reward} 🪙</div>
+        <div class="lb-reward">+${l.reward} <i class="tok"></i></div>
         ${l.base ? `<span class="lb-star" title="The habit itself">★</span>`
                  : `<button class="lb-del" data-act="ladderDel" data-page="${l.idx}" title="Remove this tier">🗑</button>`}
       </div>`).join('')
     : `<div class="ladder-box base" data-page="0">
          <div class="lb-tier" style="color:var(--ink-dim)">no tiers</div>
          <div class="lb-name">${escapeHtml(h.name || 'Untitled')}</div>
-         <div class="lb-reward">+${h.reward} 🪙</div>
+         <div class="lb-reward">+${h.reward} <i class="tok"></i></div>
          <span class="lb-star" title="The habit itself">★</span>
        </div>`;
   body.innerHTML = `
@@ -14170,7 +15006,7 @@ function addTierSide(h, side) {
     : Math.max(1, Math.round((h.reward || 1) * 0.5)) };
   if (harder) { h.tiers.push(nt); h.baseIdx = curBase; editTierPage = n; }
   else { h.tiers.unshift(nt); h.baseIdx = curBase + 1; editTierPage = 0; }
-  h.curTier = null;
+  clearHabitTiers(h);
   save();
 }
 function removeTierAt(h, page) {
@@ -14181,7 +15017,7 @@ function removeTierAt(h, page) {
   const curBase = lvls.findIndex(l => l.base);
   h.tiers.splice(lvl.tIdx, 1);
   h.baseIdx = h.tiers.length ? (page < curBase ? curBase - 1 : curBase) : null;
-  h.curTier = null; editTierPage = null;            // back to the base page / default level
+  clearHabitTiers(h); editTierPage = null;          // back to the base page / default level
   SFX.click(); save(); renderHabits(); renderTierLadder();
   return true;
 }
@@ -14199,7 +15035,7 @@ function reorderTiers(h, order) {
   h.baseIdx = items.findIndex(l => l.base);
   // Both "which tier am I on" and "which page is open" point at positions whose meaning
   // just changed, so neither survives the shuffle.
-  h.curTier = null; editTierPage = null;
+  clearHabitTiers(h); editTierPage = null;
   save(); renderHabits(); syncEditorSheet(); renderTierLadder();
 }
 
@@ -14341,7 +15177,7 @@ function renderLoadoutMenu() {
         <label class="toggle"><input type="checkbox" id="autoLoadOn" ${state.autoLoad ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
       <div class="hint">${autoLoadHintHTML()}</div>
       <div class="loadout-list">${(state.loadouts || ['Default']).map(name => {
-        const count = state.habits.filter(h => !h.archived && h.loadout === name).length;
+        const count = state.habits.filter(h => !h.archived && habitInLoadout(h, name)).length;
         const st = (state.loadoutStock || {})[name];
         const dayLabel = loadoutDaysLabel(name);
         return `<div class="loadout-row">
@@ -14410,7 +15246,7 @@ function renderLoadoutMenu() {
     return;
   }
   const groups = (state.loadouts || ['Default']).map(name => {
-    const habits = state.habits.filter(h => !h.archived && h.loadout === name);
+    const habits = state.habits.filter(h => !h.archived && habitInLoadout(h, name));
     return `<details class="loadout-copy-group">
       <summary>${escapeHtml(name)} <span class="subtle">· ${habits.length}</span></summary>
       <div class="loadout-copy-items">${habits.length ? habits.map(h => `
@@ -14432,23 +15268,27 @@ function renderLoadoutMenu() {
     </div>`;
   setTimeout(() => $('#newLoadoutName')?.focus(), 0);
 }
-function cloneHabitIntoLoadout(source, loadout) {
-  return normalizeHabit({ ...source, id: uid(), loadout, lastDone: '', streak: 0, best: 0,
-    dayDate: '', dayCount: 0, doneAt: 0, doneMin: null, timer: null, archived: false, createdBy: undefined });
-}
+
 function createLoadoutFromMenu() {
   const name = String($('#newLoadoutName')?.value || '').trim();
   if (!name) { toast('Name your loadout first', 'var(--pink)'); return; }
   if ((state.loadouts || []).some(x => x.toLowerCase() === name.toLowerCase())) { toast('That loadout already exists', 'var(--pink)'); return; }
   const ids = new Set($$('#loadoutBody [data-copy-habit]:checked').map(x => x.dataset.copyHabit));
-  const copies = state.habits.filter(h => ids.has(h.id)).map(h => cloneHabitIntoLoadout(h, name));
   state.loadouts.push(name);
-  state.habits.push(...copies);
+  /* This used to CLONE each ticked habit into the new loadout, which is how one habit
+     became five objects with five ids — edit the cello on Wednesday and Thursday's cello
+     sat there unchanged. The habit now simply joins the new set: same id, same definition,
+     edited once, with its own remembered tier per loadout. */
+  const shared = state.habits.filter(h => ids.has(h.id));
+  shared.forEach(h => {
+    h.loadouts = [...new Set([...((Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']), name])];
+  });
+  const copies = shared;
   state.activeLoadout = name;
-  logEvent('loadout_created', { name, copiedHabitCount: copies.length });
+  logEvent('loadout_created', { name, sharedHabitCount: copies.length });
   reconcileLoadoutStock();                     // the loadout we just left keeps its own bonus
   save(); closeLoadoutMenu(); renderHabits(); renderHabitEditor();
-  toast(copies.length ? `${name} created with ${copies.length} copied habit${copies.length === 1 ? '' : 's'}` : `${name} created — blank slate`, 'var(--green)');
+  toast(copies.length ? `${name} created, sharing ${copies.length} habit${copies.length === 1 ? '' : 's'}` : `${name} created — blank slate`, 'var(--green)');
 }
 $('#loadoutSwitch').addEventListener('click', () => { SFX.click(); openLoadoutMenu('list'); });
 $('#loadoutClose').addEventListener('click', closeLoadoutMenu);
@@ -14593,7 +15433,7 @@ function onHabitPointerUp(e) {
   SFX.click();
   const h = state.habits.find(x => x.id === s.id); if (!h) return;
   if (s.isEdit) { editTierPage = to; syncEditSheetHeight(); }
-  else { h.curTier = to; save(); }
+  else { setHabitTier(h, to); save(); }
   // Re-render only once the slide has finished, so the DOM swap is invisible. The row is
   // already sitting at the destination offset, so nothing jumps when it's replaced.
   const settle = () => { if (s.isEdit) renderEditSheet(); else renderHabits(); };
@@ -14947,6 +15787,18 @@ function onHabitField(e) {
   else h[f] = e.target.value;
   save();
 }
+/* #habitDupes sits outside #habitEditor, so it needs its own listener. Two taps, because
+   merging discards the other copies' settings and there is nothing to undo it with. */
+$('#habitDupes').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act="dupKeep"]'); if (!btn) return;
+  const id = btn.dataset.id;
+  if (dupArmedId !== id) { dupArmedId = id; SFX.click(); renderHabitDupes(); return; }
+  dupArmedId = '';
+  const n = mergeHabitGroupInto(id);
+  const h = state.habits.find(x => x.id === id);
+  save(); fullRender();
+  if (n && h) { SFX.coin(); toast(`🔗 ${h.name} is one habit now — in ${h.loadouts.length} loadout${h.loadouts.length === 1 ? '' : 's'}`, 'var(--green)'); }
+});
 $('#habitEditor').addEventListener('input', onHabitField);
 $('#habitEditor').addEventListener('change', onHabitField);
 $('#habitEditor').addEventListener('click', e => {
@@ -14971,13 +15823,13 @@ $('#habitEditor').addEventListener('click', e => {
 });
 $('#addHabit').addEventListener('click', () => {
   SFX.click();
-  state.habits.push({ id: uid(), emoji: '⭐', name: 'New habit', section: 'daily', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
+  state.habits.push({ id: uid(), emoji: '⭐', name: 'New habit', section: 'daily', loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
   save(); renderHabitEditor();
   $('#habitEditor').lastElementChild?.querySelector('.name-in')?.select();
 });
 $('#quickHabit').addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.value.trim()) return;
-  state.habits.push({ id: uid(), emoji: '⭐', name: e.target.value.trim(), section: 'daily', loadout: currentLoadout(), reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
+  state.habits.push({ id: uid(), emoji: '⭐', name: e.target.value.trim(), section: 'daily', loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
   e.target.value = ''; SFX.coin(); save(); renderHabitEditor(); renderHabits();
 });
 
@@ -15779,7 +16631,7 @@ function schedPickOpen() {
     <button class="pick-row" data-pick="${o.id}" data-pickkind="${kind}">
       <span class="pick-e">${escapeHtml(o.emoji || (kind === 'task' ? '🎯' : '⭐'))}</span>
       <span class="pick-n">${escapeHtml(o.name)}</span>
-      <span class="subtle">${kind === 'task' ? 'quest' : `+${o.reward}🪙`}</span>
+      <span class="subtle">${kind === 'task' ? 'quest' : `+${o.reward}<i class="tok"></i>`}</span>
     </button>`;
   // Loadout is the OUTER grouping: a habit belongs to a loadout first and a section
   // second, so "Default → Daily / Extra" is the way the list is actually shaped. The
@@ -15799,14 +16651,14 @@ function schedPickOpen() {
          + group('pick-sub-group', 'pick-sub', '✨ Extra habits', extra.length, extra.map(h => row(h, 'habit')).join(''), true);
   };
   const cur = currentLoadout();
-  const loadouts = [...new Set(habits.map(h => h.loadout || 'Default'))]
+  const loadouts = [...new Set(habits.flatMap(h => (h.loadouts && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']))]
     .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));   // current loadout first
   const label = schedOffset === 0 ? 'today' : schedOffset === 1 ? 'tomorrow'
     : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   $('#schedPickTitle').textContent = `Add to ${label}`;
   $('#schedPickBody').innerHTML =
       loadouts.map(lo => {
-        const mine = habits.filter(h => (h.loadout || 'Default') === lo);
+        const mine = habits.filter(h => habitInLoadout(h, lo));
         return group('pick-lo', 'pick-sec', `🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}`, mine.length, sections(mine), false);
       }).join('')
     // Quests are shared across every loadout, so they stay a sibling of the loadouts
