@@ -2703,6 +2703,426 @@
     /* Opened from a collapsed Settings panel, the line still shows — tapping ⓘ there
        deliberately does NOT expand the whole section. */
     #view-settings .panel.collapsed > .info-desc:not([hidden]) { display: block; }
+
+    /* =====================================================================
+       SCHEDULE — the calm timeline (see the SCHEDULE section in the script)
+
+       Last in the sheet on purpose: it sits after the greyscale layer, and every
+       class here is new, so nothing older can reach it and it reaches nothing older.
+       The Home widget still draws the original grid with the .sched-* rules above.
+
+       Orange (--cyan, re-pointed by the colour hierarchy) is spent on four things
+       only: what's done, what's now, the selected card, and primary actions.
+       ===================================================================== */
+    #view-schedule { --tlG: 64px; --schPad: max(clamp(12px,3vw,24px), env(safe-area-inset-left)); }
+    .sch-head {
+      position: sticky; top: var(--hdrH, 64px); z-index: 30;
+      margin: -14px calc(-1 * var(--schPad)) 0;
+      padding: 10px var(--schPad) 6px;
+      background: var(--gs-bg);
+      border-bottom: 1px solid var(--gs-edge);
+      box-shadow: 0 10px 18px -12px rgba(0,0,0,.8);
+    }
+    .sch-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .sch-arrow {
+      width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; cursor: pointer;
+      display: grid; place-items: center; font-size: 22px; line-height: 1; padding: 0 0 2px;
+      background: var(--gs-card); border: 1px solid rgba(255,255,255,.1); color: var(--ink);
+    }
+    .sch-arrow:active { background: var(--gs-ctl); }
+    .sch-day { text-align: center; line-height: 1.2; cursor: pointer; padding: 2px 10px; border-radius: 10px; }
+    .sch-day b {
+      font-family: 'Orbitron', sans-serif; font-size: 17px; letter-spacing: .5px;
+      color: var(--h1); text-shadow: 0 0 12px rgba(255,158,44,.35);
+    }
+    .sch-caret { font-size: 11px; opacity: .8; }
+    .sch-day > span { display: block; font-size: 11.5px; color: var(--ink-dim); margin-top: 3px; }
+    .sch-prog {
+      display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 10px;
+      padding: 4px 2px; background: none; border: 0; color: var(--ink); cursor: pointer;
+      font: inherit; text-align: left;
+    }
+    .sch-prog-n { font-size: 14px; white-space: nowrap; }
+    .sch-prog-n b { font-weight: 800; }
+    .sch-prog.empty .sch-prog-n { color: var(--ink-dim); font-size: 13px; }
+    .sch-bar { flex: 1; min-width: 40px; height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+    .sch-bar i {
+      display: block; height: 100%; border-radius: inherit;
+      background: linear-gradient(90deg, #ff8a1f, var(--cyan)); box-shadow: 0 0 10px rgba(255,158,44,.45);
+      transition: width .4s ease;
+    }
+    .sch-pct { font-size: 12px; color: var(--ink-dim); min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+    .sch-sub { display: flex; align-items: center; gap: 2px; }
+    .sch-pace {
+      flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; cursor: pointer;
+      padding: 7px 2px; background: none; border: 0; color: var(--ink-dim); font: inherit; font-size: 12.5px; text-align: left;
+    }
+    .sch-pace > span:not(.sch-pace-i):not(.sch-chev) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sch-pace.ahead, .sch-pace.record { color: var(--ink); }
+    .sch-pace-i { font-size: 14px; }
+    .sch-chev { opacity: .55; font-size: 15px; margin-left: 2px; }
+    .sch-ibtn {
+      width: 36px; height: 36px; flex: 0 0 auto; border-radius: 10px; cursor: pointer;
+      display: grid; place-items: center; font-size: 16px; padding: 0;
+      background: transparent; border: 1px solid transparent; color: var(--ink-dim);
+    }
+    .sch-ibtn:active { background: rgba(255,255,255,.07); }
+    .sch-prog:focus-visible, .sch-pace:focus-visible, .sch-ibtn:focus-visible, .sch-arrow:focus-visible,
+    .sch-day:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+    /* ---- the timeline ---- */
+    .tl-mount { position: relative; padding-top: 18px; }
+    .tl-grid { position: relative; margin-bottom: 24px; touch-action: pan-y; }
+    .tl-hour, .tl-half {
+      position: absolute; left: var(--tlG); right: 0; height: 0; pointer-events: none;
+      border-top: 1px solid rgba(255,255,255,.06); transition: transform .22s ease;
+    }
+    .tl-half { border-top: 1px dashed rgba(255,255,255,.028); }
+    .tl-hour span {
+      position: absolute; left: calc(-1 * var(--tlG)); top: -8px; width: calc(var(--tlG) - 12px);
+      font-size: 11px; color: var(--ink-dim); opacity: .85; white-space: nowrap; font-variant-numeric: tabular-nums;
+      transition: opacity .2s ease;
+    }
+    .tl-hour.near-now span { opacity: 0; }
+    .tl-now {
+      position: absolute; left: calc(var(--tlG) - 6px); right: 0; height: 0; z-index: 2; pointer-events: none;
+      border-top: 2px solid var(--cyan); box-shadow: 0 0 10px rgba(255,158,44,.45);
+      transition: top .5s ease, transform .22s ease;
+    }
+    .tl-now::before {
+      content: ''; position: absolute; left: -1px; top: -6px; width: 10px; height: 10px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 8px rgba(255,158,44,.8);
+    }
+    .tl-now-t {
+      position: absolute; left: calc(6px - var(--tlG)); top: -9px; font-size: 11px; font-weight: 800;
+      color: var(--cyan); white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    .tl-lanes { position: absolute; left: var(--tlG); right: 0; top: 0; bottom: 0; z-index: 3; pointer-events: none; }
+    .tl-empty {
+      margin: 0 0 14px var(--tlG); padding: 12px 14px; border-radius: 12px;
+      border: 1px dashed rgba(255,255,255,.12); color: var(--ink-dim); font-size: 13px; line-height: 1.4;
+    }
+    /* Unaccounted time and your answers: backdrops, never cards. */
+    .tl-back {
+      position: absolute; left: var(--tlG); right: 0; z-index: 1; border-radius: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: transform .22s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tl-back.gap {
+      border: 1px dashed rgba(255,255,255,.08);
+      background: repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 8px, transparent 8px 16px);
+    }
+    .tl-back.gap span { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; color: var(--ink-dim); opacity: .4; }
+    .tl-back.filler {
+      justify-content: flex-start; align-items: flex-start; padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.022);
+    }
+    .tl-back.filler span { font-style: italic; font-size: 12px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ---- the card ---- */
+    .tl-card {
+      position: absolute; box-sizing: border-box; pointer-events: auto; overflow: hidden;
+      display: flex; align-items: center; gap: 10px; padding: 0 10px;
+      border-radius: 12px; background: var(--gs-card); border: 1px solid rgba(255,255,255,.09);
+      color: var(--ink); cursor: pointer;
+      /* A vertical swipe over a card scrolls the day; only a hold turns it into a drag. */
+      touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: top .22s ease, height .22s ease, transform .22s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .tl-card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+    .tl-ic {
+      flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+      font-size: 17px; line-height: 1; background: color-mix(in srgb, var(--sb) 15%, rgba(255,255,255,.04));
+    }
+    .tl-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; line-height: 1.2; }
+    .tl-tx b { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tl-tx small { font-size: 11.5px; color: var(--ink-dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tl-n {
+      flex: 0 0 auto; font-size: 11.5px; font-weight: 800; color: var(--ink); padding: 3px 8px; border-radius: 8px;
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.08);
+    }
+    /* Three things at once split the row into thirds. Give the name the room, not the icon:
+       a card too narrow for both drops the icon box, then the +N chip. */
+    .tl-card:not(.open) { container-type: inline-size; }
+    @container (max-width: 150px) {
+      .tl-ic { display: none; }
+      .dens-compact .tl-tx small, .tl-card.slim .tl-tx small { display: none; }   /* one-line cards: the name wins */
+    }
+    @container (max-width: 104px) { .tl-n { display: none; } }
+    .tl-card.predicted { background: rgba(27,27,31,.78); border: 1px dashed rgba(255,255,255,.2); }
+    .tl-card.done {
+      background: color-mix(in srgb, var(--cyan) 11%, var(--gs-card));
+      border-color: color-mix(in srgb, var(--cyan) 42%, transparent);
+    }
+    .tl-card.done .tl-tx small { color: color-mix(in srgb, var(--cyan) 60%, var(--ink-dim)); }
+    .tl-card.done.moment { background: var(--gs-card); border-color: rgba(255,255,255,.13); }
+    .tl-card.done.moment .tl-tx small { color: var(--ink-dim); }
+    .tl-card.reward {
+      background: var(--gs-card); border-color: rgba(255,255,255,.1);
+      box-shadow: inset 3px 0 0 var(--gold);
+    }
+    .tl-card.reward .tl-tx small { color: var(--gold); }
+    .tl-card.is-now { border: 1.5px solid var(--cyan); box-shadow: 0 0 0 1px rgba(255,158,44,.22), 0 6px 22px rgba(255,158,44,.14); }
+    .tl-card.running { border: 1.5px solid var(--cyan); animation: tlPulse 2.4s ease-in-out infinite; }
+    @keyframes tlPulse {
+      0%, 100% { box-shadow: 0 0 0 1px rgba(255,158,44,.22), 0 0 12px rgba(255,158,44,.16); }
+      50%      { box-shadow: 0 0 0 1px rgba(255,158,44,.5),  0 0 22px rgba(255,158,44,.32); }
+    }
+    .tl-card.slim .tl-tx { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 6px; }
+    .tl-card.slim .tl-tx small { margin-top: 0; flex: 0 0 auto; }
+    .tl-card.slim .tl-n { padding: 1px 6px; }
+    .dens-compact .tl-card { gap: 8px; padding: 0 8px; border-radius: 10px; }
+    .dens-compact .tl-ic { width: 22px; height: 22px; font-size: 13px; border-radius: 6px; }
+    .dens-compact .tl-tx { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 6px; }
+    .dens-compact .tl-tx b { font-size: 12.5px; }
+    .dens-compact .tl-tx small { margin-top: 0; font-size: 11px; flex: 0 0 auto; }
+    .dens-full .tl-card { gap: 5px; padding: 0 6px; border-radius: 6px; }
+    .dens-full .tl-ic { width: auto; height: auto; background: none; font-size: 11px; }
+    .dens-full .tl-tx b { font-size: 11px; font-weight: 600; }
+    .dens-full .tl-hour span { font-size: 10px; }
+
+    /* ---- selected by a hold: handles to resize, the body to move ---- */
+    .tl-card.editing {
+      touch-action: none; overflow: visible; z-index: 5;
+      outline: 2px solid var(--cyan); outline-offset: 2px; box-shadow: 0 10px 26px rgba(0,0,0,.6);
+    }
+    .tl-card.lifted { transform: scale(1.015); }
+    .tl-card.dragging, .tl-card.resizing { transition: none; z-index: 7; }
+    .tl-grip { position: absolute; left: 50%; width: 52px; height: 24px; margin-left: -26px; z-index: 2; touch-action: none; cursor: ns-resize; }
+    .tl-grip::after { content: ''; position: absolute; left: 14px; right: 14px; height: 4px; border-radius: 4px; background: var(--cyan); box-shadow: 0 0 6px rgba(255,158,44,.6); }
+    .tl-grip.t { top: -13px; }
+    .tl-grip.t::after { top: 10px; }
+    .tl-grip.b { bottom: -13px; }
+    .tl-grip.b::after { bottom: 10px; }
+
+    /* ---- opened in place ---- */
+    .tl-card.open {
+      display: block; padding: 12px; z-index: 6; cursor: default; overflow: visible;
+      border: 1.5px solid var(--cyan); background: var(--gs-card);
+      box-shadow: 0 14px 34px rgba(0,0,0,.55), 0 0 0 1px rgba(255,158,44,.14);
+      -webkit-user-select: auto; user-select: auto; touch-action: auto;
+    }
+    .tl-card.open.fresh { animation: tlOpen .2s ease; }
+    /* Closing: the card shrinks back into its lane with its title row still showing; the
+       rest fades first so nothing is seen being squeezed. */
+    .tl-card.open.closing {
+      overflow: hidden; pointer-events: none;
+      border-color: rgba(255,255,255,.12); box-shadow: none;
+      transition: height .22s ease, left .22s ease, width .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+    .tl-card.open.closing > :not(.tlx-head) { opacity: 0; transition: opacity .12s ease; }
+    @keyframes tlOpen { from { opacity: .3; transform: scale(.985); } to { opacity: 1; transform: none; } }
+    .tl-still [data-min] { transition: none !important; }
+    .tlx-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .tlx-title { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+    .tlx-title b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tlx-title small { font-size: 12px; color: var(--ink-dim); margin-top: 3px; }
+    .tlx-live, .tlx-done { color: var(--cyan); font-weight: 700; }
+    .tlx-dim { color: var(--ink-dim); }
+    .tlx-chev {
+      flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; padding: 0; cursor: pointer;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: var(--ink); font-size: 15px;
+    }
+    .tlx-kids { margin-top: 10px; border-top: 1px solid rgba(255,255,255,.07); }
+    .tlx-kids.sheet { margin-top: 0; border-top: 0; }
+    .tlx-kid { display: flex; align-items: center; gap: 12px; min-height: 42px; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .tlx-check {
+      position: relative; flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 7px; cursor: pointer;
+      display: grid; place-items: center; font-size: 14px; font-weight: 900; color: #1a0f02;
+      background: transparent; border: 1.5px solid rgba(255,255,255,.3);
+    }
+    .tlx-check::after { content: ''; position: absolute; inset: -9px; }      /* a finger-sized target */
+    .tlx-check:disabled { opacity: .45; cursor: default; }
+    .tlx-kid.done .tlx-check { background: var(--cyan); border-color: var(--cyan); }
+    .tlx-kid.done .tlx-kn { color: var(--ink-dim); }
+    .tlx-kn { flex: 1; min-width: 0; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tlx-km { flex: 0 0 auto; font-size: 12px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+    .tlx-add { display: flex; align-items: center; gap: 12px; min-height: 42px; color: var(--ink-dim); cursor: text; }
+    .tlx-add > span { width: 24px; text-align: center; font-size: 15px; }
+    .tlx-add-in {
+      flex: 1; min-width: 0; padding: 9px 0; background: transparent; border: 0; outline: none;
+      color: var(--ink); font: inherit; font-size: 13.5px;
+    }
+    .tlx-add-in::placeholder { color: var(--ink-dim); opacity: .8; }
+    .tlx-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .tlx-btn {
+      flex: 1 1 0; min-width: 0; height: 42px; border-radius: 11px; cursor: pointer; white-space: nowrap;
+      background: var(--gs-ctl); border: 1px solid rgba(255,255,255,.13); color: var(--ink);
+      font: inherit; font-weight: 700; font-size: 13.5px;
+    }
+    .tlx-btn.go { background: var(--cyan); border-color: var(--cyan); color: #1a0f02; box-shadow: 0 4px 14px rgba(255,158,44,.25); }
+    .tlx-btn.icon { flex: 0 0 50px; font-size: 18px; letter-spacing: 1px; }
+    .tlx-btn:active { transform: scale(.98); }
+    .tlx-menu { margin-top: 8px; border-radius: 12px; overflow: hidden; background: var(--gs-panel); border: 1px solid rgba(255,255,255,.08); }
+    .tlx-menu[hidden] { display: none; }
+    .tlx-menu button {
+      display: block; width: 100%; text-align: left; padding: 13px 14px; cursor: pointer;
+      background: none; border: 0; border-bottom: 1px solid rgba(255,255,255,.06); color: var(--ink); font: inherit; font-size: 13.5px;
+    }
+    .tlx-menu button:active { background: rgba(255,255,255,.05); }
+    .tlx-tip { padding: 10px 14px; font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
+
+    /* ---- one bottom sheet for everything the timeline keeps out of the way ---- */
+    .sch-scrim {
+      position: fixed; inset: 0; z-index: 47; background: rgba(0,0,0,.55);
+      opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    }
+    .sch-scrim.show { opacity: 1; pointer-events: auto; }
+    .sch-sheet {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 48; max-width: 640px; margin: 0 auto;
+      max-height: 74vh; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box;
+      padding: 0 16px calc(18px + env(safe-area-inset-bottom));
+      background: var(--gs-panel); border: 1px solid rgba(255,255,255,.09); border-bottom: 0;
+      border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.6);
+      transform: translateY(104%); visibility: hidden;
+      transition: transform .28s cubic-bezier(.22,.9,.3,1), visibility 0s linear .28s;
+    }
+    .sch-sheet.show { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.22,.9,.3,1), visibility 0s; }
+    .sch-sheet.tall { max-height: 88vh; min-height: 58vh; }
+    .sch-grab { width: 38px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.18); margin: 8px auto 2px; }
+    .sch-sh-head {
+      position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px;
+      padding: 8px 0 12px; background: var(--gs-panel);
+    }
+    .sch-sh-x {
+      width: 38px; height: 38px; flex: 0 0 auto; border-radius: 10px; padding: 0; cursor: pointer;
+      background: transparent; border: 0; color: var(--ink); font-size: 18px;
+    }
+    .sch-sh-x:active { background: rgba(255,255,255,.07); }
+    .sch-sh-title { flex: 1; min-width: 0; font-weight: 800; font-size: 17px; }
+    .sch-sh-sp { width: 38px; flex: 0 0 auto; }
+    .sch-add {
+      height: 38px; padding: 0 20px; border-radius: 11px; border: 0; cursor: pointer;
+      background: var(--cyan); color: #1a0f02; font: inherit; font-weight: 800; font-size: 14px;
+    }
+    .sch-note { font-size: 12px; line-height: 1.45; color: var(--ink-dim); margin: 6px 2px 4px; }
+    .sch-empty { padding: 20px 6px; color: var(--ink-dim); font-size: 13px; line-height: 1.45; text-align: center; }
+
+    .sch-opt {
+      display: flex; align-items: center; gap: 14px; width: 100%; margin-bottom: 10px; padding: 12px 14px;
+      border-radius: 14px; background: var(--gs-card); border: 1px solid rgba(255,255,255,.08);
+      color: var(--ink); text-align: left; font: inherit; cursor: pointer;
+    }
+    .sch-opt.sel { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 7%, var(--gs-card)); }
+    .sch-opt-art { flex: 0 0 auto; width: 58px; height: 46px; border-radius: 10px; display: grid; place-items: center; background: rgba(0,0,0,.28); color: var(--ink-dim); }
+    .sch-opt.sel .sch-opt-art { color: var(--cyan); }
+    .sch-opt-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .sch-opt-tx b { font-size: 14.5px; }
+    .sch-opt-tx b i { font-style: normal; font-weight: 500; font-size: 12px; color: var(--ink-dim); }
+    .sch-opt-tx small { font-size: 12px; color: var(--ink-dim); }
+    .sch-opt-ck { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 900; color: #1a0f02; }
+    .sch-opt.sel .sch-opt-ck { background: var(--cyan); }
+
+    .sch-lg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+    .sch-lg { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+    .sch-lg b { display: block; font-size: 13.5px; }
+    .sch-lg small { display: block; font-size: 11.5px; line-height: 1.35; color: var(--ink-dim); margin-top: 2px; }
+    .sch-sw { flex: 0 0 auto; width: 34px; height: 18px; border-radius: 6px; margin-top: 1px; box-sizing: border-box; }
+    .sch-sw.done { background: color-mix(in srgb, var(--cyan) 28%, var(--gs-card)); border: 1px solid var(--cyan); }
+    .sch-sw.pred { border: 1.5px dashed rgba(255,255,255,.4); }
+    .sch-sw.moment { background: var(--gs-ctl); border: 1px solid rgba(255,255,255,.14); }
+    .sch-sw.reward { background: color-mix(in srgb, var(--gold) 20%, var(--gs-card)); border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); }
+    .sch-sw.now { height: 2px; margin-top: 9px; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+    .sch-sw.gap { border: 1px dashed rgba(255,255,255,.2); background: repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0 4px, transparent 4px 8px); }
+    .sch-tips { display: grid; gap: 9px; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.07); font-size: 12.5px; line-height: 1.45; color: var(--ink-dim); }
+
+    .sch-pp-top { display: flex; align-items: center; gap: 10px; font-size: 18px; }
+    .sch-pp-top .sch-pct { margin-left: auto; font-size: 14px; color: var(--ink); }
+    .sch-bar.big { display: block; height: 8px; margin: 10px 0 14px; }
+    .sch-pp { display: flex; gap: 12px; align-items: flex-start; padding: 12px; margin-bottom: 12px; border-radius: 14px; background: var(--gs-card); }
+    .sch-pp-i { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: rgba(255,255,255,.06); color: var(--ink-dim); }
+    .sch-pp.ahead .sch-pp-i { color: var(--cyan); background: rgba(255,158,44,.12); }
+    .sch-pp.ahead b { color: var(--cyan); }
+    .sch-pp b { display: block; font-size: 14px; }
+    .sch-pp small { display: block; font-size: 12.5px; line-height: 1.45; color: var(--ink-dim); margin-top: 3px; }
+    .sch-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+    .sch-st { padding: 10px 9px; border-radius: 12px; background: var(--gs-card); min-width: 0; }
+    .sch-st b { display: block; font-size: 19px; font-variant-numeric: tabular-nums; }
+    .sch-st small { display: block; font-size: 11px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sch-rec { padding: 12px; margin-bottom: 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,.07); }
+    .sch-rec-l { font-size: 12.5px; line-height: 1.45; color: var(--ink-dim); }
+    .sch-rec-l b { color: var(--ink); }
+    .sch-rec-h { margin: 10px 0 6px; font-size: 10.5px; letter-spacing: .9px; text-transform: uppercase; color: var(--ink-dim); }
+    .sch-segs { display: flex; gap: 4px; padding: 3px; border-radius: 11px; background: rgba(0,0,0,.3); }
+    .sch-segs.wide { margin-bottom: 16px; }
+    .sch-seg {
+      flex: 1; height: 34px; border-radius: 8px; border: 0; cursor: pointer;
+      background: transparent; color: var(--ink-dim); font: inherit; font-size: 12.5px; font-weight: 700;
+    }
+    .sch-seg.sel { background: var(--gs-ctl); color: var(--ink); }
+    .sch-wide {
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 46px; margin-top: 4px;
+      border-radius: 12px; cursor: pointer; background: var(--gs-ctl); border: 1px solid rgba(255,255,255,.1);
+      color: var(--ink); font: inherit; font-weight: 700; font-size: 14px;
+    }
+    .sch-wide.ghost { background: transparent; margin-top: 18px; }
+
+    .sch-dt { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .sch-dt > span:last-child { min-width: 0; }
+    .sch-dt b { display: block; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sch-dt small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--ink-dim); }
+    .tl-ic.big { width: 46px; height: 46px; font-size: 24px; border-radius: 13px; background: rgba(255,255,255,.06); }
+    .sch-tabs { display: flex; margin: 0 0 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .sch-tab {
+      flex: 1; height: 42px; cursor: pointer; background: none; border: 0; border-bottom: 2px solid transparent;
+      color: var(--ink-dim); font: inherit; font-weight: 700; font-size: 13px;
+    }
+    .sch-tab.sel { color: var(--cyan); border-bottom-color: var(--cyan); }
+    .sch-h3 { margin: 16px 0 8px; font-size: 10.5px; letter-spacing: .9px; text-transform: uppercase; color: var(--ink-dim); }
+    .sch-tabbody > .sch-h3:first-child { margin-top: 4px; }
+    .sch-kv { font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+    .sch-kv.pre { white-space: pre-wrap; }
+    .sch-when { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+    .sch-when label { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; color: var(--ink-dim); }
+    .sch-when input, .sch-field input, .sch-field select {
+      height: 42px; box-sizing: border-box; padding: 0 10px; border-radius: 10px; color-scheme: dark;
+      background: var(--gs-card); border: 1px solid rgba(255,255,255,.12); color: var(--ink); font: inherit; font-size: 14px;
+    }
+    .sch-when input:focus, .sch-field input:focus, .sch-field select:focus { outline: none; border-color: var(--cyan); }
+    .sch-len { display: flex; align-items: center; gap: 6px; }
+    .sch-len input { width: 78px; }
+    .sch-len i { font-style: normal; font-size: 12px; color: var(--ink-dim); }
+    .sch-save {
+      height: 42px; padding: 0 20px; border-radius: 10px; border: 0; cursor: pointer;
+      background: var(--cyan); color: #1a0f02; font: inherit; font-weight: 800;
+    }
+    .sch-hist { display: grid; margin-top: 8px; }
+    .sch-hrow { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px; padding: 10px 2px; border-bottom: 1px solid rgba(255,255,255,.05); font-size: 13px; }
+    .sch-hrow .dim { color: var(--ink-dim); text-align: right; }
+    .sch-noteitem { margin-bottom: 8px; padding: 10px 12px; border-radius: 12px; background: var(--gs-card); font-size: 13.5px; line-height: 1.45; }
+    .sch-noteitem small { display: block; margin-bottom: 3px; font-size: 11px; color: var(--ink-dim); }
+
+    .sch-field { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 10px; margin-bottom: 12px; }
+    .sch-field.top { align-items: start; }
+    .sch-field.top > span { padding-top: 11px; }
+    .sch-field > span { font-size: 13px; color: var(--ink-dim); }
+    .sch-field > input, .sch-field > select { width: 100%; }
+    .sch-time { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .sch-time select { flex: 1 1 110px; min-width: 0; }
+    .sch-time input { flex: 0 0 auto; }
+    .sch-end { flex: 0 0 auto; font-size: 13px; color: var(--ink-dim); white-space: nowrap; }
+    .sch-end b { color: var(--ink); font-weight: 700; }
+    .sch-emos { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sch-emo {
+      position: relative; width: 42px; height: 42px; padding: 0; border-radius: 11px; cursor: pointer;
+      display: grid; place-items: center; font-size: 20px; line-height: 1;
+      background: var(--gs-card); border: 1px solid rgba(255,255,255,.1);
+    }
+    .sch-emo i { position: absolute; left: 0; right: 0; bottom: 2px; font-style: normal; font-size: 8px; color: var(--ink-dim); text-align: center; }
+    .sch-emo span { margin-top: -6px; }
+    .sch-emo.sel { border-color: var(--cyan); box-shadow: inset 0 0 0 1px var(--cyan); }
+    .sch-tiers { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sch-tier {
+      display: inline-flex; align-items: center; gap: 4px; height: 38px; padding: 0 12px; border-radius: 10px; cursor: pointer;
+      background: transparent; border: 1px solid color-mix(in srgb, var(--tc) 50%, transparent);
+      color: var(--tc); font: inherit; font-weight: 700; font-size: 12.5px;
+    }
+    .sch-tier.sel { background: color-mix(in srgb, var(--tc) 18%, transparent); border-color: var(--tc); }
+    @media (prefers-reduced-motion: reduce) {
+      .tl-card, .tl-hour, .tl-now, .tl-back, .sch-sheet, .sch-bar i { transition: none !important; }
+      .tl-card.open, .tl-card.running { animation: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -3089,10 +3509,8 @@
 
     <!-- ===================== BLOCK SCHEDULE ===================== -->
     <section class="view" id="view-schedule">
-      <div class="section-title t1">📅 Block Schedule</div>
-      <div class="subtle" style="margin-bottom:12px">Past days show what you actually did and how long it took, plus 🎁 when you cashed in a reward. Today lays your best day back over the hours ahead, drawn dashed — the target to beat.</div>
-      <!-- No inner scroll container: blocks are percentage-width and fit any screen, so a
-           nested overflow-x scroller only fought the page's own vertical scroll on mobile. -->
+      <!-- No inner scroll container: the page scrolls, the date/progress header sticks under
+           the top bar. What used to be explained here lives in the ⓘ legend sheet. -->
       <div id="scheduleBody"></div>
       <!-- Add a habit or quest to the day being viewed. Only on this tab. -->
       <button class="sched-fab" id="schedAddBtn" title="Add to this day" aria-label="Add to this day">＋</button>
@@ -3104,6 +3522,9 @@
         <div id="schedPickBody"></div>
       </div>
     </section>
+    <!-- The Schedule's one bottom sheet: view picker, legend, progress, task detail, add. -->
+    <div class="sch-scrim" id="schScrim"></div>
+    <div class="sch-sheet" id="schSheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
 
     <!-- ===================== SETTINGS ===================== -->
     <section class="view" id="view-settings">
@@ -3540,7 +3961,7 @@ function defaultState() {
                card9:  { common: 55, rare: 30, epic: 12, legendary: 3 },
                card10: { rare: 60, epic: 30, legendary: 10 } },
     },
-    settings: { sound: true, reducedMotion: false, cloudCompress: false,
+    settings: { sound: true, reducedMotion: false, cloudCompress: false, schedDensity: 'detailed',
                 // Analytics → Weekly Comparison: how many COMPLETED weeks feed the
                 // weekday averages and the typical range. One of the WC_RANGES widths.
                 weekCmpWeeks: 12,
@@ -7994,6 +8415,7 @@ function segmentBlock(e, seg, idx, dateStr, endTs) {
     name: idx > 0 ? `${e.name} (continued)` : e.name, baseName: e.name, emoji: e.emoji, category: e.category,
     startMin, endMin, durMin: Math.max(0, endMin - startMin),
     kind: 'actual', type: e.kind === 'task' ? 'task' : 'habit',
+    srcId: e.id || null,                    // the habit/quest this was — the Schedule's card opens it
     hid: e.hid || null, segIndex: idx,      // which history row and which sitting — see updateHistoryBlock
   };
 }
@@ -8016,7 +8438,7 @@ function computeActualBlocks(dateStr) {
         name: e.name, baseName: e.name, emoji: e.emoji, category: e.category,
         startMin: Math.max(0, endMin - durMin), endMin, durMin,
         kind: timed ? 'actual' : 'moment', type: e.kind === 'task' ? 'task' : 'habit',
-        hid: e.hid || null, segIndex: 0,
+        hid: e.hid || null, segIndex: 0, srcId: e.id || null,
       });
     });
   return out.sort((a, b) => a.startMin - b.startMin);
@@ -8033,7 +8455,7 @@ function computeLiveBlocks(dateStr) {
   const out = [];
   const push = (src, kind) => {
     if (!src.timer) return;
-    const e = { name: src.name, emoji: src.emoji, category: src.category, kind };
+    const e = { id: src.id, name: src.name, emoji: src.emoji, category: src.category, kind };
     timerSegments(src.timer).forEach((seg, i) => {
       const b = segmentBlock(e, seg, i, dateStr, now);
       if (b) { b.live = true; b.running = !Number.isFinite(seg.e); out.push(b); }
@@ -8145,7 +8567,7 @@ function blockFloorPx() { return BAR_MIN_PX; }
 function blockDrawnPx(durMin, px) { return Math.max(BAR_MIN_PX, (durMin || 0) / 60 * px); }
 function isTinyBlock(durMin, px) { return blockDrawnPx(durMin, px) < LABEL_MIN_PX; }
 
-function layoutLanes(blocks, px) {
+function layoutLanes(blocks, px, floorPx) {
   // How many minutes the shortest drawable block occupies AT THIS ZOOM. This used to be a
   // flat 12 minutes while blocks rendered with a 24px floor — at 56px/hour that floor is
   // 25.7 minutes, so anything starting within ~26 minutes of a short block was declared
@@ -8157,7 +8579,7 @@ function layoutLanes(blocks, px) {
   blocks.forEach(b => {
     // +2px so neighbours never graze: reserving the exact drawn height leaves them
     // touching, and sub-pixel rounding then reads as a 1px overlap at some scales.
-    const end = b.startMin + Math.max(b.durMin, (blockFloorPx() + 2) / pxPerHour * 60);
+    const end = b.startMin + Math.max(b.durMin, ((Number.isFinite(floorPx) ? floorPx : blockFloorPx()) + 2) / pxPerHour * 60);
     if (b.startMin >= clusterEnd && cluster.length) closeCluster();
     let lane = lanes.findIndex(laneEnd => laneEnd <= b.startMin);
     if (lane === -1) { lane = lanes.length; lanes.push(end); } else { lanes[lane] = end; }
@@ -8243,11 +8665,6 @@ function relayoutLanes(rootSel, px) {
   });
   grid.classList.toggle('has-tiny', anyTiny);
 }
-function applySchedZoom() {
-  schedZoomIdx = clamp(schedZoomIdx, 0, SCHED_ZOOMS.length - 1);
-  applyZoomWithin('#view-schedule', schedZoomIdx);
-  relayoutLanes('#view-schedule', schedPx(schedZoomIdx));
-}
 function applyHomeZoom() {
   homeZoomIdx = clamp(homeZoomIdx, 0, SCHED_ZOOMS.length - 1);
   applyZoomWithin('#homeNow', homeZoomIdx);
@@ -8266,8 +8683,12 @@ const SCHED_GUTTER = 56;
 
    Returns the pieces rather than a finished string so each caller can wrap them in its
    own chrome. */
-function schedGridParts(dateStr, opts = {}) {
-  const draggable = opts.draggable !== false;
+/* The day as DATA, no markup: what happened, what's still expected, the rewards, the
+   unaccounted gaps and the answered ones, and the hours that frame them. Two renderers
+   read it — the Home widget's compact grid (schedGridParts, below) and the Schedule tab's
+   card timeline — so the two can look nothing alike and still never disagree about what
+   happened when. Fresh objects every call: the renderers write lane positions onto them. */
+function schedDayModel(dateStr) {
   const isToday = dateStr === todayStr();
   const isFuture = daysBetween(todayStr(), dateStr) > 0;
   // Future days have no history — they're pure plan. Past days are pure record. Today is
@@ -8289,23 +8710,34 @@ function schedGridParts(dateStr, opts = {}) {
     ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name) && !inFiller(b) && !pastPrediction(b)))
     : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
+  const gaps = isFuture ? [] : computeGapBlocks(dateStr);
+  // Frame the grid around the day's real span rather than a fixed 5am–11pm window.
+  let lo = 7, hi = 21;
+  blocks.concat(gaps, fillers).forEach(b => {
+    lo = Math.min(lo, Math.floor(b.startMin / 60));
+    hi = Math.max(hi, Math.ceil((b.startMin + Math.max(b.durMin, 15)) / 60));
+  });
+  lo = clamp(lo, 0, 23); hi = clamp(hi, lo + 1, 24);
+  // When the next prediction on screen runs out — the 30s tick repaints then, not before.
+  const nextExpiry = isToday
+    ? blocks.reduce((m, b) => b.kind === 'predicted' ? Math.min(m, b.startMin + (b.durMin || 15)) : m, Infinity)
+    : Infinity;
+  return { dateStr, blocks, gaps, fillers, lo, hi, isToday, isFuture, nextExpiry };
+}
+
+function schedGridParts(dateStr, opts = {}) {
+  const draggable = opts.draggable !== false;
+  const m = schedDayModel(dateStr);
+  const { isToday, isFuture, lo, hi, gaps, fillers } = m;
+  const blocks = m.blocks;
   const px = opts.px || schedPx();
   layoutLanes(blocks, px);
   // Gaps are laid out separately and drawn FIRST: a gap is the backdrop behind an
   // unaccounted stretch, so it takes the full width and must never push a real block
   // into a second lane the way another overlapping block would.
-  const gaps = isFuture ? [] : computeGapBlocks(dateStr);
   gaps.forEach(g => { g.lane = 0; g.laneCount = 1; });
   fillers.forEach(g => { g.lane = 0; g.laneCount = 1; });   // same backdrop treatment as a gap
   blocks.unshift(...gaps, ...fillers);
-
-  // Frame the grid around the day's real span rather than a fixed 5am–11pm window.
-  let lo = 7, hi = 21;
-  blocks.forEach(b => {
-    lo = Math.min(lo, Math.floor(b.startMin / 60));
-    hi = Math.max(hi, Math.ceil((b.startMin + Math.max(b.durMin, 15)) / 60));
-  });
-  lo = clamp(lo, 0, 23); hi = clamp(hi, lo + 1, 24);
 
   // Every vertical position is expressed as `calc(var(--ph) * hours)` rather than a baked
   // pixel value. Zooming then only has to change --ph on the grid — no re-render — so the
@@ -8401,80 +8833,1129 @@ function schedGridParts(dateStr, opts = {}) {
     </div>`;
   }).join('');
 
-  // When the next prediction on screen runs out — the 30s tick repaints then, not before.
-  const nextExpiry = isToday
-    ? blocks.reduce((m, b) => b.kind === 'predicted' ? Math.min(m, b.startMin + (b.durMin || 15)) : m, Infinity)
-    : Infinity;
-  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture, nextExpiry,
+  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture, nextExpiry: m.nextExpiry,
     inner: `${hourLines.join('')}${nowLine}<div class="sched-lanes">${blockEls}</div><div class="sched-labels">${labelEls.join('')}</div>` };
 }
 
-/* The record bar: which day is being replayed, and how far back to look for it.
-   Written as its own function because the empty case matters as much as the full one —
-   with no history yet the toggle would be four dead buttons, so it explains itself
-   instead. */
-function recordBarHTML() {
-  const loadout = currentLoadout();
-  const { day } = recordFor(loadout);
-  const segs = RECORD_WINDOWS.map(w =>
-    `<button class="btn ghost sm rec-seg ${w.key === recordWindowKey() ? 'sel' : ''}" data-act="recWin" data-win="${w.key}">${w.label}</button>`
-  ).join('');
-  const line = day
-    ? `\u{1F3C6} Beating <b>${escapeHtml(new Date(day.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))}</b> \u2014 ${day.count} done by ${escapeHtml(fmtMinOfDay(day.lastMin))}`
-    : `\u{1F3C6} No finished <b>${escapeHtml(loadout)}</b> day to beat yet \u2014 today sets the record.`;
+/* =================================================================
+   SCHEDULE — the day as a calm vertical timeline.
+
+   Progressive disclosure, three layers deep:
+     1. the card ...... icon, name, how long, and +N when it has parts. Nothing else.
+     2. tap it ........ it opens in place: the exact time, its subtasks, Start / Edit / ⋯.
+     3. Edit .......... the detail sheet: this day's time and length, why it sits where it
+                        does, its history and notes — and the full editor one tap further.
+   Everything the old grid printed on every block (start–end times, the leader lines, the
+   legend, the record bar, the drag hint) still exists. It moved to the layer where it is
+   asked for.
+
+   Gestures:
+     tap .............. open / close a card
+     hold ............. lift it and drag to move; it stays selected with handles to resize
+     swipe sideways ... previous / next day
+     pinch ............ step between Detailed, Compact and Full Day
+   A vertical swipe ALWAYS scrolls. The old grid resized a block on the first few pixels of
+   any drag, which was harmless on 3px bars and would make a screen of cards impossible to
+   scroll — so changing a block now waits for a deliberate hold.
+
+   The data comes from schedDayModel, the same model the Home widget draws, so the two can
+   never disagree about what happened when.
+   ================================================================= */
+const SCHED_DENSITIES = {
+  detailed: { label: 'Detailed', sub: 'More space per hour. Easier to see details.', px: 84, card: 40 },
+  compact:  { label: 'Compact',  sub: 'See more of your day at once.',               px: 54, card: 30 },
+  full:     { label: 'Full Day', sub: 'Fit 7 AM – 10 PM on one screen.',              px: 0,  card: 17 },
+};
+// Pinching OUT walks right along this list, pinching in walks left.
+const SCHED_DENSITY_ORDER = ['full', 'compact', 'detailed'];
+function schedDensity() {
+  const d = (state.settings || {}).schedDensity;
+  return SCHED_DENSITIES[d] ? d : 'detailed';
+}
+let schedShownOpen = null;      // the card that was open at the last paint — a repaint of it doesn't re-animate
+let schedExpandedKey = null;   // the one card opened in place, by schedKey()
+let schedEditKey = null;       // the card lifted by a hold — selected, with resize handles
+let schedMenuOpen = false;     // the ⋯ menu inside the open card
+let schedScrollPending = false;   // centre on "now" after the next paint
+let schedHasRunning = false;   // a stopwatch is drawing a live block — the tick repaints it
+let schedSuppressUntil = 0;    // a hold or a swipe just ended — swallow the click it leaves behind
+let schedSheet = null;         // { type: 'view'|'legend'|'progress'|'detail'|'add', key, tab }
+let schedAddDraft = null;      // the Add Task form, kept while its sheet is open
+
+// A block's identity that survives a repaint. Index positions don't: the list is rebuilt
+// every render, and a card has to stay open across the 30-second tick.
+function schedKey(b) {
+  if (b.kind === 'gap') return `g:${b.startMin}`;
+  if (b.kind === 'filler') return `f:${b.startMin}`;
+  if (b.type === 'reward') return `r:${b.startMin}:${b.name}`;
+  if (b.live) return `l:${b.srcId || b.name}:${b.segIndex || 0}`;
+  if (b.hid) return `h:${b.hid}:${b.segIndex || 0}`;
+  if (b.kind === 'predicted') return `p:${b.planKind || b.type}:${b.refId}`;
+  return `x:${b.startMin}:${b.name}`;
+}
+// The habit or quest a block is about, if it still exists. A finished quest is deleted
+// from state.oneoffs, so its blocks can resolve to nothing — callers handle null.
+function schedSource(b) {
+  if (!b) return null;
+  const kind = (b.planKind === 'task' || b.type === 'task') ? 'task' : (b.type === 'habit' ? 'habit' : null);
+  if (!kind) return null;
+  const id = b.refId || b.srcId;
+  if (!id) return null;
+  const item = kind === 'task'
+    ? (state.oneoffs || []).find(t => t.id === id)
+    : (state.habits || []).find(h => h.id === id && !h.archived);
+  return item ? { kind, item } : null;
+}
+function schedDurLabel(min) {
+  const m = Math.max(0, Math.round(min || 0)), h = Math.floor(m / 60), r = m % 60;
+  if (!h) return `${m} min`;
+  return r ? `${h} hr ${r} min` : `${h} hr`;
+}
+function schedRangeLabel(b) {
+  if (b.kind === 'moment' || !(b.durMin > 0)) return fmtMinOfDay(b.startMin);
+  return `${fmtMinOfDay(b.startMin)} – ${fmtMinOfDay((b.startMin + b.durMin) % 1440)}`;
+}
+function schedHourLabel(h, dens) {
+  const hh = h % 24, ap = hh >= 12 ? 'PM' : 'AM', d = hh % 12 || 12;
+  return dens === 'detailed' ? `${d}:00 ${ap}` : `${d} ${ap}`;
+}
+function schedParseTime(v) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(v || ''));
+  return m ? clamp(+m[1] * 60 + +m[2], 0, 1439) : null;
+}
+function schedTimeValue(min) {
+  const m = clamp(Math.round(min || 0), 0, 1439);
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+}
+
+/* ---- The numbers in the header ------------------------------------------------------
+   Today reads paceToday() — the same done/total every other surface shows — and the
+   "usual pace" line is compareTodayToSimilarDays(): today at this minute against the days
+   it resembles at the same minute. A whole-day average would call every morning "behind".
+   When that comparison has nothing behind it (a new save, a new loadout) the line falls
+   back to the record day being replayed, and failing that says nothing rather than
+   inventing a pace. Past days read what paceLog recorded at the time; a future day has
+   no progress at all, only a plan. */
+function schedDayCounts(m) {
+  const real = m.blocks.filter(b => b.type !== 'reward');
+  const seen = new Set();
+  let completed = 0, untimed = 0;
+  real.forEach(b => {
+    if (b.kind === 'predicted' || b.live) return;
+    const k = b.hid || `${b.baseName || b.name}@${b.startMin}`;
+    if (seen.has(k)) return;
+    seen.add(k);
+    completed++;
+    if (b.kind === 'moment') untimed++;
+  });
+  return {
+    completed, untimed,
+    predicted: real.filter(b => b.kind === 'predicted').length,
+    running: real.filter(b => b.running).length,
+    rewards: m.blocks.filter(b => b.type === 'reward').length,
+  };
+}
+function schedDaySummary(m) {
+  const counts = schedDayCounts(m);
+  let done = null, total = null;
+  if (m.isToday) { const p = paceToday(); done = p.done; total = p.total; }
+  else if (!m.isFuture) {
+    const row = (state.paceLog || {})[m.dateStr];
+    if (row && row.total) { done = row.done; total = row.total; }
+  }
+  const pct = total ? clamp(Math.round(done / total * 100), 0, 100) : null;
+  const standing = m.isToday ? compareTodayToSimilarDays() : null;
+  const rec = (m.isToday || m.isFuture) ? recordFor(currentLoadout()).day : null;
+  return { done, total, pct, counts, standing, record: rec };
+}
+function schedPaceLine(sum, m) {
+  const st = sum.standing;
+  if (st) {
+    if (st.delta > 0) return { icon: '🏆', text: 'Ahead of your usual pace', cls: 'ahead' };
+    if (st.delta < 0) return { icon: '', text: 'Behind your usual pace', cls: 'behind' };
+    return { icon: '', text: 'Right on your usual pace', cls: 'level' };
+  }
+  if (sum.record) return { icon: '🏆', text: `Record to beat: ${sum.record.count} done by ${fmtMinOfDay(sum.record.lastMin)}`, cls: 'record' };
+  if (m.isFuture) return { icon: '', text: `${sum.counts.predicted} planned`, cls: 'level' };
+  return { icon: '', text: m.isToday ? "Today's summary" : 'Day summary', cls: 'level' };
+}
+
+/* ---- Header: date, progress, and the two quiet controls -------------------------- */
+function schedHeadHTML(m, sum) {
+  const label = m.isToday ? 'Today'
+    : schedOffset === -1 ? 'Yesterday'
+    : schedOffset === 1 ? 'Tomorrow'
+    : new Date(m.dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long' });
+  const sub = new Date(m.dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const pace = schedPaceLine(sum, m);
+  const prog = sum.total
+    ? `<button class="sch-prog" data-act="schedProgress" aria-label="${escapeHtml(`${sum.done} of ${sum.total} done, ${sum.pct} percent. Open the day's summary`)}">
+         <span class="sch-prog-n"><b>${sum.done}</b> / ${sum.total} done</span>
+         <span class="sch-bar" aria-hidden="true"><i style="width:${sum.pct}%"></i></span>
+         <span class="sch-pct">${sum.pct}%</span>
+       </button>`
+    : `<button class="sch-prog empty" data-act="schedProgress" aria-label="Open the day's summary">
+         <span class="sch-prog-n">${m.isFuture ? `${sum.counts.predicted} planned` : `${sum.counts.completed} done`}</span>
+       </button>`;
   return `
-    <div class="rec-bar">
-      <div class="rec-line">${line}</div>
-      <div class="rec-segs">${segs}</div>
+    <div class="sch-head">
+      <div class="sch-nav">
+        <button class="sch-arrow" data-act="schedPrev" aria-label="Previous day">‹</button>
+        <div class="sch-day" data-act="schedCal" role="button" tabindex="0" aria-label="${escapeHtml(`${label}, ${sub}. Pick a day`)}">
+          <b>${escapeHtml(label)} <span class="sch-caret">▾</span></b>
+          <span>${escapeHtml(sub)}</span>
+        </div>
+        <button class="sch-arrow" data-act="schedNext" aria-label="Next day">›</button>
+      </div>
+      ${prog}
+      <div class="sch-sub">
+        <button class="sch-pace ${pace.cls}" data-act="schedProgress">
+          ${pace.icon ? `<span class="sch-pace-i">${pace.icon}</span>` : ''}<span>${escapeHtml(pace.text)}</span><span class="sch-chev">›</span>
+        </button>
+        <button class="sch-ibtn" data-act="schedView" aria-label="Timeline view: ${escapeHtml(SCHED_DENSITIES[schedDensity()].label)}" title="Timeline view">
+          <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M3 5h14M3 10h9M3 15h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+        </button>
+        <button class="sch-ibtn" data-act="schedLegend" aria-label="What the colours mean" title="Legend">ⓘ</button>
+      </div>
     </div>`;
 }
 
+/* ---- The timeline ---------------------------------------------------------------- */
+// Full Day fits the day to whatever room is left under the header. Measured, not guessed:
+// the header height depends on the phone, the safe area and whether a pace line wraps.
+function schedFullPx(hours) {
+  const top = ($('header')?.offsetHeight || 64) + ($('#view-schedule .sch-head')?.offsetHeight || 132);
+  const nav = $('nav.bottomnav')?.offsetHeight || 66;
+  const room = (window.innerHeight || 700) - top - nav - 28;
+  return clamp(Math.floor(room / Math.max(1, hours)), 22, 84);
+}
+function schedCardHTML(b, ctx) {
+  const { px, cardH, lo, dens, isToday, nowM } = ctx;
+  const key = schedKey(b);
+  const src = schedSource(b);
+  const kids = src ? childrenOf(src.kind, src.item) : [];
+  const open = key === schedExpandedKey;
+  const editing = !open && key === schedEditKey;
+  const reward = b.type === 'reward';
+  const done = !reward && (b.kind === 'actual' || b.kind === 'moment') && !b.live;
+  const isNow = isToday && !done && (b.running || (b.kind === 'predicted' && b.startMin <= nowM && nowM < b.startMin + (b.durMin || 15)));
+  const editHist = b.hid && !b.live && !reward;
+  const drag = (b.kind === 'predicted' && b.refId) || editHist;
+  const lanes = Math.max(1, b.laneCount || 1), w = 100 / lanes;
+  const trueH = (b.durMin || 0) / 60 * px;
+  const h = Math.max(cardH, trueH);
+  const top = (b.startMin - lo * 60) / 60;
+  const col = categoryColor(b.category) || 'rgba(255,255,255,.18)';
+  const dur = b.kind === 'moment' ? `✓ ${fmtMinOfDay(b.startMin)}`
+    : reward && !(b.durMin > 0) ? `🎁 ${fmtMinOfDay(b.startMin)}`
+    : (reward ? '🎁 ' : done ? '✓ ' : '') + (dens === 'detailed' ? schedDurLabel(b.durMin) : fmtMins(Math.round(b.durMin)));
+  const status = b.running ? 'running now' : done ? 'done' : reward ? 'reward' : b.kind === 'predicted' ? 'planned' : '';
+  const aria = `${b.name}, ${schedRangeLabel(b)}${status ? `, ${status}` : ''}${kids.length ? `, ${kids.length} subtask${kids.length > 1 ? 's' : ''}` : ''}`;
+  const cls = ['tl-card', b.kind, reward ? 'reward' : '', done ? 'done' : '', b.running ? 'running' : '',
+    isNow ? 'is-now' : '', drag ? 'draggable' : '', open ? 'open' : '', open && key !== schedShownOpen ? 'fresh' : '', editing ? 'editing' : '',
+    h < 30 ? 'slim' : ''].filter(Boolean).join(' ');
+  const pos = open
+    ? `top:calc(var(--ph) * ${top.toFixed(4)});min-height:${h.toFixed(1)}px;left:0;width:100%`
+    : `top:calc(var(--ph) * ${top.toFixed(4)});height:max(${cardH}px, calc(var(--ph) * ${((b.durMin || 0) / 60).toFixed(4)}));left:${(b.lane || 0) * w}%;width:calc(${w}% - 6px)`;
+  const data = `data-key="${escapeHtml(key)}" data-min="${b.startMin}" data-start="${b.startMin}" data-dur="${Math.round(b.durMin || 0)}" data-h="${h.toFixed(1)}"`
+    + (drag ? (editHist ? ` data-hid="${b.hid}" data-seg="${b.segIndex || 0}"` : ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"`) : '')
+    + (open ? ` data-lane="${b.lane || 0}" data-lanes="${lanes}"` : '');
+  const inner = open ? schedExpandedHTML(b, src, kids, ctx) : `
+      <span class="tl-ic" aria-hidden="true">${escapeHtml(b.emoji || (reward ? '🎁' : '•'))}</span>
+      <span class="tl-tx"><b>${escapeHtml(b.name)}</b>${dens !== 'full' ? `<small>${escapeHtml(dur)}</small>` : ''}</span>
+      ${kids.length && dens !== 'full' ? `<span class="tl-n">+${kids.length}</span>` : ''}
+      ${editing ? `<i class="tl-grip t" data-grip="top" aria-hidden="true"></i><i class="tl-grip b" data-grip="bot" aria-hidden="true"></i>` : ''}`;
+  return `<div class="${cls}" ${data} ${open ? 'role="group"' : 'role="button" tabindex="0" aria-expanded="false"'} aria-label="${escapeHtml(aria)}"
+      style="${pos};--sb:${col}">${inner}</div>`;
+}
+function schedTimelineHTML(m, dens, px, lo, hi) {
+  const cardH = SCHED_DENSITIES[dens].card;
+  const blocks = m.blocks.slice();
+  layoutLanes(blocks, px, cardH);
+  const nowM = m.isToday ? nowMinutes() : -1;
+  const ctx = { px, cardH, lo, dens, isToday: m.isToday, isFuture: m.isFuture, nowM, dateStr: m.dateStr };
+  const at = hrs => `calc(var(--ph) * ${(+hrs).toFixed(4)})`;
+  const nowOn = m.isToday && nowM >= lo * 60 && nowM <= hi * 60;
+  const lines = [];
+  for (let h = lo; h <= hi; h++) {
+    // The hour label right beside the now-marker would print two times on top of each other.
+    const near = nowOn && Math.abs((nowM - h * 60) / 60 * px) < 15;
+    lines.push(`<div class="tl-hour${near ? ' near-now' : ''}" data-min="${h * 60}" style="top:${at(h - lo)}"><span>${escapeHtml(schedHourLabel(h, dens))}</span></div>`);
+    if (dens === 'detailed' && h < hi) lines.push(`<div class="tl-half" data-min="${h * 60 + 30}" style="top:${at(h - lo + 0.5)}"></div>`);
+  }
+  const now = nowOn
+    ? `<div class="tl-now" data-min="${nowM}" style="top:${at((nowM - lo * 60) / 60)}" aria-label="Now, ${escapeHtml(fmtMinOfDay(nowM))}"><span class="tl-now-t">${escapeHtml(fmtMinOfDay(nowM))}</span></div>` : '';
+  // Unaccounted stretches and answered ones: the quietest things on the grid, behind
+  // everything, full width — a backdrop, never a card.
+  const backs = m.gaps.concat(m.fillers).map(g => {
+    const span = `${fmtMinOfDay(Math.round(g.startMin))} – ${fmtMinOfDay(Math.round(g.endMin))}`;
+    const style = `top:${at((g.startMin - lo * 60) / 60)};height:${at(g.durMin / 60)}`;
+    const data = `data-min="${Math.round(g.startMin)}" data-gapstart="${g.startMin}" data-gapend="${g.endMin}" data-gapdate="${g.gapDate}"`;
+    return g.kind === 'filler'
+      ? `<div class="tl-back filler" ${data} style="${style}" role="button" tabindex="0" aria-label="${escapeHtml(`${g.name}, ${span}. Tap to change`)}"><span>✎ ${escapeHtml(g.name)}</span></div>`
+      : `<div class="tl-back gap" ${data} style="${style}" role="button" tabindex="0" aria-label="${escapeHtml(`Nothing logged ${span}. Tap to say what you were doing`)}"><span>?</span></div>`;
+  }).join('');
+  const cards = blocks.map(b => schedCardHTML(b, ctx)).join('');
+  const empty = !m.blocks.length
+    ? `<div class="tl-empty">${escapeHtml(m.isFuture ? 'Nothing planned for this day yet — tap ＋ to add something.'
+        : m.isToday ? 'Nothing logged or planned yet — tap ＋ to add something.' : 'Nothing was logged on this day.')}</div>` : '';
+  const H = (hi - lo) * px;
+  return `${empty}
+    <div class="tl-grid dens-${dens}" data-lo="${lo}" data-hi="${hi}" data-px="${px}" data-card="${cardH}" data-h="${H}"
+         data-today="${m.isToday ? 1 : 0}" style="--ph:${px}px;height:${H}px">
+      ${lines.join('')}${backs}
+      <div class="tl-lanes">${cards}</div>
+      ${now}
+    </div>`;
+}
+
+/* ---- Layer 2: a card opened in place --------------------------------------------- */
+function schedKidRowsHTML(src, ctx, opts = {}) {
+  const kids = childrenOf(src.kind, src.item);
+  // A habit's part is done for TODAY only, so ticking one on another day would mean
+  // nothing. A quest's parts persist, so those stay tickable on any day.
+  const live = src.kind === 'task' || ctx.isToday;
+  const rows = kids.map(c => {
+    const done = live && childIsDone(src.kind, c);
+    const exp = childExpectedMin(c);
+    return `<div class="tlx-kid${done ? ' done' : ''}">
+      <button class="tlx-check" data-tl="kid" data-kid="${c.id}" ${live ? '' : 'disabled'} aria-label="${escapeHtml(`${c.name || 'Subtask'}: ${done ? 'done — tap to undo' : 'mark done'}`)}">${done ? '✓' : ''}</button>
+      <span class="tlx-kn">${escapeHtml(c.name || 'Untitled')}</span>
+      ${exp ? `<span class="tlx-km">${escapeHtml(schedDurLabel(exp))}</span>` : ''}
+    </div>`;
+  }).join('');
+  return `${rows}
+    <label class="tlx-add"><span aria-hidden="true">＋</span>
+      <input class="tlx-add-in" data-tl-add="1" data-kind="${src.kind}" data-id="${src.item.id}" placeholder="${kids.length ? 'Add subtask' : 'Add a subtask — “technique 15 min”'}" enterkeyhint="done" autocomplete="off" aria-label="Add a subtask">
+    </label>`;
+}
+function schedActionsHTML(b, src, ctx) {
+  const btns = [];
+  if (src && ctx.isToday) {
+    const it = src.item;
+    const finished = src.kind === 'habit' ? isComplete(it) : (it.progress || 0) >= Math.max(1, it.iterations || 1);
+    if (it.timer) {
+      btns.push(`<button class="tlx-btn go" data-tl="pause">${it.timer.pausedAt ? '▶ Resume' : '⏸ Pause'}</button>`);
+      btns.push(`<button class="tlx-btn" data-tl="finish">⏹ Finish</button>`);
+    } else if (!finished) {
+      btns.push(`<button class="tlx-btn go" data-tl="start">▶ Start</button>`);
+    }
+  }
+  btns.push(`<button class="tlx-btn" data-tl="detail">✎ Edit</button>`);
+  btns.push(`<button class="tlx-btn icon" data-tl="more" aria-label="More actions" aria-expanded="${schedMenuOpen}">⋯</button>`);
+  return btns.join('');
+}
+function schedMenuHTML(b, src, ctx) {
+  const items = [];
+  if (src && ctx.isToday && !src.item.timer) {
+    const it = src.item;
+    const finished = src.kind === 'habit' ? isComplete(it) : (it.progress || 0) >= Math.max(1, it.iterations || 1);
+    if (!finished) items.push(`<button data-tl="markDone">✓ Mark done without a timer</button>`);
+  }
+  if (b.kind === 'predicted' && b.planId) {
+    items.push(`<button data-tl="unplan">${b.planKind === 'task' ? '✕ Remove from this day' : '↺ Back to my usual time'}</button>`);
+  }
+  if (src) items.push(`<button data-tl="editor">⚙︎ ${src.kind === 'task' ? 'Quest' : 'Habit'} settings</button>`);
+  if (b.kind === 'predicted' || (b.hid && !b.live && b.type !== 'reward')) items.push(`<div class="tlx-tip">Hold a card to move it. While it's selected, drag its handles to change how long it takes.</div>`);
+  return items.join('');
+}
+function schedExpandedHTML(b, src, kids, ctx) {
+  const reward = b.type === 'reward';
+  const done = !reward && (b.kind === 'actual' || b.kind === 'moment') && !b.live;
+  const len = b.kind === 'moment' ? 'no timer' : (b.durMin > 0 ? schedDurLabel(b.durMin) : '');
+  let status = '';
+  if (b.running) status = `<span class="tlx-live">● Running</span>`;
+  else if (b.live) status = `<span class="tlx-dim">Paused</span>`;
+  else if (done) status = `<span class="tlx-done">✓ Done</span>`;
+  else if (reward) status = `<span class="tlx-dim">🎁 Reward</span>`;
+  // Subtasks belong to what's still ahead. On a finished block they would read today's
+  // ticks against a day that has already closed.
+  const showKids = src && !done && !reward && (ctx.isToday || ctx.isFuture || src.kind === 'task');
+  return `
+    <div class="tlx-head" data-tl="collapse">
+      <span class="tl-ic" aria-hidden="true">${escapeHtml(b.emoji || (reward ? '🎁' : '•'))}</span>
+      <span class="tlx-title"><b>${escapeHtml(b.name)}</b>
+        <small>${escapeHtml(schedRangeLabel(b))}${len ? ` · ${escapeHtml(len)}` : ''}${status ? ` · ${status}` : ''}</small></span>
+      <button class="tlx-chev" data-tl="collapse" aria-label="Close">⌃</button>
+    </div>
+    ${showKids ? `<div class="tlx-kids">${schedKidRowsHTML(src, ctx)}</div>` : ''}
+    ${(src || b.kind === 'predicted' || b.hid) ? `<div class="tlx-actions">${schedActionsHTML(b, src, ctx)}</div>` : ''}
+    <div class="tlx-menu"${schedMenuOpen ? '' : ' hidden'}>${schedMenuHTML(b, src, ctx)}</div>`;
+}
+
+/* Opening a card in place pushes everything after it down by exactly the room it needs,
+   the way a list row would — rather than spilling over the next hour's cards. A
+   transform, so nothing has to re-render and the hour labels slide with the cards. */
+// Only a card that has just been opened slides its neighbours down; when a card that was
+// already open is repainted (a ticked subtask, the minute tick) they are put straight back
+// where they were, or every repaint would replay the slide across the open card.
+function schedApplyExpansion(animate) {
+  const grid = $('#view-schedule .tl-grid'); if (!grid) return;
+  const open = grid.querySelector('.tl-card.open'); if (!open) return;
+  const extra = Math.max(0, open.offsetHeight - (parseFloat(open.dataset.h) || 0));
+  if (!extra) return;
+  const start = +open.dataset.min;
+  if (!animate) grid.classList.add('tl-still');
+  grid.querySelectorAll('[data-min]').forEach(el => {
+    if (el === open) return;
+    const m = +el.dataset.min;
+    if (m > start || (m === start && el.classList.contains('tl-card'))) el.style.transform = `translateY(${extra}px)`;
+  });
+  grid.style.height = ((parseFloat(grid.dataset.h) || 0) + extra) + 'px';
+  if (!animate) { void grid.offsetHeight; grid.classList.remove('tl-still'); }
+}
+
+// An opened card should be readable in one look: bring its bottom (the action row) up
+// past the + button, but never push its top under the sticky header.
+function schedRevealOpen() {
+  const open = $('#view-schedule .tl-card.open'); if (!open) return;
+  const r = open.getBoundingClientRect();
+  const topH = ($('header')?.offsetHeight || 0) + ($('#view-schedule .sch-head')?.offsetHeight || 0);
+  const fab = $('#schedAddBtn');
+  const fr = fab && fab.getClientRects().length ? fab.getBoundingClientRect() : null;   // fixed: no offsetParent
+  const floor = fr ? fr.top - 10 : window.innerHeight - ($('nav.bottomnav')?.offsetHeight || 0) - 10;
+  let dy = r.bottom > floor ? r.bottom - floor : 0;
+  if (r.top - dy < topH + 8) dy = r.top - topH - 8;
+  if (Math.abs(dy) > 2) window.scrollBy({ top: dy, behavior: 'smooth' });
+}
+
+// Closing plays the opening backwards: the card shrinks back into its slot while the cards
+// it pushed slide up into place, and the day is repainted only once they've landed. Given
+// a next key, that card opens after this one is down, so switching reads as close → open.
+const SCHED_COLLAPSE_MS = 220;
+let schedCollapseTimer = null, schedNextOpen = null;
+function schedCollapse(nextKey) {
+  schedNextOpen = nextKey || null;
+  if (schedCollapseTimer) return;                       // already on its way down
+  const grid = $('#view-schedule .tl-grid');
+  const open = grid && grid.querySelector('.tl-card.open');
+  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
+  const done = () => {
+    schedCollapseTimer = null;
+    schedExpandedKey = schedNextOpen; schedNextOpen = null;
+    renderBlockSchedule();
+    if (schedExpandedKey) schedRevealOpen();
+  };
+  const still = !open || !$('#view-schedule').classList.contains('active')
+    || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if (still) { done(); return; }
+  const lanes = Math.max(1, +open.dataset.lanes || 1), w = 100 / lanes;
+  open.style.height = open.offsetHeight + 'px';          // from auto to a number, or it can't animate
+  open.style.minHeight = '0';
+  open.classList.add('closing');
+  void open.offsetHeight;
+  open.style.height = (parseFloat(open.dataset.h) || 40) + 'px';
+  open.style.left = `${(+open.dataset.lane || 0) * w}%`;
+  open.style.width = `calc(${w}% - 6px)`;
+  grid.querySelectorAll('[data-min]').forEach(el => { if (el !== open && el.style.transform) el.style.transform = ''; });
+  schedCollapseTimer = setTimeout(done, SCHED_COLLAPSE_MS);
+}
+
+/* ---- Render ---------------------------------------------------------------------- */
 function renderBlockSchedule() {
   const box = $('#scheduleBody'); if (!box) return;
+  const view = $('#view-schedule');
+  const visible = !!(view && view.classList.contains('active'));
   const dateStr = todayStr(schedOffset);
-  const { blocks, lo, hi, isToday, isFuture, inner, nextExpiry } = schedGridParts(dateStr);
-  schedNextExpiry = nextExpiry;
-
-  const label = isToday ? 'Today'
-    : schedOffset === -1 ? 'Yesterday'
-    : schedOffset === 1 ? 'Tomorrow'
-    : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-  const anyPinned = blocks.some(b => b.pinned);
-  const emptyMsg = isFuture ? 'Nothing planned for this day yet — tap + to add something.'
-    : isToday ? 'Nothing logged or predicted for today yet.'
-    : 'Nothing was logged on this day.';
-
-  box.innerHTML = `
-    <div class="sched-nav">
-      <button class="btn ghost sm" data-act="schedPrev">‹</button>
-      <div class="sched-day" data-act="schedCal" role="button" tabindex="0" title="Pick a day">
-        <b>${escapeHtml(label)} <span class="sched-cal">▾</span></b>
-        <span class="subtle">${escapeHtml(new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</span>
-      </div>
-      <button class="btn ghost sm" data-act="schedNext">›</button>
-    </div>
-    <div class="sched-key">
-      <span><i class="k-actual"></i> actually done</span>
-      ${isToday ? `<span><i class="k-pred"></i> predicted</span>` : ''}
-      <span><i class="k-moment"></i> no timer</span>
-      <span><i class="k-reward"></i> 🎁 reward</span>
-    </div>
-    ${isToday || isFuture ? recordBarHTML() : ''}
-    <!-- Zoom rides ABOVE the day rather than scrolling away with the legend: on a day
-         that runs to 3,000px you were scrolling back to the top to change scale. Fixed,
-         stacked over the ＋ button so the two live controls share one corner. -->
-    <div class="sched-zoom">
-      <button class="zbtn" data-act="zoomIn" title="Zoom in">+</button>
-      <button class="zbtn" data-act="zoomOut" title="Zoom out">−</button>
-    </div>
-    <div class="sched-grid zoom-${schedZoomIdx}" data-lo="${lo}" data-hours="${hi - lo}"
-         style="--ph:${schedPx()}px;height:calc(var(--ph) * ${hi - lo})">${inner}</div>
-    ${blocks.some(b => b.kind === 'predicted') ? `<div class="hint" style="margin-top:6px">Drag a block up or down to change how long it takes (grab its top third to move its start). To move it to a new time, hold it until it lifts, then drag. Both snap to 5 minutes.${anyPinned ? ' 📌 = a time you set; ✕ puts it back to your record time.' : ''}</div>` : ''}
-    ${!blocks.length ? `<div class="empty" style="margin-top:12px"><div class="big">📅</div>${escapeHtml(emptyMsg)}</div>` : ''}`;
-  // Which blocks are too short to hold their own name depends on the zoom, so the answer
-  // is computed against the live DOM rather than baked into the markup above.
-  relayoutLanes('#view-schedule', schedPx());
+  const m = schedDayModel(dateStr);
+  schedNextExpiry = m.nextExpiry;
+  schedHasRunning = m.blocks.some(b => b.running);
+  const sum = schedDaySummary(m);
+  const dens = schedDensity();
+  // A card that no longer exists (finished, deleted, moved to another day) can't stay open.
+  const keys = new Set(m.blocks.map(schedKey));
+  if (schedExpandedKey && !keys.has(schedExpandedKey)) { schedExpandedKey = null; schedMenuOpen = false; }
+  if (schedEditKey && !keys.has(schedEditKey)) schedEditKey = null;
+  // One write, no layout read in between: emptying the box first would shrink the page for
+  // an instant and the browser would clamp the scroll to the top — every tap and every
+  // minute of a running timer would throw you back to midnight.
+  const keepY = window.scrollY;
+  if (visible) view.style.setProperty('--hdrH', ($('header')?.offsetHeight || 0) + 'px');
+  const lo = dens === 'full' ? Math.min(m.lo, 7) : m.lo;
+  const hi = dens === 'full' ? Math.max(m.hi, 22) : m.hi;
+  const px = dens === 'full' ? schedFullPx(hi - lo) : SCHED_DENSITIES[dens].px;
+  box.innerHTML = schedHeadHTML(m, sum) + `<div class="tl-mount" id="tlMount">${schedTimelineHTML(m, dens, px, lo, hi)}</div>`;
+  if (visible) schedApplyExpansion(schedExpandedKey !== schedShownOpen);
+  schedShownOpen = visible ? schedExpandedKey : null;
+  if (visible && !schedScrollPending && Math.abs(window.scrollY - keepY) > 1) window.scrollTo(0, keepY);
+  // The sheets that SHOW this day follow it; the ones being typed into are left alone.
+  if (schedSheet && (schedSheet.type === 'progress' || schedSheet.type === 'detail')
+      && !$('#schSheet')?.contains(document.activeElement)) renderSchedSheet();
+  if (visible && schedScrollPending) { schedScrollPending = false; schedScrollToNow(); }
 }
+// Put "now" about a third of the way down the visible timeline — enough of what's next
+// below it, a little of what just happened above. Other days open on their first card.
+function schedScrollToNow(smooth) {
+  const view = $('#view-schedule');
+  const grid = $('#view-schedule .tl-grid');
+  if (!grid || !view || !view.classList.contains('active')) return;
+  const topH = ($('header')?.offsetHeight || 0) + ($('#view-schedule .sch-head')?.offsetHeight || 0);
+  const navH = $('nav.bottomnav')?.offsetHeight || 0;
+  const visibleH = Math.max(120, window.innerHeight - topH - navH);
+  const lo = +grid.dataset.lo, px = +grid.dataset.px;
+  let min, frac;
+  if (grid.dataset.today === '1') { min = nowMinutes(); frac = 0.35; }
+  else {
+    const first = grid.querySelector('.tl-card');
+    min = first ? +first.dataset.min : lo * 60; frac = 0.06;
+  }
+  if (grid.classList.contains('dens-full')) { min = lo * 60; frac = 0; }
+  const y = grid.getBoundingClientRect().top + window.scrollY + (min - lo * 60) / 60 * px;
+  window.scrollTo({ top: Math.max(0, y - topH - visibleH * frac - 8), behavior: smooth ? 'smooth' : 'auto' });
+}
+// Between repaints the now-marker still has to creep. Moving one element beats rebuilding
+// the day every 30 seconds — and doesn't throw away a half-typed subtask.
+function schedTick() {
+  if (schedOffset !== 0) return;
+  const typing = $('#scheduleBody')?.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (!typing && (nowMinutes() >= schedNextExpiry || schedHasRunning)) { renderBlockSchedule(); return; }
+  const grid = $('#view-schedule .tl-grid'); if (!grid) return;
+  const el = grid.querySelector('.tl-now'); if (!el) return;
+  const now = nowMinutes(), lo = +grid.dataset.lo;
+  el.dataset.min = now;
+  el.style.top = `calc(var(--ph) * ${((now - lo * 60) / 60).toFixed(4)})`;
+  const t = el.querySelector('.tl-now-t'); if (t) t.textContent = fmtMinOfDay(now);
+}
+
+/* =================================================================
+   SCHEDULE SHEETS — one bottom sheet, five faces: the timeline view picker, the legend,
+   the day's progress, a task's detail, and Add Task. One element and a scrim, so there is
+   exactly one thing to dismiss and Escape always knows what that is.
+   ================================================================= */
+function openSchedSheet(type, opts = {}) {
+  schedSheet = { type, key: opts.key || null, tab: opts.tab || 'subtasks' };
+  if (type === 'add') schedAddDraft = schedNewAddDraft();
+  schedPickClose();
+  renderSchedSheet();
+  $('#schScrim').classList.add('show');
+  $('#schSheet').classList.add('show');
+  $('#schSheet').setAttribute('aria-hidden', 'false');
+  document.body.classList.add('sch-sheet-open');
+  setTimeout(() => {
+    const f = $('#schSheet').querySelector(type === 'add' ? '#saName' : '[data-sh="close"]');
+    if (f) f.focus({ preventScroll: true });
+  }, 240);
+}
+function closeSchedSheet() {
+  schedSheet = null; schedAddDraft = null;
+  $('#schScrim')?.classList.remove('show');
+  const sh = $('#schSheet'); if (!sh) return;
+  sh.classList.remove('show'); sh.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('sch-sheet-open');
+}
+function schedSheetFrame(title, body, opts = {}) {
+  return `
+    <div class="sch-grab" aria-hidden="true"></div>
+    <div class="sch-sh-head">
+      <button class="sch-sh-x" data-sh="close" aria-label="Close">✕</button>
+      <div class="sch-sh-title">${title}</div>
+      ${opts.action || '<span class="sch-sh-sp"></span>'}
+    </div>
+    <div class="sch-sh-body">${body}</div>`;
+}
+function renderSchedSheet() {
+  const sh = $('#schSheet'); if (!sh || !schedSheet) return;
+  const t = schedSheet.type;
+  let html = '';
+  if (t === 'view') html = schedViewSheetHTML();
+  else if (t === 'legend') html = schedLegendSheetHTML();
+  else if (t === 'progress') html = schedProgressSheetHTML();
+  else if (t === 'add') html = schedAddSheetHTML();
+  else if (t === 'detail') {
+    html = schedDetailSheetHTML();
+    if (!html) { closeSchedSheet(); return; }
+  }
+  sh.innerHTML = html;
+  sh.classList.toggle('tall', t === 'detail' || t === 'add');
+  sh.setAttribute('aria-label', { view: 'Timeline view', legend: 'Timeline legend', progress: "Day's progress", detail: 'Task details', add: 'Add task' }[t] || 'Schedule');
+}
+
+function schedViewSheetHTML() {
+  const cur = schedDensity();
+  const art = k => {
+    const rows = k === 'detailed' ? [[0, 70], [1, 50]] : k === 'compact' ? [[0, 70], [1, 45], [2, 60]] : [[0, 60], [1, 40], [2, 70], [3, 50], [4, 35]];
+    const gap = k === 'detailed' ? 17 : k === 'compact' ? 11 : 7, hh = k === 'detailed' ? 12 : k === 'compact' ? 8 : 5;
+    return `<svg viewBox="0 0 48 40" width="48" height="40" aria-hidden="true">${rows.map(([i, w]) =>
+      `<rect x="4" y="${4 + i * gap}" width="5" height="1.6" rx=".8" fill="currentColor" opacity=".45"/><rect x="12" y="${2 + i * gap}" width="${w * .45}" height="${hh}" rx="2.5" fill="currentColor" opacity="${i === 0 ? .95 : .4}"/>`).join('')}</svg>`;
+  };
+  const opts = SCHED_DENSITY_ORDER.slice().reverse().map(k => `
+    <button class="sch-opt${k === cur ? ' sel' : ''}" data-sh="density" data-dens="${k}" aria-pressed="${k === cur}">
+      <span class="sch-opt-art">${art(k)}</span>
+      <span class="sch-opt-tx"><b>${escapeHtml(SCHED_DENSITIES[k].label)}${k === 'detailed' ? ' <i>(default)</i>' : ''}</b><small>${escapeHtml(SCHED_DENSITIES[k].sub)}</small></span>
+      <span class="sch-opt-ck" aria-hidden="true">${k === cur ? '✓' : ''}</span>
+    </button>`).join('');
+  return schedSheetFrame('Timeline View', `${opts}
+    <div class="sch-note">Pinch the timeline to switch between these.</div>`);
+}
+function schedLegendSheetHTML() {
+  const item = (cls, label, sub) => `<div class="sch-lg"><i class="sch-sw ${cls}"></i><span><b>${label}</b><small>${sub}</small></span></div>`;
+  return schedSheetFrame('Timeline Legend', `
+    <div class="sch-lg-grid">
+      ${item('done', 'Actually done', 'Completed — its real time and length')}
+      ${item('pred', 'Predicted', 'Where it usually lands, or where you put it')}
+      ${item('moment', 'No timer', 'Ticked off without the stopwatch')}
+      ${item('reward', '🎁 Reward', 'A prize you cashed in')}
+      ${item('now', 'Now', 'What you should be on right now')}
+      ${item('gap', '?', 'Time nothing was logged — tap to fill it in')}
+    </div>
+    <div class="sch-tips">
+      <div>ⓘ Tap any task to see its time, subtasks and actions.</div>
+      <div>✋ Hold a task to move it. While it's selected, drag its handles to change its length.</div>
+      <div>↔ Swipe sideways to change day. Pinch to change the view.</div>
+    </div>`);
+}
+function schedProgressSheetHTML() {
+  const m = schedDayModel(todayStr(schedOffset));
+  const sum = schedDaySummary(m);
+  const c = sum.counts;
+  const title = m.isToday ? "Today's Progress"
+    : new Date(m.dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  const st = sum.standing;
+  let pace = '';
+  if (st) {
+    const head = st.delta > 0 ? 'Ahead of your usual pace' : st.delta < 0 ? 'Behind your usual pace' : 'Right on your usual pace';
+    const body = st.delta > 0 ? `You've done ${st.delta} more by this time than on the ${st.days} days most like this one.`
+      : st.delta < 0 ? `${-st.delta} fewer than usual by this time, across the ${st.days} days most like this one.`
+      : `The same as the ${st.days} days most like this one, at this time of day.`;
+    pace = `<div class="sch-pp ${st.delta > 0 ? 'ahead' : st.delta < 0 ? 'behind' : ''}">
+      <span class="sch-pp-i" aria-hidden="true">${st.delta > 0 ? '↗' : st.delta < 0 ? '↘' : '→'}</span>
+      <span><b>${escapeHtml(head)}</b><small>${escapeHtml(body)}</small></span></div>`;
+  } else if (m.isToday) {
+    pace = `<div class="sch-pp"><span class="sch-pp-i" aria-hidden="true">…</span><span><b>Your usual pace is still forming</b><small>It needs a few more days on this loadout to compare against.</small></span></div>`;
+  }
+  const bar = sum.total ? `
+    <div class="sch-pp-top"><span class="sch-pp-trophy" aria-hidden="true">🏆</span><b>${sum.done} / ${sum.total} done</b><span class="sch-pct">${sum.pct}%</span></div>
+    <span class="sch-bar big" aria-hidden="true"><i style="width:${sum.pct}%"></i></span>` : '';
+  const stat = (n, l) => `<div class="sch-st"><b>${n}</b><small>${l}</small></div>`;
+  const stats = `<div class="sch-stats">
+    ${stat(c.completed, 'Completed')}${stat(c.predicted, m.isFuture ? 'Planned' : 'Predicted')}${stat(c.untimed, 'No timer')}${stat(c.rewards, 'Rewards')}</div>`;
+  // The record day is what Today replays as dashed targets. Its window used to sit on the
+  // timeline permanently; it's a setting you change once in a while, so it lives here now.
+  let rec = '';
+  if (m.isToday || m.isFuture) {
+    const r = sum.record;
+    const segs = RECORD_WINDOWS.map(w =>
+      `<button class="sch-seg${w.key === recordWindowKey() ? ' sel' : ''}" data-sh="recWin" data-win="${w.key}" aria-pressed="${w.key === recordWindowKey()}">${w.label}</button>`).join('');
+    rec = `<div class="sch-rec">
+      <div class="sch-rec-l">${r
+        ? `🏆 Target day: <b>${escapeHtml(new Date(r.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))}</b> — ${r.count} done by ${escapeHtml(fmtMinOfDay(r.lastMin))}`
+        : `🏆 No finished <b>${escapeHtml(currentLoadout())}</b> day to beat yet — today sets the record.`}</div>
+      <div class="sch-rec-h">Look back over</div>
+      <div class="sch-segs">${segs}</div>
+    </div>`;
+  }
+  return schedSheetFrame(escapeHtml(title), `${bar}${pace}${stats}${rec}
+    <button class="sch-wide" data-sh="analytics">View detailed analytics <span aria-hidden="true">→</span></button>`);
+}
+
+/* ---- Layer 3: the detail sheet --------------------------------------------------- */
+function schedFindBlock(key) {
+  const m = schedDayModel(todayStr(schedOffset));
+  return { m, b: m.blocks.find(b => schedKey(b) === key) || null };
+}
+function schedBasisLine(b, src) {
+  if (b.type === 'reward') return '🎁 You cashed in a reward here.';
+  if (b.live) return b.running ? '⏱ The stopwatch is running — this block grows until you finish.' : '⏸ Paused. Resume it to keep timing.';
+  if (b.hid) return b.kind === 'moment'
+    ? '✓ Ticked off without the stopwatch, so it has a time but no length. Set one below if you know it.'
+    : '✓ Timed with the stopwatch. Correct it below if the timer ran on.';
+  if (b.planId) return '📌 You put it here, for this day only.';
+  if (b.pinned) return '📌 Pinned to a time you set for every day.';
+  if (b.fromPrediction) return `🔮 Predicted from the days most like this one (${Math.round((b.predConfidence || 0) * 100)}% confident).`;
+  if (b.fromRecord) return '🏆 Where it landed on your record day — the day this one is chasing.';
+  return '⏱ Your usual time, from the last few times you did it.';
+}
+function schedDetailSheetHTML() {
+  const { m, b } = schedFindBlock(schedSheet.key);
+  if (!b) return '';
+  const src = schedSource(b);
+  const ctx = { isToday: m.isToday, isFuture: m.isFuture };
+  const tab = schedSheet.tab;
+  const tabs = [['subtasks', 'Subtasks'], ['details', 'Details'], ['history', 'History'], ['notes', 'Notes']];
+  const tabBar = `<div class="sch-tabs" role="tablist">${tabs.map(([k, l]) =>
+    `<button role="tab" class="sch-tab${k === tab ? ' sel' : ''}" data-sh="tab" data-tab="${k}" aria-selected="${k === tab}">${l}</button>`).join('')}</div>`;
+  let body = '';
+  if (tab === 'subtasks') {
+    body = src
+      ? `${childrenOf(src.kind, src.item).length ? '' : `<div class="sch-note">No subtasks yet. Break this into parts and each one gets its own check.</div>`}
+         <div class="tlx-kids sheet">${schedKidRowsHTML(src, ctx)}</div>
+         ${childrenOf(src.kind, src.item).length > 1 ? `<div class="sch-note">Finishing every part finishes the ${src.kind === 'task' ? 'quest' : 'habit'}.</div>` : ''}`
+      : `<div class="sch-empty">This one has no subtasks${b.type === 'task' ? ' — the quest is finished' : ''}.</div>`;
+  } else if (tab === 'details') {
+    const editable = (b.kind === 'predicted' && b.refId) || (b.hid && !b.live && b.type !== 'reward');
+    const when = editable ? `
+      <div class="sch-h3">${b.hid ? 'What actually happened' : 'On this day'}</div>
+      <div class="sch-when">
+        <label>Start<input type="time" id="sdStart" value="${schedTimeValue(b.startMin)}"></label>
+        <label>Length<span class="sch-len"><input type="number" id="sdLen" min="${b.hid ? 0 : 5}" max="1440" step="5" inputmode="numeric" value="${Math.round(b.durMin || 0)}"><i>min</i></span></label>
+        <button class="sch-save" data-sh="saveWhen">Save</button>
+      </div>` : `<div class="sch-h3">When</div><div class="sch-kv">${escapeHtml(schedRangeLabel(b))}${b.durMin > 0 ? ` · ${escapeHtml(schedDurLabel(b.durMin))}` : ''}</div>`;
+    const it = src && src.item;
+    let about = '';
+    if (it) {
+      const lv = src.kind === 'habit' ? habitLevels(it) : null;
+      const tier = lv ? lv[curLevelIndex(it)] : null;
+      const reward = src.kind === 'habit' ? (tier ? tier.reward : it.reward) : it.reward;
+      about = `<div class="sch-h3">About</div>
+        <div class="sch-kv">${src.kind === 'task' ? '🎯 Quest' : '⚡ Habit'} · 🏷️ ${escapeHtml(it.category || 'Unsorted')}${Number.isFinite(+reward) ? ` · +${+reward} <i class="tok"></i>` : ''}${tier ? ` · ${escapeHtml(tier.label)} of ${lv.length}` : ''}</div>`;
+    }
+    body = `${when}
+      <div class="sch-h3">Why it's here</div><div class="sch-kv">${escapeHtml(schedBasisLine(b, src))}</div>
+      ${about}
+      ${src ? `<button class="sch-wide ghost" data-sh="editor">⚙︎ Open ${src.kind === 'task' ? 'quest' : 'habit'} settings</button>` : ''}`;
+  } else if (tab === 'history') {
+    const id = (src && src.item.id) || b.srcId || b.refId;
+    const kind = src ? src.kind : (b.type === 'task' ? 'task' : 'habit');
+    const rows = (state.history || []).filter(e => e && Number.isFinite(e.ts) && e.kind === kind
+      && (src && kind === 'habit' ? historyMatchesHabit(e, src.item) : (e.id ? e.id === id : e.name === (b.baseName || b.name))))
+      .slice(-14).reverse();
+    const usualDur = src && kind === 'habit' ? habitMedianActualMinutes(src.item) : null;
+    const usualAt = src && kind === 'habit' ? habitUsualMinute(src.item) : null;
+    const facts = [usualAt != null ? `Usually around <b>${escapeHtml(fmtMinOfDay(usualAt))}</b>` : '',
+                   usualDur ? `usually takes <b>${escapeHtml(schedDurLabel(usualDur))}</b>` : ''].filter(Boolean).join(' · ');
+    body = `${facts ? `<div class="sch-kv">${facts}</div>` : ''}
+      ${rows.length ? `<div class="sch-hist">${rows.map(e => {
+        const d = new Date(e.ts);
+        const day = dateStrFromTs(e.ts);
+        return `<div class="sch-hrow"><span>${escapeHtml(day === todayStr() ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))}</span>
+          <span>${escapeHtml(fmtMinOfDay(d.getHours() * 60 + d.getMinutes()))}</span>
+          <span class="dim">${Number.isFinite(e.actualElapsedSec) && e.actualElapsedSec >= 60 ? escapeHtml(schedDurLabel(Math.round(e.actualElapsedSec / 60))) : 'no timer'}</span></div>`;
+      }).join('')}</div>` : `<div class="sch-empty">No completions logged yet.</div>`}`;
+  } else {
+    const it = src && src.item;
+    const desc = it && String(it.desc || '').trim();
+    const id = (it && it.id) || b.srcId || b.refId;
+    const refl = (state.reflections || []).filter(r => r && (r.habitId === id || (Array.isArray(r.habitIds) && r.habitIds.includes(id))) && (r.note || r.summary))
+      .slice(-12).reverse();
+    body = `${desc ? `<div class="sch-h3">Description</div><div class="sch-kv pre">${escapeHtml(desc)}</div>` : ''}
+      ${refl.length ? `<div class="sch-h3">Reflections</div>${refl.map(r => `<div class="sch-noteitem"><small>${escapeHtml(fmtPlanDate(r.date))}</small>${escapeHtml(r.note || r.summary)}</div>`).join('')}` : ''}
+      ${!desc && !refl.length ? `<div class="sch-empty">No notes yet. Descriptions and check-in answers about this ${b.type === 'task' ? 'quest' : 'habit'} show up here.</div>` : ''}`;
+  }
+  const len = b.kind === 'moment' ? 'no timer' : (b.durMin > 0 ? schedDurLabel(b.durMin) : '');
+  const title = `<span class="sch-dt"><span class="tl-ic big" aria-hidden="true">${escapeHtml(b.emoji || '•')}</span>
+    <span><b>${escapeHtml(b.name)}</b><small>${escapeHtml(schedRangeLabel(b))}${len ? ` · ${escapeHtml(len)}` : ''}</small></span></span>`;
+  return schedSheetFrame(title, tabBar + `<div class="sch-tabbody" role="tabpanel">${body}</div>`);
+}
+
+/* ---- Quick add ------------------------------------------------------------------- */
+const SCHED_ADD_DURS = [15, 30, 45, 60, 90, 120, 180];
+const SCHED_ADD_ICONS = ['📖', '💻', '✍️', '🎻', '🏐', '🏃', '🧹', '🍳', '🧘', '📞', '🛒', '🎨'];
+function schedNewAddDraft() {
+  const date = todayStr(schedOffset);
+  // Today: the next quarter hour from now. Any other day: after what's already planned.
+  const start = date === todayStr()
+    ? clamp(Math.ceil((nowMinutes() + 1) / 15) * 15, 0, 23 * 60 + 45)
+    : nextFreeMinute(date);
+  return { name: '', date, start, dur: 60, emoji: null, tier: TASK_TIERS[quickTier] ? quickTier : 'medium' };
+}
+function schedAddSheetHTML() {
+  const d = schedAddDraft || (schedAddDraft = schedNewAddDraft());
+  const auto = guessEmoji(d.name) || '🎯';
+  const dayOpts = Array.from({ length: 8 }, (_, i) => todayStr(i))
+    .concat(daysBetween(todayStr(), d.date) > 7 || daysBetween(todayStr(), d.date) < 0 ? [d.date] : [])
+    .map(ds => `<option value="${ds}"${ds === d.date ? ' selected' : ''}>${escapeHtml(ds === todayStr() ? 'Today' : ds === todayStr(1) ? 'Tomorrow'
+      : new Date(ds + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))}</option>`).join('');
+  const durOpts = SCHED_ADD_DURS.concat(SCHED_ADD_DURS.includes(d.dur) ? [] : [d.dur]).sort((a, b) => a - b)
+    .map(v => `<option value="${v}"${v === d.dur ? ' selected' : ''}>${escapeHtml(schedDurLabel(v).replace(' hr', v === 60 ? ' hour' : ' hr'))}</option>`).join('');
+  const icons = [`<button class="sch-emo${!d.emoji ? ' sel' : ''}" data-sh="emoji" data-emoji="" aria-label="Pick automatically from the name" aria-pressed="${!d.emoji}"><span id="saAuto">${escapeHtml(auto)}</span><i>auto</i></button>`]
+    .concat(SCHED_ADD_ICONS.map(e => `<button class="sch-emo${d.emoji === e ? ' sel' : ''}" data-sh="emoji" data-emoji="${e}" aria-pressed="${d.emoji === e}">${e}</button>`)).join('');
+  const tiers = Object.entries(TASK_TIERS).map(([k, ti]) =>
+    `<button class="sch-tier${k === d.tier ? ' sel' : ''}" data-sh="tier" data-tier="${k}" style="--tc:${ti.color}" aria-pressed="${k === d.tier}">${escapeHtml(ti.label)} +${tierReward(k)}<i class="tok"></i></button>`).join('');
+  return schedSheetFrame('Add Task', `
+    <div class="sch-segs wide" role="tablist">
+      <button class="sch-seg sel" role="tab" aria-selected="true">New task</button>
+      <button class="sch-seg" role="tab" aria-selected="false" data-sh="fromList">From your list</button>
+    </div>
+    <label class="sch-field"><span>Name</span><input id="saName" value="${escapeHtml(d.name)}" placeholder="Study for AP Human Geo" autocomplete="off" enterkeyhint="done"></label>
+    <div class="sch-field"><span>Time</span>
+      <span class="sch-time">
+        <select id="saDate" aria-label="Day">${dayOpts}</select>
+        <input type="time" id="saStart" value="${schedTimeValue(d.start)}" aria-label="Start time">
+      </span>
+    </div>
+    <label class="sch-field"><span>Duration</span>
+      <span class="sch-time"><select id="saDur">${durOpts}</select>
+        <span class="sch-end">until <b id="saEnd">${escapeHtml(fmtMinOfDay((d.start + d.dur) % 1440))}</b></span></span>
+    </label>
+    <div class="sch-field top"><span>Icon</span><div class="sch-emos">${icons}</div></div>
+    <div class="sch-field top"><span>Reward</span><div class="sch-tiers">${tiers}</div></div>
+    <div class="sch-note">It's timed with the stopwatch like any quest — Start it from its card when you begin.</div>`,
+    { action: `<button class="sch-add" data-sh="add">Add</button>` });
+}
+function schedReadAddForm() {
+  const d = schedAddDraft; if (!d) return;
+  const n = $('#saName'); if (n) d.name = n.value;
+  const dt = $('#saDate'); if (dt && /^\d{4}-\d{2}-\d{2}$/.test(dt.value)) d.date = dt.value;
+  const s = schedParseTime($('#saStart')?.value); if (s != null) d.start = s;
+  const du = parseInt($('#saDur')?.value, 10); if (du > 0) d.dur = du;
+}
+function schedSubmitAdd() {
+  schedReadAddForm();
+  const d = schedAddDraft; if (!d) return;
+  const name = String(d.name || '').trim();
+  if (!name) { $('#saName')?.focus(); toast('Give it a name first', 'var(--pink)'); return; }
+  const tier = TASK_TIERS[d.tier] ? d.tier : 'medium';
+  // Same shape addQuickQuest builds, plus the day and the block it was added for.
+  const task = { id: uid(), emoji: d.emoji || guessEmoji(name) || '🎯', emojiAuto: !d.emoji, name, tier,
+    category: 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0,
+    timedMinutes: d.dur, timedAuto: false, desc: '', quadrant: null, due: d.date, createdAt: Date.now() };
+  state.oneoffs.push(task);
+  logEvent('task_created', { entityType: 'task', entityId: task.id, name: task.name, category: task.category, level: task.tier, iterations: 1, source: 'schedule' });
+  upsertPlannedBlock(d.date, 'task', task.id, d.start, d.dur);   // saves
+  quickTier = tier;
+  closeSchedSheet();
+  schedOffset = daysBetween(todayStr(), d.date);
+  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
+  SFX.coin();
+  toast(`🎯 ${name} — ${fmtMinOfDay(d.start)}`, 'var(--cyan)');
+  renderBlockSchedule(); renderOneoffs(); buildHabitWheel(); renderHabits();
+  // Bring the new card into view rather than leaving it somewhere off-screen.
+  const card = $(`#view-schedule .tl-card[data-key="p:task:${task.id}"]`);
+  if (card) card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+/* ---- Events ---------------------------------------------------------------------- */
+// Day stepper, header controls, card taps and every button inside an open card.
+function schedGoDay(delta) {
+  schedOffset += delta;
+  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
+  schedScrollPending = true;
+  SFX.click(); renderBlockSchedule();
+}
+function schedAfterChange() { renderBlockSchedule(); renderHabits(); renderOneoffs(); renderHomeNow(); }
+function schedCardAction(act, card, btn) {
+  const { b } = schedFindBlock(card.dataset.key);
+  if (!b) { renderBlockSchedule(); return; }
+  const src = schedSource(b);
+  const it = src && src.item;
+  if (act === 'collapse') { SFX.click(); schedCollapse(); return; }
+  if (act === 'more') { schedMenuOpen = !schedMenuOpen; SFX.click(); renderBlockSchedule(); if (schedMenuOpen) schedRevealOpen(); return; }
+  if (act === 'detail') { SFX.click(); openSchedSheet('detail', { key: card.dataset.key, tab: (src && childrenOf(src.kind, it).length) ? 'subtasks' : 'details' }); return; }
+  if (act === 'editor' && src) { schedMenuOpen = false; openEditor(src.kind === 'task' ? 'oneoff' : 'habit', it.id); return; }
+  if (act === 'kid') { toggleChildDone(btn.dataset.kid); schedAfterChange(); return; }
+  if (act === 'unplan') {
+    removePlannedBlock(todayStr(schedOffset), b.refId);
+    schedExpandedKey = null; schedMenuOpen = false;
+    SFX.click(); toast(b.planKind === 'task' ? 'Removed from this day' : 'Back to your usual time', 'var(--cyan)');
+    schedAfterChange(); return;
+  }
+  if (!src) return;
+  if (act === 'start') {
+    src.kind === 'habit' ? startHabitTimer(it.id) : startOneoffTimer(it.id);
+    // The plan turns into a live block under a new key; follow it so Pause / Finish show.
+    if (!b.live) { schedExpandedKey = `l:${it.id}:0`; schedMenuOpen = false; }
+    schedAfterChange(); schedRevealOpen(); return;
+  }
+  if (act === 'pause') { src.kind === 'habit' ? toggleHabitTimerPause(it.id) : toggleOneoffTimerPause(it.id); schedAfterChange(); return; }
+  if (act === 'finish') { schedExpandedKey = null; src.kind === 'habit' ? finishTimedHabit(it.id) : finishTimedOneoff(it.id); schedAfterChange(); return; }
+  if (act === 'markDone') { schedExpandedKey = null; schedMenuOpen = false; src.kind === 'habit' ? completeHabit(it.id) : completeOneoff(it.id); schedAfterChange(); }
+}
+$('#view-schedule').addEventListener('click', e => {
+  // A hold or a swipe ends in a click the finger never meant.
+  if (Date.now() < schedSuppressUntil) { e.preventDefault(); return; }
+  const hit = e.target.closest('[data-act]');
+  const act = hit && $('#scheduleBody').contains(hit) ? hit.dataset.act : null;
+  if (act === 'schedPrev') { schedGoDay(-1); return; }
+  if (act === 'schedNext') { schedGoDay(1); return; }
+  if (act === 'schedCal') { SFX.click(); openSchedCal(); return; }
+  if (act === 'schedProgress') { SFX.click(); openSchedSheet('progress'); return; }
+  if (act === 'schedView') { SFX.click(); openSchedSheet('view'); return; }
+  if (act === 'schedLegend') { SFX.click(); openSchedSheet('legend'); return; }
+  const back = e.target.closest('.tl-back');
+  if (back) {
+    SFX.click();
+    openGapCheckin(back.dataset.gapdate, parseInt(back.dataset.gapstart, 10), parseInt(back.dataset.gapend, 10), back.classList.contains('filler'));
+    return;
+  }
+  const card = e.target.closest('.tl-card');
+  if (card) {
+    if (e.target.closest('.tlx-add')) return;                     // typing a subtask — not a tap on the card
+    const tl = e.target.closest('[data-tl]');
+    if (tl && card.classList.contains('open')) { schedCardAction(tl.dataset.tl, card, tl); return; }
+    if (card.classList.contains('open')) return;                  // a tap on the open card's body does nothing
+    if (card.classList.contains('editing')) { schedEditKey = null; SFX.click(); renderBlockSchedule(); return; }
+    // Another card is open (or still closing): close that one first, then open this.
+    if (schedExpandedKey || schedCollapseTimer) { SFX.click(); schedCollapse(card.dataset.key); return; }
+    schedExpandedKey = card.dataset.key; schedEditKey = null; schedMenuOpen = false;
+    SFX.click(); renderBlockSchedule(); schedRevealOpen();
+    return;
+  }
+  // Anywhere else on the schedule: put things back the way they were.
+  if (!e.target.closest('#scheduleBody')) return;
+  if (schedExpandedKey) schedCollapse();
+  else if (schedEditKey) { schedEditKey = null; renderBlockSchedule(); }
+});
+// Keyboard: Enter / Space open a focused card or backdrop; Escape backs out one layer.
+$('#view-schedule').addEventListener('keydown', e => {
+  if (e.target.classList && e.target.classList.contains('tlx-add-in')) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const inp = e.target, text = inp.value.trim(); if (!text) return;
+      const c = addChild(inp.dataset.kind, inp.dataset.id, undefined, text);
+      if (!c) return;
+      SFX.click();
+      schedAfterChange();
+      const again = $('#view-schedule .tl-card.open .tlx-add-in');
+      if (again) again.focus({ preventScroll: true });
+    }
+    return;
+  }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.tl-card:not(.open), .tl-back, .sch-day')) {
+    e.preventDefault(); e.target.click();
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (schedSheet) { closeSchedSheet(); return; }
+  if (!$('#view-schedule').classList.contains('active')) return;
+  if (schedExpandedKey) schedCollapse();
+  else if (schedEditKey) { schedEditKey = null; renderBlockSchedule(); }
+});
+
+/* ---- Hold to lift, drag to move, handles to resize, swipe to change day ----------- */
+const SCHED_HOLD_MS = 450;
+let schedDrag = null;
+let schedSwipe = null;
+function schedTip(d) {
+  if (!d.tip) { d.tip = document.createElement('div'); d.tip.className = 'sched-tip'; d.el.parentNode.appendChild(d.tip); }
+  const edge = d.mode === 'bot' ? d.min + d.dur : d.min;
+  d.tip.style.top = `calc(var(--ph) * ${((edge - d.lo) / 60).toFixed(4)})`;
+  d.tip.textContent = `${fmtMinOfDay(d.min)}–${fmtMinOfDay((d.min + d.dur) % 1440)} · ${fmtMins(d.dur)}`;
+}
+function schedVibrate() { try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {} }
+$('#view-schedule').addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  const grid = $('#view-schedule .tl-grid');
+  if (grid && grid.contains(e.target) && !e.target.closest('.tl-card.open, input, select, textarea'))
+    schedSwipe = { x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
+  const el = e.target.closest('.tl-card.draggable');
+  if (!el || el.classList.contains('open') || e.target.closest('[data-tl]') || !grid) return;
+  // With a card open, the first tap belongs to closing it — not to lifting another one
+  // whose position is currently shifted by the opened card.
+  if (schedExpandedKey || schedCollapseTimer) return;
+  const start = parseInt(el.dataset.start, 10), dur = parseInt(el.dataset.dur, 10) || 15;
+  const grip = e.target.closest('.tl-grip');
+  const d = schedDrag = {
+    el, key: el.dataset.key, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
+    hid: el.dataset.hid || null, segIndex: parseInt(el.dataset.seg, 10) || 0,
+    mode: null, start, durMin: dur, end: start + dur, lo: parseInt(grid.dataset.lo, 10) * 60,
+    px: parseFloat(grid.dataset.px) || 84, cardH: parseFloat(grid.dataset.card) || 30,
+    x0: e.clientX, y0: e.clientY, min: start, dur, moved: false, tip: null, hold: null, pid: e.pointerId,
+  };
+  if (el.classList.contains('editing')) {
+    // Already selected, so the gesture is unambiguous and starts on the first pixel.
+    d.mode = grip ? (grip.dataset.grip === 'top' ? 'top' : 'bot') : 'move';
+    el.classList.add(d.mode === 'move' ? 'dragging' : 'resizing');
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    schedSwipe = null;
+    return;
+  }
+  d.hold = setTimeout(() => {
+    if (schedDrag !== d || d.mode) return;
+    d.mode = 'move';
+    schedEditKey = d.key;
+    el.classList.add('editing', 'lifted', 'dragging');
+    schedSwipe = null;
+    try { el.setPointerCapture(d.pid); } catch (err) {}
+    SFX.click(); schedVibrate();
+    schedTip(d);
+  }, SCHED_HOLD_MS);
+});
+$('#view-schedule').addEventListener('pointermove', e => {
+  const d = schedDrag; if (!d || e.pointerId !== d.pid) return;
+  const dy = e.clientY - d.y0;
+  if (!d.mode) {
+    // Moving before the hold lands is a scroll or a swipe, never an edit. Let it go.
+    if (Math.hypot(e.clientX - d.x0, dy) > 8) { clearTimeout(d.hold); schedDrag = null; }
+    return;
+  }
+  if (!d.moved && Math.abs(dy) < 3) return;
+  d.moved = true;
+  const deltaMin = dy / d.px * 60;
+  const snap = v => Math.round(v / SNAP_MIN) * SNAP_MIN;
+  if (d.mode === 'move') {
+    d.min = clamp(snap(d.start + deltaMin), 0, 1439); d.dur = d.durMin;
+  } else if (d.mode === 'bot') {
+    const end = clamp(snap(d.end + deltaMin), d.start + SNAP_MIN, 1440);
+    d.min = d.start; d.dur = end - d.start;
+  } else {
+    const st = clamp(snap(d.start + deltaMin), 0, d.end - SNAP_MIN);
+    d.min = st; d.dur = d.end - st;
+  }
+  d.el.style.top = `calc(var(--ph) * ${((d.min - d.lo) / 60).toFixed(4)})`;
+  d.el.style.height = `max(${d.cardH}px, calc(var(--ph) * ${(d.dur / 60).toFixed(4)}))`;
+  const sm = d.el.querySelector('.tl-tx small');
+  if (sm) sm.textContent = schedDurLabel(d.dur);
+  schedTip(d);
+});
+function endSchedDrag(e) {
+  const sw = schedSwipe; schedSwipe = null;
+  const d = schedDrag;
+  if (d && e && e.pointerId !== d.pid) return;
+  // A sideways flick on the timeline turns the page — but only a clear one: short, fast,
+  // and far more across than down, so a scroll that drifts never changes the day.
+  if (sw && e && e.type === 'pointerup' && (!d || !d.mode)) {
+    const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 45 && Date.now() - sw.t < 700) {
+      if (d) { clearTimeout(d.hold); schedDrag = null; }
+      schedSuppressUntil = Date.now() + 350;
+      schedGoDay(dx < 0 ? 1 : -1);
+      return;
+    }
+  }
+  if (!d) return;
+  schedDrag = null;
+  clearTimeout(d.hold);
+  if (!d.mode) return;                        // a plain tap — the click handler has it
+  schedSuppressUntil = Date.now() + 350;
+  if (d.tip) d.tip.remove();
+  d.el.classList.remove('dragging', 'resizing', 'lifted');
+  if (!d.moved || (d.min === d.start && d.dur === d.durMin)) { renderBlockSchedule(); return; }   // stays selected
+  const dateStr = todayStr(schedOffset);
+  let name;
+  if (d.hid) {
+    // Editing history, not a plan. Snapshot first: this rewrites a real completion and
+    // the predictions built on it, so a slip of the finger has to be as recoverable as a
+    // mis-tapped ✓.
+    const undoSnap = undoSnapshot();
+    name = updateHistoryBlock(d.hid, d.segIndex, dateStr, d.min, d.dur);
+    if (name) { SFX.coin(); toast(`✏️ ${name} → ${fmtMins(d.dur)} at ${fmtMinOfDay(d.min)}`, 'var(--cyan)'); offerUndo(undoSnap, `✏️ ${name}`); }
+  } else {
+    // Writes the DAY being viewed, not the habit's global usual time — that's what makes
+    // "Thursday at 3pm, just this once" possible and leaves every other day alone.
+    name = upsertPlannedBlock(dateStr, d.refKind, d.refId, d.min, d.dur);
+    if (name) { SFX.coin(); toast(d.mode === 'move' ? `${name} → ${fmtMinOfDay(d.min)}` : `${name} → ${fmtMins(d.dur)}`, 'var(--cyan)'); }
+  }
+  renderBlockSchedule(); renderHabits();
+}
+
+/* ---- Density ----------------------------------------------------------------------
+   Three intentional scales instead of fifteen zoom stops. A pinch moves ONE step and
+   holds the minute under your fingers still, so the part of the day you were looking at
+   is still under them afterwards. */
+function schedSetDensity(k, anchorY) {
+  if (!SCHED_DENSITIES[k]) return;
+  const grid = $('#view-schedule .tl-grid');
+  let anchorMin = null;
+  if (grid && Number.isFinite(anchorY)) {
+    anchorMin = +grid.dataset.lo * 60 + (anchorY - grid.getBoundingClientRect().top) / (+grid.dataset.px) * 60;
+  }
+  state.settings.schedDensity = k; save();
+  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
+  SFX.click();
+  renderBlockSchedule();
+  const g2 = $('#view-schedule .tl-grid');
+  if (g2 && anchorMin != null && k !== 'full') {
+    const y2 = g2.getBoundingClientRect().top + (anchorMin - +g2.dataset.lo * 60) / 60 * (+g2.dataset.px);
+    window.scrollBy(0, y2 - anchorY);
+  } else schedScrollToNow();
+}
+// Shared with the Home widget's own pinch.
+function touchDistance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+let schedPinch = null;
+$('#view-schedule').addEventListener('touchstart', e => {
+  if (e.touches.length !== 2 || !e.target.closest('.tl-grid')) return;
+  if (schedDrag) {
+    clearTimeout(schedDrag.hold); if (schedDrag.tip) schedDrag.tip.remove();
+    schedDrag.el.classList.remove('dragging', 'resizing', 'lifted'); schedDrag = null;
+  }
+  schedSwipe = null;
+  schedPinch = { distance: touchDistance(e.touches[0], e.touches[1]), stepped: false };
+}, { passive: true });
+$('#view-schedule').addEventListener('touchmove', e => {
+  // A lifted card owns the finger: the page must not scroll out from under it. Cards are
+  // pan-y so an ordinary swipe scrolls; this is what turns that off once a hold lands.
+  if (schedDrag && schedDrag.mode) { if (e.cancelable) e.preventDefault(); return; }
+  if (!schedPinch || e.touches.length !== 2) return;
+  if (e.cancelable) e.preventDefault();
+  if (schedPinch.stepped) return;              // one step per pinch — never a race through all three
+  const ratio = touchDistance(e.touches[0], e.touches[1]) / Math.max(1, schedPinch.distance);
+  if (ratio < 1.18 && ratio > 0.85) return;
+  schedPinch.stepped = true;
+  const i = SCHED_DENSITY_ORDER.indexOf(schedDensity());
+  const j = clamp(i + (ratio > 1 ? 1 : -1), 0, SCHED_DENSITY_ORDER.length - 1);
+  if (j !== i) schedSetDensity(SCHED_DENSITY_ORDER[j], (e.touches[0].clientY + e.touches[1].clientY) / 2);
+}, { passive: false });
+const endSchedPinch = e => { if (e.touches.length < 2) schedPinch = null; };
+$('#view-schedule').addEventListener('touchend', endSchedPinch, { passive: true });
+$('#view-schedule').addEventListener('touchcancel', () => { schedPinch = null; }, { passive: true });
+
+/* ---- Sheet events ------------------------------------------------------------------ */
+$('#schScrim').addEventListener('click', () => { SFX.click(); closeSchedSheet(); });
+function schedSheetAddKid(inp) {
+  const text = (inp.value || '').trim(); if (!text) return;
+  if (!addChild(inp.dataset.kind, inp.dataset.id, undefined, text)) return;
+  SFX.click();
+  renderSchedSheet(); renderBlockSchedule(); renderHabits(); renderOneoffs();
+  const again = $('#schSheet .tlx-add-in'); if (again) again.focus({ preventScroll: true });
+}
+$('#schSheet').addEventListener('click', e => {
+  const btn = e.target.closest('[data-sh], [data-tl]'); if (!btn || !schedSheet) return;
+  if (btn.dataset.tl === 'kid') {
+    toggleChildDone(btn.dataset.kid);
+    renderSchedSheet(); renderBlockSchedule(); renderHomeNow();
+    return;
+  }
+  const a = btn.dataset.sh;
+  if (a === 'close') { SFX.click(); closeSchedSheet(); return; }
+  if (a === 'density') { closeSchedSheet(); schedSetDensity(btn.dataset.dens); return; }
+  if (a === 'recWin') {
+    const w = btn.dataset.win;
+    if (RECORD_WINDOWS.some(x => x.key === w)) { state.settings.recordWindow = w; SFX.click(); save(); renderBlockSchedule(); renderHabits(); renderSchedSheet(); }
+    return;
+  }
+  if (a === 'analytics') {
+    closeSchedSheet(); SFX.click(); switchView('stats');
+    setTimeout(() => { const p = $('#wcPanel'); if (p) p.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 120);
+    return;
+  }
+  if (a === 'tab') { schedSheet.tab = btn.dataset.tab; SFX.click(); renderSchedSheet(); return; }
+  if (a === 'editor') {
+    const { b } = schedFindBlock(schedSheet.key);
+    const src = schedSource(b); if (!src) return;
+    closeSchedSheet(); openEditor(src.kind === 'task' ? 'oneoff' : 'habit', src.item.id);
+    return;
+  }
+  if (a === 'saveWhen') {
+    const { b } = schedFindBlock(schedSheet.key); if (!b) return;
+    const st = schedParseTime($('#sdStart')?.value);
+    if (st == null) { toast('Pick a start time', 'var(--pink)'); return; }
+    const len = clamp(parseInt($('#sdLen')?.value, 10) || 0, b.hid ? 0 : 5, 1440);
+    const dateStr = todayStr(schedOffset);
+    if (b.hid) {
+      const snap = undoSnapshot();
+      const name = updateHistoryBlock(b.hid, b.segIndex || 0, dateStr, st, len);
+      if (name) { offerUndo(snap, `✏️ ${name}`); toast(`✏️ ${name} → ${fmtMins(len)} at ${fmtMinOfDay(st)}`, 'var(--cyan)'); }
+    } else {
+      const name = upsertPlannedBlock(dateStr, b.planKind || 'habit', b.refId, st, len);
+      if (name) toast(`${name} → ${fmtMinOfDay(st)} · ${fmtMins(len)}`, 'var(--cyan)');
+    }
+    SFX.coin();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    renderBlockSchedule(); renderHabits(); renderHomeNow(); renderSchedSheet();
+    return;
+  }
+  if (a === 'emoji') { schedReadAddForm(); schedAddDraft.emoji = btn.dataset.emoji || null; SFX.click(); renderSchedSheet(); return; }
+  if (a === 'tier') { schedReadAddForm(); schedAddDraft.tier = btn.dataset.tier; SFX.click(); renderSchedSheet(); return; }
+  if (a === 'fromList') { SFX.click(); closeSchedSheet(); schedPickOpen(); return; }
+  if (a === 'add') schedSubmitAdd();
+});
+// Typing in Add Task: keep the draft current so a tap on an icon or a tier (which
+// repaints the sheet) never throws away what was typed, and keep the end time honest.
+function onSchedAddInput(e) {
+  if (!schedSheet || schedSheet.type !== 'add' || !schedAddDraft) return;
+  schedReadAddForm();
+  if (e.target.id === 'saName') { const a = $('#saAuto'); if (a) a.textContent = guessEmoji(schedAddDraft.name) || '🎯'; }
+  const end = $('#saEnd'); if (end) end.textContent = fmtMinOfDay((schedAddDraft.start + schedAddDraft.dur) % 1440);
+}
+$('#schSheet').addEventListener('input', onSchedAddInput);
+$('#schSheet').addEventListener('change', onSchedAddInput);
+$('#schSheet').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'saName') { e.preventDefault(); schedSubmitAdd(); return; }
+  if (e.target.classList && e.target.classList.contains('tlx-add-in')) { e.preventDefault(); schedSheetAddKid(e.target); }
+});
+
 // The hour BEFORE a habit's usual time: show it while (usual - now) is within 0..60 min.
 // Once the usual time passes it drops back into the regular list — no "overdue" flag.
 // Painted into EVERY .duenow-mount — Habits has one and Home has another. One function,
@@ -14283,7 +15764,7 @@ function switchView(name) {
   if (name === 'chat') renderChat();
   if (name === 'prizes') renderPrizes();
   if (name === 'stats') renderStats();
-  if (name === 'schedule') renderBlockSchedule();
+  if (name === 'schedule') { schedScrollPending = true; renderBlockSchedule(); }
   if (name === 'settings') renderSettings();
   updatePassFab();                 // Habit Pass button shows only on the Habits tab
 }
@@ -16548,180 +18029,10 @@ $('#calOverlay').addEventListener('click', e => {
   if (act === 'calNext') { SFX.click(); calShiftMonth(1); return; }
   if (act === 'calPick') {
     schedOffset = daysBetween(todayStr(), hit.dataset.date);
+    schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false; schedScrollPending = true;
     SFX.click(); closeSchedCal(); renderBlockSchedule();
   }
 });
-
-// Block Schedule day stepper. Forward stops at today — nothing models a future day.
-$('#view-schedule').addEventListener('click', e => {
-  const act = e.target.closest('[data-act]')?.dataset.act;
-  if (act === 'schedPrev') { schedOffset -= 1; SFX.click(); renderBlockSchedule(); return; }
-  if (act === 'schedNext') { schedOffset += 1; SFX.click(); renderBlockSchedule(); return; }
-  if (act === 'schedCal') { SFX.click(); openSchedCal(); return; }
-  if (act === 'recWin') {
-    const w = e.target.closest('[data-act="recWin"]').dataset.win;
-    if (RECORD_WINDOWS.some(x => x.key === w)) { state.settings.recordWindow = w; SFX.click(); save(); renderBlockSchedule(); renderHabits(); }
-    return;
-  }
-  if (act === 'zoomIn')  { schedZoomIdx += 1; SFX.click(); applySchedZoom(); return; }
-  if (act === 'zoomOut') { schedZoomIdx -= 1; SFX.click(); applySchedZoom(); return; }
-  // A filler is an answered gap: tapping it asks again, and the new answer replaces it.
-  const gapEl = e.target.closest('.sched-block.gap, .sched-block.filler');
-  if (gapEl) {
-    SFX.click();
-    openGapCheckin(gapEl.dataset.gapdate, parseInt(gapEl.dataset.gapstart, 10), parseInt(gapEl.dataset.gapend, 10),
-                   gapEl.classList.contains('filler'));
-    return;
-  }
-  if (act === 'unpin') {
-    const el = e.target.closest('.sched-block'); if (!el) return;
-    removePlannedBlock(todayStr(schedOffset), el.dataset.ref);
-    SFX.click(); toast('Removed from this day', 'var(--cyan)');
-    renderBlockSchedule(); renderHabits();
-  }
-});
-
-/* Two-finger schedule zoom. One-finger vertical scrolling and block dragging stay
-   unchanged; pinching steps through the same calibrated zoom levels as the +/- buttons. */
-let schedPinch = null;
-function touchDistance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
-$('#view-schedule').addEventListener('touchstart', e => {
-  if (e.touches.length !== 2 || !e.target.closest('.sched-grid')) return;
-  if (schedDrag) {
-    clearTimeout(schedDrag.hold); if (schedDrag.tip) schedDrag.tip.remove();
-    schedDrag.el.classList.remove('dragging', 'resizing', 'lifted'); schedDrag = null;
-  }
-  schedPinch = { distance: touchDistance(e.touches[0], e.touches[1]) };
-}, { passive: true });
-$('#view-schedule').addEventListener('touchmove', e => {
-  if (!schedPinch || e.touches.length !== 2) return;
-  e.preventDefault();
-  const distance = touchDistance(e.touches[0], e.touches[1]);
-  const ratio = distance / Math.max(1, schedPinch.distance);
-  if (ratio > 1.12 || ratio < 0.89) {
-    const oldPx = schedPx();
-    const grid = $('#view-schedule .sched-grid'); if (!grid) return;   // scoped: Home has one too
-    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    const contentHours = Math.max(0, (midY - grid.getBoundingClientRect().top) / oldPx);
-    schedZoomIdx += ratio > 1 ? 1 : -1;
-    applySchedZoom();
-    window.scrollBy(0, contentHours * (schedPx() - oldPx));
-    schedPinch.distance = distance;
-  }
-}, { passive: false });
-const endSchedPinch = e => { if (e.touches.length < 2) schedPinch = null; };
-$('#view-schedule').addEventListener('touchend', endSchedPinch, { passive: true });
-$('#view-schedule').addEventListener('touchcancel', () => { schedPinch = null; }, { passive: true });
-
-/* ---- Change a block by dragging it. Two gestures, told apart by how the press starts:
-     · press and DRAG          → change its LENGTH. Grab the top third of a tall block to
-                                  move its start, anywhere else to move its end. It starts
-                                  on the first few pixels, so it answers straight away.
-     · press, HOLD, then drag  → MOVE the whole block to a new time. It lifts (outline +
-                                  a tick) the moment the hold registers.
-   Moving used to be the default and resizing needed a 9px grip, so reaching for a length
-   usually shoved the block somewhere else. A readout pinned to the moving edge shows the
-   exact times the whole way through. Predictions write that day's plan; finished blocks
-   rewrite the record (see endSchedDrag).                                                */
-const SCHED_HOLD_MS = 450;
-let schedDrag = null;
-function schedTip(d) {
-  if (!d.tip) { d.tip = document.createElement('div'); d.tip.className = 'sched-tip'; d.el.parentNode.appendChild(d.tip); }
-  const edge = d.mode === 'bot' ? d.min + d.dur : d.min;
-  d.tip.style.top = `calc(var(--ph) * ${((edge - d.lo) / 60).toFixed(4)})`;
-  d.tip.textContent = `${fmtMinOfDay(d.min)}–${fmtMinOfDay((d.min + d.dur) % 1440)} · ${fmtMins(d.dur)}`;
-}
-$('#view-schedule').addEventListener('pointerdown', e => {
-  const el = e.target.closest('.sched-block.draggable');
-  if (!el || e.target.closest('[data-act]')) return;
-  const grid = $('#view-schedule .sched-grid'); if (!grid) return;     // scoped: Home has one too
-  const start = parseInt(el.dataset.start, 10);
-  const dur = parseInt(el.dataset.dur, 10) || 15;
-  // Which edge a plain drag moves: a grip says so outright; otherwise the top third of a
-  // block tall enough to have one means its start, and everything else means its end.
-  const r = el.getBoundingClientRect();
-  const grip = e.target.closest('.sb-grip');
-  const edge = grip ? (grip.dataset.grip === 'top' ? 'top' : 'bot')
-    : (r.height >= 36 && e.clientY - r.top < r.height * 0.3 ? 'top' : 'bot');
-  const d = schedDrag = {
-    el, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
-    hid: el.dataset.hid || null, segIndex: parseInt(el.dataset.seg, 10) || 0,
-    mode: null, edge, durMin: dur, start, end: start + dur,
-    lo: parseInt(grid.dataset.lo, 10) * 60, x0: e.clientX, y0: e.clientY,
-    min: start, dur, moved: false, tip: null, hold: null,
-  };
-  // Capture keeps the gesture alive if the finger leaves the block; not fatal if refused.
-  try { el.setPointerCapture(e.pointerId); } catch (err) {}
-  d.hold = setTimeout(() => {
-    if (schedDrag !== d || d.mode) return;           // already resizing, or let go
-    d.mode = 'move';
-    el.classList.add('dragging', 'lifted');
-    SFX.click();
-    try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
-    schedTip(d);
-  }, SCHED_HOLD_MS);
-});
-$('#view-schedule').addEventListener('pointermove', e => {
-  const d = schedDrag; if (!d) return;
-  const dy = e.clientY - d.y0;
-  if (!d.mode) {
-    // Still undecided: moving before the hold lands means "change the length".
-    if (Math.hypot(e.clientX - d.x0, dy) < 5) return;
-    clearTimeout(d.hold);
-    d.mode = d.edge;
-    d.el.classList.add('resizing');
-  }
-  if (!d.moved && Math.abs(dy) < 2) return;
-  d.moved = true;
-  const deltaMin = dy / schedPx() * 60;
-  const snap = v => Math.round(v / SNAP_MIN) * SNAP_MIN;
-  if (d.mode === 'move') {
-    d.min = clamp(snap(d.start + deltaMin), 0, 1439);
-    d.dur = d.durMin;
-  } else if (d.mode === 'bot') {
-    // The end moves, the start holds. Never shorter than one snap step.
-    const end = clamp(snap(d.end + deltaMin), d.start + SNAP_MIN, 1440);
-    d.min = d.start; d.dur = end - d.start;
-  } else {
-    // The start moves, the END holds — so dragging the top shortens from above rather
-    // than sliding the whole block.
-    const st = clamp(snap(d.start + deltaMin), 0, d.end - SNAP_MIN);
-    d.min = st; d.dur = d.end - st;
-  }
-  d.el.style.top = `calc(var(--ph) * ${((d.min - d.lo) / 60).toFixed(4)})`;
-  d.el.style.height = `max(${BAR_MIN_PX}px, calc(var(--ph) * ${(d.dur / 60).toFixed(4)}))`;
-  const t = d.el.querySelector('.sb-time');
-  if (t) t.textContent = `${fmtMinOfDay(d.min)}–${fmtMinOfDay((d.min + d.dur) % 1440)} · ${fmtMins(d.dur)}`;
-  schedTip(d);
-});
-function endSchedDrag() {
-  if (!schedDrag) return;
-  const d = schedDrag; schedDrag = null;
-  clearTimeout(d.hold);
-  if (d.tip) d.tip.remove();
-  d.el.classList.remove('dragging', 'resizing', 'lifted');
-  if (!d.moved || (d.min === d.start && d.dur === d.durMin)) { renderBlockSchedule(); return; }
-  const dateStr = todayStr(schedOffset);
-  let name;
-  if (d.hid) {
-    // Editing history, not a plan. Snapshot first: this rewrites a real completion and
-    // the predictions built on it, so a slip of the finger has to be as recoverable as a
-    // mis-tapped ✓.
-    const undoSnap = undoSnapshot();
-    name = updateHistoryBlock(d.hid, d.segIndex, dateStr, d.min, d.dur);
-    if (name) { SFX.coin(); toast(`✏️ ${name} → ${fmtMins(d.dur)} at ${fmtMinOfDay(d.min)}`, 'var(--cyan)'); offerUndo(undoSnap, `✏️ ${name}`); }
-  } else {
-    // Writes the DAY being viewed, not the habit's global usual time — that's what makes
-    // "Thursday at 3pm, just this once" possible and leaves every other day alone. A resize
-    // pins the block the same way a move does, so its new length is that day's plan.
-    name = upsertPlannedBlock(dateStr, d.refKind, d.refId, d.min, d.dur);
-    if (name) {
-      SFX.coin();
-      toast(d.mode === 'move' ? `${name} → ${fmtMinOfDay(d.min)}` : `${name} → ${fmtMins(d.dur)}`, 'var(--cyan)');
-    }
-  }
-  renderBlockSchedule(); renderHabits();
-}
 
 // Insert or move one planned block on a date. Returns the entity's name, or null if the
 // habit/quest has since been deleted.
@@ -16781,7 +18092,7 @@ function removePlannedBlock(dateStr, refId) {
 $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
 // The hold that lifts a block is also Android's long-press — don't open a context menu on it.
-$('#view-schedule').addEventListener('contextmenu', e => { if (e.target.closest('.sched-block.draggable')) e.preventDefault(); });
+$('#view-schedule').addEventListener('contextmenu', e => { if (e.target.closest('.tl-card.draggable')) e.preventDefault(); });
 
 /* ---- + button: put a habit or quest onto the day you're looking at ----------------
    Every group opens COLLAPSED, every time. The picker used to remember which sections you
@@ -16845,7 +18156,7 @@ function nextFreeMinute(dateStr) {
   const end = Math.max(...blocks.map(b => b.startMin + Math.max(b.durMin, 15)));
   return clamp(Math.ceil(end / SNAP_MIN) * SNAP_MIN, 0, 23 * 60);
 }
-$('#schedAddBtn').addEventListener('click', () => { SFX.click(); schedPickOpen(); });
+$('#schedAddBtn').addEventListener('click', () => { SFX.click(); openSchedSheet('add'); });
 $('#schedPickSheet').addEventListener('click', e => {
   if (e.target.closest('[data-act="schedPickClose"]')) { SFX.click(); schedPickClose(); return; }
   const head = e.target.closest('[data-act="pickToggle"]');
@@ -17401,10 +18712,10 @@ setInterval(() => {
   if ($('#view-home').classList.contains('active') && editingHabitId === null) renderHome();
   if ($('#view-tasks').classList.contains('active') && editingOneoffId === null) renderOneoffs();
   if ($('#view-prizes').classList.contains('active') && editingRewardId === null) renderPrizes();
-  // A prediction's time just ran out: repaint so it drops off (see schedGridParts). Never
-  // mid-drag — that would pull the block out from under the finger.
-  if ($('#view-schedule').classList.contains('active') && !schedDrag && schedOffset === 0
-      && nowMinutes() >= schedNextExpiry) renderBlockSchedule();
+  // The now-marker creeps every tick; the day repaints only when a prediction runs out or
+  // a stopwatch is growing a block (see schedTick). Never mid-drag — that would pull the
+  // card out from under the finger.
+  if ($('#view-schedule').classList.contains('active') && !schedDrag) schedTick();
 }, 30000);
 </script>
 
