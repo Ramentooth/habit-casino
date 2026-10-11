@@ -3303,6 +3303,9 @@
         <input type="file" id="importFile" accept="application/json" style="display:none">
         <div class="hint">Your save lives in the cloud and follows you between devices. Export still gives you an offline copy.</div>
         <hr class="set-sep">
+        <div class="ver-label">📦 SAVE SIZE</div>
+        <div id="sizeList"></div>
+        <hr class="set-sep">
         <div class="ver-label">🛟 BACKUPS</div>
         <div id="backupList"></div>
         <div class="hint">Kept automatically on this device: one every time the app starts, plus one a day. Restoring backs up the current save first, so you can always undo it.</div>
@@ -3537,7 +3540,7 @@ function defaultState() {
                card9:  { common: 55, rare: 30, epic: 12, legendary: 3 },
                card10: { rare: 60, epic: 30, legendary: 10 } },
     },
-    settings: { sound: true, reducedMotion: false,
+    settings: { sound: true, reducedMotion: false, cloudCompress: false,
                 // Analytics → Weekly Comparison: how many COMPLETED weeks feed the
                 // weekday averages and the typical range. One of the WC_RANGES widths.
                 weekCmpWeeks: 12,
@@ -3867,7 +3870,8 @@ function writeBackup(raw, reason, opts) {
   return entry;
 }
 function readBackup(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
-// Delete one backup outright (a user emptying a slot). Autos age out on their own.
+// Delete one backup outright (a user emptying a slot). Autos age out on their own —
+// locally in pruneBackups, and in the cloud via cloudBackupOrphans on the next push.
 function deleteBackup(key) {
   const entry = listBackups().find(b => b.key === key);
   writeBackupIndex(dropBackup(key, readBackupIndex()));
@@ -3920,7 +3924,18 @@ function barViews() { return sanitizeBar((state.settings || {}).barViews); }
 // it has to be derived now, and switchView still asks it whether "More" owns the active state.
 function moreViews() { const bar = barViews(); return VIEW_IDS.filter(id => !bar.includes(id)); }
 
-const CLOUD_LIMIT = 700000;     // chars of JSON — comfortably under Firestore's 1 MiB doc cap
+const CLOUD_LIMIT = 700000;     // chars of PLAIN JSON — see cloudPayload() for what happens above it
+/* ---- Retention. A few of the save's collections are append-only and would otherwise
+   grow for as long as the app is used. These caps are set by what actually READS the
+   data, not by taste: analytics never looks further back than SIMILAR_DAY_MAX_AGE
+   (90 days), and Weekly Comparison's longest range is 26 weeks against a paceLog that
+   keeps 190 days. So 190 days is "every consumer, with margin" — past that a row is
+   pure weight. A count cap alone was not enough: 4,000 eventLog rows is up to 800KB on
+   its own, which was most of a save that had outgrown the cloud document. ---- */
+const EVENT_LOG_DAYS = 190;     // habit_missed fires once per scheduled habit per day
+const PLAN_RETAIN_DAYS = 190;   // plannedBlocks / dayPlans, both date-keyed
+const TRANSCRIPT_KEEP = 40;     // newest reflections/check-ins that keep their raw transcript
+let lastSaveBytes = 0;          // chars of the last local write — Settings → 📦 Save size reads it
 let cloudOn = false;            // signed in AND reconciled — only then do we mirror upward
 let lastDailyBackupDay = null;  // guards the once-a-day snapshot in save()
 const CLOUD_BACKUP_AUTOS = 3;   // newest autos mirrored; slots are always kept
@@ -4522,10 +4537,12 @@ function save() {
   // copy left. Nothing gets written over it until the recovery screen resolves it.
   if (saveLocked) return;
   state.updatedAt = Date.now();
-  let json = JSON.stringify(state);
-  // Only trim while syncing: localStorage alone has room to spare, and silently
-  // dropping a signed-out user's chat history would be gratuitous.
-  if (cloudOn && json.length > CLOUD_LIMIT) json = trimForCloud(json);
+  // The cloud layer is a module and cannot see `state`; this is how it learns the format
+  // to write in. Published before anything can mirror, backups included.
+  window.HC_CLOUD_COMPRESS = !!(state.settings || {}).cloudCompress;
+  pruneForSize();                       // every retention cap, enforced in one place
+  const json = JSON.stringify(state);
+  lastSaveBytes = json.length;
   // First save of a new day: keep the copy we're about to replace. Boot backups only
   // span launches, so without this a week of daily use in one long-lived tab would leave
   // exactly one restore point.
@@ -4542,7 +4559,9 @@ function save() {
     }
     toast('Browser storage is full — export your save', 'var(--pink)');
   }
-  if (cloudOn && window.HCCloud) window.HCCloud.save(json);
+  // The mirror gets its own copy: trimmed if it has to be, and compressed if the user
+  // has turned that on. The bytes written above are always the full save.
+  if (cloudOn && window.HCCloud) window.HCCloud.save(cloudPayload(json));
 }
 function maybeDailyBackup() {
   const day = todayStr();
@@ -4553,19 +4572,73 @@ function maybeDailyBackup() {
   const prev = readLocal();                        // the copy about to be overwritten
   if (prev) writeBackup(prev, 'daily');
 }
-// `history` is already capped at 2000 entries, but chat threads grow without bound and
-// are the one thing that could push the document past Firestore's hard 1 MiB limit —
-// at which point writes start failing and the sync silently stops. Drop oldest threads
-// first (they're unshifted newest-first) rather than let that happen.
-function trimForCloud(json) {
-  const threads = state.aiChatThreads;
-  while (json.length > CLOUD_LIMIT && Array.isArray(threads) && threads.length > 1) {
-    const dropped = threads.pop();
-    if (dropped && state.activeChatThreadId === dropped.id) state.activeChatThreadId = threads[0] ? threads[0].id : null;
-    json = JSON.stringify(state);
+/* ---- The cloud copy and the local copy are not the same bytes.
+
+   localStorage has megabytes to spare. The cloud save is ONE Firestore document, and a
+   document stops at 1 MiB — that ceiling, not the browser's, is what limits how big a
+   save can get. So when a save outgrows CLOUD_LIMIT the copy that goes UP is trimmed,
+   and the copy that stays on this device never is.
+
+   Until 2026-10-08 this trimmed `state` itself and handed the result to BOTH writers, so
+   a signed-in user whose save crossed the line silently lost chat threads off their own
+   device — enforcing a quota that only ever applied to the mirror. Everything here now
+   works on a shallow clone and `state` is never touched.
+
+   Chat threads go first because they are the only part of the save that is pure
+   transcript: large, newest-first, and read by nothing but the chat view itself. ---- */
+function cloudPayload(json) {
+  if (json.length <= CLOUD_LIMIT) return json;
+  const threads = Array.isArray(state.aiChatThreads) ? state.aiChatThreads : [];
+  // Measure once and drop from the end (= oldest) until the estimate fits, rather than
+  // re-stringifying the whole save per thread — save() runs after nearly every tap.
+  let over = json.length - CLOUD_LIMIT, keep = threads.length;
+  while (keep > 1 && over > 0) { over -= JSON.stringify(threads[keep - 1]).length + 1; keep--; }
+  const kept = threads.slice(0, keep);
+  const copy = { ...state, aiChatThreads: kept };
+  if (!kept.some(t => t && t.id === state.activeChatThreadId)) copy.activeChatThreadId = kept[0] ? kept[0].id : null;
+  const out = JSON.stringify(copy);
+  if (out.length > CLOUD_LIMIT) warnOversize();
+  return out;
+}
+// One warning an hour, not one per save. save() fires after nearly every mutation, and
+// the old version toasted on every one of them — which is how a real limit reads as
+// nagging. Points at the screen that can actually do something about it.
+let lastOversizeWarn = 0;
+function warnOversize() {
+  if (Date.now() - lastOversizeWarn < 3600000) return;
+  lastOversizeWarn = Date.now();
+  toast('Too big to sync — see Settings → 📦 Save size', 'var(--pink)');
+}
+
+/* ---- Enforce the retention caps. Called from save(), so a collection is never more
+   than one mutation past its limit, and every cap sits in one readable place instead of
+   being scattered across the functions that append to them.
+
+   Nothing here touches anything a person typed or earned: habits, quests, rewards,
+   tokens, stats, streaks, and the reflections themselves are never pruned. What goes is
+   machine-written data whose only readers have a fixed, shorter horizon. ---- */
+function pruneForSize() {
+  const cutEvents = todayStr(-EVENT_LOG_DAYS), tsFloor = Date.now() - EVENT_LOG_DAYS * 86400000;
+  if (Array.isArray(state.eventLog) && state.eventLog.length > 500) {
+    // habit_missed is dated by the sweep that emitted it but is ABOUT scheduledForDate,
+    // so a row survives if EITHER date is inside the window — otherwise every miss would
+    // be dropped a day early. ts is the fallback for rows written before `date` existed.
+    state.eventLog = state.eventLog.filter(e => e && ((e.date || '') >= cutEvents
+      || (e.scheduledForDate || '') >= cutEvents || (e.ts || 0) >= tsFloor));
+    if (state.eventLog.length > 5000) state.eventLog = state.eventLog.slice(-4000);
   }
-  if (json.length > CLOUD_LIMIT) toast('Save is very large — export and trim it', 'var(--pink)');
-  return json;
+  const cutPlans = todayStr(-PLAN_RETAIN_DAYS);
+  [state.plannedBlocks, state.dayPlans].forEach(map => {
+    if (!map || typeof map !== 'object') return;
+    Object.keys(map).forEach(d => { if (d < cutPlans) delete map[d]; });
+  });
+  // A transcript is written but never read back — the summary is what the app shows. Keep
+  // the newest few verbatim in case that changes, and let the older ones go. The
+  // reflection itself, with its note and summary, stays forever either way.
+  [state.reflections, state.questionnaires].forEach(list => {
+    if (!Array.isArray(list) || list.length <= TRANSCRIPT_KEEP) return;
+    list.slice(0, list.length - TRANSCRIPT_KEEP).forEach(r => { if (r && r.transcript) r.transcript = null; });
+  });
 }
 
 // Append one completion event to the analytics log (capped so the cloud save stays small).
@@ -16182,11 +16255,35 @@ function cloudBackupPush(entry, raw) {
     const rank = listBackups().filter(b => b.kind === 'auto').findIndex(b => b.id === entry.id);
     if (rank >= CLOUD_BACKUP_AUTOS) return;
   }
-  if (raw.length > CLOUD_LIMIT) { console.warn('[cloud] backup too large to mirror', raw.length); return; }
+  // Plain text has to fit under the document cap on its own. Compressed, it lands near a
+  // fifth of this, so the guard lifts with it rather than refusing to mirror a backup the
+  // cloud would have taken quite happily.
+  if (!(state.settings || {}).cloudCompress && raw.length > CLOUD_LIMIT) {
+    console.warn('[cloud] backup too large to mirror', raw.length); return;
+  }
   const items = cloudBackupTargetItems(entry);
+  const orphans = cloudBackupOrphans(cloudBackupItems, items);
   window.HCCloud.backups.put(entry, raw, items)
-    .then(() => { cloudBackupItems = items; cloudBackupErr = ''; renderBackupList(); })
+    .then(() => {
+      cloudBackupItems = items; cloudBackupErr = ''; renderBackupList();
+      // The index no longer lists these, so deleting the payloads now can never leave the
+      // list pointing at something missing. Failures are only logged: worst case is the
+      // old behaviour, one stray document, and the next push tries nothing worse.
+      orphans.forEach(id => window.HCCloud.backups.dropPayload(id)
+        .catch(e => console.warn('[cloud] could not delete aged-out backup', id, e)));
+    })
     .catch(e => { cloudBackupErr = e.message || String(e); console.warn('[cloud] backup push failed', e); renderBackupList(); });
+}
+/* Which payload documents a push leaves behind. Each push rewrites the index with the
+   slots plus the newest few autos, so the auto that falls off the end disappears from the
+   list — but until 2026-10-11 its full-save payload stayed in Firestore forever, one
+   orphan per launch, invisible and unrestorable. Only THIS device's entries are ever
+   candidates: another device's backups are not ours to delete. */
+function cloudBackupOrphans(prev, next) {
+  const keep = new Set((next || []).map(i => i && i.id));
+  return (prev || [])
+    .filter(i => i && i.id && i.deviceId === DEVICE_ID && !keep.has(i.id))
+    .map(i => i.id);
 }
 function cloudBackupDelete(id) {
   if (!id || !cloudOn || !window.HCCloud || !window.HCCloud.backups) return;
@@ -16199,10 +16296,80 @@ function cloudBackupDelete(id) {
 async function refreshCloudBackups() {
   if (!cloudOn || !window.HCCloud || !window.HCCloud.backups) { cloudBackupItems = []; return; }
   cloudBackupBusy = true; renderBackupList();
-  try { cloudBackupItems = await window.HCCloud.backups.list(); cloudBackupErr = ''; }
+  let ok = false;
+  try { cloudBackupItems = await window.HCCloud.backups.list(); cloudBackupErr = ''; ok = true; }
   catch (e) { cloudBackupErr = e.message || String(e); }
   cloudBackupBusy = false;
   renderBackupList();
+  if (ok) sweepCloudBackups();          // at most once a week per device — see below
+}
+
+/* =================================================================
+   CLOUD BACKUP SWEEP — deleting the copies nothing can see.
+
+   Before 2026-10-11 an auto backup that aged out of the mirrored window was dropped from
+   the index but its full-save payload stayed in Firestore: one invisible, unrestorable
+   copy per launch, forever. cloudBackupOrphans() stops new ones as they happen. This
+   finds the ones already up there — and any a not-yet-updated build on another device
+   keeps making — by listing document NAMES only and deleting whatever the index does
+   not list.
+
+   What is never touched:
+     · `index` itself, and anything the index lists (from any device)
+     · anything this device still holds locally — it is still restorable from here
+     · anything from the last SWEEP_GRACE_MS. A push writes the payload BEFORE the index,
+       so a brand-new backup is briefly unlisted on purpose; deleting it in that gap
+       would leave the index pointing at nothing.
+     · ids that are not the `<ts>` / `<ts>-<n>` shape writeBackup makes — unknown
+       documents are left alone rather than guessed about.
+   ================================================================= */
+const SWEEP_KEY = 'habitCasino.cloudSweep';     // per device: { [uid]: ts of last sweep }
+const SWEEP_EVERY_MS = 7 * 86400000;
+const SWEEP_GRACE_MS = 10 * 60000;
+const SWEEP_MAX = 400;                          // deletes per run; the rest wait for the next
+let sweepBusy = false;
+function cloudSweepTargets(ids, listedIds, localIds, now) {
+  const listed = new Set(listedIds || []), local = new Set(localIds || []);
+  const cutoff = (now || Date.now()) - SWEEP_GRACE_MS;
+  return (ids || []).filter(id => {
+    if (typeof id !== 'string' || id === 'index' || listed.has(id) || local.has(id)) return false;
+    const m = /^(\d{12,})(?:-\d+)?$/.exec(id);
+    return !!m && Number(m[1]) < cutoff;
+  });
+}
+async function sweepCloudBackups(force) {
+  const B = window.HCCloud && window.HCCloud.backups;
+  if (sweepBusy || !cloudOn || !cloudUser || !B || !B.listIds) return null;
+  let log = {};
+  try { log = JSON.parse(localStorage.getItem(SWEEP_KEY) || '{}') || {}; } catch (e) {}
+  if (!force && Date.now() - (log[cloudUser.uid] || 0) < SWEEP_EVERY_MS) return null;
+  sweepBusy = true;
+  try {
+    // Re-read the index right now rather than trusting cloudBackupItems: this decides
+    // what gets deleted, so it has to be the cloud's current answer, not a cached one.
+    const index = await B.list();
+    const ids = await B.listIds();
+    const targets = cloudSweepTargets(ids, index.map(i => i && i.id), listBackups().map(b => b.id));
+    let gone = 0;
+    for (const id of targets.slice(0, SWEEP_MAX)) {
+      try { await B.dropPayload(id); gone++; } catch (e) { console.warn('[cloud] sweep could not delete', id, e); }
+    }
+    // Only a sweep that got through everything counts as done; a partial one runs again
+    // on the next launch instead of waiting a week.
+    if (targets.length <= SWEEP_MAX) {
+      log[cloudUser.uid] = Date.now();
+      try { localStorage.setItem(SWEEP_KEY, JSON.stringify(log)); } catch (e) {}
+    }
+    cloudBackupItems = index;
+    renderBackupList();
+    if (gone) toast(`Cleaned up ${gone} hidden cloud backup${gone === 1 ? '' : 's'} 🧹`, 'var(--cyan)');
+    else if (force) toast('No hidden cloud backups to clean up', 'var(--cyan)');
+    return { found: targets.length, deleted: gone };
+  } catch (e) {
+    console.warn('[cloud] backup sweep failed', e);
+    if (force) toast(e.message || 'Cloud cleanup failed', 'var(--pink)');
+    return null;
+  } finally { sweepBusy = false; }
 }
 // Every backup the user can act on: this device's, plus cloud-only ones (made elsewhere,
 // or left over after this device's copy aged out) marked so the UI can fetch on demand.
@@ -16841,6 +17008,175 @@ function backupRowHTML(b, opts) {
     </div>`;
 }
 // Settings → 💾 Data → 🛟 Backups: the user's three slots, then the automatic rotation.
+/* =================================================================
+   SAVE SIZE — what is actually big, and the one screen that can shrink it.
+
+   The save is a single JSON blob, and the granularity a person can act on is the
+   top-level key: every row below is something they can point at in the app. The sizes
+   are measured rather than estimated, which costs one JSON.stringify per key — under a
+   millisecond on a save this size, and only while Settings is on screen.
+
+   The ceiling it draws against is the CLOUD document's, because that is the one that is
+   actually close: localStorage holds megabytes, Firestore stops at 1 MiB per document.
+   ================================================================= */
+const SIZE_LABELS = {
+  aiChatThreads:  ['AI chat', 'Coach conversations. Usually the biggest thing here.'],
+  eventLog:       ['Activity log', 'What the analytics read. Written by the app, not by you.'],
+  history:        ['Completions', 'Every habit and quest you have ever ticked off.'],
+  reflections:    ['Reflections', 'Your notes and check-in answers.'],
+  questionnaires: ['Check-ins', 'Questions the coach asked, and your answers.'],
+  habits:         ['Habits', 'Including archived ones and their subtasks.'],
+  rewardLog:      ['Reward log', 'What the games have paid out.'],
+  plannedBlocks:  ['Schedule', 'Blocks you placed on the day planner.'],
+  dayPlans:       ['Day plans', 'The planner notes you type for a day.'],
+  paceLog:        ['Daily pace', 'One row a day. Feeds Weekly Comparison.'],
+  archivedOneoffs:['Finished quests', 'The archive of completed one-offs.'],
+  gapLog:         ['Gaps', 'Unaccounted time the app noticed.'],
+  gapAnswers:     ['Gap answers', 'What you said you were doing.'],
+  predictionLog:  ['Forecasts', 'Each morning\u2019s prediction, graded that night.'],
+  experiments:    ['Experiments', 'Habit changes being tested.'],
+  inventory:      ['Inventory', 'Prizes and wild cards you are holding.'],
+  oneoffs:        ['Quests', 'Open one-off quests.'],
+  rewards:        ['Rewards', 'Your prize pool.'],
+  stats:          ['Stats', 'Lifetime counters and streak records.'],
+  pass:           ['Habit Pass', 'This week\u2019s goals and tier rewards.'],
+};
+// Smaller keys collapse into one row. Forty one-line entries is not a finding.
+const SIZE_FLOOR = 1024;
+// key → the label on its button. Only things that are safe to lose are offered at all.
+const SIZE_ACTIONS = {
+  aiChatThreads:  'Clear',
+  eventLog:       'Trim',
+  archivedOneoffs:'Clear',
+  plannedBlocks:  'Trim',
+  dayPlans:       'Trim',
+};
+function saveSizeRows() {
+  const rows = [];
+  let other = 0;
+  Object.keys(state).forEach(k => {
+    let n = 0;
+    try { n = (JSON.stringify(state[k]) || '').length; } catch (e) { return; }
+    if (n < SIZE_FLOOR) { other += n; return; }
+    const meta = SIZE_LABELS[k] || [k, ''];
+    const v = state[k];
+    rows.push({ key: k, label: meta[0], sub: meta[1], bytes: n,
+                count: Array.isArray(v) ? v.length
+                     : (v && typeof v === 'object') ? Object.keys(v).length : null });
+  });
+  rows.sort((a, b) => b.bytes - a.bytes);
+  if (other) rows.push({ key: '', label: 'Everything else', bytes: other, count: null,
+                         sub: 'Your settings, tokens, categories and the rest — all small.' });
+  return rows;
+}
+function renderStorage() {
+  const host = $('#sizeList'); if (!host) return;
+  const rows = saveSizeRows();
+  const total = lastSaveBytes || JSON.stringify(state).length;
+  const pct = clamp(Math.round(total / CLOUD_LIMIT * 100), 0, 100);
+  const over = total > CLOUD_LIMIT;
+  const col = over ? 'var(--pink)' : pct > 80 ? 'var(--gold)' : 'var(--green)';
+  const bak = listBackups().reduce((s, b) => s + (b.bytes || 0), 0);
+  const zip = !!(state.settings || {}).cloudCompress;
+  const bar = `
+    <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:6px 0 4px">
+      <div style="height:100%;width:${pct}%;background:${col};transition:width .3s"></div>
+    </div>
+    <div class="row between" style="margin:0">
+      <span style="font-weight:700;color:${col}">${fmtBytes(total)}</span>
+      <span class="subtle">of ${fmtBytes(CLOUD_LIMIT)} before the cloud copy is trimmed${zip ? ' · compressed' : ''}</span>
+    </div>`;
+  const rowsHTML = rows.map(r => {
+    const act = SIZE_ACTIONS[r.key];
+    const cnt = r.count == null ? '' : ` · ${r.count.toLocaleString()}`;
+    return `
+      <div class="editrow" style="align-items:center">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700">${escapeHtml(r.label)} <span class="subtle">· ${fmtBytes(r.bytes)}${cnt}</span></div>
+          ${r.sub ? `<div class="bak-sub">${r.sub}</div>` : ''}
+        </div>
+        ${act ? `<button class="btn ghost sm" data-size="${r.key}">${act}</button>` : ''}
+      </div>`;
+  }).join('');
+  host.innerHTML = `
+    ${bar}
+    ${rowsHTML}
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost sm" data-size="all">⚡ Free up space</button>
+    </div>
+    <div class="hint">Clears old chat and activity data only — nothing you made or earned. Undoable for a few seconds afterwards.</div>
+    <hr class="set-sep">
+    <div class="row between" style="flex-wrap:nowrap;gap:8px">
+      <span style="flex:1;min-width:0">Compress the cloud copy</span>
+      <label class="toggle"><input type="checkbox" id="cloudCompress"${zip ? ' checked' : ''}><span class="track"></span><span class="knob"></span></label>
+    </div>
+    <div class="hint">Stores the synced copy zipped — roughly five times more room before it hits the limit. Turn this on only once <b>both</b> Alpha and Beta are on a build from 8 Oct 2026 or later: an older build cannot read a compressed cloud save, and the two channels share one account.</div>
+    <div class="hint">Backups on this device: ${fmtBytes(bak)} across ${listBackups().length}. Those live outside the save and have their own budget.</div>`;
+}
+/* What each button does. Only ever machine-written data or an archive the user can see
+   is empty afterwards — never a habit, a reward, a token or a streak. `all` deliberately
+   leaves the schedule and the quest archive alone: those are things you put there. */
+function applySizeAction(act) {
+  const all = act === 'all';
+  let did = false;
+  if (all || act === 'aiChatThreads') {
+    const threads = Array.isArray(state.aiChatThreads) ? state.aiChatThreads : [];
+    if (threads.length > 1) {
+      const keep = threads.find(t => t && t.id === state.activeChatThreadId) || threads[0];
+      state.aiChatThreads = [keep];
+      state.activeChatThreadId = keep.id;
+      did = true;
+    }
+  }
+  if (all || act === 'eventLog') {
+    if (Array.isArray(state.eventLog) && state.eventLog.length > 500) {
+      state.eventLog = state.eventLog.slice(-500); did = true;
+    }
+  }
+  if (all) {
+    // Transcripts are the one thing inside a reflection that nothing reads back.
+    [state.reflections, state.questionnaires].forEach(list => {
+      (Array.isArray(list) ? list : []).forEach(r => { if (r && r.transcript) { r.transcript = null; did = true; } });
+    });
+  }
+  if (act === 'archivedOneoffs') {
+    if (Array.isArray(state.archivedOneoffs) && state.archivedOneoffs.length) { state.archivedOneoffs = []; did = true; }
+  }
+  if (act === 'plannedBlocks' || act === 'dayPlans') {
+    const map = state[act], today = todayStr();
+    if (map && typeof map === 'object') {
+      Object.keys(map).forEach(d => { if (d < today) { delete map[d]; did = true; } });
+    }
+  }
+  return did;
+}
+// One tap, then the undo bar — rather than a confirm(), which does nothing at all inside
+// the iOS wrapper's web view. The snapshot is the whole state, so undo is exact.
+$('#sizeList').addEventListener('click', e => {
+  const btn = e.target.closest('[data-size]'); if (!btn) return;
+  const before = JSON.stringify(state).length;
+  const snap = undoSnapshot();
+  if (!applySizeAction(btn.dataset.size)) { toast('Nothing to free there', 'var(--cyan)'); return; }
+  save();
+  const freed = fmtBytes(Math.max(0, before - lastSaveBytes));
+  // The undo is offered BEFORE anything repaints. A renderer that throws would otherwise
+  // take the only route back with it, which is the last thing you want standing in front
+  // of a button whose whole job is to delete something.
+  offerUndo(snap, `Freed ${freed}`);
+  toast(`Freed ${freed} 📦`, 'var(--green)');
+  SFX.click();
+  renderStorage(); renderChat(); renderTasks();
+});
+$('#sizeList').addEventListener('change', e => {
+  if (e.target.id !== 'cloudCompress') return;
+  state.settings.cloudCompress = e.target.checked;
+  save();                                  // also republishes window.HC_CLOUD_COMPRESS
+  if (cloudOn && window.HCCloud) window.HCCloud.flush();   // rewrite the doc in the new format now
+  SFX.click();
+  renderStorage();
+  toast(e.target.checked ? 'Cloud copy will be compressed' : 'Cloud copy back to plain text', 'var(--cyan)');
+});
+
 function renderBackupList() {
   const host = $('#backupList'); if (!host) return;
   const merged = mergedBackups();
@@ -16970,6 +17306,7 @@ function fullRender() {
   updatePassFab();
   renderVersionUI();     // alpha/beta badge + switcher
   renderBackupList();    // Settings → 💾 Data → 🛟 Backups
+  renderStorage();       // Settings → 💾 Data → 📦 Save size
   renderCloudUI();       // Settings → ☁️ Cloud Save (shows "sign in to sync" when off)
   renderCloudBadge();    // red dot on More/Settings when a cloud save needs a decision
 }
@@ -17124,6 +17461,68 @@ setInterval(() => {
      than pulling every full save down just to draw a list. ---- */
   const backupDoc = (uid, id) => doc(db, 'users', uid, 'backups', id);
 
+  /* ---- Storage format. -----------------------------------------------------------
+     The save is one document, and a Firestore document stops at 1 MiB. That cap — not
+     the browser's — is the real limit on how big a save can get. JSON of this shape
+     (the same keys and ISO dates over and over) gzips to about a tenth of its length;
+     base64 hands a third of that back, so the stored copy still lands near a fifth of
+     the plain text. It moves the practical ceiling from ~700KB of JSON to a few MB.
+
+     Stored as `stateZ` (base64 gzip) with `enc: 'gz'` and no `state` field at all.
+     READING understands both formats unconditionally, from the day this ships. WRITING
+     is behind a setting that starts OFF, because a build that predates this cannot read
+     `stateZ` and the alpha and beta channels share one account — so the writer only
+     becomes safe once both channels carry this decoder. Settings says exactly that.
+
+     setDoc without merge REPLACES the document, so switching the setting back off
+     leaves no stale `stateZ` behind.
+     -------------------------------------------------------------------------------- */
+  const HAS_GZIP = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+
+  async function gzipB64(text) {
+    const cs = new CompressionStream('gzip');
+    const w = cs.writable.getWriter();
+    w.write(new TextEncoder().encode(text)); w.close();
+    const bytes = new Uint8Array(await new Response(cs.readable).arrayBuffer());
+    // Chunked: String.fromCharCode(...bytes) overruns the argument limit somewhere above
+    // 100KB, which is precisely the size range this function exists for.
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  async function gunzipB64(b64) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const ds = new DecompressionStream('gzip');
+    const w = ds.writable.getWriter();
+    w.write(bytes); w.close();
+    return new Response(ds.readable).text();
+  }
+  // Whatever is stored, as plain JSON. null means "nothing saved yet"; a THROW means
+  // "there is a save and I could not read it", which the reconcile path treats as a
+  // reason to leave this device's copy alone. The two must not be confused.
+  async function decodeDoc(data) {
+    if (!data) return null;
+    if (typeof data.state === 'string' && data.state) return data.state;
+    if (typeof data.stateZ === 'string' && data.stateZ) {
+      if (!HAS_GZIP) throw new Error('This browser cannot open a compressed cloud save.');
+      return gunzipB64(data.stateZ);
+    }
+    return null;
+  }
+  // What to store. Falls back to plain text when compression is off, unavailable, or
+  // somehow larger — a format that loses is not worth the compatibility cost.
+  async function encodeDoc(json, field) {
+    const plain = {}; plain[field] = json;
+    if (!HAS_GZIP || !window.HC_CLOUD_COMPRESS) return plain;
+    try {
+      const z = await gzipB64(json);
+      if (z.length >= json.length) return plain;
+      const out = { enc: 'gz' }; out[field + 'Z'] = z; return out;
+    } catch (e) { console.warn('[cloud] compress failed, storing plain', e); return plain; }
+  }
+
   // Firebase error codes → something a human can act on.
   function friendly(e) {
     const c = (e && e.code) || '';
@@ -17147,14 +17546,18 @@ setInterval(() => {
      one would burn the daily write quota; batch them into one write per ~2.5s. ---- */
   let pending = null, timer = null;
   function scheduleFlush() { clearTimeout(timer); timer = setTimeout(flush, 2500); }
-  function flush() {
+  async function flush() {
     clearTimeout(timer);
     const json = pending; pending = null;
     if (!json || !auth.currentUser) return;
+    let body;
+    try { body = await encodeDoc(json, 'state'); }
+    catch (e) { console.warn('[cloud] encode failed', e); return; }
+    if (!auth.currentUser) return;          // signed out while that was compressing
     // Not awaited on purpose: offline, this promise stays unsettled until the network
     // returns, but the write is already durable in the IndexedDB queue.
     setDoc(userDoc(auth.currentUser.uid), {
-      state: json, updatedAt: Date.now(), schema: 1, channel: window.HC_VERSION || '',
+      ...body, updatedAt: Date.now(), schema: body.enc ? 2 : 1, channel: window.HC_VERSION || '',
       deviceId: window.HC_DEVICE_ID || null
     }).then(() => {
       window.HCCloudSynced && window.HCCloudSynced();
@@ -17242,14 +17645,23 @@ setInterval(() => {
         else        await signInWithEmailAndPassword(auth, email, pass);
       } catch (e) { throw new Error(friendly(e)); }
     },
-    async signOut() { flush(); await signOut(auth); },
+    // Awaited now that flush() compresses: otherwise the write could land after the
+    // sign-out and be rejected by the rules for an account we no longer hold.
+    async signOut() { await flush(); await signOut(auth); },
     // Read the cloud copy. Returns null when this account has never synced.
     async pull() {
       if (!auth.currentUser) return null;
-      try {
-        const snap = await getDoc(userDoc(auth.currentUser.uid));
-        return snap.exists() ? snap.data() : null;
-      } catch (e) { throw new Error(friendly(e)); }
+      let snap;
+      try { snap = await getDoc(userDoc(auth.currentUser.uid)); }
+      catch (e) { throw new Error(friendly(e)); }
+      if (!snap.exists()) return null;
+      // Everything above this module only ever sees plain JSON in `state`. Which format
+      // it was stored in is this layer's business, and decodeDoc throws rather than
+      // quietly returning null if it cannot read one — see the note there.
+      const data = snap.data();
+      const out = { ...data, state: await decodeDoc(data) };
+      delete out.stateZ;                    // no reason to keep the compressed copy in memory
+      return out;
     },
 
     /* ---- Backups. Separate documents, separate subcollection, never debounced:
@@ -17267,10 +17679,17 @@ setInterval(() => {
       },
       async get(id) {
         if (!auth.currentUser) return null;
-        try {
-          const snap = await getDoc(backupDoc(auth.currentUser.uid, String(id)));
-          return snap.exists() ? (snap.data().raw || null) : null;
-        } catch (e) { throw new Error(friendly(e)); }
+        let snap;
+        try { snap = await getDoc(backupDoc(auth.currentUser.uid, String(id))); }
+        catch (e) { throw new Error(friendly(e)); }
+        if (!snap.exists()) return null;
+        const d = snap.data();
+        if (typeof d.raw === 'string' && d.raw) return d.raw;
+        if (typeof d.rawZ === 'string' && d.rawZ) {
+          if (!HAS_GZIP) throw new Error('This browser cannot open a compressed backup.');
+          return gunzipB64(d.rawZ);
+        }
+        return null;
       },
       // Payload first, then the index: if the second write fails the orphan is invisible
       // and harmless, whereas the reverse would advertise a backup that isn't there.
@@ -17278,10 +17697,42 @@ setInterval(() => {
         if (!auth.currentUser) return false;
         const uid = auth.currentUser.uid;
         try {
-          await setDoc(backupDoc(uid, String(meta.id)), { raw, ts: meta.ts || Date.now() });
+          await setDoc(backupDoc(uid, String(meta.id)), { ...(await encodeDoc(raw, 'raw')), ts: meta.ts || Date.now() });
           await setDoc(backupDoc(uid, 'index'), { items, updatedAt: Date.now() });
           return true;
         } catch (e) { throw new Error(friendly(e)); }
+      },
+      /* Every document id in the backups subcollection, WITHOUT the payloads.
+         The web SDK has no keys-only query: getDocs() would download every full save in
+         there, which for a few hundred leftovers is hundreds of MB on a phone. The REST
+         API's runQuery takes a field mask, so selecting only __name__ returns names and
+         nothing else. Same rules apply — it runs as this user with their ID token. */
+      async listIds() {
+        const u = auth.currentUser; if (!u) return null;
+        const token = await u.getIdToken();
+        const parent = `projects/${firebaseConfig.projectId}/databases/(default)/documents/users/${u.uid}`;
+        let res;
+        try {
+          res = await fetch(`https://firestore.googleapis.com/v1/${parent}:runQuery`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ structuredQuery: {
+              from: [{ collectionId: 'backups' }],
+              select: { fields: [{ fieldPath: '__name__' }] } } })
+          });
+        } catch (e) { throw new Error('Cannot reach the cloud right now.'); }
+        if (!res.ok) throw new Error('Could not list cloud backups (' + res.status + ')');
+        const rows = await res.json();
+        return (Array.isArray(rows) ? rows : [])
+          .filter(r => r && r.document && r.document.name)
+          .map(r => r.document.name.split('/').pop());
+      },
+      // Payload only — for a backup the index has ALREADY stopped listing. See
+      // cloudBackupOrphans in the classic script for why this exists.
+      async dropPayload(id) {
+        if (!auth.currentUser || !id || String(id) === 'index') return false;
+        try { await deleteDoc(backupDoc(auth.currentUser.uid, String(id))); return true; }
+        catch (e) { throw new Error(friendly(e)); }
       },
       // Index first here, for the same reason in reverse: drop the advertisement before
       // the payload, so a half-finished delete never points at a missing document.
