@@ -3128,6 +3128,71 @@
       .tl-card, .tl-hour, .tl-now, .tl-back, .sch-sheet, .sch-bar i { transition: none !important; }
       .tl-card.open, .tl-card.running { animation: none !important; }
     }
+
+    /* ---- FOCUS: the button, the three groups, and the pills that carry the multiplier.
+       Orange = today's focus, gold = keep it going, neutral = Other. Never red: red is
+       danger here. Last in the sheet so it outranks the greyscale pass's !important. -- */
+    .plan-cta #loadoutSwitch.focus-btn { flex: 1 1 100%; }
+    .focus-btn {
+      display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 7px 14px 7px 10px;
+      border-radius: 14px; cursor: pointer; font: inherit; text-align: left; color: var(--ink);
+      background: var(--gs-card); border: 1.5px solid rgba(255,158,44,.8); box-shadow: 0 0 14px rgba(255,158,44,.16);
+    }
+    .focus-btn:active { transform: scale(.99); }
+    .focus-btn.none { border-color: var(--gs-edge-hi); box-shadow: none; }
+    .focus-btn .fb-icon { flex: 0 0 auto; font-size: 25px; line-height: 1; }
+    .focus-btn .fb-name { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .focus-btn.none .fb-name { color: var(--ink-dim); }
+    .focus-btn .fb-go { flex: 0 0 auto; color: var(--h1); font-size: 22px; line-height: 1; }
+    .focus-btn.none .fb-go { color: var(--ink-dim); }
+    .focus-board { display: flex; flex-direction: column; gap: 16px; margin: 0 0 16px; }
+    .fg-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 2px 8px; }
+    .fg-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13.5px; letter-spacing: .6px; text-transform: uppercase; }
+    .fg-count { color: var(--ink-dim); font-size: 13.5px; white-space: nowrap; }
+    .fg-focus .fg-title { color: var(--h1); text-shadow: 0 0 10px rgba(255,158,44,.35); }
+    .fg-maintain .fg-title { color: var(--yellow); text-shadow: 0 0 10px rgba(255,194,71,.25); }
+    .fg-empty { color: var(--ink-dim); font-size: 13px; padding: 11px 12px; border: 1px dashed var(--gs-edge-hi); border-radius: 11px; cursor: pointer; }
+    .fg-other-head {
+      display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border-radius: 12px; cursor: pointer;
+      font: inherit; text-align: left; color: var(--ink); background: var(--gs-card); border: 1px solid var(--gs-edge-hi);
+    }
+    .fg-other-head svg { flex: 0 0 auto; width: 20px; height: 20px; color: var(--ink-dim); }
+    .fg-other-head .fo-name { flex: 1 1 auto; font-weight: 700; font-size: 15px; }
+    .fg-other-head .fo-caret { color: var(--ink-dim); font-size: 15px; transition: transform .2s ease; }
+    .fg-other.open .fo-caret { transform: rotate(180deg); }
+    .fg-other:not(.open) .fg-other-body { display: none; }
+    .fg-other .fg-other-body { margin-top: 8px; }
+    .hrow-reward.r-focus {
+      color: var(--h1) !important; border-color: rgba(255,158,44,.9) !important;
+      background: rgba(255,158,44,.10) !important; box-shadow: 0 0 9px rgba(255,158,44,.40) !important;
+    }
+    .hrow-reward.r-maintain {
+      color: var(--yellow) !important; border-color: rgba(255,194,71,.85) !important;
+      background: rgba(255,194,71,.08) !important; box-shadow: 0 0 7px rgba(255,194,71,.26) !important;
+    }
+    /* The editor: one row per habit with its group, in the same three colours. */
+    .fe-pick {
+      display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; margin-top: 6px; border-radius: 12px;
+      cursor: pointer; font: inherit; text-align: left; color: var(--ink); background: var(--gs-card); border: 1px solid var(--gs-edge-hi);
+    }
+    .fe-pick .fp-n { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fe-pick .fp-go { color: var(--ink-dim); font-size: 20px; }
+    .fe-label { color: var(--ink-dim); font-size: 13px; margin-top: 14px; }
+    .fe-search { width: 100%; margin-top: 10px; }
+    .fe-list { display: flex; flex-direction: column; margin: 6px 0 4px; }
+    .fe-row { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--gs-edge); }
+    .fe-row:last-child { border-bottom: 0; }
+    .fe-row .fe-e { flex: 0 0 26px; text-align: center; font-size: 18px; }
+    .fe-row .fe-n { flex: 1 1 auto; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fe-row .fe-n small { color: var(--ink-dim); margin-left: 4px; }
+    .fe-role { flex: 0 0 auto; width: 118px; height: 34px; padding: 0 8px; border-radius: 8px; font: inherit; font-weight: 600; font-size: 13px; }
+    .fe-role.r-focus { color: var(--h1) !important; border-color: rgba(255,158,44,.85) !important; background: rgba(255,158,44,.10) !important; }
+    .fe-role.r-maintain { color: var(--yellow) !important; border-color: rgba(255,194,71,.8) !important; background: rgba(255,194,71,.08) !important; }
+    .fe-save { width: 100%; margin-top: 16px; min-height: 48px; font-size: 16px; }
+    .btn.fe-save { background: var(--h1); color: #1a0f05; }
+    .fr-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .fr-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .fr-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -3252,8 +3317,9 @@
     <section class="view" id="view-habits">
       <div class="plan-cta">
         <span id="todayCtxBadge"></span>
-        <button class="loadout-button" id="loadoutSwitch" type="button" title="Choose or create a habit loadout"></button>
+        <button class="focus-btn" id="loadoutSwitch" type="button" title="Choose or edit today's focus"></button>
       </div>
+      <div class="focus-board" id="focusBoard" style="display:none"></div>
       <div class="duenow-mount" id="dueSoonSection"></div>
       <div class="habit-group collapsed" id="dailyGroup">
         <div class="daily-banner slim" data-act="toggleGroup" aria-expanded="false">
@@ -3297,7 +3363,7 @@
     <section class="view" id="view-tasks">
       <div class="oneoff-section">
         <div class="section-title t1">🎯 One-Off Quests</div>
-        <div class="subtle" style="margin-bottom:12px">Add one-off tasks below and check them off when finished. They are shared across every loadout.</div>
+        <div class="subtle" style="margin-bottom:12px">Add one-off tasks below and check them off when finished. They are shared across every focus.</div>
         <div class="hh-banner" id="hhBannerTasks"></div>
         <div class="oneoff-layout"><div class="quest-list" id="oneoffGrid"></div></div>
         <div class="matrix-wrap" id="taskMatrix" style="display:none"></div>
@@ -4048,7 +4114,14 @@ function defaultState() {
     // Week Planner: the day-context taxonomy (grows like `categories`) + what the user
     // said about each upcoming day. A date present in dayPlans is "flagged": habits can
     // wear a Mode that day, and a miss there never breaks a streak.
-    loadouts: ['Default'], // independent habit sets; every habit belongs to exactly one
+    loadouts: ['Default'], // the Focuses (internal keys). 'Default' is "No focus" — see FOCUS
+    // A Focus's shown name, when it has been renamed: key → name. The key itself never
+    // changes, because history, paceLog, tier memory and the day stock all file under it.
+    focusNames: {},
+    // The habits that are MAINTAIN in each Focus: key → [habit ids]. Top-level on purpose:
+    // alpha's habit normalizer is a whitelist and drops any per-habit field it doesn't know,
+    // but it passes top-level keys straight through — so a trip through alpha keeps these.
+    focusMaintain: {},
     // Per-loadout daily reward allowance. name → { on, counts, wild, lastDate }.
     // A stocked loadout hands you rewards outright each day instead of making you win
     // every one of them in the casino; casino wins still stack on top.
@@ -4584,12 +4657,93 @@ function normalizeHabit(h) {
     createdBy: h.createdBy === 'ai' ? 'ai' : undefined,
   };
 }
-/* Is this habit part of `name`'s set? Everything that used to read h.loadout === X goes
-   through here, so a habit in three loadouts shows up in all three. */
+/* ---- FOCUS — what used to be loadouts. ----------------------------------------------
+   A Focus no longer decides whether a habit EXISTS today; every habit is always on the
+   board. It decides PRIORITY: each habit is Focus, Maintain or Other in each Focus, and
+   pays a multiplier to match. Internally a Focus is still a loadout — same key in
+   `state.loadouts`, the same weekday auto-switch, day stock and tier memory — so nothing
+   filed under a loadout name (history, paceLog, the Similar Day engine) had to move.
+
+     h.loadouts           the Focuses this habit is a FOCUS habit in. A loadout's old
+                          members are exactly this, which is the whole migration.
+     state.focusMaintain  Focus → the ids of its MAINTAIN habits (top-level: see defaultState).
+     'Default'     is "No focus": every habit, one neutral list, no multiplier. A habit
+                   that sits in no Focus at all keeps 'Default' in `loadouts` only so the
+                   alpha channel (a build behind) still has somewhere to show it.
+
+   Every function here is hoisted, and none touches a const: load() reaches some of them
+   from far above this line (see the boot dead-zone note above defaultState()). */
+// The payout multipliers, by group. Change them here.
+function focusMultipliers() { return { focus: 1.5, maintain: 1.25, other: 1 }; }
+function isNoFocus(name) { return !name || name === 'Default'; }
+function focusActive() { return !isNoFocus(currentLoadout()); }
+// The name a Focus is shown under: its renamed name if it has one.
+function focusLabel(name) {
+  if (isNoFocus(name)) return 'No focus';
+  const shown = (state.focusNames || {})[name];
+  return (typeof shown === 'string' && shown.trim()) ? shown.trim() : String(name);
+}
+// 'focus' | 'maintain' | 'other' — this habit's group in `name` (default: the active Focus).
+function habitRole(h, name) {
+  if (name === undefined) name = currentLoadout();
+  if (!h || isNoFocus(name)) return 'other';
+  const list = (Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default'];
+  if (list.includes(name)) return 'focus';
+  const m = (state && state.focusMaintain) ? state.focusMaintain[name] : null;
+  return (Array.isArray(m) && m.includes(h.id)) ? 'maintain' : 'other';
+}
+// load()'s pass over the Maintain lists: only real Focuses, only habits that still exist,
+// and never a habit that is Focus there too (an edit made in alpha can leave one in both).
+function sanitizeFocusMaintain(src, st) {
+  const out = {};
+  if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+  const byId = new Map((st.habits || []).map(h => [h.id, h]));
+  (st.loadouts || []).forEach(n => {
+    if (isNoFocus(n) || !Array.isArray(src[n])) return;
+    const list = [...new Set(src[n].filter(id => byId.has(id) && !(byId.get(id).loadouts || []).includes(n)))];
+    if (list.length) out[n] = list;
+  });
+  return out;
+}
+/* Is this habit part of the day `name` sets up — Focus or Maintain there? Everything
+   that used to read h.loadout === X still goes through here: Due Now, the day's
+   predictions, "all done today" and the daily bonus all follow the day's priorities.
+   Other habits are left out of those, never off the board. With no Focus, every habit
+   is part of the day. */
 function habitInLoadout(h, name) {
   if (!h) return false;
-  const list = (Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default'];
-  return list.includes(name);
+  if (isNoFocus(name)) return true;
+  return habitRole(h, name) !== 'other';
+}
+// The add / copy pickers' outer groups: today's Focus and Maintain habits, then the rest.
+// With no Focus there is nothing to rank by, so it is one group. Titles are markup.
+function focusPickGroups(list) {
+  const cur = currentLoadout();
+  if (isNoFocus(cur)) return [{ title: '🗂️ All habits', list }];
+  return [
+    { title: `🎯 ${escapeHtml(focusLabel(cur))} · focus &amp; maintain`, list: list.filter(h => habitRole(h, cur) !== 'other') },
+    { title: '🗂️ Other habits', list: list.filter(h => habitRole(h, cur) === 'other') },
+  ];
+}
+// What a habit pays at this tier's reward: the multiplier applied AFTER the tier.
+function habitFocusReward(h, base) {
+  const m = focusMultipliers()[habitRole(h)] || 1;
+  return Math.round((Number(base) || 0) * m);
+}
+// Move a habit into a group of Focus `key`. Its tier memory there is kept: every habit
+// is on the board in every Focus now, so the tier it was left on still means something.
+function setHabitRole(h, key, role) {
+  if (!h || isNoFocus(key)) return;
+  const lo = new Set((Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']);
+  lo.delete(key);
+  if (role === 'focus') lo.add(key);
+  if (!lo.size) lo.add('Default');
+  h.loadouts = [...lo];
+  if (!h.loadouts.includes(h.loadout)) h.loadout = h.loadouts[0];
+  state.focusMaintain = state.focusMaintain || {};
+  const m = new Set(state.focusMaintain[key] || []);
+  if (role === 'maintain') m.add(h.id); else m.delete(h.id);
+  if (m.size) state.focusMaintain[key] = [...m]; else delete state.focusMaintain[key];
 }
 /* Everything that DEFINES a habit, as one comparable string. Per-copy runtime state is
    stripped: two copies that disagree only on when they were last done are the same habit,
@@ -4669,6 +4823,9 @@ function remapHabitIds(st, remap) {
   (st.experiments || []).forEach(x => { if (x && x.change && x.change.habitId) x.change.habitId = fix(x.change.habitId); });
   (st.history || []).forEach(e => { if (e && e.kind === 'habit' && e.id) e.id = fix(e.id); });
   (st.eventLog || []).forEach(e => { if (e && e.entityType === 'habit' && e.entityId) e.entityId = fix(e.entityId); });
+  if (st.focusMaintain && typeof st.focusMaintain === 'object') Object.keys(st.focusMaintain).forEach(k => {
+    if (Array.isArray(st.focusMaintain[k])) st.focusMaintain[k] = [...new Set(st.focusMaintain[k].map(fix))];
+  });
   return remap.size;
 }
 
@@ -4747,6 +4904,12 @@ function load(raw) {
       if (!h.loadouts.length) h.loadouts = ['Default'];
       if (!h.loadouts.includes(h.loadout)) h.loadout = h.loadouts[0];
       Object.keys(h.tierByLoadout).forEach(n => { if (!merged.loadouts.includes(n)) delete h.tierByLoadout[n]; });
+    });
+    const srcNames = (parsed.focusNames && typeof parsed.focusNames === 'object' && !Array.isArray(parsed.focusNames)) ? parsed.focusNames : {};
+    merged.focusNames = {};
+    merged.loadouts.forEach(n => {
+      const shown = typeof srcNames[n] === 'string' ? srcNames[n].trim().slice(0, 32) : '';
+      if (n !== 'Default' && shown && shown !== n) merged.focusNames[n] = shown;
     });
     // Auto load defaults ON so an existing save picks it up, which is harmless: with no
     // loadout claiming a weekday it does nothing. Day arrays are pinned to exactly 7
@@ -4929,6 +5092,8 @@ function load(raw) {
     const folded = mergeHabitCopies(merged.habits, merged.activeLoadout);
     merged.habits = folded.habits;
     remapHabitIds(merged, folded.remap);
+    // Maintain lists last of all, once the fold has settled every habit's id.
+    merged.focusMaintain = sanitizeFocusMaintain(merged.focusMaintain, merged);
     return merged;
   } catch (e) {
     // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
@@ -5536,9 +5701,11 @@ function setHabitTier(h, i) {
 }
 // The ladder itself moved, so every remembered position now points at a different rung.
 function clearHabitTiers(h) { if (h) { h.tierByLoadout = {}; h.curTier = null; } }
-// "Default", "Default · Work", or "Default +3 more" once the list stops fitting.
+// The Focuses that put this habit in Focus or Maintain: "Cello", "Cello · School",
+// "Cello +3 more" once the list stops fitting, or "No focus" when none do.
 function habitLoadoutLabel(h) {
-  const list = (h && Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [(h && h.loadout) || currentLoadout()];
+  const list = (state.loadouts || []).filter(n => !isNoFocus(n) && habitRole(h, n) !== 'other').map(focusLabel);
+  if (!list.length) return 'No focus';
   return list.length > 2 ? `${list[0]} +${list.length - 1} more` : list.join(' · ');
 }
 /* ---- Context Modes: the SECOND axis, independent of the difficulty ladder above.
@@ -5589,7 +5756,8 @@ function isScheduledToday(h) {
 }
 function sectionStats(section) {
   let list = state.habits.filter(h => h.section === section && !h.archived && isScheduledToday(h));
-  // Every habit belongs to exactly one loadout; both Daily and Extra switch together.
+  // The day's set: Focus + Maintain habits under a Focus, every habit with none. Other
+  // habits are still on the board — they just aren't what "all done today" asks for.
   list = list.filter(h => habitInLoadout(h, currentLoadout()));
   const done = list.reduce((s, h) => s + doneCount(h), 0);
   const cap = list.reduce((s, h) => s + capOf(h), 0);
@@ -5650,6 +5818,8 @@ function habitCardHTML(h, usualMin) {
     : [h.children, ...(h.tiers || []).map(t => t && t.children)].flatMap(l => l || []).find(c => c && c.timer);
   const kidChip = liveKid
     ? `<span class="row-chip live">⏱ ${escapeHtml(clip(liveKid.name, 14))} <b data-timer-elapsed-child="${liveKid.id}">${fmtTimerSec(timerElapsedSec(liveKid.timer))}</b>${liveKid.timer.pausedAt ? ' ⏸' : ''}</span>` : '';
+  // The pill is the only place a Focus shows on a row: orange for Focus, gold for Maintain.
+  const role = habitRole(h), pillCls = role === 'other' ? '' : ` r-${role}`;
   const paneHTML = (name, reward, minutes, word) => {
     // Chips ride alongside the name, inside .hrow-main, so the row never wraps.
     const kp = childProgress('habit', h, word ? word.idx : undefined);   // this tier's parts
@@ -5667,8 +5837,8 @@ function habitCardHTML(h, usualMin) {
         </div>
         ${chevs}
         ${word
-          ? `<span class="hrow-reward lvl">+${reward} <i class="tok"></i><i class="lvl-word" style="color:${word.color}">${word.label}</i></span>`
-          : `<span class="hrow-reward">+${reward} <i class="tok"></i></span>`}
+          ? `<span class="hrow-reward lvl${pillCls}">+${habitFocusReward(h, reward)} <i class="tok"></i><i class="lvl-word" style="color:${word.color}">${word.label}</i></span>`
+          : `<span class="hrow-reward${pillCls}">+${habitFocusReward(h, reward)} <i class="tok"></i></span>`}
       </div>`;
   };
   // Leveled habits get every tier rendered up front in a track offset by -index×100%.
@@ -5756,13 +5926,32 @@ function daysSummaryText(days) {
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].filter((x, i) => d[i]).join(', ');
 }
 
+// The words and the picker for a habit's group, shared by the habit editor and the Focus editor.
+const FOCUS_ROLE_WORD = { focus: 'Focus', maintain: 'Maintain', other: 'Other' };
+function focusRoleSelectHTML(role, attrs) {
+  return `<select class="fe-role r-${role}" ${attrs}>${['focus', 'maintain', 'other'].map(r =>
+    `<option value="${r}"${r === role ? ' selected' : ''}>${FOCUS_ROLE_WORD[r]}</option>`).join('')}</select>`;
+}
+// One row per Focus: this habit's group in it.
+function focusRoleRowsHTML(h) {
+  const keys = (state.loadouts || []).filter(n => !isNoFocus(n));
+  if (!keys.length) return '<div class="hint">No focuses yet — make one from the 🎯 button at the top of Habits.</div>';
+  return `<div class="fr-rows">${keys.map(n => `
+    <div class="fr-row"><span>🎯 ${escapeHtml(focusLabel(n))}</span>
+      ${focusRoleSelectHTML(habitRole(h, n), `data-f="focusRole" data-lo="${escapeHtml(n)}" aria-label="Group in ${escapeHtml(focusLabel(n))}"`)}</div>`).join('')}
+  </div>
+  <div class="hint">Each Focus keeps its own tier for this habit, too.</div>`;
+}
+
 function habitEditHeadHTML(h, lvls) {
-  const where = `${h.section === 'extra' ? '✨ Extra' : '🗓️ Daily'} · ${habitLoadoutLabel(h)}`;
+  const role = habitRole(h);
+  const where = `${h.section === 'extra' ? '✨ Extra' : '🗓️ Daily'} · ${focusActive()
+    ? `${FOCUS_ROLE_WORD[role]} in ${focusLabel(currentLoadout())}` : habitLoadoutLabel(h)}`;
   const menu = !editMoreOpen ? '' : `
         <div class="tt-menu" role="menu">
           <button data-act="editSec" data-sec="repeats">↻ Repeats<small>${h.repeatable ? `up to ${h.cap}/day` : 'off'}</small></button>
           <button data-act="editSec" data-sec="why">💭 Why it matters</button>
-          <button data-act="editSec" data-sec="where">🗂️ Section &amp; loadout</button>
+          <button data-act="editSec" data-sec="where">🎯 Section &amp; focus</button>
           <button data-act="addTier">🎚 Difficulty tiers<small>${lvls ? lvls.length : 'none'}</small></button>
           <button data-act="copyHabit">⧉ Copy from another habit</button>
           <hr>
@@ -5778,18 +5967,14 @@ function habitEditHeadHTML(h, lvls) {
         <button class="tt-icon" data-act="editMore" aria-label="More" aria-expanded="${editMoreOpen}">⋯</button>
         ${menu}
       </div>
-      ${ttTray('where', 'Section & loadout', 'Daily habits are your everyday rotation; Extra ones are optional bonuses that never break a streak. The loadout decides which day-setups this habit shows up in.', `
+      ${ttTray('where', 'Section & focus', 'Daily habits are your everyday rotation; Extra ones are optional bonuses that never break a streak. In each Focus a habit is Focus, Maintain or Other: it stays on the board either way — the group sets its place and what it pays.', `
         <div class="tt-tray-row">
           <select class="sect-in" data-f="section" title="Section">
             <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
             <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
           </select>
         </div>
-        <div class="lo-chips">${(state.loadouts || []).map(n => `
-          <button class="chip lo-chip${habitInLoadout(h, n) ? ' sel' : ''}" data-act="togHabitLoadout" data-lo="${escapeHtml(n)}"
-            title="${habitInLoadout(h, n) ? `Remove from ${escapeHtml(n)}` : `Also do this on ${escapeHtml(n)}`}">🗂️ ${escapeHtml(n)}</button>`).join('')}
-        </div>
-        <div class="hint">One habit, many loadouts — editing it here changes it everywhere, and each loadout keeps its own tier.</div>`)}
+        ${focusRoleRowsHTML(h)}`)}
       ${ttTray('repeats', 'Repeats', 'A repeatable habit can be completed more than once a day and pays out every time, up to the cap. Its subtasks start fresh for each round.', `
         <div class="tt-tray-row">
           <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
@@ -5917,7 +6102,7 @@ function renderDailyIdentities() {
   const st = sectionStats('daily');   // already filtered to today's active loadout + universal habits
   const loadout = currentLoadout();
   if (!st.list.length) {
-    grid.innerHTML = `<div class="empty"><div class="big">🌱</div>No daily habits in <b>${escapeHtml(loadout)}</b> yet — tap <b>＋ Add habit</b> below.</div>`;
+    grid.innerHTML = `<div class="empty"><div class="big">🌱</div>No daily habits yet — tap <b>＋ Add habit</b> below.</div>`;
   } else {
     grid.innerHTML = `<div class="habit-list">${sortHabitsForDisplay(st.list).map(h => habitCardHTML(h)).join('')}</div>`;
   }
@@ -5927,15 +6112,14 @@ function renderDailyIdentities() {
     : 'Add habits in Settings to begin.';
 }
 
-/* Habits in this loadout + section that the board is NOT showing today. Computed as a
-   diff against what sectionStats() actually renders rather than by re-testing the weekday
-   rule, so any future filter added there is covered here for free — the failure this
-   guards against is a habit existing but being reachable from nowhere. Archived ones are
-   excluded: they have their own Graduated section. */
+/* Habits in this section ('all' for both) that the board is NOT showing today. Every
+   habit is on the board in every Focus now, so what keeps one off is its weekdays — still
+   computed as a diff against what the board shows rather than by re-testing the rule, so
+   any future filter there is covered here for free. The failure this guards against is a
+   habit existing but being reachable from nowhere. Archived ones have their own section. */
 function inactiveHabits(section) {
-  const shown = new Set(sectionStats(section).list.map(h => h.id));
-  return state.habits.filter(h => h.section === section && !h.archived
-    && habitInLoadout(h, currentLoadout()) && !shown.has(h.id));
+  const shown = new Set(state.habits.filter(h => !h.archived && isScheduledToday(h)).map(h => h.id));
+  return state.habits.filter(h => (section === 'all' || h.section === section) && !h.archived && !shown.has(h.id));
 }
 const DOW_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 function renderInactiveButtons() {
@@ -5949,7 +6133,7 @@ function renderInactiveButtons() {
 }
 let inactivePickSection = 'daily';
 function openInactivePicker(section) {
-  inactivePickSection = section === 'extra' ? 'extra' : 'daily';
+  inactivePickSection = (section === 'extra' || section === 'all') ? section : 'daily';
   renderInactivePicker();
   $('#inactivePickSheet').classList.add('show');
   $('#inactivePickSheet').setAttribute('aria-hidden', 'false');
@@ -5962,9 +6146,10 @@ function renderInactivePicker() {
   const body = $('#inactivePickBody'); if (!body) return;
   const list = inactiveHabits(inactivePickSection);
   const title = $('#inactivePickTitle');
-  if (title) title.textContent = `Not scheduled today \u00b7 ${inactivePickSection === 'extra' ? 'Extra' : 'Daily'}`;
+  if (title) title.textContent = inactivePickSection === 'all' ? 'Not scheduled today'
+    : `Not scheduled today \u00b7 ${inactivePickSection === 'extra' ? 'Extra' : 'Daily'}`;
   if (!list.length) { body.innerHTML = `<div class="subtle" style="padding:14px 16px">Everything in this section is running today.</div>`; return; }
-  body.innerHTML = `<div class="subtle" style="padding:10px 16px">These belong to <b>${escapeHtml(currentLoadout())}</b> but aren't on today's board. Tap one to edit it \u2014 including the days it runs.</div>`
+  body.innerHTML = `<div class="subtle" style="padding:10px 16px">These don't run on ${['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'][new Date().getDay()]}, so they're off today's board. Tap one to edit it \u2014 including the days it runs.</div>`
     + list.map(h => {
       const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
       return `
@@ -6013,16 +6198,59 @@ function renderHabits() {
   renderDueSoon();
   renderDailyIdentities();
   renderHabitSection('extra', '#extraGrid', '#extraFill', '#extraStatus');
+  renderFocusBoard();
   renderInactiveButtons();
   renderArchived();
   renderHappyBanners();
   renderHomeExtras();   // Home shares this view's Due Now board — keep its rail and pace in step
 }
 
+/* ---- The FOCUS board: Focus habits, then Maintain, then everything else folded shut.
+   Shown only while a Focus is on — with none, the plain Daily / Extra lists below it do
+   the job exactly as they always have. Every habit scheduled today is on one of these
+   three lists; the only thing that keeps one off is its weekdays (💤 not today). */
+let focusOtherOpen = false;      // Other starts folded on each launch; a new habit unfolds it
+const OTHER_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z"/><path d="M4 7.2 12 11.6l8-4.4M12 11.6v9.6"/></svg>';
+function renderFocusBoard() {
+  const board = $('#focusBoard'); if (!board) return;
+  const on = focusActive();
+  ['#dailyGroup', '#extraGroup'].forEach(sel => { const g = $(sel); if (g) g.style.display = on ? 'none' : ''; });
+  board.style.display = on ? '' : 'none';
+  if (!on) { board.innerHTML = ''; return; }
+  const by = { focus: [], maintain: [], other: [] };
+  state.habits.filter(h => !h.archived && isScheduledToday(h)).forEach(h => by[habitRole(h)].push(h));
+  const rows = list => `<div class="habit-list">${sortHabitsForDisplay(list).map(h => habitCardHTML(h)).join('')}</div>`;
+  const count = n => `${n} habit${n === 1 ? '' : 's'}`;
+  const notToday = inactiveHabits('all').length;
+  // A Focus whose focus habits all rest today isn't an empty Focus, and shouldn't say so.
+  const resting = !by.focus.length && state.habits.some(h => !h.archived && habitRole(h) === 'focus');
+  board.innerHTML = `
+    <div class="fg fg-focus">
+      <div class="fg-head"><span class="fg-title">Focus habits</span><span class="fg-count">${count(by.focus.length)}</span></div>
+      ${by.focus.length ? rows(by.focus) : resting
+        ? '<div class="fg-empty" data-act="openFocus">Your focus habits aren\'t scheduled today.</div>'
+        : '<div class="fg-empty" data-act="openFocus">No focus habits yet — tap to pick them.</div>'}
+    </div>
+    ${by.maintain.length ? `<div class="fg fg-maintain">
+      <div class="fg-head"><span class="fg-title">Maintain habits</span><span class="fg-count">${count(by.maintain.length)}</span></div>
+      ${rows(by.maintain)}
+    </div>` : ''}
+    <div class="fg fg-other${focusOtherOpen ? ' open' : ''}">
+      <button class="fg-other-head" type="button" data-act="focusOther" aria-expanded="${focusOtherOpen}">
+        ${OTHER_ICON}<span class="fo-name">Other habits · ${by.other.length}</span><span class="fo-caret" aria-hidden="true">▾</span>
+      </button>
+      <div class="fg-other-body">${by.other.length ? rows(by.other) : '<div class="subtle" style="padding:8px 4px">Every habit today is in Focus or Maintain.</div>'}</div>
+    </div>
+    <div class="addhabit-row">
+      <button class="btn ghost addhabit-btn" data-act="addHabit" data-section="daily">＋ Add habit</button>
+      ${notToday ? `<button class="btn ghost sm inactive-btn" data-act="inactivePick" data-section="all">💤 ${notToday} not today</button>` : ''}
+    </div>`;
+}
+
 // Graduated habits: resting out of rotation with their history intact, one tap to restore.
 function renderArchived() {
   const box = $('#archivedSection'); if (!box) return;
-  const arch = state.habits.filter(h => h.archived && habitInLoadout(h, currentLoadout()));
+  const arch = state.habits.filter(h => h.archived);
   if (!arch.length) { box.innerHTML = ''; return; }
   box.innerHTML = `
     <div class="section-title t2" style="margin-top:22px">🎓 Graduated Habits</div>
@@ -6451,7 +6679,9 @@ function completeHabit(id, timing) {
   // difficulty level. The completion itself counts the same either way.
   const td = habitToday(h);
   const lvl = td.lvl;
-  const amt = Math.round(td.reward * hh);
+  // The row's pill already shows the Focus payout, so that is what happy hour multiplies.
+  const role = habitRole(h), focusPay = habitFocusReward(h, td.reward);
+  const amt = Math.round(focusPay * hh);
   const card = $(`.hrow[data-id="${id}"] .hrow-check`) || $(`.hrow[data-id="${id}"]`);
   addTokens(amt, card);
   // name stays the BASE habit name — history is keyed by it (streak/pattern analysis,
@@ -6478,7 +6708,8 @@ function completeHabit(id, timing) {
     scheduledForDate: today, scheduledStartMin: entry.scheduledStartMin, expectedDurationMin: expectedMinutes,
     actualStartTs: timerSnapshot ? timerSnapshot.startedAt : null, actualEndTs: finishedAt,
     actualElapsedSec: timing ? timing.actualElapsedSec : null, pauseCount: timing ? timing.pauseCount : null, totalPausedSec: timing ? timing.totalPausedSec : null,
-    completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt });
+    completionMethod: entry.completionMethod, baseReward: td.reward, multiplier: hh, finalReward: amt,
+    focusRole: role, focusMultiplier: focusMultipliers()[role] || 1 });
   toast(`+${amt} token${amt !== 1 ? 's' : ''} earned${lvl ? ` · ${lvl.label}` : ''}!${hh > 1 ? ` ×${hh} happy hour 🎉` : ' <i class="tok"></i>'}`, 'var(--green)');
   renderHabits();
   checkAllDailyGoal();
@@ -7858,7 +8089,7 @@ function predictDayUncached(dateStr, opts = {}) {
     if (rhythm.days < PREDICT_MIN_RHYTHM_DAYS) {
       return { date: dateStr, upToMin, loadout, basis: 'sparse', confidence: 0,
                similar, rhythm, blocks: [], startMin: null, finishMin: null,
-               why: rhythm.days ? `only ${rhythm.days} day${rhythm.days > 1 ? 's' : ''} of history on ${loadout}` : 'no history yet' };
+               why: rhythm.days ? `only ${rhythm.days} day${rhythm.days > 1 ? 's' : ''} of history on ${focusLabel(loadout)}` : 'no history yet' };
     }
     basis = 'rhythm';
     // A loadout-wide rhythm is a weaker claim than a set of close matches, and the
@@ -7904,8 +8135,8 @@ function predictDayUncached(dateStr, opts = {}) {
     startMin: blocks.length ? blocks[0].startMin : null,
     finishMin: blocks.length ? Math.max(...blocks.map(b => b.startMin + b.durMin)) : null,
     why: basis === 'similar'
-      ? `${similar.length} similar day${similar.length > 1 ? 's' : ''} on ${loadout}`
-      : `your usual ${loadout} rhythm (${rhythm.days} days)`,
+      ? `${similar.length} similar day${similar.length > 1 ? 's' : ''} on ${focusLabel(loadout)}`
+      : `your usual ${focusLabel(loadout)} rhythm (${rhythm.days} days)`,
   };
 }
 
@@ -9434,7 +9665,7 @@ function schedProgressSheetHTML() {
       <span class="sch-pp-i" aria-hidden="true">${st.delta > 0 ? '↗' : st.delta < 0 ? '↘' : '→'}</span>
       <span><b>${escapeHtml(head)}</b><small>${escapeHtml(body)}</small></span></div>`;
   } else if (m.isToday) {
-    pace = `<div class="sch-pp"><span class="sch-pp-i" aria-hidden="true">…</span><span><b>Your usual pace is still forming</b><small>It needs a few more days on this loadout to compare against.</small></span></div>`;
+    pace = `<div class="sch-pp"><span class="sch-pp-i" aria-hidden="true">…</span><span><b>Your usual pace is still forming</b><small>It needs a few more days on this focus to compare against.</small></span></div>`;
   }
   const bar = sum.total ? `
     <div class="sch-pp-top"><span class="sch-pp-trophy" aria-hidden="true">🏆</span><b>${sum.done} / ${sum.total} done</b><span class="sch-pct">${sum.pct}%</span></div>
@@ -9452,7 +9683,7 @@ function schedProgressSheetHTML() {
     rec = `<div class="sch-rec">
       <div class="sch-rec-l">${r
         ? `🏆 Target day: <b>${escapeHtml(new Date(r.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))}</b> — ${r.count} done by ${escapeHtml(fmtMinOfDay(r.lastMin))}`
-        : `🏆 No finished <b>${escapeHtml(currentLoadout())}</b> day to beat yet — today sets the record.`}</div>
+        : `🏆 No finished <b>${escapeHtml(focusLabel(currentLoadout()))}</b> day to beat yet — today sets the record.`}</div>
       <div class="sch-rec-h">Look back over</div>
       <div class="sch-segs">${segs}</div>
     </div>`;
@@ -9508,7 +9739,7 @@ function schedDetailSheetHTML() {
     if (it) {
       const lv = src.kind === 'habit' ? habitLevels(it) : null;
       const tier = lv ? lv[curLevelIndex(it)] : null;
-      const reward = src.kind === 'habit' ? (tier ? tier.reward : it.reward) : it.reward;
+      const reward = src.kind === 'habit' ? habitFocusReward(it, tier ? tier.reward : it.reward) : it.reward;
       about = `<div class="sch-h3">About</div>
         <div class="sch-kv">${src.kind === 'task' ? '🎯 Quest' : '⚡ Habit'} · 🏷️ ${escapeHtml(it.category || 'Unsorted')}${Number.isFinite(+reward) ? ` · +${+reward} <i class="tok"></i>` : ''}${tier ? ` · ${escapeHtml(tier.label)} of ${lv.length}` : ''}</div>`;
     }
@@ -11895,13 +12126,13 @@ function prizeTileHTML(r, ti) {
   const redemption = redeemWindow();
   const locked = lit && !redemption.open;
   const title = wild ? (lit ? `${n} held — tap to trade for any ${ti.label} reward` : `Can drop from any ${ti.label} game`)
-    : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim${bonus ? ` (${bonus} loadout bonus, spent first)` : ''}` : 'Not won yet — tap to edit'));
+    : (locked ? `${n} available — ${redemption.reason}` : (lit ? `${n} available — tap to claim${bonus ? ` (${bonus} focus bonus, spent first)` : ''}` : 'Not won yet — tap to edit'));
   return `<div class="prize${r.special ? ' special' : ''}${lit ? ' owned' : ' dim'}" data-rid="${r.id}"
       style="border-color:${lit ? ti.hex : ti.hex + '33'};--pz:${ti.hex}" title="${escapeHtml(title)}">
     ${r.special ? '' : `<button class="prize-dots" data-act="prizeSettings" title="Reward settings" aria-label="Reward settings">⋯</button>`}
     ${locked ? `<span class="prize-lock" title="${escapeHtml(redemption.reason)}" aria-label="Reward locked">🔒</span>` : ''}
     ${lit ? `<span class="prize-count">${n}</span>` : ''}
-    ${bonus ? `<span class="prize-stock" title="${bonus} of these are ${escapeHtml(currentLoadout())} bonus — they go back if you switch loadout, and are spent first">${bonus} BONUS</span>` : ''}
+    ${bonus ? `<span class="prize-stock" title="${bonus} of these are ${escapeHtml(focusLabel(currentLoadout()))} bonus — they go back if you switch focus, and are spent first">${bonus} BONUS</span>` : ''}
     <div class="pe-wrap">
       <div class="pe">${escapeHtml(r.emoji || ti.emoji)}</div>
     </div>
@@ -11937,7 +12168,7 @@ function claimCardHTML(r) {
     <div class="cc-head"><span class="cc-e">${escapeHtml(r.emoji || ti.emoji)}</span>
       <div><div class="cc-n">${escapeHtml(r.name)}</div>
       <div class="subtle">${n} available · ${per}</div>
-      ${bonusTaken ? `<div class="subtle" style="color:var(--gold)">${bonusTaken} of these ${bonusTaken === 1 ? 'is' : 'are'} ${escapeHtml(currentLoadout())} bonus — spent before anything you won</div>` : ''}</div>
+      ${bonusTaken ? `<div class="subtle" style="color:var(--gold)">${bonusTaken} of these ${bonusTaken === 1 ? 'is' : 'are'} ${escapeHtml(focusLabel(currentLoadout()))} bonus — spent before anything you won</div>` : ''}</div>
     </div>
     <div class="cc-qty">
       <button class="rstep" data-act="claimMinus" title="Fewer">−</button>
@@ -12184,8 +12415,8 @@ function reconcileLoadoutStock() {
     // Name the loadout each half belongs to — "12 set aside" under the name of the
     // loadout you just arrived at would read as though THIS one lost them.
     const bits = [];
-    if (gave) bits.push(`${gave} ${cur} bonus back`);
-    if (took) bits.push(`${took} returned to ${tookFrom.join(' & ')}`);
+    if (gave) bits.push(`${gave} ${focusLabel(cur)} bonus back`);
+    if (took) bits.push(`${took} returned to ${tookFrom.map(focusLabel).join(' & ')}`);
     toast(`🗂️ ${bits.join(' · ')}`, 'var(--cyan)');
     save();
   }
@@ -12432,7 +12663,7 @@ function similarDaysHTML() {
   if (pred.basis === 'sparse') {
     return `<div class="panel" style="margin-top:14px">
       <div class="section-title t2">🔍 Similar Days</div>
-      <div class="subtle">Once there are about a week's worth of days on this loadout, this is where the app starts comparing today to the days it resembles. Right now: ${escapeHtml(pred.why)}.</div>
+      <div class="subtle">Once there are about a week's worth of days on this focus, this is where the app starts comparing today to the days it resembles. Right now: ${escapeHtml(pred.why)}.</div>
     </div>`;
   }
 
@@ -12444,7 +12675,7 @@ function similarDaysHTML() {
     ? `<div class="sd-refs">${pred.similar.map(x => `
         <span class="sd-ref" title="${escapeHtml(x.parts.map(p => p.label + ' ' + Math.round(p.v * 100) + '%').join(' · '))}">
           ${escapeHtml(fmtPlanDate ? fmtPlanDate(x.date) : x.date)}<b>${Math.round(x.score * 100)}%</b></span>`).join('')}</div>`
-    : `<div class="subtle">Not enough close matches today, so this is your general ${escapeHtml(pred.loadout)} rhythm over ${pred.rhythm.days} days.</div>`;
+    : `<div class="subtle">Not enough close matches today, so this is your general ${escapeHtml(focusLabel(pred.loadout))} rhythm over ${pred.rhythm.days} days.</div>`;
 
   const standHTML = standing ? `
     <div class="sd-stand ${standing.delta < 0 ? 'behind' : standing.delta > 0 ? 'ahead' : 'level'}">
@@ -12862,9 +13093,9 @@ function renderWeeklyComparison() {
         ${limited ? `<span class="wc-chip">Limited history</span>` : ''}
       </div>
       <div class="wc-controls">
-        ${multi ? `<select class="wc-range" id="wcLoadout" aria-label="Which loadout's days to count">
-          <option value="all"${lo === 'all' ? ' selected' : ''}>All loadouts</option>
-          ${names.map(n => `<option value="${escapeHtml(n)}"${n === lo ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('')}
+        ${multi ? `<select class="wc-range" id="wcLoadout" aria-label="Which focus's days to count">
+          <option value="all"${lo === 'all' ? ' selected' : ''}>All days</option>
+          ${names.map(n => `<option value="${escapeHtml(n)}"${n === lo ? ' selected' : ''}>${escapeHtml(focusLabel(n))}</option>`).join('')}
         </select>` : ''}
         <select class="wc-range" id="wcRange" aria-label="How far back to compare">
           ${WC_RANGES.map(r => `<option value="${r.w}"${r.w === weeks ? ' selected' : ''}>${r.label}</option>`).join('')}
@@ -12895,7 +13126,7 @@ function renderWeeklyComparison() {
 
   if (!data.hasCurrent && !data.hasHistory) {
     mount.innerHTML = `<div class="subtle">${filtered
-      ? `No days logged on the ${escapeHtml(lo)} loadout yet. Switch the filter to “All loadouts” to see every day.`
+      ? `No days logged on ${escapeHtml(focusLabel(lo))} yet. Switch the filter to “All days” to see every day.`
       : `Nothing to compare yet. Each day you open the app with things planned, that day's share gets logged — after a week or two this fills in with your usual pattern.`}</div>`;
     return;
   }
@@ -12915,7 +13146,7 @@ function renderWeeklyComparison() {
       <span><i class="wc-sw band"></i>Typical range</span>
     </div>
     <div class="wc-foot">${n ? `Compared with your last ${n} completed week${n === 1 ? '' : 's'}.` : 'No completed weeks logged yet.'}${
-      filtered ? ` Only days you ended on the ${escapeHtml(lo)} loadout.` : ''}${
+      filtered ? ` Only days you ended on ${escapeHtml(focusLabel(lo))}.` : ''}${
       limited ? ' A weekday needs 3 logged days behind it before its typical range is drawn.' : ''} Days with nothing planned are left out rather than counted as 0%.</div>`);
   if (anim) $('#wcChart').classList.add('wc-anim');
 
@@ -13264,7 +13495,7 @@ function renderHabitDupes() {
   if (!groups.length) { box.innerHTML = ''; return; }
   box.innerHTML = `
     <div class="sub-head">🔗 Same name, separate habits</div>
-    <div class="hint">These share a name but not a definition, so they were left alone. Pick the version to keep: the others fold into it and their loadouts come along, but their own settings don't.</div>
+    <div class="hint">These share a name but not a definition, so they were left alone. Pick the version to keep: the others fold into it and their focus groups come along, but their own settings don't.</div>
     ${groups.map(g => `
       <div class="dup-group">
         <div class="dup-name">${escapeHtml(g[0].emoji || '')} ${escapeHtml(g[0].name)}
@@ -13284,7 +13515,7 @@ function renderHabitEditor() {
   renderHabitDupes();
   const box = $('#habitEditor');
   const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
-  box.innerHTML = state.habits.filter(h => !h.archived && habitInLoadout(h, currentLoadout())).map(h => {
+  box.innerHTML = state.habits.filter(h => !h.archived).map(h => {
     const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
     const dayPicker = `<span class="day-picker" title="Days this habit appears (default: every day)">${DOW.map((d, i) => `<button class="day-dot ${days[i] ? 'active' : ''}" data-day="${i}">${d}</button>`).join('')}</span>`;
     return `
@@ -13791,16 +14022,22 @@ function appContext() {
   });
 
   // --- Habits (active + recently graduated) ---
-  const active = state.habits.filter(h => !h.archived && habitInLoadout(h, currentLoadout()));
-  const archived = state.habits.filter(h => h.archived && habitInLoadout(h, currentLoadout()));
-  L.push('ACTIVE HABITS:');
+  // Every habit, with its group when a Focus is on — the coach should know what today is
+  // about without being told a habit outside it doesn't exist.
+  const active = state.habits.filter(h => !h.archived);
+  const archived = state.habits.filter(h => h.archived);
+  const fm = focusMultipliers();
+  L.push(focusActive()
+    ? `ACTIVE HABITS (today's Focus: "${focusLabel(currentLoadout())}". Focus habits pay ×${fm.focus}, Maintain ×${fm.maintain}, Other ×${fm.other}; every habit stays available):`
+    : 'ACTIVE HABITS (no Focus today):');
   if (!active.length) L.push('  (none)');
   active.forEach(h => {
     const lvls = habitLevels(h), lvl = lvls ? lvls[curLevelIndex(h)] : null;
     const sched = (h.days || [1,1,1,1,1,1,1]).filter(Boolean).length;
     const age = daysAgo(firstSeen[h.name]), last = daysAgo(lastSeen[h.name]);
     const tmins = habitCurrentMinutes(h);
-    L.push(`  - id=${h.id} "${h.name}" [${h.section}] cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` on tier ${lvl.idx + 1}/${lvl.n}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
+    const fr = focusActive() ? habitRole(h) : null;
+    L.push(`  - id=${h.id} "${h.name}" [${h.section}]${fr ? ` [${fr}${fr !== 'other' ? `, pays +${habitFocusReward(h, lvl ? lvl.reward : h.reward)}🪙` : ''}]` : ''} cat=${h.category || 'Unsorted'} +${lvl ? lvl.reward : h.reward}🪙${lvl ? ` on tier ${lvl.idx + 1}/${lvl.n}` : ''}${tmins ? ` ⏱${tmins}m timed` : ''}${h.repeatable ? ` (repeatable ×${h.cap}/day)` : ''}, ${sched}d/wk${age != null ? `, ~${age}d old` : ', new'}${last != null ? `, last done ${last}d ago` : ', never done'}`);
   });
   if (archived.length) {
     L.push('RECENTLY GRADUATED (archived — history intact, can be restored):');
@@ -13879,7 +14116,7 @@ function appContext() {
   // --- The day model: what today resembles, and how well the app has been doing ---
   const pred = predictDay(todayStr());
   if (pred.basis !== 'sparse') {
-    L.push('', `TODAY'S PREDICTED DAY (basis: ${pred.basis === 'similar' ? 'the past days most like today' : 'the loadout\'s general rhythm'}, ${Math.round(pred.confidence * 100)}% confidence — ${pred.why}):`);
+    L.push('', `TODAY'S PREDICTED DAY (basis: ${pred.basis === 'similar' ? 'the past days most like today' : 'the focus\'s general rhythm'}, ${Math.round(pred.confidence * 100)}% confidence — ${pred.why}):`);
     if (pred.basis === 'similar') {
       L.push(`  Reference days: ${pred.similar.map(x => `${x.date} (${Math.round(x.score * 100)}% alike)`).join(', ')}`);
     }
@@ -14210,7 +14447,7 @@ function applyProposal(p) {
       repeatable: !!p.repeatable, cap: clamp(parseInt(p.cap) || 1, 1, 99),
       lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0,
       days: (Array.isArray(p.days) && p.days.length === 7) ? p.days.map(Boolean) : [true, true, true, true, true, true, true],
-      category: ensureAICategory(p.category), loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, doneAt: 0, doneMin: null,
+      category: ensureAICategory(p.category), loadout: 'Default', loadouts: ['Default'], tierByLoadout: {}, doneAt: 0, doneMin: null,
       context: [], contextAsked: false,
       createdBy: 'ai' };
     state.habits.push(h); state.aiMeta.habits.push(h.id);
@@ -14688,9 +14925,15 @@ function renderTodayContext() {
   el.innerHTML = ctx
     ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day</span>`
     : (dayPlan(todayStr()) ? `<span class="ctx-badge">📅 planned day · streak-safe</span>` : '');
-  // Loadouts are independent habit sets, selected through the in-app menu.
+  // The Focus button: what today is about, one tap from changing it.
   const sw = $('#loadoutSwitch');
-  if (sw) sw.innerHTML = `<span>🗂️ ${escapeHtml(currentLoadout())}</span>`;
+  if (sw) {
+    const on = focusActive();
+    sw.classList.toggle('none', !on);
+    sw.innerHTML = `<span class="fb-icon" aria-hidden="true">🎯</span>
+      <span class="fb-name">${on ? `Focus: ${escapeHtml(focusLabel(currentLoadout()))}` : 'Choose a focus'}</span>
+      <span class="fb-go" aria-hidden="true">›</span>`;
+  }
 }
 
 /* ---- the AI contract (its own prompt — the chat coach's proposal types don't apply) ---- */
@@ -14710,7 +14953,7 @@ function habitContextLines(h) {
   return bits;
 }
 function habitPlanSummary() {
-  const rows = state.habits.filter(h => !h.archived && habitInLoadout(h, currentLoadout())).map(h => {
+  const rows = state.habits.filter(h => !h.archived).map(h => {
     const lvls = habitLevels(h);
     const easiest = lvls ? lvls[0] : null;
     const bits = [];
@@ -15453,14 +15696,14 @@ function gapSystemPrompt(g) {
   return `The user tracks habits in HabitCasinoAI. On ${day} they logged nothing between ${fmtMinOfDay(g.startMin)} and ${fmtMinOfDay(g.endMin)} (${fmtMins(g.endMin - g.startMin)}). You are guessing what they were plausibly doing so they can answer with one tap.
 
 CONTEXT
-- Loadout (the kind of day this is): "${g.loadout}"
+- Focus (what the day was about): "${focusLabel(g.loadout)}"
 - Logged just before the gap: ${list(before)}
 - Logged just after the gap: ${list(after)}
-- Their habits on this loadout: ${state.habits.filter(h => !h.archived && habitInLoadout(h, g.loadout)).map(h => `"${h.name}"`).join(', ') || '(none)'}
+- Their ${isNoFocus(g.loadout) ? '' : 'focus & maintain '}habits that day: ${state.habits.filter(h => !h.archived && habitInLoadout(h, g.loadout)).map(h => `"${h.name}"`).join(', ') || '(none)'}
 
 RULES
-- Give 3-4 SHORT options (under 32 characters each), each a plausible everyday activity for this person, this loadout and this time of day. "Class", "Commuting", "Napping", "Out with friends" — concrete, not categories like "Leisure activity".
-- Use the time of day and the surrounding entries. A gap between a 7am habit and a 6pm one on a "School" loadout is almost certainly school.
+- Give 3-4 SHORT options (under 32 characters each), each a plausible everyday activity for this person, this focus and this time of day. "Class", "Commuting", "Napping", "Out with friends" — concrete, not categories like "Leisure activity".
+- Use the time of day and the surrounding entries. A gap between a 7am habit and a 6pm one on a "School" focus is almost certainly school.
 - Do NOT include an "Other" option; the app adds one.
 - No preamble, no explanation.
 
@@ -16138,6 +16381,13 @@ function onHabitsClick(e) {
     if (act === 'finishOneoffTimer') { finishTimedOneoff(qrow.dataset.id); renderHabits(); return; }
     SFX.click(); switchView('tasks'); openEditor('oneoff', qrow.dataset.id); return;
   }
+  if (act === 'focusOther') {
+    focusOtherOpen = !focusOtherOpen;
+    const g = e.target.closest('.fg-other');
+    if (g) { g.classList.toggle('open', focusOtherOpen); g.querySelector('[data-act="focusOther"]')?.setAttribute('aria-expanded', String(focusOtherOpen)); }
+    SFX.click(); return;
+  }
+  if (act === 'openFocus') { SFX.click(); openFocusMenu(); return; }
   if (act === 'toggleGroup') {
     const g = e.target.closest('.habit-group'); if (!g) return;
     const open = g.classList.toggle('collapsed') === false;
@@ -16204,25 +16454,6 @@ function onHabitsClick(e) {
     const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
     SFX.click(); openCopyPicker(id); return;
   }
-  if (act === 'togHabitLoadout') {
-    const id = e.target.closest('.hedit')?.dataset.id; if (!id) return;
-    const h = state.habits.find(x => x.id === id); if (!h) return;
-    const name = e.target.closest('[data-lo]').dataset.lo;
-    const set = new Set((Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']);
-    if (set.has(name)) {
-      // A habit with no loadout at all would vanish from every screen with no way back.
-      if (set.size === 1) { toast('A habit has to be in at least one loadout', 'var(--pink)'); return; }
-      set.delete(name);
-      if (h.tierByLoadout) delete h.tierByLoadout[name];   // that loadout's remembered tier goes with it
-    } else set.add(name);
-    h.loadouts = [...set];
-    if (!h.loadouts.includes(h.loadout)) h.loadout = h.loadouts[0];
-    SFX.click(); save();
-    // Dropping the loadout you are standing in takes the habit off this screen, so the
-    // sheet it was being edited in has to go with it.
-    if (!habitInLoadout(h, currentLoadout())) { editingHabitId = null; editTierPage = null; renderHabits(); return; }
-    renderHabits(); syncEditorSheet(); return;
-  }
   if (act === 'removeTier') {
     const box = e.target.closest('.hedit'); if (!box) return;
     const h = state.habits.find(x => x.id === box.dataset.id);
@@ -16235,9 +16466,12 @@ function onHabitsClick(e) {
   }
   if (act === 'addHabit') {
     const section = e.target.closest('[data-act="addHabit"]').dataset.section === 'extra' ? 'extra' : 'daily';
-    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', desc: '', section, category: 'Unsorted', loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, loadouts: [currentLoadout()], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, timedMinutes: 0, timedAuto: true, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
+    const nh = { id: uid(), emoji: '⭐', emojiAuto: true, name: '', desc: '', section, category: 'Unsorted', loadout: 'Default', loadouts: ['Default'], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, timedMinutes: 0, timedAuto: true, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true], doneAt: 0, doneMin: null, context: [], contextAsked: false };
     // openEditor, not a bare editingHabitId — only it raises the sheet, and a brand-new
     // habit with no name is useless until you can type into it.
+    // A new habit is Other in every Focus until it's given a group (Section & focus), so
+    // fold Other open — otherwise it would land somewhere the user can't see.
+    if (focusActive()) focusOtherOpen = true;
     state.habits.push(nh); SFX.click(); save(); renderHabits(); openEditor('habit', nh.id);
     return;
   }
@@ -16297,6 +16531,13 @@ function onInlineHabitField(e) {
   else if (f === 'timedMinutes') { h.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999); h.timedAuto = false; }   // a real number — stop guessing
   else if (f === 'category') { if (!pickCategoryInto(h, e.target)) return; }
   else if (f === 'section') { h.section = (e.target.value === 'extra' ? 'extra' : 'daily'); renderHabits(); }   // moves lists, repaints the crumb
+  else if (f === 'focusRole') {
+    const role = ['focus', 'maintain'].includes(e.target.value) ? e.target.value : 'other';
+    setHabitRole(h, e.target.dataset.lo, role);
+    e.target.className = `fe-role r-${role}`;
+    logEvent('habit_focus_role', { entityType: 'habit', entityId: h.id, name: h.name, focus: e.target.dataset.lo, role });
+    save(); renderHabits(); return;
+  }
   else if (f === 'scheduledTime') {           // the editor's "⏰ Start at" — same pin a Schedule drag sets
     const m = /^(\d{1,2}):(\d{2})/.exec(e.target.value || '');
     h.scheduledMin = m ? clamp(parseInt(m[1], 10) * 60 + parseInt(m[2], 10), 0, 1439) : null;
@@ -16568,18 +16809,14 @@ function renderCopyPicker() {
     body.innerHTML = `<div class="subtle" style="padding:14px 16px">No other habits to copy from yet.</div>`;
     syncCopyApply(); return;
   }
-  const cur = currentLoadout();
-  const loadouts = [...new Set(all.flatMap(h => (h.loadouts && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']))]
-    .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));   // current loadout first
-  // One drop-down per loadout, same two-level shape the Schedule's ＋ picker uses, and
-  // like that one every group starts SHUT — an open group pushes the rest off-screen, so
-  // opening the sheet on a wall of habits is worse than one tap to the loadout you want.
-  // The current loadout is still sorted first and still labelled; only the collapse differs.
-  body.innerHTML = loadouts.map(lo => {
-    const list = all.filter(h => habitInLoadout(h, lo));
+  // Today's Focus and Maintain habits, then the rest — same two-level shape the Schedule's
+  // ＋ picker uses, and like that one every group starts SHUT: an open group pushes the
+  // rest off-screen, so opening the sheet on a wall of habits is worse than one tap.
+  body.innerHTML = focusPickGroups(all).map(g => {
+    const list = g.list;
     return `
       <div class="pick-group pick-lo collapsed">
-        <div class="pick-sub" data-act="pickToggle">🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}
+        <div class="pick-sub" data-act="pickToggle">${g.title}
           <span class="pick-count">${list.length}</span></div>
         <div class="pick-body">${list.map(h => `
           <button class="pick-row" data-copyfrom="${h.id}" aria-pressed="${copyPicked.has(h.id)}">
@@ -16612,11 +16849,13 @@ function applyCopyPicks() {
   copyHabitDefinition(picks[0], into);
   const extras = picks.slice(1).map(src => {
     const nh = { id: uid(), emoji: '⭐', emojiAuto: false, name: '', section: into.section,
-      category: 'Unsorted', loadout: into.loadout, reward: 1, repeatable: false, cap: 1,
+      category: 'Unsorted', loadout: into.loadout, loadouts: (into.loadouts || [into.loadout || 'Default']).slice(),
+      reward: 1, repeatable: false, cap: 1,
       lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0,
       days: Array.isArray(into.days) ? into.days.slice() : [true, true, true, true, true, true, true],
       doneAt: 0, doneMin: null, context: [], contextAsked: true };
     copyHabitDefinition(src, nh);
+    Object.values(state.focusMaintain || {}).forEach(list => { if (list.includes(into.id)) list.push(nh.id); });
     return nh;
   });
   // Inserted right after the habit being edited rather than at the end, so a batch lands
@@ -16844,18 +17083,40 @@ const endLadderDrag = () => {
 };
 $('#tierOverlay').addEventListener('pointerup', endLadderDrag);
 $('#tierOverlay').addEventListener('pointercancel', endLadderDrag);
-/* ---- Loadout chooser/creator -------------------------------------------------------
-   Fully in-app: no native <select> or prompt. Creating a loadout can clone any chosen
-   habits, grouped by their source loadout; choosing none creates a clean blank slate. */
-let loadoutScreen = 'list';
-let loadoutEditName = null;    // which loadout the ⋯ editor screen is showing
-function openLoadoutMenu(screen = 'list') {
-  loadoutScreen = screen;
-  renderLoadoutMenu();
+/* ---- FOCUS menu: choose, create, edit and delete Focuses -----------------------------
+   Fully in-app, like the loadout menu it replaces (and it reuses that modal). Three
+   screens: the list (switch focus, 🔁 Auto Focus), the editor (name, every habit's group,
+   its weekdays) and the day stock, which is unchanged from loadouts. The editor works on a
+   DRAFT and only Save Focus writes it, so ✕ is always a way out. */
+let focusScreen = 'list';
+let focusDraft = null;      // { key, name, roles: {habitId: role}, days, order, search, dirty, warned }
+function openFocusMenu(screen) {
+  const cur = currentLoadout();
+  if (screen === 'list' || isNoFocus(cur)) { focusScreen = 'list'; focusDraft = null; }
+  else { focusDraft = focusDraftFor(cur); focusScreen = 'edit'; }
+  renderFocusMenu();
   $('#loadoutOverlay').classList.add('show');
 }
-function closeLoadoutMenu() { $('#loadoutOverlay').classList.remove('show'); }
-// Short label for a loadout's days on the list row: "every day", "Mo We Fr", or nothing.
+function closeFocusMenu() { $('#loadoutOverlay').classList.remove('show'); focusDraft = null; focusScreen = 'list'; }
+// Unsaved edits get one warning before ✕ or switching focus throws them away.
+function focusDraftCanLeave() {
+  if (!focusDraft || !focusDraft.dirty || focusDraft.warned) return true;
+  focusDraft.warned = true;
+  toast('Unsaved changes — tap Save Focus to keep them, or again to discard', 'var(--cyan)');
+  return false;
+}
+function focusDraftFor(key) {
+  const habits = state.habits.filter(h => !h.archived);
+  const roles = {};
+  habits.forEach(h => { roles[h.id] = key ? habitRole(h, key) : 'other'; });
+  // Focus first, then Maintain, then Other, each in the user's own habit order. Sorted
+  // once on opening — re-sorting as groups change would move a row out from under a tap.
+  const rank = { focus: 0, maintain: 1, other: 2 };
+  const order = habits.map((h, i) => [h.id, i]).sort((a, b) => (rank[roles[a[0]]] - rank[roles[b[0]]]) || a[1] - b[1]).map(x => x[0]);
+  return { key, name: key ? focusLabel(key) : '', roles, order, search: '',
+           days: key ? loadoutDaysFor(key).slice() : [false, false, false, false, false, false, false], dirty: false, warned: false };
+}
+// Short label for a Focus's days on the list row: "every day", "Mo We Fr", or nothing.
 function loadoutDaysLabel(name) {
   const d = loadoutDaysFor(name);
   if (!d.some(Boolean)) return '';
@@ -16865,53 +17126,57 @@ function loadoutDaysLabel(name) {
 /* The switch alone can't say why nothing is happening — off, no days set, nothing claiming
    today and "re-armed, so tomorrow" all look identical from the outside. */
 function autoLoadHintHTML() {
-  if (!state.autoLoad) return 'Paused — nothing switches on its own. Picking a loadout by hand pauses it for you.';
+  if (!state.autoLoad) return 'Paused — nothing switches on its own. Picking a focus by hand pauses it for you.';
   if (!(state.loadouts || []).some(n => loadoutDaysFor(n).some(Boolean)))
-    return 'No loadout has days yet — open ⋯ on one to choose which days it runs.';
+    return 'No focus has days yet — open ⋯ on one to choose which days it runs.';
   const target = loadoutForDay(new Date().getDay());
-  if (!target) return "Nothing claims today, so you stay on the loadout you're using.";
+  if (!target) return "Nothing claims today, so you stay on the focus you're using.";
   if (target !== currentLoadout() && state.autoLoadStamp === todayStr())
-    return `Staying on ${escapeHtml(currentLoadout())} today — ${escapeHtml(target)} takes over tomorrow.`;
-  return `${escapeHtml(target)} runs today.`;
+    return `Staying on ${escapeHtml(focusLabel(currentLoadout()))} today — ${escapeHtml(focusLabel(target))} takes over tomorrow.`;
+  return `${escapeHtml(focusLabel(target))} runs today.`;
 }
-function renderLoadoutMenu() {
+function focusCountsLabel(key) {
+  let f = 0, m = 0;
+  state.habits.forEach(h => { if (h.archived) return; const r = habitRole(h, key); if (r === 'focus') f++; else if (r === 'maintain') m++; });
+  return `${f} focus · ${m} maintain`;
+}
+function renderFocusMenu() {
   const body = $('#loadoutBody'); if (!body) return;
-  if (loadoutScreen === 'list') {
+  const cur = currentLoadout();
+  if (focusScreen === 'list') {
+    const keys = (state.loadouts || []).filter(n => !isNoFocus(n));
     body.innerHTML = `
-      <div class="pass-title">🗂️ LOADOUTS</div>
-      <div class="subtle">Each loadout has its own complete set of Daily and Extra habits.</div>
-      <div class="row between" style="margin-top:14px"><span>🔁 Auto load</span>
+      <div class="pass-title">🎯 FOCUS</div>
+      <div class="subtle">A focus sets what today is about. Every habit stays on the board either way.</div>
+      <div class="row between" style="margin-top:14px"><span>🔁 Auto Focus</span>
         <label class="toggle"><input type="checkbox" id="autoLoadOn" ${state.autoLoad ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
       <div class="hint">${autoLoadHintHTML()}</div>
-      <div class="loadout-list">${(state.loadouts || ['Default']).map(name => {
-        const count = state.habits.filter(h => !h.archived && habitInLoadout(h, name)).length;
-        const st = (state.loadoutStock || {})[name];
-        const dayLabel = loadoutDaysLabel(name);
-        return `<div class="loadout-row">
-          <button class="loadout-choice ${name === currentLoadout() ? 'active' : ''}" data-loadout-pick="${escapeHtml(name)}">
-            <span>${name === currentLoadout() ? '✓ ' : ''}${escapeHtml(name)}</span>
-            <span class="subtle">${count} habit${count === 1 ? '' : 's'}${st && st.on ? ' · 🎁 stocked' : ''}${dayLabel ? ' · 🔁 ' + escapeHtml(dayLabel) : ''}</span>
+      <div class="loadout-list">
+        <div class="loadout-row">
+          <button class="loadout-choice ${isNoFocus(cur) ? 'active' : ''}" data-focus-pick="Default">
+            <span>${isNoFocus(cur) ? '✓ ' : ''}No focus</span>
+            <span class="subtle">Every habit in one list, no bonus${loadoutDaysLabel('Default') ? ' · 🔁 ' + escapeHtml(loadoutDaysLabel('Default')) : ''}</span>
           </button>
-          <button class="loadout-dots" data-act="loadoutEdit" data-loadout="${escapeHtml(name)}" title="Edit ${escapeHtml(name)}" aria-label="Edit ${escapeHtml(name)}">⋯</button>
+        </div>
+        ${keys.map(name => {
+          const st = (state.loadoutStock || {})[name];
+          const dayLabel = loadoutDaysLabel(name);
+          return `<div class="loadout-row">
+          <button class="loadout-choice ${name === cur ? 'active' : ''}" data-focus-pick="${escapeHtml(name)}">
+            <span>${name === cur ? '✓ ' : ''}${escapeHtml(focusLabel(name))}</span>
+            <span class="subtle">${focusCountsLabel(name)}${st && st.on ? ' · 🎁 stocked' : ''}${dayLabel ? ' · 🔁 ' + escapeHtml(dayLabel) : ''}</span>
+          </button>
+          <button class="loadout-dots" data-act="focusEdit" data-focus="${escapeHtml(name)}" title="Edit ${escapeHtml(focusLabel(name))}" aria-label="Edit ${escapeHtml(focusLabel(name))}">⋯</button>
         </div>`;
-      }).join('')}</div>
-      <button class="btn purple" data-act="loadoutNew" style="width:100%">＋ Create new loadout</button>`;
+        }).join('')}
+      </div>
+      <button class="btn purple" data-act="focusNew" style="width:100%">＋ New focus</button>`;
     return;
   }
-  if (loadoutScreen === 'edit') {
-    const name = loadoutEditName;
-    const cfg = stockFor(name);
-    const days = loadoutDaysFor(name);
-    const runsOn = days.map((on, i) => on ? PLAN_DOW[i] : null).filter(Boolean).join(', ');
-    // A day two loadouts both claim is decided by list order, which is invisible unless
-    // it's said out loud — otherwise one of them silently never runs.
-    const clashes = days.map((on, i) => (on && loadoutForDay(i) !== name)
-      ? `${PLAN_DOW[i]} (${loadoutForDay(i)})` : null).filter(Boolean);
-    const daysNote = !runsOn
-      ? '<div class="hint">No days picked.</div>'
-      : clashes.length
-        ? `<div class="hint" style="color:var(--pink)">Another loadout claims these first, so this one won't run on them: ${escapeHtml(clashes.join(', '))}.</div>`
-        : `<div class="hint">Runs on ${escapeHtml(runsOn)}.${state.autoLoad ? '' : ' Auto load is switched off right now, so nothing happens until you turn it back on.'}</div>`;
+  const d = focusDraft;
+  if (!d) { focusScreen = 'list'; renderFocusMenu(); return; }
+  if (focusScreen === 'stock') {
+    const cfg = stockFor(d.key);
     // Spell out what the numbers mean for the rewards that actually exist — "5 common"
     // is meaningless until you know how many common rewards you've defined.
     const lines = REWARD_TIERS.map(t => {
@@ -16929,16 +17194,10 @@ function renderLoadoutMenu() {
       </div>`;
     }).join('');
     body.innerHTML = `
-      <div class="pass-title">⋯ ${escapeHtml(name)}</div>
-      <div class="subtle">Settings for this loadout only.</div>
-      <div class="sub-head">🔁 Auto load</div>
-      <div class="subtle">The days this loadout switches itself on. Leave them all off and it only ever loads when you pick it.</div>
-      <span class="day-picker" style="margin-top:12px">${DOW_LETTERS.map((d, i) =>
-        `<button class="day-dot ${days[i] ? 'active' : ''}" data-loadout-day="${i}" title="${PLAN_DOW[i]}" aria-label="${PLAN_DOW[i]}">${d}</button>`).join('')}</span>
-      ${daysNote}
+      <div class="pass-title">🎁 ${escapeHtml(focusLabel(d.key))}</div>
       <div class="sub-head">🎁 Daily reward stock</div>
       <div class="subtle">Hands you a set number of <b>every</b> reward at each rarity, once a day, instead of making you win each one. Tops up to the amounts below — leftovers don't pile up — and anything you win in the casino still stacks on top.</div>
-      <div class="row between" style="margin-top:12px"><span>Stock this loadout daily</span>
+      <div class="row between" style="margin-top:12px"><span>Stock this focus daily</span>
         <label class="toggle"><input type="checkbox" id="stockOn" ${cfg.on ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
       <div id="stockRows" style="${cfg.on ? '' : 'opacity:.45;pointer-events:none'}">
         ${lines}
@@ -16947,122 +17206,188 @@ function renderLoadoutMenu() {
         <div class="hint">${cfg.lastDate === todayStr() ? 'Already stocked today — the next top-up is tomorrow.' : 'Not stocked yet today.'}</div>
       </div>
       <div class="row" style="gap:8px;margin-top:18px">
-        <button class="btn ghost" data-act="loadoutBack">‹ Back</button>
+        <button class="btn ghost" data-act="focusBackEdit">‹ Back</button>
         <button class="btn green" data-act="stockNow" style="flex:1" ${cfg.on ? '' : 'disabled'}>Stock now</button>
       </div>`;
     return;
   }
-  const groups = (state.loadouts || ['Default']).map(name => {
-    const habits = state.habits.filter(h => !h.archived && habitInLoadout(h, name));
-    return `<details class="loadout-copy-group">
-      <summary>${escapeHtml(name)} <span class="subtle">· ${habits.length}</span></summary>
-      <div class="loadout-copy-items">${habits.length ? habits.map(h => `
-        <label class="loadout-copy-item"><input type="checkbox" data-copy-habit="${h.id}">
-          <span>${escapeHtml(h.emoji || '⭐')} <b>${escapeHtml(h.name)}</b></span>
-          <span class="subtle" style="margin-left:auto">${h.section === 'extra' ? 'Extra' : 'Daily'}</span>
-        </label>`).join('') : '<span class="subtle">No habits in this loadout.</span>'}</div>
-    </details>`;
-  }).join('');
+  // ---- the editor ----
+  const byId = new Map(state.habits.map(h => [h.id, h]));
+  const rows = d.order.map(id => byId.get(id)).filter(h => h && !h.archived).map(h => `
+        <div class="fe-row" data-fe-name="${escapeHtml(String(h.name || '').toLowerCase())}">
+          <span class="fe-e">${escapeHtml(h.emoji || '⭐')}</span>
+          <span class="fe-n">${escapeHtml(h.name || 'Untitled habit')}${isScheduledToday(h) ? '' : '<small>not today</small>'}</span>
+          ${focusRoleSelectHTML(d.roles[h.id] || 'other', `data-fe-role="${h.id}" aria-label="${escapeHtml(h.name || 'Habit')}: group"`)}
+        </div>`).join('');
+  // A weekday two focuses both claim goes to whichever is first in the list, which is
+  // invisible unless it's said out loud — otherwise one of them silently never runs.
+  const owner = i => (state.loadouts || []).find(n => (n === d.key ? d.days[i] : loadoutDaysFor(n)[i])) || null;
+  const clashes = d.days.map((on, i) => {
+    if (!on) return null;
+    const o = owner(i);
+    return (o && o !== d.key) ? `${PLAN_DOW[i]} (${focusLabel(o)})` : null;
+  }).filter(Boolean);
+  const runsOn = d.days.map((on, i) => on ? PLAN_DOW[i] : null).filter(Boolean).join(', ');
+  const daysNote = !runsOn
+    ? '<div class="hint">No days picked — it only runs when you choose it.</div>'
+    : clashes.length
+      ? `<div class="hint" style="color:var(--pink)">Another focus claims these first, so this one won't run on them: ${escapeHtml(clashes.join(', '))}.</div>`
+      : `<div class="hint">Switches on by itself on ${escapeHtml(runsOn)}.${state.autoLoad ? '' : ' Auto Focus is paused right now, so nothing happens until you turn it back on.'}</div>`;
+  const cfg = d.key ? (state.loadoutStock || {})[d.key] : null;
   body.innerHTML = `
-    <div class="pass-title">＋ NEW LOADOUT</div>
-    <div class="subtle">Name it, then optionally copy habits from any existing loadout. Select none for a blank slate.</div>
-    <input class="name-in" id="newLoadoutName" maxlength="32" placeholder="e.g. Workdays, Weekend, Travel" style="width:100%;margin-top:14px">
-    <div class="section-title t3" style="margin-top:16px">COPY HABITS (OPTIONAL)</div>
-    <div class="loadout-copy-groups">${groups}</div>
-    <div class="row" style="gap:8px">
-      <button class="btn ghost" data-act="loadoutBack">‹ Back</button>
-      <button class="btn green" data-act="loadoutCreate" style="flex:1">Create loadout</button>
-    </div>`;
-  setTimeout(() => $('#newLoadoutName')?.focus(), 0);
+      <div class="pass-title">${d.key ? 'Edit Focus' : 'New Focus'}</div>
+      ${d.key ? `<div class="fe-label">Focus</div>
+      <button class="fe-pick" type="button" data-act="focusList"><span aria-hidden="true">🎯</span><span class="fp-n">${escapeHtml(focusLabel(d.key))}</span><span class="fp-go" aria-hidden="true">›</span></button>` : ''}
+      <div class="fe-label">Focus name</div>
+      <input class="name-in" id="feName" maxlength="32" value="${escapeHtml(d.name)}" placeholder="e.g. Cello, School, Cleaning day" style="width:100%;margin-top:6px">
+      <div class="sub-head" style="margin-top:18px">Select habits for this focus</div>
+      <div class="subtle">Choose which habits are Focus or Maintain, or leave them as Other.</div>
+      <input class="name-in fe-search" id="feSearch" type="search" placeholder="🔍 Search habits…" value="${escapeHtml(d.search)}" autocomplete="off">
+      <div class="fe-list">${rows || '<div class="subtle" style="padding:10px 2px">No habits yet — add some on the Habits tab first.</div>'}</div>
+      <div class="sub-head" style="margin-top:16px">🔁 Auto Focus days</div>
+      <span class="day-picker" style="margin-top:10px">${DOW_LETTERS.map((l, i) =>
+        `<button class="day-dot ${d.days[i] ? 'active' : ''}" data-focus-day="${i}" title="${PLAN_DOW[i]}" aria-label="${PLAN_DOW[i]}">${l}</button>`).join('')}</span>
+      ${daysNote}
+      ${d.key ? `<button class="fe-pick" type="button" data-act="focusStock" style="margin-top:14px"><span aria-hidden="true">🎁</span><span class="fp-n" style="font-size:14px;font-weight:600">Daily reward stock${cfg && cfg.on ? ' · on' : ''}</span><span class="fp-go" aria-hidden="true">›</span></button>` : ''}
+      <button class="btn fe-save" data-act="focusSave">Save Focus</button>
+      ${d.key ? '<button class="btn ghost sm" data-act="focusDelete" style="width:100%;margin-top:10px;color:var(--pink)">🗑 Delete this focus</button>' : ''}`;
+  applyFocusSearch();
 }
-
-function createLoadoutFromMenu() {
-  const name = String($('#newLoadoutName')?.value || '').trim();
-  if (!name) { toast('Name your loadout first', 'var(--pink)'); return; }
-  if ((state.loadouts || []).some(x => x.toLowerCase() === name.toLowerCase())) { toast('That loadout already exists', 'var(--pink)'); return; }
-  const ids = new Set($$('#loadoutBody [data-copy-habit]:checked').map(x => x.dataset.copyHabit));
-  state.loadouts.push(name);
-  /* This used to CLONE each ticked habit into the new loadout, which is how one habit
-     became five objects with five ids — edit the cello on Wednesday and Thursday's cello
-     sat there unchanged. The habit now simply joins the new set: same id, same definition,
-     edited once, with its own remembered tier per loadout. */
-  const shared = state.habits.filter(h => ids.has(h.id));
-  shared.forEach(h => {
-    h.loadouts = [...new Set([...((Array.isArray(h.loadouts) && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']), name])];
+// Hide rows that don't match — no re-render, so every dropdown keeps its value and focus.
+function applyFocusSearch() {
+  const q = String((focusDraft && focusDraft.search) || '').trim().toLowerCase();
+  $$('#loadoutBody .fe-row').forEach(r => { r.style.display = (!q || r.dataset.feName.includes(q)) ? '' : 'none'; });
+}
+function saveFocusDraft() {
+  const d = focusDraft; if (!d) return;
+  const name = String(($('#feName') || {}).value != null ? $('#feName').value : d.name).trim().slice(0, 32);
+  if (!name) { toast('Name your focus first', 'var(--pink)'); $('#feName')?.focus(); return; }
+  const taken = name.toLowerCase() === 'no focus'
+    || (state.loadouts || []).some(n => n !== d.key && !isNoFocus(n) && focusLabel(n).toLowerCase() === name.toLowerCase());
+  if (taken) { toast('There is already a focus with that name', 'var(--pink)'); return; }
+  state.focusNames = state.focusNames || {};
+  let key = d.key;
+  const isNew = !key;
+  if (isNew) {
+    // The key is the first name it was given; a rename only ever changes the shown name.
+    key = name; let i = 2;
+    while (isNoFocus(key) || (state.loadouts || []).includes(key)) key = `${name} (${i++})`;
+    state.loadouts.push(key);
+  }
+  if (name === key) delete state.focusNames[key]; else state.focusNames[key] = name;
+  let nf = 0, nm = 0;
+  state.habits.forEach(h => {
+    if (!Object.prototype.hasOwnProperty.call(d.roles, h.id)) return;
+    setHabitRole(h, key, d.roles[h.id]);
+    if (d.roles[h.id] === 'focus') nf++; else if (d.roles[h.id] === 'maintain') nm++;
   });
-  const copies = shared;
-  state.activeLoadout = name;
-  logEvent('loadout_created', { name, sharedHabitCount: copies.length });
-  reconcileLoadoutStock();                     // the loadout we just left keeps its own bonus
-  save(); closeLoadoutMenu(); renderHabits(); renderHabitEditor();
-  toast(copies.length ? `${name} created, sharing ${copies.length} habit${copies.length === 1 ? '' : 's'}` : `${name} created — blank slate`, 'var(--green)');
+  const days = loadoutDaysFor(key);
+  d.days.forEach((on, i) => { days[i] = !!on; });
+  if (isNew) activateLoadout(key);   // a focus you just made is the one you meant to use
+  logEvent(isNew ? 'focus_created' : 'focus_saved', { name: key, shownName: name, focus: nf, maintain: nm });
+  SFX.click(); save(); closeFocusMenu();
+  renderHabits(); renderPrizes(); renderBlockSchedule();
+  toast(isNew ? `🎯 ${name} is today's focus` : `🎯 ${name} saved`, 'var(--cyan)');
 }
-$('#loadoutSwitch').addEventListener('click', () => { SFX.click(); openLoadoutMenu('list'); });
-$('#loadoutClose').addEventListener('click', closeLoadoutMenu);
-$('#loadoutOverlay').addEventListener('click', e => { if (e.target.id === 'loadoutOverlay') closeLoadoutMenu(); });
+/* Deleting a Focus takes only the Focus: its habits stay, Other from now on. Its daily
+   bonus was only ever borrowed, so unclaimed copies go back; history filed under it stays
+   exactly where it is. One tap, with the undo bar as the net. */
+function deleteFocus(key) {
+  if (isNoFocus(key) || !(state.loadouts || []).includes(key)) return;
+  const snap = undoSnapshot(), shown = focusLabel(key);
+  if (currentLoadout() === key) activateLoadout('Default');
+  state.inventory = state.inventory.filter(w => !(stockOwner(w) === key && !w.redeemed));
+  if (state.loadoutStock) delete state.loadoutStock[key];
+  if (state.loadoutDays) delete state.loadoutDays[key];
+  if (state.focusNames) delete state.focusNames[key];
+  if (state.focusMaintain) delete state.focusMaintain[key];
+  state.loadouts = state.loadouts.filter(n => n !== key);
+  state.habits.forEach(h => { setHabitRole(h, key, 'other'); if (h.tierByLoadout) delete h.tierByLoadout[key]; });
+  if (state.settings && state.settings.weekCmpLoadout === key) state.settings.weekCmpLoadout = '';
+  logEvent('focus_deleted', { name: key, shownName: shown });
+  SFX.click(); save(); closeFocusMenu();
+  renderHabits(); renderPrizes(); renderBlockSchedule();
+  offerUndo(snap, `🗑 ${shown}`);
+}
+$('#loadoutSwitch').addEventListener('click', () => { SFX.click(); openFocusMenu(); });
+$('#loadoutClose').addEventListener('click', () => { if (focusDraftCanLeave()) closeFocusMenu(); });
+$('#loadoutOverlay').addEventListener('click', e => { if (e.target.id === 'loadoutOverlay' && focusDraftCanLeave()) closeFocusMenu(); });
 $('#loadoutBody').addEventListener('click', e => {
-  // Checked BEFORE the row, or tapping ⋯ would switch loadout on the way to the editor.
-  const dots = e.target.closest('[data-act="loadoutEdit"]');
-  if (dots) {
-    loadoutEditName = dots.dataset.loadout;
-    loadoutScreen = 'edit'; SFX.click(); renderLoadoutMenu(); return;
+  // Checked BEFORE the row, or tapping ⋯ would switch focus on the way to the editor.
+  const dots = e.target.closest('[data-act="focusEdit"]');
+  if (dots) { focusDraft = focusDraftFor(dots.dataset.focus); focusScreen = 'edit'; SFX.click(); renderFocusMenu(); return; }
+  const dayDot = e.target.closest('[data-focus-day]');
+  if (dayDot && focusDraft) {
+    const i = parseInt(dayDot.dataset.focusDay, 10);
+    focusDraft.days[i] = !focusDraft.days[i];
+    focusDraft.dirty = true; focusDraft.warned = false;
+    SFX.click(); renderFocusMenu(); return;
   }
-  const dayDot = e.target.closest('[data-loadout-day]');
-  if (dayDot && loadoutEditName) {
-    const i = parseInt(dayDot.dataset.loadoutDay, 10);
-    const days = loadoutDaysFor(loadoutEditName);
-    days[i] = !days[i];
-    SFX.click(); save(); renderLoadoutMenu(); return;
-  }
-  const pick = e.target.closest('[data-loadout-pick]');
+  const pick = e.target.closest('[data-focus-pick]');
   if (pick) {
-    const name = pick.dataset.loadoutPick;
-    // Picking by hand parks auto load — see the AUTO LOAD note. Announced, because a
+    const name = pick.dataset.focusPick;
+    // Picking by hand parks Auto Focus — see the AUTO LOAD note. Announced, because a
     // switch flipping itself without a word is how you lose track of why nothing changes.
     const wasAuto = state.autoLoad;
     state.autoLoad = false;
     activateLoadout(name);
     logEvent('loadout_selected', { name, autoLoadPaused: wasAuto });
-    save(); closeLoadoutMenu(); renderHabits(); renderPrizes();
-    if (wasAuto) toast('🔁 Auto load paused — turn it back on any time', 'var(--cyan)');
+    save(); closeFocusMenu(); renderHabits(); renderPrizes(); renderBlockSchedule();
+    if (wasAuto) toast('🔁 Auto Focus paused — turn it back on any time', 'var(--cyan)');
     return;
   }
   const act = e.target.closest('[data-act]')?.dataset.act;
-  if (act === 'loadoutNew') { loadoutScreen = 'create'; renderLoadoutMenu(); }
-  else if (act === 'loadoutBack') { loadoutScreen = 'list'; loadoutEditName = null; renderLoadoutMenu(); }
-  else if (act === 'loadoutCreate') createLoadoutFromMenu();
-  else if (act === 'stockNow') {
+  if (act === 'focusNew') { focusDraft = focusDraftFor(null); focusScreen = 'edit'; SFX.click(); renderFocusMenu(); setTimeout(() => $('#feName')?.focus(), 0); }
+  else if (act === 'focusList') { if (focusDraftCanLeave()) { focusDraft = null; focusScreen = 'list'; SFX.click(); renderFocusMenu(); } }
+  else if (act === 'focusStock') { focusScreen = 'stock'; SFX.click(); renderFocusMenu(); }
+  else if (act === 'focusBackEdit') { focusScreen = 'edit'; SFX.click(); renderFocusMenu(); }
+  else if (act === 'focusSave') saveFocusDraft();
+  else if (act === 'focusDelete') { if (focusDraft) deleteFocus(focusDraft.key); }
+  else if (act === 'stockNow' && focusDraft && focusDraft.key) {
     // Manual top-up: clear today's stamp so the same once-a-day code path runs.
-    const cfg = stockFor(loadoutEditName); cfg.lastDate = '';
-    const was = state.activeLoadout; state.activeLoadout = loadoutEditName;
+    const key = focusDraft.key;
+    const cfg = stockFor(key); cfg.lastDate = '';
+    const was = state.activeLoadout; state.activeLoadout = key;
     const n = applyLoadoutStock();
     state.activeLoadout = was;
-    // Stocking a loadout you're not on shouldn't dump its bonus into your live pool —
-    // the sweep parks it on that loadout's shelf until you actually switch there.
+    // Stocking a focus you're not on shouldn't dump its bonus into your live pool —
+    // the sweep parks it on that focus's shelf until you actually switch there.
     reconcileLoadoutStock();
     if (!n) toast('Already fully stocked', 'var(--cyan)');
-    SFX.click(); save(); renderLoadoutMenu(); renderPrizes();
+    SFX.click(); save(); renderFocusMenu(); renderPrizes();
   }
 });
 // Stock settings write straight through — no Save button, same as every other toggle.
+// A habit's group only lands with Save Focus.
 $('#loadoutBody').addEventListener('change', e => {
   // Before the edit-screen guard: this switch lives on the list, where there is no
-  // loadout being edited. Re-arming stamps today so today's pick survives until tomorrow.
+  // focus being edited. Re-arming stamps today so today's pick survives until tomorrow.
   if (e.target.id === 'autoLoadOn') {
     state.autoLoad = e.target.checked;
     if (state.autoLoad) state.autoLoadStamp = todayStr();
     logEvent('auto_load_toggled', { on: state.autoLoad });
-    save(); renderLoadoutMenu(); return;
+    save(); renderFocusMenu(); return;
   }
-  if (!loadoutEditName) return;
-  const cfg = stockFor(loadoutEditName);
-  if (e.target.id === 'stockOn') { cfg.on = e.target.checked; save(); renderLoadoutMenu(); return; }
-  if (e.target.id === 'stockWild') { cfg.wild = e.target.checked; save(); renderLoadoutMenu(); return; }
+  if (!focusDraft) return;
+  const roleSel = e.target.closest('[data-fe-role]');
+  if (roleSel) {
+    const role = ['focus', 'maintain'].includes(roleSel.value) ? roleSel.value : 'other';
+    focusDraft.roles[roleSel.dataset.feRole] = role;
+    roleSel.className = `fe-role r-${role}`;
+    focusDraft.dirty = true; focusDraft.warned = false;
+    return;
+  }
+  if (!focusDraft.key) return;
+  const cfg = stockFor(focusDraft.key);
+  if (e.target.id === 'stockOn') { cfg.on = e.target.checked; save(); renderFocusMenu(); return; }
+  if (e.target.id === 'stockWild') { cfg.wild = e.target.checked; save(); renderFocusMenu(); return; }
 });
 $('#loadoutBody').addEventListener('input', e => {
-  if (!loadoutEditName) return;
-  const t = e.target.dataset.stock; if (!t) return;
-  const cfg = stockFor(loadoutEditName);
+  if (!focusDraft) return;
+  if (e.target.id === 'feSearch') { focusDraft.search = e.target.value; applyFocusSearch(); return; }
+  if (e.target.id === 'feName') { focusDraft.name = e.target.value; focusDraft.dirty = true; focusDraft.warned = false; return; }
+  const t = e.target.dataset.stock; if (!t || !focusDraft.key) return;
+  const cfg = stockFor(focusDraft.key);
   cfg.counts[t] = clamp(parseInt(e.target.value, 10) || 0, 0, 99);
   save();
   // Repaint only the "→ N items/day" readouts, so the field keeps focus while typing.
@@ -17504,7 +17829,7 @@ $('#habitDupes').addEventListener('click', e => {
   const n = mergeHabitGroupInto(id);
   const h = state.habits.find(x => x.id === id);
   save(); fullRender();
-  if (n && h) { SFX.coin(); toast(`🔗 ${h.name} is one habit now — in ${h.loadouts.length} loadout${h.loadouts.length === 1 ? '' : 's'}`, 'var(--green)'); }
+  if (n && h) { SFX.coin(); toast(`🔗 ${h.name} is one habit now — ${habitLoadoutLabel(h)}`, 'var(--green)'); }
 });
 $('#habitEditor').addEventListener('input', onHabitField);
 $('#habitEditor').addEventListener('change', onHabitField);
@@ -17530,13 +17855,13 @@ $('#habitEditor').addEventListener('click', e => {
 });
 $('#addHabit').addEventListener('click', () => {
   SFX.click();
-  state.habits.push({ id: uid(), emoji: '⭐', name: 'New habit', section: 'daily', loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
+  state.habits.push({ id: uid(), emoji: '⭐', name: 'New habit', section: 'daily', loadout: 'Default', loadouts: ['Default'], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
   save(); renderHabitEditor();
   $('#habitEditor').lastElementChild?.querySelector('.name-in')?.select();
 });
 $('#quickHabit').addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.value.trim()) return;
-  state.habits.push({ id: uid(), emoji: '⭐', name: e.target.value.trim(), section: 'daily', loadout: currentLoadout(), loadouts: [currentLoadout()], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
+  state.habits.push({ id: uid(), emoji: '⭐', name: e.target.value.trim(), section: 'daily', loadout: 'Default', loadouts: ['Default'], tierByLoadout: {}, reward: 1, repeatable: false, cap: 1, lastDone: '', streak: 0, best: 0, dayDate: '', dayCount: 0, days: [true, true, true, true, true, true, true] });
   e.target.value = ''; SFX.coin(); save(); renderHabitEditor(); renderHabits();
 });
 
@@ -18296,19 +18621,12 @@ function schedPickOpen() {
     return group('pick-sub-group', 'pick-sub', '🗓️ Daily habits', daily.length, daily.map(h => row(h, 'habit')).join(''), true)
          + group('pick-sub-group', 'pick-sub', '✨ Extra habits', extra.length, extra.map(h => row(h, 'habit')).join(''), true);
   };
-  const cur = currentLoadout();
-  const loadouts = [...new Set(habits.flatMap(h => (h.loadouts && h.loadouts.length) ? h.loadouts : [h.loadout || 'Default']))]
-    .sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a.localeCompare(b)));   // current loadout first
   const label = schedOffset === 0 ? 'today' : schedOffset === 1 ? 'tomorrow'
     : new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   $('#schedPickTitle').textContent = `Add to ${label}`;
   $('#schedPickBody').innerHTML =
-      loadouts.map(lo => {
-        const mine = habits.filter(h => habitInLoadout(h, lo));
-        return group('pick-lo', 'pick-sec', `🗂️ ${escapeHtml(lo)}${lo === cur ? ' · current' : ''}`, mine.length, sections(mine), false);
-      }).join('')
-    // Quests are shared across every loadout, so they stay a sibling of the loadouts
-    // rather than being duplicated inside each one.
+      focusPickGroups(habits).map(g => group('pick-lo', 'pick-sec', g.title, g.list.length, sections(g.list), false)).join('')
+    // Quests belong to no focus, so they stay a sibling of the habit groups.
     + group('', 'pick-sec', '📋 Tasks', quests.length, quests.map(t => row(t, 'task')).join(''), false);
   $('#schedPickSheet').classList.add('show');
   $('#schedPickSheet').setAttribute('aria-hidden', 'false');
