@@ -89,12 +89,17 @@
       text-size-adjust: 100%;
       overscroll-behavior-y: none;                 /* tame rubber-band scroll */
       touch-action: manipulation;                  /* kill double-tap zoom delay */
-      user-select: none;                           /* don't select UI text on long-press */
+      /* Don't select UI text on long-press. Safari and the iOS wrapper only read the
+         -webkit- form; with the bare property alone, a hold anywhere still started a
+         selection and threw up the copy menu. */
+      -webkit-user-select: none; user-select: none;
     }
-    /* keep real form fields typeable / selectable */
-    input, textarea {
+    /* keep real form fields typeable / selectable — a hold there is how you paste */
+    input, textarea, [contenteditable]:not([contenteditable="false"]) {
       -webkit-user-select: text; user-select: text; -webkit-touch-callout: default;
     }
+    /* A held image or link would otherwise lift off the page for iOS drag-and-drop. */
+    img, a { -webkit-user-drag: none; }
 
     /* Animated neon background */
     #bg {
@@ -2901,7 +2906,7 @@
       display: block; padding: 12px; z-index: 6; cursor: default; overflow: visible;
       border: 1.5px solid var(--cyan); background: var(--gs-card);
       box-shadow: 0 14px 34px rgba(0,0,0,.55), 0 0 0 1px rgba(255,158,44,.14);
-      -webkit-user-select: auto; user-select: auto; touch-action: auto;
+      touch-action: auto;
     }
     .tl-card.open.fresh { animation: tlOpen .2s ease; }
     /* Closing: the card shrinks back into its lane with its title row still showing; the
@@ -4061,7 +4066,8 @@ function defaultState() {
     // Reminders. `authorized` is mirrored from the iOS wrapper; the two switches are the
     // user's own and are the only part that survives a reload.
     notify: { rewardEnd: true, habitOverrun: true, authorized: false,
-              web: false },   // push through the browser, for the Home Screen web app
+              web: false,     // push through the browser, for the Home Screen web app
+              live: true },   // the iPhone app's Live Activity while something is running
     // What the Similar Day Engine expected, and what actually happened. One row per
     // day, graded when the day closes — the feedback loop that lets a prediction be
     // corrected instead of merely repeated.
@@ -4727,6 +4733,7 @@ function load(raw) {
     const pn = parsed.notify || {};
     merged.notify = { ...base.notify,
                       rewardEnd: pn.rewardEnd !== false, habitOverrun: pn.habitOverrun !== false,
+                      live: pn.live !== false,
                       // Whether the user asked for web push. The live subscription is the
                       // real authority — this only records the intent, so a reload doesn't
                       // have to ask again.
@@ -6341,7 +6348,7 @@ function completeOneoff(id, viaSpin, timing) {
             || visible(`#oneoffGrid .qrow[data-id="${id}"] .qcheck`)
             || $('#habitWheelResult');
   addTokens(amt, card);
-  const completedAt = Date.now();
+  const completedAt = (timing && Number.isFinite(timing.finishedAt)) ? timing.finishedAt : Date.now();
   logCompletion({ ts: completedAt, kind: 'task', id: t.id, name: t.name, emoji: t.emoji, category: t.category || 'Unsorted', level: TASK_TIERS[t.tier] ? t.tier : 'medium', reward: amt, iteration: t.progress, iterations: t.iterations, viaSpin: !!viaSpin,
     actualElapsedSec: (timing && Number.isFinite(timing.actualElapsedSec)) ? timing.actualElapsedSec : undefined,
     pauseCount: timing ? timing.pauseCount : undefined, totalPausedSec: timing ? timing.totalPausedSec : undefined,
@@ -6427,7 +6434,8 @@ function completeHabit(id, timing) {
   const h = state.habits.find(x => x.id === id);
   if (!h) return;
   const undoSnap = undoSnapshot(), undoName = `${h.emoji || '⚡'} ${h.name}`;
-  const finishedAt = Date.now();
+  // A finish carries its own moment when it was tapped somewhere else (the Lock Screen).
+  const finishedAt = (timing && Number.isFinite(timing.finishedAt)) ? timing.finishedAt : Date.now();
   const timerSnapshot = h.timer ? { ...h.timer } : null;
   h.timer = null;                                    // a completion always ends any running timer
   const cap = capOf(h);
@@ -6744,7 +6752,9 @@ function timerSuggestHTML(habitId, page, name, currentMins, isAuto) {
   return `<button class="btn ghost sm" data-act="applyTimerSuggest" data-page="${page}" data-min="${det}" style="color:var(--cyan)">⏱ "${fmtMins(det)}" detected — set as expected duration?</button>
           <button class="btn ghost sm" data-act="dismissTimerSuggest" data-page="${page}" data-min="${det}">✕</button>`;
 }
-function timerElapsedSec(t) { return Math.max(0, ((t.pausedAt || Date.now()) - t.startedAt) / 1000 - (t.pausedTotalSec || 0)); }
+// `at`: the moment to measure to while it's running — a Lock Screen Finish is measured to the
+// tap, not to whenever the page got to hear about it.
+function timerElapsedSec(t, at) { return Math.max(0, ((t.pausedAt || (Number.isFinite(at) ? at : Date.now())) - t.startedAt) / 1000 - (t.pausedTotalSec || 0)); }
 function fmtTimerSec(sec) { sec = Math.max(0, Math.round(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
 
 /* ---- Working segments: WHEN the pauses happened, not just how long they were ----------
@@ -6780,10 +6790,12 @@ function startHabitTimer(id) {
   logEvent('habit_started', { entityType: 'habit', entityId: h.id, name: h.name, category: h.category || 'Unsorted', scheduledStartMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin : null });
   SFX.click(); save(); renderHabits();
 }
-function toggleHabitTimerPause(id) {
+// `at` (epoch ms) is for a Lock Screen tap the page is only now hearing about: the pause
+// lands when it was tapped, not when the app next opened. Everything else passes nothing.
+function toggleHabitTimerPause(id, at) {
   const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
   const t = h.timer;
-  const now = Date.now();
+  const now = Number.isFinite(at) ? at : Date.now();
   // Resuming opens a NEW segment rather than extending the old one — that gap is the
   // whole point, and it's what draws the second block as "… (continued)".
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); logEvent('habit_resumed', { entityType: 'habit', entityId: h.id, name: h.name }); }
@@ -6807,13 +6819,13 @@ function cancelHabitTimer(id) {
 // Ends the session and completes the habit, logging actual elapsed time. There's no
 // "finished early" concept anymore — no target duration means Finish always just
 // means "I'm done, here's how long it actually took."
-function finishTimedHabit(id) {
+function finishTimedHabit(id, at) {
   const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
   const t = h.timer;
-  const now = Date.now();
+  const now = Number.isFinite(at) ? at : Date.now();
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; }
   closeSegment(t, now);
-  completeHabit(id, { actualElapsedSec: Math.round(timerElapsedSec(t)),
+  completeHabit(id, { actualElapsedSec: Math.round(timerElapsedSec(t, now)), finishedAt: now,
                       pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0),
                       segments: timerSegments(t).map(s => ({ s: s.s, e: s.e })) });
 }
@@ -6827,10 +6839,10 @@ function startOneoffTimer(id) {
   logEvent('task_started', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted' });
   SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
 }
-function toggleOneoffTimerPause(id) {
+function toggleOneoffTimerPause(id, at) {
   const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
   const t = q.timer;
-  const now = Date.now();
+  const now = Number.isFinite(at) ? at : Date.now();
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); logEvent('task_resumed', { entityType: 'task', entityId: q.id, name: q.name }); }
   else { t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now); logEvent('task_paused', { entityType: 'task', entityId: q.id, name: q.name, pauseCount: t.pauseCount }); }
   SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
@@ -6845,13 +6857,13 @@ function cancelOneoffTimer(id) {
   toast(`↺ Un-started ${q.name}`, 'var(--cyan)');
   offerUndo(snap, `↺ ${q.name}`);
 }
-function finishTimedOneoff(id) {
+function finishTimedOneoff(id, at) {
   const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
   const t = q.timer;
-  const now = Date.now();
+  const now = Number.isFinite(at) ? at : Date.now();
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; }
   closeSegment(t, now);
-  completeOneoff(id, false, { actualElapsedSec: Math.round(timerElapsedSec(t)),
+  completeOneoff(id, false, { actualElapsedSec: Math.round(timerElapsedSec(t, now)), finishedAt: now,
                               pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0),
                               segments: timerSegments(t).map(s => ({ s: s.s, e: s.e })) });
 }
@@ -7271,6 +7283,7 @@ setInterval(() => {
   // Reminders are always derived here and nowhere else. A second of lag is irrelevant
   // when what's being scheduled is minutes away, and one call site can't miss a path.
   syncReminders();
+  syncLive();
 }, 1000);
 
 /* =================================================================
@@ -11125,19 +11138,21 @@ function isActiveWin(w) {
 // (pausedRemainingMs) and activeUntil is cleared so the expiry sweep leaves it alone
 // while paused — same shape the habit/quest stopwatch uses (pausedAt + a banked amount),
 // just banked in whole milliseconds instead of accumulated seconds.
-function pauseActiveWin(id) {
+function pauseActiveWin(id, at) {
   const item = state.inventory.find(x => x.id === id);
   if (!item || item.pausedAt || !Number.isFinite(item.activeUntil)) return;
-  item.pausedRemainingMs = Math.max(0, item.activeUntil - Date.now());
-  item.pausedAt = Date.now();
+  const now = Number.isFinite(at) ? at : Date.now();
+  if (item.activeUntil <= now) return;            // a late Lock Screen tap: it had already run out
+  item.pausedRemainingMs = Math.max(0, item.activeUntil - now);
+  item.pausedAt = now;
   item.activeUntil = null;
   SFX.click(); toast(`⏸ ${item.name} paused`, 'var(--cyan)');
   save(); renderPrizes();
 }
-function resumeActiveWin(id) {
+function resumeActiveWin(id, at) {
   const item = state.inventory.find(x => x.id === id);
   if (!item || !item.pausedAt) return;
-  item.activeUntil = Date.now() + (item.pausedRemainingMs || 0);
+  item.activeUntil = (Number.isFinite(at) ? Math.max(at, item.pausedAt) : Date.now()) + (item.pausedRemainingMs || 0);
   item.pausedAt = null; item.pausedRemainingMs = null;
   SFX.click(); toast(`▶ ${item.name} resumed`, 'var(--green)');
   save(); renderPrizes();
@@ -11169,6 +11184,11 @@ window.HCNative = {
                                       shielded: !!s.shielded });
     save();
     if (state.notify) state.notify.authorized = !!s.notifyAuthorized;
+    // Only an app built with the Live Activity reports this at all; an older build would
+    // just log every 'live' message as unknown, so nothing is sent to one.
+    liveSupported = s.liveEnabled !== undefined;
+    liveSystemOn = s.liveEnabled !== false;
+    lastLivePush = '';                             // a fresh launch or return re-sends the list
     if ($('#view-settings') && $('#view-settings').classList.contains('active')) {
       renderScreenTime(); renderReminders();
     }
@@ -11301,6 +11321,135 @@ function syncReminders() {
     if (!p || p.at !== r.at || p.body !== r.body) HCBridge.send({ op: 'notify', id, ...r });
   });
 }
+
+/* ---- LIVE ACTIVITY -------------------------------------------------------
+   The iPhone app shows a Lock Screen / Dynamic Island card while something is in
+   progress: a habit or quest on the stopwatch, or a reward being used. Same division of
+   labour as the shield and the reminders — this page works out WHAT is running from
+   `state` every tick and sends the whole list; the app reconciles the cards against it.
+   Every number on the card counts by itself, so nothing here has to tick it.
+
+   The card's buttons run in the app, not here. They update the card at once and queue
+   the change; the queue reaches this page through HCNative.onLiveCommands — immediately
+   if the page is running, otherwise on the next load — with the moment of each tap, so
+   a pause tapped an hour ago still costs exactly what it should. ---- */
+let liveSupported = false;     // the app reported a build with Live Activities
+let liveSystemOn = true;       // …and iOS hasn't had them switched off for it
+let lastLivePush = '';
+const LIVE_APPLIED_KEY = 'habitCasino.liveApplied';
+function liveItems() {
+  const out = [];
+  const stopwatch = (src, kind) => {
+    const t = src.timer;
+    // The start with every pause cut out, so the card's elapsed is simply now − start.
+    const start = Math.round(t.startedAt + (t.pausedTotalSec || 0) * 1000);
+    const mins = predictedMinutesFor(src, kind);
+    const parts = childProgress(kind, src);
+    const detail = [mins > 0 ? `Usually ${fmtMins(mins)}` : '',
+                    parts.total ? `${parts.done}/${parts.total} parts` : ''].filter(Boolean).join(' · ')
+                   || (kind === 'task' ? 'Quest' : 'Habit');
+    out.push({ key: `${kind}:${src.id}`, run: String(t.startedAt), kind, name: src.name,
+               emoji: src.emoji || (kind === 'task' ? '🎯' : '⚡'), screenTime: false,
+               mode: 'stopwatch', start, end: mins > 0 ? start + Math.round(mins * 60000) : 0,
+               pausedAt: t.pausedAt || 0, detail });
+  };
+  state.habits.filter(h => h.timer).forEach(h => stopwatch(h, 'habit'));
+  state.oneoffs.filter(q => q.timer).forEach(q => stopwatch(q, 'task'));
+
+  // Rewards: the card counts the time or the uses down, and says how many prizes are
+  // still sitting in the pool behind this one.
+  const waiting = state.inventory.filter(x => !x.redeemed).length;
+  const pool = waiting ? `${waiting} more prize${waiting === 1 ? '' : 's'} waiting` : '';
+  const now = Date.now();
+  activeWinnings().forEach(w => {
+    const base = { key: `reward:${w.id}`, run: String(w.redeemedAt || w.actualStartedAt || w.id), kind: 'reward',
+                   name: w.name, emoji: w.emoji || '🎁',
+                   screenTime: !!(state.screenTime && state.screenTime.on && isScreenTimeWin(w)) };
+    const paused = !!(w.pausedAt && Number.isFinite(w.pausedRemainingMs));
+    if (paused || (Number.isFinite(w.activeUntil) && w.activeUntil > now)) {
+      out.push({ ...base, mode: 'countdown', end: paused ? 0 : w.activeUntil, pausedAt: paused ? w.pausedAt : 0,
+                 left: paused ? Math.round(w.pausedRemainingMs / 1000) : 0,
+                 total: Math.max(60, Math.round((w.activeMinutes || 0) * 60)),
+                 detail: pool || `${fmtMins(w.activeMinutes || 0)} reward` });
+    } else if (Number.isFinite(w.remaining) && w.remaining > 0) {
+      const unit = w.countUnit || 'uses';
+      out.push({ ...base, mode: 'tally', count: w.remaining, total: Math.max(w.remaining, w.countTotal || 0), unit,
+                 detail: [`of ${Math.max(w.remaining, w.countTotal || 0)} ${unit}`, pool].filter(Boolean).join(' · ') });
+    } else if (w.activePlain) {
+      out.push({ ...base, mode: 'plain', detail: pool || 'Enjoy it' });
+    }
+  });
+  return out;
+}
+function syncLive() {
+  if (!HCBridge.present || !liveSupported) return;
+  const items = (state.notify || {}).live === false ? [] : liveItems();
+  const key = JSON.stringify(items);
+  if (key === lastLivePush) return;
+  lastLivePush = key;
+  HCBridge.send({ op: 'live', items });
+}
+// One Lock Screen tap, applied at the moment it was made. Each verb checks the item is
+// still in the state the tap assumed — a pause on something already paused, or a finish
+// on something already finished from inside the app, does nothing.
+function applyLiveCommand(c) {
+  const key = String(c.key || ''), i = key.indexOf(':');
+  if (i < 0) return false;
+  const kind = key.slice(0, i), id = key.slice(i + 1);
+  let at = Math.min(Date.now(), Number(c.at) || Date.now());
+  if (kind === 'habit' || kind === 'task') {
+    const it = (kind === 'habit' ? state.habits : state.oneoffs).find(x => x.id === id);
+    const t = it && it.timer; if (!t) return false;
+    const segs = timerSegments(t), last = segs[segs.length - 1];
+    at = Math.max(at, t.pausedAt || 0, (last && last.s) || 0);   // never before the stretch it ends
+    const pause = kind === 'habit' ? toggleHabitTimerPause : toggleOneoffTimerPause;
+    if (c.action === 'pause') { if (t.pausedAt) return false; pause(id, at); return true; }
+    if (c.action === 'resume') { if (!t.pausedAt) return false; pause(id, at); return true; }
+    if (c.action === 'finish') { (kind === 'habit' ? finishTimedHabit : finishTimedOneoff)(id, at); return true; }
+    return false;
+  }
+  if (kind === 'reward') {
+    const w = state.inventory.find(x => x.id === id); if (!w) return false;
+    if (c.action === 'pause') { pauseActiveWin(id, at); return true; }
+    if (c.action === 'resume') { resumeActiveWin(id, at); return true; }
+    if (c.action === 'useOne') { useOneRep(id); return true; }
+    if (c.action === 'end' || c.action === 'finish') { endActiveWin(id, at); return true; }
+  }
+  return false;
+}
+// Taps can arrive twice (applied, then the app was killed before it heard so), so the ids
+// already applied are kept beside the save — and outside it: they are about this phone.
+window.HCNative.onLiveCommands = cmds => {
+  let applied = [];
+  try { applied = JSON.parse(localStorage.getItem(LIVE_APPLIED_KEY) || '[]'); } catch (e) {}
+  const seen = new Set(applied), ids = [];
+  let changed = false;
+  (Array.isArray(cmds) ? cmds : []).filter(c => c && c.id).sort((a, b) => a.at - b.at).forEach(c => {
+    if (!seen.has(c.id)) { if (applyLiveCommand(c)) changed = true; seen.add(c.id); }
+    ids.push(c.id);
+  });
+  try { localStorage.setItem(LIVE_APPLIED_KEY, JSON.stringify([...seen].slice(-100))); } catch (e) {}
+  HCBridge.send({ op: 'liveAck', ids });
+  if (changed) {
+    renderHabits(); renderOneoffs(); renderPrizes(); renderHomeNow(); renderBlockSchedule();
+    lastLivePush = ''; syncLive();
+  }
+};
+// Tapping the card opens the app on that item: a reward on Winnings, a habit or quest on
+// the Schedule with its running card already open — Pause, Finish and its parts in reach.
+window.HCNative.onOpen = key => {
+  key = String(key || '');
+  const i = key.indexOf(':'); if (i < 0) return false;
+  const kind = key.slice(0, i), id = key.slice(i + 1);
+  closeSchedSheet();
+  if (kind === 'reward') { switchView('prizes'); return true; }
+  const b = schedDayModel(todayStr()).blocks.find(x => x.live && x.srcId === id);
+  schedOffset = 0; schedEditKey = null; schedMenuOpen = false;
+  schedExpandedKey = b ? schedKey(b) : null;
+  switchView('schedule');
+  if (b) schedRevealOpen();
+  return true;
+};
 
 /* ---- WEB PUSH ------------------------------------------------------------
    The same two reminders, delivered by Apple to a Home Screen web app — so the phone
@@ -11632,9 +11781,9 @@ function useOneRep(id) {
   save(); renderPrizes();
 }
 // End early — stops a countdown or discards remaining reps.
-function endActiveWin(id) {
+function endActiveWin(id, at) {
   const item = state.inventory.find(x => x.id === id); if (!item) return;
-  const endedAt = Date.now();
+  const endedAt = Number.isFinite(at) ? at : Date.now();
   logEvent('reward_finished', { entityType: 'reward', entityId: item.rewardId || item.id, inventoryId: item.id, name: item.name,
     startedAt: item.actualStartedAt || null, endedAt, allocatedMinutes: item.activeMinutes || null,
     actualUsedMinutes: item.actualStartedAt ? Math.max(0, Math.round((endedAt - item.actualStartedAt) / 60000)) : null, finishReason: 'ended_early' });
@@ -13209,6 +13358,10 @@ function renderReminders() {
   box.innerHTML =
     row('ntRewardEnd', "A reward's timer runs out", n.rewardEnd !== false) +
     row('ntOverrun', 'A habit passes its usual length', n.habitOverrun !== false) +
+    (HCBridge.present && liveSupported
+      ? row('ntLive', 'Live Activity while something is running', n.live !== false) +
+        `<div class="hint">On the Lock Screen and in the Dynamic Island: the timer, Pause / Resume and Finish for a habit or quest, and the time or uses left on a reward.${n.live !== false && !liveSystemOn ? ' <b>Live Activities are switched off for Habit Casino in iOS Settings.</b>' : ''}</div>`
+      : '') +
     (HCBridge.present
       ? `<div class="row" style="margin-top:10px">${n.authorized
             ? '<span class="pill">✓ Notifications allowed</span>'
@@ -17422,6 +17575,7 @@ $('#addReward').addEventListener('click', () => {
 // ---- Settings: 🔔 Reminders ----
 $('#remindersBody').addEventListener('change', e => {
   const id = e.target.id;
+  if (id === 'ntLive') { state.notify.live = e.target.checked; save(); syncLive(); renderReminders(); return; }
   if (id !== 'ntRewardEnd' && id !== 'ntOverrun') return;
   state.notify[id === 'ntRewardEnd' ? 'rewardEnd' : 'habitOverrun'] = e.target.checked;
   // Deliberately does NOT reset lastReminderPlan. The diff against the previous plan is
@@ -18093,6 +18247,20 @@ $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
 // The hold that lifts a block is also Android's long-press — don't open a context menu on it.
 $('#view-schedule').addEventListener('contextmenu', e => { if (e.target.closest('.tl-card.draggable')) e.preventDefault(); });
+// A long press is a gesture in this app (lift a block, hold a habit), never "copy this".
+// The CSS stops the selection on iOS; these stop the same press starting one anywhere the
+// CSS isn't honoured, and stop the menu Android raises for it. Text fields keep both — a
+// hold there is how you paste. A mouse right-click is left alone.
+const TEXT_FIELD = 'input, textarea, [contenteditable]:not([contenteditable="false"])';
+let lastPointerType = 'mouse';
+document.addEventListener('pointerdown', e => { lastPointerType = e.pointerType || 'mouse'; }, { capture: true, passive: true });
+document.addEventListener('contextmenu', e => {
+  if (lastPointerType !== 'mouse' && !(e.target.closest && e.target.closest(TEXT_FIELD))) e.preventDefault();
+});
+document.addEventListener('selectstart', e => {
+  const el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+  if (!el || !el.closest(TEXT_FIELD)) e.preventDefault();
+});
 
 /* ---- + button: put a habit or quest onto the day you're looking at ----------------
    Every group opens COLLAPSED, every time. The picker used to remember which sections you
