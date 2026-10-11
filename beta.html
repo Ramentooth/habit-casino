@@ -3170,6 +3170,15 @@
       color: var(--yellow) !important; border-color: rgba(255,194,71,.85) !important;
       background: rgba(255,194,71,.08) !important; box-shadow: 0 0 7px rgba(255,194,71,.26) !important;
     }
+    /* The Focus menu is taller than a phone — the editor lists every habit — and .pass-modal
+       clips its content, so the menu's body is its own scroll area (the Pass and Planner use
+       .pass-scroll the same way). Without it everything below the fold was unreachable. */
+    .loadout-modal { padding-left: 0; padding-right: 0; }      /* the scroll area pads instead */
+    #loadoutBody {
+      flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain; touch-action: pan-y;
+      padding: 18px 16px calc(28px + env(safe-area-inset-bottom));
+    }
     /* The editor: one row per habit with its group, in the same three colours. */
     .fe-pick {
       display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; margin-top: 6px; border-radius: 12px;
@@ -17097,7 +17106,7 @@ function openFocusMenu(screen) {
   renderFocusMenu();
   $('#loadoutOverlay').classList.add('show');
 }
-function closeFocusMenu() { $('#loadoutOverlay').classList.remove('show'); focusDraft = null; focusScreen = 'list'; }
+function closeFocusMenu() { $('#loadoutOverlay').classList.remove('show'); focusDraft = null; focusScreen = 'list'; focusShownScreen = null; }
 // Unsaved edits get one warning before ✕ or switching focus throws them away.
 function focusDraftCanLeave() {
   if (!focusDraft || !focusDraft.dirty || focusDraft.warned) return true;
@@ -17140,8 +17149,10 @@ function focusCountsLabel(key) {
   state.habits.forEach(h => { if (h.archived) return; const r = habitRole(h, key); if (r === 'focus') f++; else if (r === 'maintain') m++; });
   return `${f} focus · ${m} maintain`;
 }
+let focusShownScreen = null;   // which screen is drawn, so changing screens starts at the top
 function renderFocusMenu() {
   const body = $('#loadoutBody'); if (!body) return;
+  if (focusShownScreen !== focusScreen) { body.scrollTop = 0; focusShownScreen = focusScreen; }
   const cur = currentLoadout();
   if (focusScreen === 'list') {
     const keys = (state.loadouts || []).filter(n => !isNoFocus(n));
