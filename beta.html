@@ -2789,14 +2789,16 @@
       transition: opacity .2s ease;
     }
     .tl-hour.near-now span { opacity: 0; }
+    /* Above the blocks (the lanes are z-index 3) but thin and barely glowing, so a 4px bar
+       under it still shows, and never in the way of a tap. */
     .tl-now {
-      position: absolute; left: calc(var(--tlG) - 6px); right: 0; height: 0; z-index: 2; pointer-events: none;
-      border-top: 2px solid var(--cyan); box-shadow: 0 0 10px rgba(255,158,44,.45);
-      transition: top .5s ease, transform .22s ease;
+      position: absolute; left: calc(var(--tlG) - 6px); right: 0; height: 0; z-index: 4; pointer-events: none;
+      border-top: 1.5px solid var(--cyan); box-shadow: 0 0 5px rgba(255,158,44,.3); opacity: .9;
+      transition: top .5s ease;
     }
     .tl-now::before {
-      content: ''; position: absolute; left: -1px; top: -6px; width: 10px; height: 10px; border-radius: 50%;
-      background: var(--cyan); box-shadow: 0 0 8px rgba(255,158,44,.8);
+      content: ''; position: absolute; left: -1px; top: -4.75px; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 6px rgba(255,158,44,.55);
     }
     .tl-now-t {
       position: absolute; left: calc(6px - var(--tlG)); top: -9px; font-size: 11px; font-weight: 800;
@@ -2826,7 +2828,7 @@
 
     /* ---- the card ---- */
     .tl-card {
-      position: absolute; box-sizing: border-box; pointer-events: auto; overflow: hidden;
+      position: absolute; z-index: 2; box-sizing: border-box; pointer-events: auto; overflow: hidden;
       display: flex; align-items: center; gap: 10px; padding: 0 10px;
       border-radius: 12px; background: var(--gs-card); border: 1px solid rgba(255,255,255,.09);
       color: var(--ink); cursor: pointer;
@@ -2848,12 +2850,11 @@
       background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.08);
     }
     /* Three things at once split the row into thirds. Give the name the room, not the icon:
-       a card too narrow for both drops the icon box, then the +N chip. */
-    .tl-card:not(.open) { container-type: inline-size; }
-    @container (max-width: 150px) {
-      .tl-ic { display: none; }
-      .dens-compact .tl-tx small, .tl-card.slim .tl-tx small { display: none; }   /* one-line cards: the name wins */
-    }
+       a card too narrow for both drops the time on a one-line block, then the icon, then +N.
+       (An icon-only block keeps its icon — it is all that block has.) */
+    .tl-card { container-type: inline-size; }
+    @container (max-width: 170px) { .tl-card.t-m .tl-tx small { display: none; } }
+    @container (max-width: 150px) { .tl-card.t-l .tl-ic, .tl-card.t-m .tl-ic { display: none; } }
     @container (max-width: 104px) { .tl-n { display: none; } }
     .tl-card.predicted { background: rgba(27,27,31,.78); border: 1px dashed rgba(255,255,255,.2); }
     .tl-card.done {
@@ -2874,17 +2875,42 @@
       0%, 100% { box-shadow: 0 0 0 1px rgba(255,158,44,.22), 0 0 12px rgba(255,158,44,.16); }
       50%      { box-shadow: 0 0 0 1px rgba(255,158,44,.5),  0 0 22px rgba(255,158,44,.32); }
     }
-    .tl-card.slim .tl-tx { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 6px; }
-    .tl-card.slim .tl-tx small { margin-top: 0; flex: 0 0 auto; }
-    .tl-card.slim .tl-n { padding: 1px 6px; }
-    .dens-compact .tl-card { gap: 8px; padding: 0 8px; border-radius: 10px; }
-    .dens-compact .tl-ic { width: 22px; height: 22px; font-size: 13px; border-radius: 6px; }
-    .dens-compact .tl-tx { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 6px; }
-    .dens-compact .tl-tx b { font-size: 12.5px; }
-    .dens-compact .tl-tx small { margin-top: 0; font-size: 11px; flex: 0 0 auto; }
-    .dens-full .tl-card { gap: 5px; padding: 0 6px; border-radius: 6px; }
-    .dens-full .tl-ic { width: auto; height: auto; background: none; font-size: 11px; }
-    .dens-full .tl-tx b { font-size: 11px; font-weight: 600; }
+    /* ---- label tiers: the text gives way, the height never does (see SCHED_MIN_PX) ---- */
+    .tl-card.t-l .tl-ic { width: min(30px, calc(var(--h) - 10px)); height: min(30px, calc(var(--h) - 10px)); }
+    .tl-card.t-m { gap: 7px; padding: 0 9px; border-radius: 8px; }
+    .tl-card.t-m .tl-ic, .tl-card.t-s .tl-ic { width: auto; height: auto; background: none; border-radius: 0; }
+    .tl-card.t-m .tl-ic { font-size: 12.5px; }
+    .tl-card.t-m .tl-tx { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 7px; }
+    .tl-card.t-m .tl-tx b { flex: 0 1 auto; min-width: 2.5em; font-size: 12.5px; }
+    .tl-card.t-m .tl-tx small { flex: 0 100 auto; min-width: 0; margin-top: 0; font-size: 11px; }   /* the time goes before the name does */
+    .tl-card.t-m .tl-n { padding: 0 6px; font-size: 10.5px; }
+    .tl-card.t-s { padding: 0 6px; border-radius: 5px; }
+    .tl-card.t-s .tl-ic { font-size: min(13px, calc(var(--h) - 2px)); line-height: 1; }
+    .tl-card.t-xs, .tl-card.t-pt { padding: 0; border-width: 0; border-radius: 3px; }
+    /* Too thin for words, so the fill has to say what it is: the legend's colours, stronger. */
+    .tl-card.done.t-xs { background: color-mix(in srgb, var(--cyan) 26%, var(--gs-card)); border: 1px solid color-mix(in srgb, var(--cyan) 55%, transparent); }
+    .tl-card.predicted:is(.t-s, .t-xs, .t-pt) { background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.34); }
+    .tl-card.reward:is(.t-s, .t-xs, .t-pt) { background: color-mix(in srgb, var(--gold) 55%, var(--gs-card)); box-shadow: none; }
+    .tl-card.running:is(.t-s, .t-xs, .t-pt) { background: color-mix(in srgb, var(--cyan) 70%, var(--gs-card)); }
+    .tl-card.moment.t-pt { background: rgba(255,255,255,.3); }
+    /* A tick with no length is a line at its minute, with a dot like the now-marker's so it
+       reads as a moment rather than a divider. Its name hangs below it, in empty time. */
+    .tl-card.t-pt { overflow: visible; }
+    .tl-card.t-pt::before {
+      content: ''; position: absolute; left: -2px; top: 50%; width: 10px; height: 10px; margin-top: -5px; box-sizing: border-box;
+      border-radius: 50%; background: inherit; border: 1.5px solid var(--gs-bg);
+    }
+    .tl-cap {
+      position: absolute; left: 2px; top: calc(100% + 3px); max-width: calc(100% - 4px);
+      font-size: 11.5px; line-height: 14px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* A finger-sized target made of empty time around a thin block. Under every block (z 1
+       against their 2), so a tap on a block always lands on that block. */
+    .tl-hit {
+      position: absolute; z-index: 1; pointer-events: auto; cursor: pointer;
+      touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
     .dens-full .tl-hour span { font-size: 10px; }
 
     /* ---- selected by a hold: handles to resize, the body to move ---- */
@@ -2900,35 +2926,12 @@
     .tl-grip.t::after { top: 10px; }
     .tl-grip.b { bottom: -13px; }
     .tl-grip.b::after { bottom: 10px; }
+    /* On a short block the two handles would sit on top of each other: move them outside. */
+    .tl-card.editing.tight .tl-grip.t { top: -25px; }
+    .tl-card.editing.tight .tl-grip.b { bottom: -25px; }
 
-    /* ---- opened in place ---- */
-    .tl-card.open {
-      display: block; padding: 12px; z-index: 6; cursor: default; overflow: visible;
-      border: 1.5px solid var(--cyan); background: var(--gs-card);
-      box-shadow: 0 14px 34px rgba(0,0,0,.55), 0 0 0 1px rgba(255,158,44,.14);
-      touch-action: auto;
-    }
-    .tl-card.open.fresh { animation: tlOpen .2s ease; }
-    /* Closing: the card shrinks back into its lane with its title row still showing; the
-       rest fades first so nothing is seen being squeezed. */
-    .tl-card.open.closing {
-      overflow: hidden; pointer-events: none;
-      border-color: rgba(255,255,255,.12); box-shadow: none;
-      transition: height .22s ease, left .22s ease, width .22s ease, box-shadow .22s ease, border-color .22s ease;
-    }
-    .tl-card.open.closing > :not(.tlx-head) { opacity: 0; transition: opacity .12s ease; }
-    @keyframes tlOpen { from { opacity: .3; transform: scale(.985); } to { opacity: 1; transform: none; } }
-    .tl-still [data-min] { transition: none !important; }
-    .tlx-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-    .tlx-title { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
-    .tlx-title b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tlx-title small { font-size: 12px; color: var(--ink-dim); margin-top: 3px; }
     .tlx-live, .tlx-done { color: var(--cyan); font-weight: 700; }
     .tlx-dim { color: var(--ink-dim); }
-    .tlx-chev {
-      flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; padding: 0; cursor: pointer;
-      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: var(--ink); font-size: 15px;
-    }
     .tlx-kids { margin-top: 10px; border-top: 1px solid rgba(255,255,255,.07); }
     .tlx-kids.sheet { margin-top: 0; border-top: 0; }
     .tlx-kid { display: flex; align-items: center; gap: 12px; min-height: 42px; border-bottom: 1px solid rgba(255,255,255,.05); }
@@ -2950,23 +2953,6 @@
       color: var(--ink); font: inherit; font-size: 13.5px;
     }
     .tlx-add-in::placeholder { color: var(--ink-dim); opacity: .8; }
-    .tlx-actions { display: flex; gap: 8px; margin-top: 12px; }
-    .tlx-btn {
-      flex: 1 1 0; min-width: 0; height: 42px; border-radius: 11px; cursor: pointer; white-space: nowrap;
-      background: var(--gs-ctl); border: 1px solid rgba(255,255,255,.13); color: var(--ink);
-      font: inherit; font-weight: 700; font-size: 13.5px;
-    }
-    .tlx-btn.go { background: var(--cyan); border-color: var(--cyan); color: #1a0f02; box-shadow: 0 4px 14px rgba(255,158,44,.25); }
-    .tlx-btn.icon { flex: 0 0 50px; font-size: 18px; letter-spacing: 1px; }
-    .tlx-btn:active { transform: scale(.98); }
-    .tlx-menu { margin-top: 8px; border-radius: 12px; overflow: hidden; background: var(--gs-panel); border: 1px solid rgba(255,255,255,.08); }
-    .tlx-menu[hidden] { display: none; }
-    .tlx-menu button {
-      display: block; width: 100%; text-align: left; padding: 13px 14px; cursor: pointer;
-      background: none; border: 0; border-bottom: 1px solid rgba(255,255,255,.06); color: var(--ink); font: inherit; font-size: 13.5px;
-    }
-    .tlx-menu button:active { background: rgba(255,255,255,.05); }
-    .tlx-tip { padding: 10px 14px; font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
 
     /* ---- one bottom sheet for everything the timeline keeps out of the way ---- */
     .sch-scrim {
@@ -3068,6 +3054,36 @@
     .sch-dt b { display: block; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sch-dt small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--ink-dim); }
     .tl-ic.big { width: 46px; height: 46px; font-size: 24px; border-radius: 13px; background: rgba(255,255,255,.06); }
+    /* The sheet a tap on any block opens. */
+    .sch-edit {
+      flex: 0 0 auto; height: 34px; padding: 0 14px; border-radius: 10px; cursor: pointer;
+      background: var(--gs-ctl); border: 1px solid rgba(255,255,255,.12); color: var(--ink);
+      font: inherit; font-weight: 700; font-size: 13.5px;
+    }
+    .sch-bk-top { display: flex; align-items: center; gap: 14px; padding: 0 2px 16px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sch-bk-top .tl-ic.big { width: 54px; height: 54px; font-size: 30px; border-radius: 15px; background: color-mix(in srgb, var(--sb) 18%, rgba(255,255,255,.05)); }
+    .sch-bk-name { flex: 1; min-width: 0; }
+    .sch-bk-name b { display: block; font-size: 20px; line-height: 1.2; overflow-wrap: anywhere; }
+    .sch-bk-name small { display: block; margin-top: 4px; font-size: 13.5px; line-height: 1.35; color: var(--ink-dim); }
+    .sch-bk-rows { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .sch-bk-row { display: flex; align-items: flex-start; gap: 12px; padding: 11px 2px; font-size: 14px; line-height: 1.35; }
+    .sch-bk-row > i { flex: 0 0 22px; font-style: normal; text-align: center; }
+    .sch-bk-row > span { flex: 0 0 auto; color: var(--ink-dim); }
+    .sch-bk-row > b { flex: 1; min-width: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+    .sch-bk-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500; }
+    .sch-bk-why { margin: 12px 2px 4px; font-size: 12.5px; line-height: 1.45; color: var(--ink-dim); }
+    .sch-bk-acts { margin-top: 16px; }
+    .sch-wide.go { background: var(--cyan); border-color: var(--cyan); color: #1a0f02; box-shadow: 0 4px 14px rgba(255,158,44,.25); }
+    .sch-wide.line { background: transparent; border-color: color-mix(in srgb, var(--cyan) 65%, transparent); }
+    .sch-wide + .sch-wide { margin-top: 10px; }
+    .sch-wide:active { transform: scale(.985); }
+    .sch-bk-more { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .sch-chip {
+      height: 36px; padding: 0 12px; border-radius: 10px; cursor: pointer;
+      background: transparent; border: 1px solid rgba(255,255,255,.12); color: var(--ink);
+      font: inherit; font-weight: 600; font-size: 12.5px;
+    }
+    .sch-bk-tip { margin-top: 14px; font-size: 11.5px; line-height: 1.45; color: var(--ink-dim); }
     .sch-tabs { display: flex; margin: 0 0 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
     .sch-tab {
       flex: 1; height: 42px; cursor: pointer; background: none; border: 0; border-bottom: 2px solid transparent;
@@ -3126,7 +3142,7 @@
     .sch-tier.sel { background: color-mix(in srgb, var(--tc) 18%, transparent); border-color: var(--tc); }
     @media (prefers-reduced-motion: reduce) {
       .tl-card, .tl-hour, .tl-now, .tl-back, .sch-sheet, .sch-bar i { transition: none !important; }
-      .tl-card.open, .tl-card.running { animation: none !important; }
+      .tl-card.running { animation: none !important; }
     }
 
     /* ---- FOCUS: the button, the three groups, and the pills that carry the multiplier.
@@ -3326,7 +3342,7 @@
     <section class="view" id="view-habits">
       <div class="plan-cta">
         <span id="todayCtxBadge"></span>
-        <button class="focus-btn" id="loadoutSwitch" type="button" title="Choose or edit today's focus"></button>
+        <button class="focus-btn" id="loadoutSwitch" type="button" title="Choose today's focus"></button>
       </div>
       <div class="focus-board" id="focusBoard" style="display:none"></div>
       <div class="duenow-mount" id="dueSoonSection"></div>
@@ -8820,7 +8836,7 @@ function blockFloorPx() { return BAR_MIN_PX; }
 function blockDrawnPx(durMin, px) { return Math.max(BAR_MIN_PX, (durMin || 0) / 60 * px); }
 function isTinyBlock(durMin, px) { return blockDrawnPx(durMin, px) < LABEL_MIN_PX; }
 
-function layoutLanes(blocks, px, floorPx) {
+function layoutLanes(blocks, px, floorPx, gapPx = 2) {
   // How many minutes the shortest drawable block occupies AT THIS ZOOM. This used to be a
   // flat 12 minutes while blocks rendered with a 24px floor — at 56px/hour that floor is
   // 25.7 minutes, so anything starting within ~26 minutes of a short block was declared
@@ -8831,8 +8847,9 @@ function layoutLanes(blocks, px, floorPx) {
   const closeCluster = () => { cluster.forEach(b => { b.laneCount = lanes.length; }); cluster = []; lanes = []; clusterEnd = -1; };
   blocks.forEach(b => {
     // +2px so neighbours never graze: reserving the exact drawn height leaves them
-    // touching, and sub-pixel rounding then reads as a 1px overlap at some scales.
-    const end = b.startMin + Math.max(b.durMin, ((Number.isFinite(floorPx) ? floorPx : blockFloorPx()) + 2) / pxPerHour * 60);
+    // touching, and sub-pixel rounding then reads as a 1px overlap at some scales. (The
+    // Schedule tab passes 1: its blocks are drawn a pixel short of their length already.)
+    const end = b.startMin + Math.max(b.durMin, ((Number.isFinite(floorPx) ? floorPx : blockFloorPx()) + gapPx) / pxPerHour * 60);
     if (b.startMin >= clusterEnd && cluster.length) closeCluster();
     let lane = lanes.findIndex(laneEnd => laneEnd <= b.startMin);
     if (lane === -1) { lane = lanes.length; lanes.push(end); } else { lanes[lane] = end; }
@@ -9094,16 +9111,18 @@ function schedGridParts(dateStr, opts = {}) {
    SCHEDULE — the day as a calm vertical timeline.
 
    Progressive disclosure, three layers deep:
-     1. the card ...... icon, name, how long, and +N when it has parts. Nothing else.
-     2. tap it ........ it opens in place: the exact time, its subtasks, Start / Edit / ⋯.
-     3. Edit .......... the detail sheet: this day's time and length, why it sits where it
-                        does, its history and notes — and the full editor one tap further.
+     1. the block ..... exactly as tall as it is long (see SCHED_MIN_PX). It prints what
+                        fits — icon, name, time — and drops words before it would ever grow.
+     2. tap it ........ a sheet: the exact times, how long, tier, reward, notes, its
+                        subtasks, Start Timer / Mark Complete. Any block, the thinnest too.
+     3. Edit .......... the full sheet: this day's time and length, why it sits where it
+                        does, its history and notes — and the habit's editor one tap further.
    Everything the old grid printed on every block (start–end times, the leader lines, the
    legend, the record bar, the drag hint) still exists. It moved to the layer where it is
    asked for.
 
    Gestures:
-     tap .............. open / close a card
+     tap .............. the block's sheet
      hold ............. lift it and drag to move; it stays selected with handles to resize
      swipe sideways ... previous / next day
      pinch ............ step between Detailed, Compact and Full Day
@@ -9115,9 +9134,9 @@ function schedGridParts(dateStr, opts = {}) {
    never disagree about what happened when.
    ================================================================= */
 const SCHED_DENSITIES = {
-  detailed: { label: 'Detailed', sub: 'More space per hour. Easier to see details.', px: 84, card: 40 },
-  compact:  { label: 'Compact',  sub: 'See more of your day at once.',               px: 54, card: 30 },
-  full:     { label: 'Full Day', sub: 'Fit 7 AM – 10 PM on one screen.',              px: 0,  card: 17 },
+  detailed: { label: 'Detailed', sub: 'More space per hour. Easier to see details.', px: 84 },
+  compact:  { label: 'Compact',  sub: 'See more of your day at once.',               px: 54 },
+  full:     { label: 'Full Day', sub: 'Fit 7 AM – 10 PM on one screen.',              px: 0 },
 };
 // Pinching OUT walks right along this list, pinching in walks left.
 const SCHED_DENSITY_ORDER = ['full', 'compact', 'detailed'];
@@ -9125,18 +9144,15 @@ function schedDensity() {
   const d = (state.settings || {}).schedDensity;
   return SCHED_DENSITIES[d] ? d : 'detailed';
 }
-let schedShownOpen = null;      // the card that was open at the last paint — a repaint of it doesn't re-animate
-let schedExpandedKey = null;   // the one card opened in place, by schedKey()
-let schedEditKey = null;       // the card lifted by a hold — selected, with resize handles
-let schedMenuOpen = false;     // the ⋯ menu inside the open card
+let schedEditKey = null;       // the block lifted by a hold — selected, with resize handles
 let schedScrollPending = false;   // centre on "now" after the next paint
 let schedHasRunning = false;   // a stopwatch is drawing a live block — the tick repaints it
 let schedSuppressUntil = 0;    // a hold or a swipe just ended — swallow the click it leaves behind
-let schedSheet = null;         // { type: 'view'|'legend'|'progress'|'detail'|'add', key, tab }
+let schedSheet = null;         // { type: 'view'|'legend'|'progress'|'block'|'detail'|'add', key, tab }
 let schedAddDraft = null;      // the Add Task form, kept while its sheet is open
 
 // A block's identity that survives a repaint. Index positions don't: the list is rebuilt
-// every render, and a card has to stay open across the 30-second tick.
+// every render, and its sheet (or its selection) has to survive the 30-second tick.
 function schedKey(b) {
   if (b.kind === 'gap') return `g:${b.startMin}`;
   if (b.kind === 'filler') return `f:${b.startMin}`;
@@ -9167,6 +9183,96 @@ function schedDurLabel(min) {
 function schedRangeLabel(b) {
   if (b.kind === 'moment' || !(b.durMin > 0)) return fmtMinOfDay(b.startMin);
   return `${fmtMinOfDay(b.startMin)} – ${fmtMinOfDay((b.startMin + b.durMin) % 1440)}`;
+}
+// "9:30 – 9:40 AM": the AM/PM said once when both ends share it. No length, just the time.
+function schedShortRange(startMin, durMin) {
+  const a = fmtMinOfDay(Math.round(startMin));
+  if (!(durMin > 0)) return a;
+  const z = fmtMinOfDay(Math.round(startMin + durMin) % 1440);
+  return a.slice(-2) === z.slice(-2) ? `${a.slice(0, -3)} – ${z}` : `${a} – ${z}`;
+}
+// A length the way a screen reader should say it: "10 minutes", "1 hour 5 minutes".
+function schedDurWords(min) {
+  const m = Math.max(0, Math.round(min || 0)), h = Math.floor(m / 60), r = m % 60;
+  const n = (v, w) => `${v} ${w}${v === 1 ? '' : 's'}`;
+  if (!h) return n(m, 'minute');
+  return r ? `${n(h, 'hour')} ${n(r, 'minute')}` : n(h, 'hour');
+}
+function schedBlockStatus(b) {
+  if (b.running) return 'running now';
+  if (b.live) return 'paused';
+  if (b.type === 'reward') return 'reward';
+  if (b.kind === 'actual' || b.kind === 'moment') return 'done';
+  return b.kind === 'predicted' ? 'planned' : '';
+}
+// "Cello, 9:30 AM to 9:40 AM, 10 minutes, planned" — the whole block in words, because a
+// thin one may print none at all.
+function schedBlockAria(b, nKids) {
+  const start = Math.round(b.startMin);
+  const when = b.durMin > 0
+    ? `${fmtMinOfDay(start)} to ${fmtMinOfDay(Math.round(b.startMin + b.durMin) % 1440)}, ${schedDurWords(b.durMin)}`
+    : `at ${fmtMinOfDay(start)}${b.kind === 'moment' ? ', no timer' : ''}`;
+  const status = schedBlockStatus(b);
+  return `${b.name}, ${when}${status ? `, ${status}` : ''}${nKids ? `, ${nKids} subtask${nKids > 1 ? 's' : ''}` : ''}`;
+}
+
+/* ---- Geometry: the block IS the duration ------------------------------------------------
+   A block is drawn exactly as tall as its length at the current scale, less a 1px seam so
+   back-to-back blocks read as separate. SCHED_MIN_PX only stops a one-minute block (or a
+   tick with no length at all) from vanishing; at Detailed's 84px/hour it is under three
+   minutes. Until 2026-10-12 every card had a 40 / 30 / 17px floor: a ten-minute task drew
+   as twenty-nine minutes, and a run of short ones was pushed into side-by-side lanes.
+
+   Text gives way before the geometry does. The label tier follows the drawn height:
+     l   >= 36px  icon, name, and the time on a second line
+     m   >= 18px  one line: icon, name, then the time if the width allows
+     s   >= 12px  the icon alone
+     xs   < 12px  a bare coloured bar
+     pt           no length at all: a line at its minute, its name hanging below in empty time
+   Whatever a block can't print is in its sheet, one tap away.
+
+   Touch is separate from drawing: a thin block gets an invisible hit strip grown towards
+   SCHED_HIT_PX, but only into empty time and never past halfway to its neighbour, so a
+   dense run of short blocks stays thin and each one still takes its own taps. */
+const SCHED_MIN_PX = 4;
+const SCHED_HIT_PX = 44;
+function schedDrawnPx(durMin, px) {
+  return Math.max(SCHED_MIN_PX, (durMin || 0) / 60 * px - 1);
+}
+function schedLabelTier(h) {
+  return h >= 36 ? 'l' : h >= 18 ? 'm' : h >= 12 ? 's' : 'xs';
+}
+// Writes hitUp / hitDown (px to grow the hit strip above and below the drawn block) and
+// roomBelow (empty px under it, in its own column) onto each block. Lanes must be laid
+// out first: two blocks are neighbours only if their columns overlap.
+function schedHitAreas(blocks, px) {
+  const geo = blocks.map(b => {
+    const n = Math.max(1, b.laneCount || 1), l = b.lane || 0;
+    const y0 = b.startMin / 60 * px;
+    return { b, x0: l / n, x1: (l + 1) / n, y0, y1: y0 + schedDrawnPx(b.durMin, px) };
+  });
+  geo.forEach(g => {
+    let above = -Infinity, below = Infinity;
+    geo.forEach(o => {
+      if (o === g || o.x1 <= g.x0 + 1e-9 || o.x0 >= g.x1 - 1e-9) return;   // another column
+      if (o.y1 <= g.y0 + 0.01) above = Math.max(above, o.y1);
+      else if (o.y0 >= g.y1 - 0.01) below = Math.min(below, o.y0);
+    });
+    const want = Math.max(0, SCHED_HIT_PX - (g.y1 - g.y0));
+    const maxUp = (g.y0 - above) / 2, maxDown = (below - g.y1) / 2;
+    // Centred when there's room both ways; squeezed on one side, the rest goes to the other.
+    let up = Math.min(maxUp, want / 2);
+    const down = Math.min(maxDown, want - up);
+    up = Math.min(maxUp, want - down);
+    g.b.hitUp = Math.max(0, up);
+    g.b.hitDown = Math.max(0, down);
+    g.b.roomBelow = below - g.y1;
+  });
+  return blocks;
+}
+// The drawn block for a key — keys can hold any character, so no selector string.
+function schedCardEl(key) {
+  return [...document.querySelectorAll('#view-schedule .tl-card')].find(c => c.dataset.key === key) || null;
 }
 function schedHourLabel(h, dens) {
   const hh = h % 24, ap = hh >= 12 ? 'PM' : 'AM', d = hh % 12 || 12;
@@ -9283,50 +9389,55 @@ function schedFullPx(hours) {
   return clamp(Math.floor(room / Math.max(1, hours)), 22, 84);
 }
 function schedCardHTML(b, ctx) {
-  const { px, cardH, lo, dens, isToday, nowM } = ctx;
+  const { px, lo, isToday, nowM } = ctx;
   const key = schedKey(b);
   const src = schedSource(b);
   const kids = src ? childrenOf(src.kind, src.item) : [];
-  const open = key === schedExpandedKey;
-  const editing = !open && key === schedEditKey;
+  const editing = key === schedEditKey;
   const reward = b.type === 'reward';
   const done = !reward && (b.kind === 'actual' || b.kind === 'moment') && !b.live;
   const isNow = isToday && !done && (b.running || (b.kind === 'predicted' && b.startMin <= nowM && nowM < b.startMin + (b.durMin || 15)));
   const editHist = b.hid && !b.live && !reward;
   const drag = (b.kind === 'predicted' && b.refId) || editHist;
   const lanes = Math.max(1, b.laneCount || 1), w = 100 / lanes;
-  const trueH = (b.durMin || 0) / 60 * px;
-  const h = Math.max(cardH, trueH);
+  const point = !(b.durMin > 0);
+  const h = schedDrawnPx(b.durMin, px);
+  const tier = point ? 'pt' : schedLabelTier(h);
   const top = (b.startMin - lo * 60) / 60;
   const col = categoryColor(b.category) || 'rgba(255,255,255,.18)';
-  const dur = b.kind === 'moment' ? `✓ ${fmtMinOfDay(b.startMin)}`
-    : reward && !(b.durMin > 0) ? `🎁 ${fmtMinOfDay(b.startMin)}`
-    : (reward ? '🎁 ' : done ? '✓ ' : '') + (dens === 'detailed' ? schedDurLabel(b.durMin) : fmtMins(Math.round(b.durMin)));
-  const status = b.running ? 'running now' : done ? 'done' : reward ? 'reward' : b.kind === 'predicted' ? 'planned' : '';
-  const aria = `${b.name}, ${schedRangeLabel(b)}${status ? `, ${status}` : ''}${kids.length ? `, ${kids.length} subtask${kids.length > 1 ? 's' : ''}` : ''}`;
-  const cls = ['tl-card', b.kind, reward ? 'reward' : '', done ? 'done' : '', b.running ? 'running' : '',
-    isNow ? 'is-now' : '', drag ? 'draggable' : '', open ? 'open' : '', open && key !== schedShownOpen ? 'fresh' : '', editing ? 'editing' : '',
-    h < 30 ? 'slim' : ''].filter(Boolean).join(' ');
-  const pos = open
-    ? `top:calc(var(--ph) * ${top.toFixed(4)});min-height:${h.toFixed(1)}px;left:0;width:100%`
-    : `top:calc(var(--ph) * ${top.toFixed(4)});height:max(${cardH}px, calc(var(--ph) * ${((b.durMin || 0) / 60).toFixed(4)}));left:${(b.lane || 0) * w}%;width:calc(${w}% - 6px)`;
-  const data = `data-key="${escapeHtml(key)}" data-min="${b.startMin}" data-start="${b.startMin}" data-dur="${Math.round(b.durMin || 0)}" data-h="${h.toFixed(1)}"`
-    + (drag ? (editHist ? ` data-hid="${b.hid}" data-seg="${b.segIndex || 0}"` : ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"`) : '')
-    + (open ? ` data-lane="${b.lane || 0}" data-lanes="${lanes}"` : '');
-  const inner = open ? schedExpandedHTML(b, src, kids, ctx) : `
-      <span class="tl-ic" aria-hidden="true">${escapeHtml(b.emoji || (reward ? '🎁' : '•'))}</span>
-      <span class="tl-tx"><b>${escapeHtml(b.name)}</b>${dens !== 'full' ? `<small>${escapeHtml(dur)}</small>` : ''}</span>
-      ${kids.length && dens !== 'full' ? `<span class="tl-n">+${kids.length}</span>` : ''}
-      ${editing ? `<i class="tl-grip t" data-grip="top" aria-hidden="true"></i><i class="tl-grip b" data-grip="bot" aria-hidden="true"></i>` : ''}`;
-  return `<div class="${cls}" ${data} ${open ? 'role="group"' : 'role="button" tabindex="0" aria-expanded="false"'} aria-label="${escapeHtml(aria)}"
-      style="${pos};--sb:${col}">${inner}</div>`;
+  const glyph = b.running ? '● ' : reward ? '🎁 ' : done ? '✓ ' : '';
+  const range = schedShortRange(b.startMin, b.durMin);
+  const cls = ['tl-card', `t-${tier}`, b.kind, reward ? 'reward' : '', done ? 'done' : '', b.running ? 'running' : '',
+    isNow ? 'is-now' : '', drag ? 'draggable' : '', editing ? 'editing' : '', h < 40 ? 'tight' : ''].filter(Boolean).join(' ');
+  const across = `left:${(b.lane || 0) * w}%;width:calc(${w}% - 6px)`;
+  const height = point ? `${SCHED_MIN_PX}px` : `max(${SCHED_MIN_PX}px, calc(var(--ph) * ${(b.durMin / 60).toFixed(4)} - 1px))`;
+  const data = `data-key="${escapeHtml(key)}" data-min="${b.startMin}" data-start="${b.startMin}" data-dur="${Math.round(b.durMin || 0)}"`
+    + (drag ? (editHist ? ` data-hid="${b.hid}" data-seg="${b.segIndex || 0}"` : ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"`) : '');
+  const ic = `<span class="tl-ic" aria-hidden="true">${escapeHtml(b.emoji || (reward ? '🎁' : '•'))}</span>`;
+  let inner = '';
+  if (tier === 'l' || tier === 'm') {
+    inner = `${ic}<span class="tl-tx"><b>${escapeHtml(b.name)}</b><small>${escapeHtml(glyph + range)}</small></span>`
+      + (kids.length ? `<span class="tl-n">+${kids.length}</span>` : '');
+  } else if (tier === 's') inner = ic;
+  else if (tier === 'pt' && b.roomBelow >= 18) {
+    inner = `<span class="tl-cap" aria-hidden="true">${escapeHtml(`${b.emoji ? b.emoji + ' ' : ''}${b.name} · ${glyph}${range}`)}</span>`;
+  }
+  if (editing) inner += `<i class="tl-grip t" data-grip="top" aria-hidden="true"></i><i class="tl-grip b" data-grip="bot" aria-hidden="true"></i>`;
+  // The invisible strip that makes a thin block a finger-sized target (schedHitAreas).
+  const up = b.hitUp || 0, down = b.hitDown || 0;
+  const hit = up + down >= 1
+    ? `<i class="tl-hit" data-key="${escapeHtml(key)}" aria-hidden="true" style="top:${(top * px - up).toFixed(1)}px;height:${(h + up + down).toFixed(1)}px;${across}"></i>` : '';
+  return `${hit}<div class="${cls}" ${data} role="button" tabindex="0" aria-haspopup="dialog" aria-label="${escapeHtml(schedBlockAria(b, kids.length))}"
+      style="top:calc(var(--ph) * ${top.toFixed(4)});height:${height};${across};--sb:${col};--h:${h.toFixed(1)}px">${inner}</div>`;
 }
 function schedTimelineHTML(m, dens, px, lo, hi) {
-  const cardH = SCHED_DENSITIES[dens].card;
   const blocks = m.blocks.slice();
-  layoutLanes(blocks, px, cardH);
+  // Lanes reserve each block's real length (floored at its drawn minimum), so back-to-back
+  // short blocks stack in one column instead of being pushed side by side.
+  layoutLanes(blocks, px, SCHED_MIN_PX, 1);
+  schedHitAreas(blocks, px);
   const nowM = m.isToday ? nowMinutes() : -1;
-  const ctx = { px, cardH, lo, dens, isToday: m.isToday, isFuture: m.isFuture, nowM, dateStr: m.dateStr };
+  const ctx = { px, lo, dens, isToday: m.isToday, isFuture: m.isFuture, nowM, dateStr: m.dateStr };
   const at = hrs => `calc(var(--ph) * ${(+hrs).toFixed(4)})`;
   const nowOn = m.isToday && nowM >= lo * 60 && nowM <= hi * 60;
   const lines = [];
@@ -9354,7 +9465,7 @@ function schedTimelineHTML(m, dens, px, lo, hi) {
         : m.isToday ? 'Nothing logged or planned yet — tap ＋ to add something.' : 'Nothing was logged on this day.')}</div>` : '';
   const H = (hi - lo) * px;
   return `${empty}
-    <div class="tl-grid dens-${dens}" data-lo="${lo}" data-hi="${hi}" data-px="${px}" data-card="${cardH}" data-h="${H}"
+    <div class="tl-grid dens-${dens}" data-lo="${lo}" data-hi="${hi}" data-px="${px}" data-h="${H}"
          data-today="${m.isToday ? 1 : 0}" style="--ph:${px}px;height:${H}px">
       ${lines.join('')}${backs}
       <div class="tl-lanes">${cards}</div>
@@ -9362,7 +9473,7 @@ function schedTimelineHTML(m, dens, px, lo, hi) {
     </div>`;
 }
 
-/* ---- Layer 2: a card opened in place --------------------------------------------- */
+/* ---- Subtask rows: the block's sheet and the Subtasks tab -------------------------- */
 function schedKidRowsHTML(src, ctx, opts = {}) {
   const kids = childrenOf(src.kind, src.item);
   // A habit's part is done for TODAY only, so ticking one on another day would mean
@@ -9382,128 +9493,6 @@ function schedKidRowsHTML(src, ctx, opts = {}) {
       <input class="tlx-add-in" data-tl-add="1" data-kind="${src.kind}" data-id="${src.item.id}" placeholder="${kids.length ? 'Add subtask' : 'Add a subtask — “technique 15 min”'}" enterkeyhint="done" autocomplete="off" aria-label="Add a subtask">
     </label>`;
 }
-function schedActionsHTML(b, src, ctx) {
-  const btns = [];
-  if (src && ctx.isToday) {
-    const it = src.item;
-    const finished = src.kind === 'habit' ? isComplete(it) : (it.progress || 0) >= Math.max(1, it.iterations || 1);
-    if (it.timer) {
-      btns.push(`<button class="tlx-btn go" data-tl="pause">${it.timer.pausedAt ? '▶ Resume' : '⏸ Pause'}</button>`);
-      btns.push(`<button class="tlx-btn" data-tl="finish">⏹ Finish</button>`);
-    } else if (!finished) {
-      btns.push(`<button class="tlx-btn go" data-tl="start">▶ Start</button>`);
-    }
-  }
-  btns.push(`<button class="tlx-btn" data-tl="detail">✎ Edit</button>`);
-  btns.push(`<button class="tlx-btn icon" data-tl="more" aria-label="More actions" aria-expanded="${schedMenuOpen}">⋯</button>`);
-  return btns.join('');
-}
-function schedMenuHTML(b, src, ctx) {
-  const items = [];
-  if (src && ctx.isToday && !src.item.timer) {
-    const it = src.item;
-    const finished = src.kind === 'habit' ? isComplete(it) : (it.progress || 0) >= Math.max(1, it.iterations || 1);
-    if (!finished) items.push(`<button data-tl="markDone">✓ Mark done without a timer</button>`);
-  }
-  if (b.kind === 'predicted' && b.planId) {
-    items.push(`<button data-tl="unplan">${b.planKind === 'task' ? '✕ Remove from this day' : '↺ Back to my usual time'}</button>`);
-  }
-  if (src) items.push(`<button data-tl="editor">⚙︎ ${src.kind === 'task' ? 'Quest' : 'Habit'} settings</button>`);
-  if (b.kind === 'predicted' || (b.hid && !b.live && b.type !== 'reward')) items.push(`<div class="tlx-tip">Hold a card to move it. While it's selected, drag its handles to change how long it takes.</div>`);
-  return items.join('');
-}
-function schedExpandedHTML(b, src, kids, ctx) {
-  const reward = b.type === 'reward';
-  const done = !reward && (b.kind === 'actual' || b.kind === 'moment') && !b.live;
-  const len = b.kind === 'moment' ? 'no timer' : (b.durMin > 0 ? schedDurLabel(b.durMin) : '');
-  let status = '';
-  if (b.running) status = `<span class="tlx-live">● Running</span>`;
-  else if (b.live) status = `<span class="tlx-dim">Paused</span>`;
-  else if (done) status = `<span class="tlx-done">✓ Done</span>`;
-  else if (reward) status = `<span class="tlx-dim">🎁 Reward</span>`;
-  // Subtasks belong to what's still ahead. On a finished block they would read today's
-  // ticks against a day that has already closed.
-  const showKids = src && !done && !reward && (ctx.isToday || ctx.isFuture || src.kind === 'task');
-  return `
-    <div class="tlx-head" data-tl="collapse">
-      <span class="tl-ic" aria-hidden="true">${escapeHtml(b.emoji || (reward ? '🎁' : '•'))}</span>
-      <span class="tlx-title"><b>${escapeHtml(b.name)}</b>
-        <small>${escapeHtml(schedRangeLabel(b))}${len ? ` · ${escapeHtml(len)}` : ''}${status ? ` · ${status}` : ''}</small></span>
-      <button class="tlx-chev" data-tl="collapse" aria-label="Close">⌃</button>
-    </div>
-    ${showKids ? `<div class="tlx-kids">${schedKidRowsHTML(src, ctx)}</div>` : ''}
-    ${(src || b.kind === 'predicted' || b.hid) ? `<div class="tlx-actions">${schedActionsHTML(b, src, ctx)}</div>` : ''}
-    <div class="tlx-menu"${schedMenuOpen ? '' : ' hidden'}>${schedMenuHTML(b, src, ctx)}</div>`;
-}
-
-/* Opening a card in place pushes everything after it down by exactly the room it needs,
-   the way a list row would — rather than spilling over the next hour's cards. A
-   transform, so nothing has to re-render and the hour labels slide with the cards. */
-// Only a card that has just been opened slides its neighbours down; when a card that was
-// already open is repainted (a ticked subtask, the minute tick) they are put straight back
-// where they were, or every repaint would replay the slide across the open card.
-function schedApplyExpansion(animate) {
-  const grid = $('#view-schedule .tl-grid'); if (!grid) return;
-  const open = grid.querySelector('.tl-card.open'); if (!open) return;
-  const extra = Math.max(0, open.offsetHeight - (parseFloat(open.dataset.h) || 0));
-  if (!extra) return;
-  const start = +open.dataset.min;
-  if (!animate) grid.classList.add('tl-still');
-  grid.querySelectorAll('[data-min]').forEach(el => {
-    if (el === open) return;
-    const m = +el.dataset.min;
-    if (m > start || (m === start && el.classList.contains('tl-card'))) el.style.transform = `translateY(${extra}px)`;
-  });
-  grid.style.height = ((parseFloat(grid.dataset.h) || 0) + extra) + 'px';
-  if (!animate) { void grid.offsetHeight; grid.classList.remove('tl-still'); }
-}
-
-// An opened card should be readable in one look: bring its bottom (the action row) up
-// past the + button, but never push its top under the sticky header.
-function schedRevealOpen() {
-  const open = $('#view-schedule .tl-card.open'); if (!open) return;
-  const r = open.getBoundingClientRect();
-  const topH = ($('header')?.offsetHeight || 0) + ($('#view-schedule .sch-head')?.offsetHeight || 0);
-  const fab = $('#schedAddBtn');
-  const fr = fab && fab.getClientRects().length ? fab.getBoundingClientRect() : null;   // fixed: no offsetParent
-  const floor = fr ? fr.top - 10 : window.innerHeight - ($('nav.bottomnav')?.offsetHeight || 0) - 10;
-  let dy = r.bottom > floor ? r.bottom - floor : 0;
-  if (r.top - dy < topH + 8) dy = r.top - topH - 8;
-  if (Math.abs(dy) > 2) window.scrollBy({ top: dy, behavior: 'smooth' });
-}
-
-// Closing plays the opening backwards: the card shrinks back into its slot while the cards
-// it pushed slide up into place, and the day is repainted only once they've landed. Given
-// a next key, that card opens after this one is down, so switching reads as close → open.
-const SCHED_COLLAPSE_MS = 220;
-let schedCollapseTimer = null, schedNextOpen = null;
-function schedCollapse(nextKey) {
-  schedNextOpen = nextKey || null;
-  if (schedCollapseTimer) return;                       // already on its way down
-  const grid = $('#view-schedule .tl-grid');
-  const open = grid && grid.querySelector('.tl-card.open');
-  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
-  const done = () => {
-    schedCollapseTimer = null;
-    schedExpandedKey = schedNextOpen; schedNextOpen = null;
-    renderBlockSchedule();
-    if (schedExpandedKey) schedRevealOpen();
-  };
-  const still = !open || !$('#view-schedule').classList.contains('active')
-    || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  if (still) { done(); return; }
-  const lanes = Math.max(1, +open.dataset.lanes || 1), w = 100 / lanes;
-  open.style.height = open.offsetHeight + 'px';          // from auto to a number, or it can't animate
-  open.style.minHeight = '0';
-  open.classList.add('closing');
-  void open.offsetHeight;
-  open.style.height = (parseFloat(open.dataset.h) || 40) + 'px';
-  open.style.left = `${(+open.dataset.lane || 0) * w}%`;
-  open.style.width = `calc(${w}% - 6px)`;
-  grid.querySelectorAll('[data-min]').forEach(el => { if (el !== open && el.style.transform) el.style.transform = ''; });
-  schedCollapseTimer = setTimeout(done, SCHED_COLLAPSE_MS);
-}
-
 /* ---- Render ---------------------------------------------------------------------- */
 function renderBlockSchedule() {
   const box = $('#scheduleBody'); if (!box) return;
@@ -9515,10 +9504,8 @@ function renderBlockSchedule() {
   schedHasRunning = m.blocks.some(b => b.running);
   const sum = schedDaySummary(m);
   const dens = schedDensity();
-  // A card that no longer exists (finished, deleted, moved to another day) can't stay open.
-  const keys = new Set(m.blocks.map(schedKey));
-  if (schedExpandedKey && !keys.has(schedExpandedKey)) { schedExpandedKey = null; schedMenuOpen = false; }
-  if (schedEditKey && !keys.has(schedEditKey)) schedEditKey = null;
+  // A block that no longer exists (finished, deleted, moved to another day) can't stay selected.
+  if (schedEditKey && !m.blocks.some(b => schedKey(b) === schedEditKey)) schedEditKey = null;
   // One write, no layout read in between: emptying the box first would shrink the page for
   // an instant and the browser would clamp the scroll to the top — every tap and every
   // minute of a running timer would throw you back to midnight.
@@ -9528,12 +9515,11 @@ function renderBlockSchedule() {
   const hi = dens === 'full' ? Math.max(m.hi, 22) : m.hi;
   const px = dens === 'full' ? schedFullPx(hi - lo) : SCHED_DENSITIES[dens].px;
   box.innerHTML = schedHeadHTML(m, sum) + `<div class="tl-mount" id="tlMount">${schedTimelineHTML(m, dens, px, lo, hi)}</div>`;
-  if (visible) schedApplyExpansion(schedExpandedKey !== schedShownOpen);
-  schedShownOpen = visible ? schedExpandedKey : null;
   if (visible && !schedScrollPending && Math.abs(window.scrollY - keepY) > 1) window.scrollTo(0, keepY);
-  // The sheets that SHOW this day follow it; the ones being typed into are left alone.
-  if (schedSheet && (schedSheet.type === 'progress' || schedSheet.type === 'detail')
-      && !$('#schSheet')?.contains(document.activeElement)) renderSchedSheet();
+  // The sheets that SHOW this day follow it; one being typed into is left alone.
+  const ae = document.activeElement;
+  if (schedSheet && ['progress', 'block', 'detail'].includes(schedSheet.type)
+      && !($('#schSheet')?.contains(ae) && /INPUT|TEXTAREA|SELECT/.test(ae.tagName))) renderSchedSheet();
   if (visible && schedScrollPending) { schedScrollPending = false; schedScrollToNow(); }
 }
 // Put "now" about a third of the way down the visible timeline — enough of what's next
@@ -9614,13 +9600,18 @@ function renderSchedSheet() {
   else if (t === 'legend') html = schedLegendSheetHTML();
   else if (t === 'progress') html = schedProgressSheetHTML();
   else if (t === 'add') html = schedAddSheetHTML();
-  else if (t === 'detail') {
-    html = schedDetailSheetHTML();
+  else if (t === 'block' || t === 'detail') {
+    html = t === 'block' ? schedBlockSheetHTML() : schedDetailSheetHTML();
     if (!html) { closeSchedSheet(); return; }
   }
+  // A repaint (the minute tick, a running timer) must not throw away where you were in it.
+  const focusSh = sh.contains(document.activeElement) ? document.activeElement.dataset.sh : null;
+  const y = sh.scrollTop;
   sh.innerHTML = html;
+  sh.scrollTop = y;
+  if (focusSh) { const f = [...sh.querySelectorAll('[data-sh]')].find(el => el.dataset.sh === focusSh); if (f) f.focus({ preventScroll: true }); }
   sh.classList.toggle('tall', t === 'detail' || t === 'add');
-  sh.setAttribute('aria-label', { view: 'Timeline view', legend: 'Timeline legend', progress: "Day's progress", detail: 'Task details', add: 'Add task' }[t] || 'Schedule');
+  sh.setAttribute('aria-label', { view: 'Timeline view', legend: 'Timeline legend', progress: "Day's progress", block: 'Task details', detail: 'Edit task', add: 'Add task' }[t] || 'Schedule');
 }
 
 function schedViewSheetHTML() {
@@ -9652,7 +9643,8 @@ function schedLegendSheetHTML() {
       ${item('gap', '?', 'Time nothing was logged — tap to fill it in')}
     </div>
     <div class="sch-tips">
-      <div>ⓘ Tap any task to see its time, subtasks and actions.</div>
+      <div>📏 A block is exactly as tall as it is long. A short one drops its words rather than grow.</div>
+      <div>ⓘ Tap any block, even a thin one, for its times, subtasks and actions.</div>
       <div>✋ Hold a task to move it. While it's selected, drag its handles to change its length.</div>
       <div>↔ Swipe sideways to change day. Pinch to change the view.</div>
     </div>`);
@@ -9706,17 +9698,101 @@ function schedFindBlock(key) {
   const m = schedDayModel(todayStr(schedOffset));
   return { m, b: m.blocks.find(b => schedKey(b) === key) || null };
 }
-function schedBasisLine(b, src) {
+function schedBasisLine(b, src, where = 'below') {
   if (b.type === 'reward') return '🎁 You cashed in a reward here.';
   if (b.live) return b.running ? '⏱ The stopwatch is running — this block grows until you finish.' : '⏸ Paused. Resume it to keep timing.';
   if (b.hid) return b.kind === 'moment'
-    ? '✓ Ticked off without the stopwatch, so it has a time but no length. Set one below if you know it.'
-    : '✓ Timed with the stopwatch. Correct it below if the timer ran on.';
+    ? `✓ Ticked off without the stopwatch, so it has a time but no length. Set one ${where} if you know it.`
+    : `✓ Timed with the stopwatch. Correct it ${where} if the timer ran on.`;
   if (b.planId) return '📌 You put it here, for this day only.';
   if (b.pinned) return '📌 Pinned to a time you set for every day.';
   if (b.fromPrediction) return `🔮 Predicted from the days most like this one (${Math.round((b.predConfidence || 0) * 100)}% confident).`;
   if (b.fromRecord) return '🏆 Where it landed on your record day — the day this one is chasing.';
   return '⏱ Your usual time, from the last few times you did it.';
+}
+// What a tap on any block opens — the thin ones included. Everything a block is too short
+// to print lives here: the exact times, how long, tier, reward, notes, what to do next.
+// Edit leads on to the full sheet (this day's time and length, history, notes).
+function schedBlockSheetHTML() {
+  const { m, b } = schedFindBlock(schedSheet.key);
+  if (!b) return '';
+  const src = schedSource(b), it = src && src.item;
+  const ctx = { isToday: m.isToday, isFuture: m.isFuture };
+  const reward = b.type === 'reward';
+  const done = !reward && (b.kind === 'actual' || b.kind === 'moment') && !b.live;
+  const day = m.isToday ? 'Today' : schedOffset === -1 ? 'Yesterday' : schedOffset === 1 ? 'Tomorrow' : fmtPlanDate(m.dateStr);
+  const len = b.durMin > 0 ? schedDurWords(b.durMin) + (b.live ? ' so far' : '') : b.kind === 'moment' ? 'No timer' : '';
+  const badge = b.running ? '<span class="tlx-live">● Running</span>' : b.live ? '<span class="tlx-dim">Paused</span>'
+    : done ? '<span class="tlx-done">✓ Done</span>' : reward ? '<span class="tlx-dim">🎁 Reward</span>'
+    : b.kind === 'predicted' ? '<span class="tlx-dim">Planned</span>' : '';
+  const rows = [];
+  if (it) {
+    const lv = src.kind === 'habit' ? habitLevels(it) : null;
+    const tier = lv ? lv[curLevelIndex(it)] : null;
+    const pay = src.kind === 'habit' ? habitFocusReward(it, tier ? tier.reward : it.reward) : it.reward;
+    rows.push(['🏷️', src.kind === 'task' ? 'Quest' : 'Habit', escapeHtml(it.category || 'Unsorted')]);
+    if (tier) rows.push(['🎚️', 'Tier', `Tier ${tier.idx + 1} of ${lv.length}`]);
+    else if (src.kind === 'task' && TASK_TIERS[it.tier]) rows.push(['🎚️', 'Tier', escapeHtml(TASK_TIERS[it.tier].label)]);
+    if (Number.isFinite(+pay)) rows.push(['🪙', 'Reward', `+${+pay} <i class="tok"></i>`]);
+    const desc = String(it.desc || '').trim();
+    if (desc) rows.push(['📝', 'Notes', `<span class="sch-bk-clamp">${escapeHtml(desc)}</span>`]);
+  }
+  const acts = [];
+  if (it && m.isToday) {
+    const finished = src.kind === 'habit' ? isComplete(it) : (it.progress || 0) >= Math.max(1, it.iterations || 1);
+    if (it.timer) {
+      acts.push(`<button class="sch-wide go" data-sh="pause">${it.timer.pausedAt ? '▶ Resume' : '⏸ Pause'}</button>`);
+      acts.push(`<button class="sch-wide line" data-sh="finish">⏹ Finish</button>`);
+    } else if (!finished) {
+      acts.push(`<button class="sch-wide go" data-sh="start">▶ Start Timer</button>`);
+      acts.push(`<button class="sch-wide line" data-sh="markDone">✓ Mark Complete</button>`);
+    }
+  }
+  const more = [];
+  if (b.kind === 'predicted' && b.planId) more.push(`<button class="sch-chip" data-sh="unplan">${b.planKind === 'task' ? '✕ Remove from this day' : '↺ Back to my usual time'}</button>`);
+  if (it) more.push(`<button class="sch-chip" data-sh="editor">⚙︎ ${src.kind === 'task' ? 'Quest' : 'Habit'} settings</button>`);
+  const movable = (b.kind === 'predicted' && b.refId) || (b.hid && !b.live && !reward);
+  // Subtasks belong to what's still ahead. On a finished block they would read today's
+  // ticks against a day that has already closed.
+  const showKids = it && !done && !reward && (m.isToday || m.isFuture || src.kind === 'task');
+  const body = `
+    <div class="sch-bk-top" style="--sb:${categoryColor(b.category) || 'rgba(255,255,255,.18)'}">
+      <span class="tl-ic big" aria-hidden="true">${escapeHtml(b.emoji || (reward ? '🎁' : '•'))}</span>
+      <span class="sch-bk-name"><b>${escapeHtml(b.name)}</b>
+        <small>${escapeHtml(day)} · ${escapeHtml(schedShortRange(b.startMin, b.durMin))}</small>
+        ${len || badge ? `<small>${escapeHtml(len)}${len && badge ? ' · ' : ''}${badge}</small>` : ''}</span>
+    </div>
+    ${rows.length ? `<div class="sch-bk-rows">${rows.map(([ic, k, v]) => `<div class="sch-bk-row"><i aria-hidden="true">${ic}</i><span>${k}</span><b>${v}</b></div>`).join('')}</div>` : ''}
+    <div class="sch-bk-why">${escapeHtml(schedBasisLine(b, src, 'under Edit'))}</div>
+    ${showKids ? `<div class="sch-h3">Subtasks</div><div class="tlx-kids sheet">${schedKidRowsHTML(src, ctx)}</div>` : ''}
+    ${acts.length ? `<div class="sch-bk-acts">${acts.join('')}</div>` : ''}
+    ${more.length ? `<div class="sch-bk-more">${more.join('')}</div>` : ''}
+    ${movable ? `<div class="sch-bk-tip">✋ Hold the block on the timeline to move it. While it's selected, drag its handles to change its length.</div>` : ''}`;
+  return schedSheetFrame('', body, { action: `<button class="sch-edit" data-sh="edit" aria-label="${escapeHtml(`Edit ${b.name}`)}">Edit</button>` });
+}
+// Start / Pause / Finish / Mark Complete / Remove, from the block's sheet.
+function schedBlockAction(act) {
+  const { b } = schedFindBlock(schedSheet.key);
+  if (!b) { closeSchedSheet(); renderBlockSchedule(); return; }
+  const src = schedSource(b), it = src && src.item;
+  if (act === 'unplan') {
+    if (!b.planId) return;
+    removePlannedBlock(todayStr(schedOffset), b.refId);
+    closeSchedSheet();
+    SFX.click(); toast(b.planKind === 'task' ? 'Removed from this day' : 'Back to your usual time', 'var(--cyan)');
+    schedAfterChange(); return;
+  }
+  if (!it) return;
+  if (act === 'start') {
+    src.kind === 'habit' ? startHabitTimer(it.id) : startOneoffTimer(it.id);
+    // The plan turns into a live block under a new key; the sheet follows it so Pause / Finish show.
+    schedSheet.key = `l:${it.id}:0`;
+    schedAfterChange(); return;
+  }
+  if (act === 'pause') { src.kind === 'habit' ? toggleHabitTimerPause(it.id) : toggleOneoffTimerPause(it.id); schedAfterChange(); return; }
+  // Finishing can raise a reward or a check-in, which must not open behind this sheet.
+  if (act === 'finish') { closeSchedSheet(); src.kind === 'habit' ? finishTimedHabit(it.id) : finishTimedOneoff(it.id); schedAfterChange(); return; }
+  if (act === 'markDone') { closeSchedSheet(); src.kind === 'habit' ? completeHabit(it.id) : completeOneoff(it.id); schedAfterChange(); }
 }
 function schedDetailSheetHTML() {
   const { m, b } = schedFindBlock(schedSheet.key);
@@ -9858,7 +9934,7 @@ function schedSubmitAdd() {
   quickTier = tier;
   closeSchedSheet();
   schedOffset = daysBetween(todayStr(), d.date);
-  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
+  schedEditKey = null;
   SFX.coin();
   toast(`🎯 ${name} — ${fmtMinOfDay(d.start)}`, 'var(--cyan)');
   renderBlockSchedule(); renderOneoffs(); buildHabitWheel(); renderHabits();
@@ -9871,38 +9947,11 @@ function schedSubmitAdd() {
 // Day stepper, header controls, card taps and every button inside an open card.
 function schedGoDay(delta) {
   schedOffset += delta;
-  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
+  schedEditKey = null;
   schedScrollPending = true;
   SFX.click(); renderBlockSchedule();
 }
 function schedAfterChange() { renderBlockSchedule(); renderHabits(); renderOneoffs(); renderHomeNow(); }
-function schedCardAction(act, card, btn) {
-  const { b } = schedFindBlock(card.dataset.key);
-  if (!b) { renderBlockSchedule(); return; }
-  const src = schedSource(b);
-  const it = src && src.item;
-  if (act === 'collapse') { SFX.click(); schedCollapse(); return; }
-  if (act === 'more') { schedMenuOpen = !schedMenuOpen; SFX.click(); renderBlockSchedule(); if (schedMenuOpen) schedRevealOpen(); return; }
-  if (act === 'detail') { SFX.click(); openSchedSheet('detail', { key: card.dataset.key, tab: (src && childrenOf(src.kind, it).length) ? 'subtasks' : 'details' }); return; }
-  if (act === 'editor' && src) { schedMenuOpen = false; openEditor(src.kind === 'task' ? 'oneoff' : 'habit', it.id); return; }
-  if (act === 'kid') { toggleChildDone(btn.dataset.kid); schedAfterChange(); return; }
-  if (act === 'unplan') {
-    removePlannedBlock(todayStr(schedOffset), b.refId);
-    schedExpandedKey = null; schedMenuOpen = false;
-    SFX.click(); toast(b.planKind === 'task' ? 'Removed from this day' : 'Back to your usual time', 'var(--cyan)');
-    schedAfterChange(); return;
-  }
-  if (!src) return;
-  if (act === 'start') {
-    src.kind === 'habit' ? startHabitTimer(it.id) : startOneoffTimer(it.id);
-    // The plan turns into a live block under a new key; follow it so Pause / Finish show.
-    if (!b.live) { schedExpandedKey = `l:${it.id}:0`; schedMenuOpen = false; }
-    schedAfterChange(); schedRevealOpen(); return;
-  }
-  if (act === 'pause') { src.kind === 'habit' ? toggleHabitTimerPause(it.id) : toggleOneoffTimerPause(it.id); schedAfterChange(); return; }
-  if (act === 'finish') { schedExpandedKey = null; src.kind === 'habit' ? finishTimedHabit(it.id) : finishTimedOneoff(it.id); schedAfterChange(); return; }
-  if (act === 'markDone') { schedExpandedKey = null; schedMenuOpen = false; src.kind === 'habit' ? completeHabit(it.id) : completeOneoff(it.id); schedAfterChange(); }
-}
 $('#view-schedule').addEventListener('click', e => {
   // A hold or a swipe ends in a click the finger never meant.
   if (Date.now() < schedSuppressUntil) { e.preventDefault(); return; }
@@ -9920,49 +9969,38 @@ $('#view-schedule').addEventListener('click', e => {
     openGapCheckin(back.dataset.gapdate, parseInt(back.dataset.gapstart, 10), parseInt(back.dataset.gapend, 10), back.classList.contains('filler'));
     return;
   }
-  const card = e.target.closest('.tl-card');
+  // A tap on a block, or on the empty space that is its hit strip, opens its sheet.
+  const hitEl = e.target.closest('.tl-hit');
+  const card = hitEl ? schedCardEl(hitEl.dataset.key) : e.target.closest('.tl-card');
   if (card) {
-    if (e.target.closest('.tlx-add')) return;                     // typing a subtask — not a tap on the card
-    const tl = e.target.closest('[data-tl]');
-    if (tl && card.classList.contains('open')) { schedCardAction(tl.dataset.tl, card, tl); return; }
-    if (card.classList.contains('open')) return;                  // a tap on the open card's body does nothing
     if (card.classList.contains('editing')) { schedEditKey = null; SFX.click(); renderBlockSchedule(); return; }
-    // Another card is open (or still closing): close that one first, then open this.
-    if (schedExpandedKey || schedCollapseTimer) { SFX.click(); schedCollapse(card.dataset.key); return; }
-    schedExpandedKey = card.dataset.key; schedEditKey = null; schedMenuOpen = false;
-    SFX.click(); renderBlockSchedule(); schedRevealOpen();
+    const key = card.dataset.key;
+    if (schedEditKey) { schedEditKey = null; renderBlockSchedule(); }
+    SFX.click(); openSchedSheet('block', { key });
     return;
   }
-  // Anywhere else on the schedule: put things back the way they were.
+  // Anywhere else on the schedule: let go of a selected block.
   if (!e.target.closest('#scheduleBody')) return;
-  if (schedExpandedKey) schedCollapse();
-  else if (schedEditKey) { schedEditKey = null; renderBlockSchedule(); }
+  if (schedEditKey) { schedEditKey = null; renderBlockSchedule(); }
 });
-// Keyboard: Enter / Space open a focused card or backdrop; Escape backs out one layer.
+// Keyboard: Enter / Space open a focused block or backdrop; Escape backs out one layer.
 $('#view-schedule').addEventListener('keydown', e => {
-  if (e.target.classList && e.target.classList.contains('tlx-add-in')) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const inp = e.target, text = inp.value.trim(); if (!text) return;
-      const c = addChild(inp.dataset.kind, inp.dataset.id, undefined, text);
-      if (!c) return;
-      SFX.click();
-      schedAfterChange();
-      const again = $('#view-schedule .tl-card.open .tlx-add-in');
-      if (again) again.focus({ preventScroll: true });
-    }
-    return;
-  }
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.tl-card:not(.open), .tl-back, .sch-day')) {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.tl-card, .tl-back, .sch-day')) {
     e.preventDefault(); e.target.click();
   }
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (schedSheet) { closeSchedSheet(); return; }
+  if (schedSheet) {
+    // Back to the block the sheet was about, so the keyboard carries on from where it was.
+    const key = schedSheet.key;
+    closeSchedSheet();
+    const back = key && schedCardEl(key);
+    if (back) back.focus({ preventScroll: true });
+    return;
+  }
   if (!$('#view-schedule').classList.contains('active')) return;
-  if (schedExpandedKey) schedCollapse();
-  else if (schedEditKey) { schedEditKey = null; renderBlockSchedule(); }
+  if (schedEditKey) { schedEditKey = null; renderBlockSchedule(); }
 });
 
 /* ---- Hold to lift, drag to move, handles to resize, swipe to change day ----------- */
@@ -9979,20 +10017,19 @@ function schedVibrate() { try { if (navigator.vibrate) navigator.vibrate(12); } 
 $('#view-schedule').addEventListener('pointerdown', e => {
   if (e.button > 0) return;
   const grid = $('#view-schedule .tl-grid');
-  if (grid && grid.contains(e.target) && !e.target.closest('.tl-card.open, input, select, textarea'))
+  if (grid && grid.contains(e.target) && !e.target.closest('input, select, textarea'))
     schedSwipe = { x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
-  const el = e.target.closest('.tl-card.draggable');
-  if (!el || el.classList.contains('open') || e.target.closest('[data-tl]') || !grid) return;
-  // With a card open, the first tap belongs to closing it — not to lifting another one
-  // whose position is currently shifted by the opened card.
-  if (schedExpandedKey || schedCollapseTimer) return;
+  // A hold on a thin block's hit strip lifts that block, the same as a hold on the block.
+  const hitEl = e.target.closest('.tl-hit');
+  const el = hitEl ? schedCardEl(hitEl.dataset.key) : e.target.closest('.tl-card');
+  if (!el || !el.classList.contains('draggable') || !grid) return;
   const start = parseInt(el.dataset.start, 10), dur = parseInt(el.dataset.dur, 10) || 15;
   const grip = e.target.closest('.tl-grip');
   const d = schedDrag = {
     el, key: el.dataset.key, refId: el.dataset.ref, refKind: el.dataset.refkind || 'habit',
     hid: el.dataset.hid || null, segIndex: parseInt(el.dataset.seg, 10) || 0,
     mode: null, start, durMin: dur, end: start + dur, lo: parseInt(grid.dataset.lo, 10) * 60,
-    px: parseFloat(grid.dataset.px) || 84, cardH: parseFloat(grid.dataset.card) || 30,
+    px: parseFloat(grid.dataset.px) || 84,
     x0: e.clientX, y0: e.clientY, min: start, dur, moved: false, tip: null, hold: null, pid: e.pointerId,
   };
   if (el.classList.contains('editing')) {
@@ -10036,9 +10073,9 @@ $('#view-schedule').addEventListener('pointermove', e => {
     d.min = st; d.dur = d.end - st;
   }
   d.el.style.top = `calc(var(--ph) * ${((d.min - d.lo) / 60).toFixed(4)})`;
-  d.el.style.height = `max(${d.cardH}px, calc(var(--ph) * ${(d.dur / 60).toFixed(4)}))`;
+  d.el.style.height = `max(${SCHED_MIN_PX}px, calc(var(--ph) * ${(d.dur / 60).toFixed(4)} - 1px))`;
   const sm = d.el.querySelector('.tl-tx small');
-  if (sm) sm.textContent = schedDurLabel(d.dur);
+  if (sm) sm.textContent = schedShortRange(d.min, d.dur);
   schedTip(d);
 });
 function endSchedDrag(e) {
@@ -10094,7 +10131,7 @@ function schedSetDensity(k, anchorY) {
     anchorMin = +grid.dataset.lo * 60 + (anchorY - grid.getBoundingClientRect().top) / (+grid.dataset.px) * 60;
   }
   state.settings.schedDensity = k; save();
-  schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false;
+  schedEditKey = null;
   SFX.click();
   renderBlockSchedule();
   const g2 = $('#view-schedule .tl-grid');
@@ -10163,6 +10200,13 @@ $('#schSheet').addEventListener('click', e => {
     return;
   }
   if (a === 'tab') { schedSheet.tab = btn.dataset.tab; SFX.click(); renderSchedSheet(); return; }
+  if (a === 'start' || a === 'pause' || a === 'finish' || a === 'markDone' || a === 'unplan') { SFX.click(); schedBlockAction(a); return; }
+  if (a === 'edit') {
+    schedSheet = { type: 'detail', key: schedSheet.key, tab: 'details' };
+    SFX.click(); renderSchedSheet();
+    $('#schSheet').scrollTop = 0;
+    return;
+  }
   if (a === 'editor') {
     const { b } = schedFindBlock(schedSheet.key);
     const src = schedSource(b); if (!src) return;
@@ -11676,7 +11720,7 @@ window.HCNative.onLiveCommands = cmds => {
   }
 };
 // Tapping the card opens the app on that item: a reward on Winnings, a habit or quest on
-// the Schedule with its running card already open — Pause, Finish and its parts in reach.
+// the Schedule with its running block's sheet already up — Pause, Finish and its parts in reach.
 window.HCNative.onOpen = key => {
   key = String(key || '');
   const i = key.indexOf(':'); if (i < 0) return false;
@@ -11684,10 +11728,9 @@ window.HCNative.onOpen = key => {
   closeSchedSheet();
   if (kind === 'reward') { switchView('prizes'); return true; }
   const b = schedDayModel(todayStr()).blocks.find(x => x.live && x.srcId === id);
-  schedOffset = 0; schedEditKey = null; schedMenuOpen = false;
-  schedExpandedKey = b ? schedKey(b) : null;
+  schedOffset = 0; schedEditKey = null;
   switchView('schedule');
-  if (b) schedRevealOpen();
+  if (b) openSchedSheet('block', { key: schedKey(b) });
   return true;
 };
 
@@ -11837,18 +11880,48 @@ async function pushQueueSync(plan) {
 /* Derive the shield state from `state` rather than hooking the six places a reward's timer
    moves (claim, extend, pause, resume, end early, expire, day-end). One derivation cannot
    miss a path, and it is still correct after a reload with a reward already running.
-   Deduped on the deadline so the 1s tick doesn't spam the bridge. */
-let lastShieldPush = null;
-function syncShield() {
-  if (!HCBridge.present || !state.screenTime || !state.screenTime.on) return;
+   Deduped on the deadline so the 1s tick doesn't spam the bridge.
+
+   And settled before it is sent. Every message is a round trip to iOS's Screen Time
+   services (the block list, plus cancelling and rescheduling the re-block). On 2026-10-12
+   a run of pause/resume taps on a Screen Time reward ended with those services no longer
+   answering, and the phone stopped opening apps until it was restarted from a Mac. So a
+   change waits SHIELD_SETTLE_MS for the taps to stop and then sends only where they ended
+   up: a burst of ten is one message, or none if it ends where it began. Leaving the app
+   mid-wait sends at once, so a pause can't leave apps open behind you. The app coalesces
+   again on its side, for taps on the Lock Screen. */
+const SHIELD_SETTLE_MS = 1200;
+let lastShieldPush = null;      // what the phone was last told: the deadline, or '0' for blocked
+let shieldPending = null;       // a change waiting for the taps to settle…
+let shieldTimer = null;         // …and its timer
+function shieldTarget() {
   const w = activeWinnings().find(isScreenTimeWin);
   // A paused reward banks its remaining time and must not spend it — so pausing re-shields.
   const until = (w && !w.pausedAt && Number.isFinite(w.activeUntil) && w.activeUntil > Date.now())
     ? w.activeUntil : 0;
-  if (String(until) === lastShieldPush) return;
-  lastShieldPush = String(until);
-  HCBridge.send(until ? { op: 'unshield', until } : { op: 'shield' });
+  return String(until);
 }
+function syncShield() {
+  if (!HCBridge.present || !state.screenTime || !state.screenTime.on) return;
+  const want = shieldTarget();
+  // Nothing new: the 1s tick lands here every second, and must not restart the wait.
+  if (want === (shieldTimer ? shieldPending : lastShieldPush)) return;
+  clearTimeout(shieldTimer); shieldTimer = null; shieldPending = null;
+  if (want === lastShieldPush) return;          // back where the phone already is: send nothing
+  shieldPending = want;
+  shieldTimer = setTimeout(sendShield, SHIELD_SETTLE_MS);
+}
+function sendShield() {
+  clearTimeout(shieldTimer); shieldTimer = null; shieldPending = null;
+  if (!HCBridge.present || !state.screenTime || !state.screenTime.on) return;
+  const want = shieldTarget();                  // where things are now, not when the wait began
+  if (want === lastShieldPush) return;
+  lastShieldPush = want;
+  HCBridge.send(+want ? { op: 'unshield', until: +want } : { op: 'shield' });
+}
+// Leaving the app (or the page) can't wait: JS timers stall in the background.
+document.addEventListener('visibilitychange', () => { if (document.hidden && shieldTimer) sendShield(); });
+window.addEventListener('pagehide', () => { if (shieldTimer) sendShield(); });
 
 
 // Which loadout handed this item out as a bonus, or '' if it was genuinely won.
@@ -16396,7 +16469,7 @@ function onHabitsClick(e) {
     if (g) { g.classList.toggle('open', focusOtherOpen); g.querySelector('[data-act="focusOther"]')?.setAttribute('aria-expanded', String(focusOtherOpen)); }
     SFX.click(); return;
   }
-  if (act === 'openFocus') { SFX.click(); openFocusMenu(); return; }
+  if (act === 'openFocus') { SFX.click(); openFocusMenu('edit'); return; }
   if (act === 'toggleGroup') {
     const g = e.target.closest('.habit-group'); if (!g) return;
     const open = g.classList.toggle('collapsed') === false;
@@ -17099,9 +17172,12 @@ $('#tierOverlay').addEventListener('pointercancel', endLadderDrag);
    DRAFT and only Save Focus writes it, so ✕ is always a way out. */
 let focusScreen = 'list';
 let focusDraft = null;      // { key, name, roles: {habitId: role}, days, order, search, dirty, warned }
+// Opens on the LIST: the 🎯 button is almost always "switch today's focus", and editing one
+// is a ⋯ away. Only 'edit' — from the empty Focus section's "tap to pick them" — goes
+// straight to the active Focus's editor, because that tap is about choosing its habits.
 function openFocusMenu(screen) {
   const cur = currentLoadout();
-  if (screen === 'list' || isNoFocus(cur)) { focusScreen = 'list'; focusDraft = null; }
+  if (screen !== 'edit' || isNoFocus(cur)) { focusScreen = 'list'; focusDraft = null; }
   else { focusDraft = focusDraftFor(cur); focusScreen = 'edit'; }
   renderFocusMenu();
   $('#loadoutOverlay').classList.add('show');
@@ -17931,6 +18007,7 @@ $('#screenTimeBody').addEventListener('change', e => {
   if (e.target.id !== 'stOn') return;
   state.screenTime.on = e.target.checked;
   lastShieldPush = null;                 // whatever was last sent, the next push must land
+  clearTimeout(shieldTimer); shieldTimer = null; shieldPending = null;
   save();
   // Turning the feature OFF has to stand the shield down. Leaving apps blocked with the
   // switch off would be a lockout with no control left in the app that caused it.
@@ -18519,7 +18596,7 @@ $('#calOverlay').addEventListener('click', e => {
   if (act === 'calNext') { SFX.click(); calShiftMonth(1); return; }
   if (act === 'calPick') {
     schedOffset = daysBetween(todayStr(), hit.dataset.date);
-    schedExpandedKey = null; schedEditKey = null; schedMenuOpen = false; schedScrollPending = true;
+    schedEditKey = null; schedScrollPending = true;
     SFX.click(); closeSchedCal(); renderBlockSchedule();
   }
 });
@@ -18582,7 +18659,7 @@ function removePlannedBlock(dateStr, refId) {
 $('#view-schedule').addEventListener('pointerup', endSchedDrag);
 $('#view-schedule').addEventListener('pointercancel', endSchedDrag);
 // The hold that lifts a block is also Android's long-press — don't open a context menu on it.
-$('#view-schedule').addEventListener('contextmenu', e => { if (e.target.closest('.tl-card.draggable')) e.preventDefault(); });
+$('#view-schedule').addEventListener('contextmenu', e => { if (e.target.closest('.tl-card.draggable, .tl-hit')) e.preventDefault(); });
 // A long press is a gesture in this app (lift a block, hold a habit), never "copy this".
 // The CSS stops the selection on iOS; these stop the same press starting one anywhere the
 // CSS isn't honoured, and stop the menu Android raises for it. Text fields keep both — a
