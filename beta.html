@@ -3218,6 +3218,206 @@
     .fr-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
     .fr-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .fr-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ---------- HABIT STACKS: Home's card, the one-step runner, and the editor sheet ----------
+       Home's language: hairlines, no glow, ONE accent — orange marks the step you're on.
+       Last in the sheet so nothing in the greyscale pass above can outrank it. */
+    #homeStack:empty { display: none; }
+    .plan-cta #loadoutSwitch.focus-btn { flex: 1 1 0; }
+    .stack-btn {
+      flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 52px; padding: 0 15px;
+      border-radius: 14px; cursor: pointer; font: inherit; font-weight: 700; font-size: 15px; color: var(--ink);
+      background: var(--gs-card); border: 1.5px solid var(--gs-edge-hi);
+    }
+    .stack-btn:active { transform: scale(.98); }
+    .stk-card { border: 1px solid var(--gs-edge); border-radius: 14px; padding: 10px 14px 14px; margin-bottom: 14px; }
+    .stk-card.live { border-color: rgba(255,158,44,.55); }
+    .stk-head { display: flex; align-items: center; gap: 6px; min-height: 34px; }
+    .stk-kicker {
+      flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--ink-dim);
+    }
+    .stk-count { flex: 0 0 auto; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+    .stk-icon {
+      flex: 0 0 auto; width: 36px; height: 36px; padding: 0; border-radius: 10px; border: 0; cursor: pointer;
+      background: transparent; color: var(--ink-dim); font-size: 15px;
+    }
+    .stk-icon.big { width: 44px; height: 44px; font-size: 18px; color: var(--ink); }
+    .stk-icon:active { background: rgba(255,255,255,.07); }
+    .stk-segs { display: flex; gap: 3px; margin: 6px 0 8px; }
+    .stk-segs i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.1); }
+    .stk-segs i.done { background: var(--cyan); }
+    .stk-segs i.cur { background: rgba(255,158,44,.3); box-shadow: inset 0 0 0 1px var(--cyan); }
+    .stk-segs i.skip { background: repeating-linear-gradient(90deg, rgba(255,255,255,.32) 0 3px, transparent 3px 6px); }
+    .stk-steps { list-style: none; margin: 0; padding: 0; }
+    .stk-step { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px; color: var(--ink-dim); }
+    .stk-mark { flex: 0 0 18px; text-align: center; font-weight: 900; }
+    .stk-emoji { flex: 0 0 auto; font-size: 16px; line-height: 1; }
+    .stk-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stk-step.done { opacity: .5; }
+    .stk-step.done .stk-name { text-decoration: line-through; text-decoration-color: rgba(255,255,255,.3); }
+    .stk-step.done .stk-mark, .stk-step.cur .stk-mark { color: var(--cyan); }
+    .stk-step.cur { color: var(--ink); font-size: 16.5px; font-weight: 800; min-height: 46px; }
+    .stk-step.cur .stk-emoji { font-size: 19px; }
+    .stk-skipped {
+      flex: 0 0 auto; font-size: 10.5px; font-weight: 700; color: var(--ink-dim);
+      border: 1px dashed rgba(255,255,255,.28); border-radius: 999px; padding: 1px 8px;
+    }
+    .stk-tag {
+      flex: 0 0 auto; font-size: 9.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
+      padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; opacity: .85;
+    }
+    .stk-tag.focus { color: var(--h1); }
+    .stk-tag.maintain { color: var(--yellow); }
+    .stk-tick {
+      flex: 0 0 auto; width: 44px; height: 38px; border-radius: 11px; cursor: pointer; padding: 0;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-ctl); color: var(--ink); font-size: 17px; font-weight: 900;
+    }
+    .stk-now-btn {
+      flex: 0 0 auto; height: 36px; padding: 0 12px; border-radius: 10px; cursor: pointer;
+      border: 1px solid var(--gs-edge-hi); background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 700;
+    }
+    .stk-go {
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; margin-top: 12px;
+      border-radius: 14px; border: 0; cursor: pointer; background: var(--cyan); color: #1a0f02;
+      font: inherit; font-weight: 800; font-size: 16px;
+    }
+    .stk-go:active, .stk-primary:active, .stk-btn:active, .stk-tick:active, .stk-now-btn:active { transform: scale(.985); }
+    .stk-note { margin: 8px 2px 0; font-size: 13px; color: var(--ink-dim); line-height: 1.45; }
+    .stk-mini {
+      display: flex; align-items: center; gap: 10px; min-height: 48px; margin-bottom: 10px; padding: 4px 6px 4px 14px;
+      border: 1px solid var(--gs-edge); border-radius: 12px;
+    }
+    .stk-mini-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 14px; }
+    .stk-mini.done { opacity: .6; padding-right: 14px; }
+    /* The cue after a step: in, held, gone — with its space folding away on Home. */
+    .stk-line { box-sizing: border-box; overflow: hidden; padding-bottom: 4px; font-size: 14.5px; color: var(--ink);
+      animation: stkLine 4.5s ease both; animation-delay: var(--d, 0ms); }
+    .stk-line b, .stk-k-flash b { color: var(--cyan); }
+    @keyframes stkLine { 0% { opacity: 0; max-height: 0; } 6%, 80% { opacity: 1; max-height: 30px; } 100% { opacity: 0; max-height: 0; padding-bottom: 0; } }
+
+    /* The runner: one step at a time, buttons where a thumb already is. */
+    .stk-overlay { position: fixed; inset: 0; z-index: 74; display: none; background: var(--gs-bg); }
+    .stk-overlay.show { display: block; animation: fadeUp .22s ease; }
+    .stk-run { position: absolute; inset: 0; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column;
+      padding-top: env(safe-area-inset-top); }
+    .stk-run-top { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px 0; }
+    .stk-run-title { flex: 1; min-width: 0; text-align: center; }
+    .stk-run-title b { display: block; font-size: 15.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stk-run-title small { display: block; margin-top: 1px; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+    .stk-run > .stk-segs { margin: 10px 16px 0; }
+    .stk-run-body {
+      flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+      display: flex; flex-direction: column; padding: 16px 16px 14px;
+    }
+    /* "NOW" — or, for a few seconds after a step, "Nice. Next: …" in its place. */
+    .stk-k { display: grid; align-items: end; min-height: 24px; margin: auto 4px 10px; }
+    .stk-k > span { grid-area: 1 / 1; }
+    .stk-k-now { font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--ink-dim); }
+    .stk-k-flash { font-size: 16px; font-weight: 600; color: var(--ink); opacity: 0; }
+    .stk-k.flash .stk-k-flash { animation: stkFlashIn 4.5s ease both; animation-delay: var(--d, 0ms); }
+    .stk-k.flash .stk-k-now { animation: stkFlashOut 4.5s ease both; animation-delay: var(--d, 0ms); }
+    @keyframes stkFlashIn { 0% { opacity: 0; transform: translateY(5px); } 6%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+    @keyframes stkFlashOut { 0%, 82% { opacity: 0; } 100% { opacity: 1; } }
+    .stk-now {
+      padding: 18px 18px 16px; border-radius: 18px; background: var(--gs-card);
+      border: 1.5px solid rgba(255,158,44,.8); box-shadow: 0 0 22px rgba(255,158,44,.12);
+    }
+    .stk-now.enter { animation: stkEnter .38s cubic-bezier(.22,.9,.3,1) both; animation-delay: var(--d, 0ms); }
+    @keyframes stkEnter { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+    .stk-now-top { display: flex; align-items: center; gap: 14px; }
+    .stk-now-emoji { flex: 0 0 auto; width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center;
+      font-size: 31px; background: rgba(255,158,44,.1); }
+    .stk-now-name { flex: 1; min-width: 0; font-size: 24px; font-weight: 800; line-height: 1.18; overflow-wrap: anywhere; }
+    .stk-now-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 14px; font-size: 13.5px; color: var(--ink-dim); }
+    .stk-timer { margin-top: 14px; font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--h-live); }
+    .stk-timer small { margin-left: 10px; font-size: 13px; font-weight: 600; color: var(--ink-dim); }
+    .stk-then { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 14px 6px 0; font-size: 14.5px; color: var(--ink-dim); }
+    .stk-then b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-weight: 700; }
+    .stk-all { align-self: center; flex: 0 0 auto; height: 40px; margin-top: 10px; padding: 0 14px; border: 0; border-radius: 10px;
+      background: transparent; color: var(--ink-dim); font: inherit; font-size: 13px; cursor: pointer; }
+    .stk-run-body > .stk-steps { margin-top: 2px; padding-top: 4px; border-top: 1px solid var(--gs-edge); }
+    .stk-run-acts { flex: 0 0 auto; padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--gs-edge); }
+    .stk-acts-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .stk-btn {
+      flex: 1 1 0; min-width: 0; height: 48px; padding: 0 6px; border-radius: 13px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,.12); background: var(--gs-ctl); color: var(--ink);
+      font: inherit; font-size: 14.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .stk-primary {
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 60px;
+      border-radius: 16px; border: 0; cursor: pointer; background: var(--cyan); color: #1a0f02;
+      font: inherit; font-weight: 800; font-size: 18px; box-shadow: 0 4px 16px rgba(255,158,44,.22);
+    }
+    .stk-primary.live { background: var(--h-live); }
+    .stk-fin { margin: auto 0; padding: 24px 8px; text-align: center; }
+    .stk-fin-mark { width: 66px; height: 66px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center;
+      font-size: 30px; font-weight: 900; color: #1a0f02; background: var(--cyan); }
+    .stk-fin b { display: block; font-size: 23px; }
+    .stk-fin small { display: block; margin-top: 6px; font-size: 14px; color: var(--ink-dim); }
+    /* While the runner is up, the toast and the undo bar move to the top: the bottom of
+       the screen is where the next tap goes. */
+    body.stk-open #undoBar { top: calc(10px + env(safe-area-inset-top)); bottom: auto; transform: translateX(-50%) translateY(-16px); }
+    body.stk-open #undoBar.show { transform: translateX(-50%) translateY(0); }
+    body.stk-open #toast { top: calc(64px + env(safe-area-inset-top)); bottom: auto; transform: translateX(-50%) translateY(-24px); }
+    body.stk-open #toast.show { transform: translateX(-50%) translateY(0); }
+    body.reduced .stk-now.enter, body.reduced .stk-overlay.show { animation: none; }
+
+    /* The editor: same sheet as the Schedule's, above the runner it can be opened from. */
+    .stk-scrim { position: fixed; inset: 0; z-index: 76; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+    .stk-scrim.show { opacity: 1; pointer-events: auto; }
+    .stk-sheet {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 77; max-width: 640px; margin: 0 auto;
+      max-height: 86vh; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box;
+      padding: 0 16px calc(18px + env(safe-area-inset-bottom));
+      background: var(--gs-panel); border: 1px solid rgba(255,255,255,.09); border-bottom: 0;
+      border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.6);
+      transform: translateY(104%); visibility: hidden;
+      transition: transform .28s cubic-bezier(.22,.9,.3,1), visibility 0s linear .28s;
+    }
+    .stk-sheet.show { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.22,.9,.3,1), visibility 0s; }
+    .stk-ed-in {
+      display: block; width: 100%; height: 48px; box-sizing: border-box; padding: 0 14px; border-radius: 12px;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-card); color: var(--ink);
+      font: inherit; font-size: 16px; font-weight: 700; -webkit-user-select: text; user-select: text;
+    }
+    .stk-ed-on { display: flex; align-items: center; gap: 12px; padding: 14px 2px; border-bottom: 1px solid var(--gs-edge); }
+    .stk-ed-on > span { flex: 1; min-width: 0; }
+    .stk-ed-on b { display: block; font-size: 14.5px; }
+    .stk-ed-on small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-dim); line-height: 1.4; }
+    .stk-sw { position: relative; flex: 0 0 auto; width: 52px; height: 32px; padding: 0; border-radius: 16px; cursor: pointer;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-ctl); transition: background .18s ease; }
+    .stk-sw::after { content: ''; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%;
+      background: var(--ink-dim); transition: transform .18s ease, background .18s ease; }
+    .stk-sw.on { background: var(--cyan); border-color: var(--cyan); }
+    .stk-sw.on::after { transform: translateX(20px); background: #1a0f02; }
+    .stk-ed-h { margin: 18px 2px 4px; font-size: 10.5px; letter-spacing: .9px; text-transform: uppercase; color: var(--ink-dim); }
+    .stk-ed-h small { margin-left: 8px; font-size: 11px; letter-spacing: 0; text-transform: none; opacity: .8; }
+    .stk-ed-row { display: flex; align-items: center; gap: 8px; min-height: 56px; border-bottom: 1px solid var(--gs-edge); }
+    .stk-ed-n { flex: 0 0 18px; text-align: center; font-size: 12px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+    .stk-ed-name { flex: 1; min-width: 0; }
+    .stk-ed-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14.5px; font-weight: 700; }
+    .stk-ed-name small { display: block; margin-top: 1px; font-size: 11.5px; color: var(--ink-dim); }
+    .stk-ed-btn { flex: 0 0 auto; width: 42px; height: 42px; padding: 0; border-radius: 11px; cursor: pointer;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-ctl); color: var(--ink); font-size: 13px; }
+    .stk-ed-btn:disabled { opacity: .25; cursor: default; }
+    .stk-ed-btn.x { background: transparent; border-color: transparent; color: var(--ink-dim); font-size: 16px; }
+    .stk-pick { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 6px 2px; cursor: pointer;
+      border: 0; border-bottom: 1px solid var(--gs-edge); background: transparent; color: var(--ink); font: inherit; text-align: left; }
+    .stk-pick:active { background: rgba(255,255,255,.05); }
+    .stk-plus { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+      color: var(--cyan); font-size: 18px; font-weight: 800; border: 1px solid rgba(255,158,44,.45); }
+    .stk-added { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+    .stk-added span { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: var(--gs-card); border: 1px solid var(--gs-edge-hi); }
+    .stk-li { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--gs-edge); }
+    .stk-li-main { flex: 1; min-width: 0; min-height: 60px; display: flex; flex-direction: column; justify-content: center; gap: 3px;
+      padding: 6px 2px; border: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .stk-li-main b { font-size: 15px; }
+    .stk-li-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-dim); }
+    .stk-li.off .stk-li-main { opacity: .55; }
+    .sch-wide.danger { margin-top: 22px; background: transparent; color: var(--pink); border-color: rgba(255,59,92,.35); }
   </style>
 </head>
 <body>
@@ -3332,6 +3532,7 @@
          draws, and the board below is literally Due Now rendered a second time (see
          .duenow-mount), so the two can't drift apart. -->
     <section class="view active" id="view-home">
+      <div id="homeStack"></div>
       <div class="now-card" id="homeNow"></div>
       <div class="home-sec-title">DUE NOW</div>
       <div class="duenow-mount" id="homeDue" data-bare="1"></div>
@@ -3343,6 +3544,7 @@
       <div class="plan-cta">
         <span id="todayCtxBadge"></span>
         <button class="focus-btn" id="loadoutSwitch" type="button" title="Choose today's focus"></button>
+        <button class="stack-btn" id="stackSwitch" type="button" title="Habit stacks — your habits in a fixed order"><span aria-hidden="true">🔗</span>Stacks</button>
       </div>
       <div class="focus-board" id="focusBoard" style="display:none"></div>
       <div class="duenow-mount" id="dueSoonSection"></div>
@@ -3928,6 +4130,11 @@
     </div>
   </div>
 
+  <!-- Habit stacks: the one-step-at-a-time runner, and the sheet that builds stacks. -->
+  <div class="stk-overlay" id="stkOverlay" aria-hidden="true"></div>
+  <div class="stk-scrim" id="stkScrim"></div>
+  <div class="stk-sheet" id="stkSheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
+
   <div id="toast"></div>
   <!-- Undo bar: appears after completing a habit/quest or claiming a reward, offering a
        single-tap reversal for a few seconds. Sits above the toast rather than sharing its
@@ -4107,6 +4314,10 @@ function defaultState() {
     // so it can't express "Thursday at 3pm, just this once" and can't hold a quest at all.
     // These entries are what the Schedule's drag and its + button write to.
     plannedBlocks: {},    // 'YYYY-MM-DD' → [{ id, kind:'habit'|'task', refId, startMin, durMin }]
+    // Habit stacks: existing habits in a fixed order (see HABIT STACKS). Membership and
+    // order only — whether a step is done is read off the habit, never stored twice.
+    stacks: [],           // [{ id, name, habitIds: [in order], on }]
+    stackRun: null,       // { date, stackId, paused, open, skipped: [ids] } — today's pass
     // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
     // finished quests are deleted and the habit list changes — so each day's pair is
     // recorded as it happens and never recomputed. See recordPaceToday().
@@ -4851,6 +5062,8 @@ function remapHabitIds(st, remap) {
   if (st.focusMaintain && typeof st.focusMaintain === 'object') Object.keys(st.focusMaintain).forEach(k => {
     if (Array.isArray(st.focusMaintain[k])) st.focusMaintain[k] = [...new Set(st.focusMaintain[k].map(fix))];
   });
+  (st.stacks || []).forEach(s => { if (s && Array.isArray(s.habitIds)) s.habitIds = [...new Set(s.habitIds.map(fix))]; });
+  if (st.stackRun && Array.isArray(st.stackRun.skipped)) st.stackRun.skipped = [...new Set(st.stackRun.skipped.map(fix))];
   return remap.size;
 }
 
@@ -5119,6 +5332,9 @@ function load(raw) {
     remapHabitIds(merged, folded.remap);
     // Maintain lists last of all, once the fold has settled every habit's id.
     merged.focusMaintain = sanitizeFocusMaintain(merged.focusMaintain, merged);
+    // Stacks too: they hold habit ids, so they're checked against the folded list.
+    merged.stacks = sanitizeStacks(merged.stacks, merged);
+    merged.stackRun = sanitizeStackRun(merged.stackRun, merged);
     return merged;
   } catch (e) {
     // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
@@ -10552,12 +10768,474 @@ function renderHomeTally() {
 // calls save(), which is safe here: save() is a no-op while saveLocked, so a degraded
 // load can't be written over by a render.
 function renderHomeExtras() {
+  renderStacks();
   renderHomeNow();
   // The pace panel is gone, but the log it fed is not: dayLoadout() reads paceLog to work
   // out which loadout a past day belonged to, which the Similar Day Engine depends on.
   recordPaceToday();
 }
 function renderHome() { renderDueSoon(); renderHomeExtras(); }
+
+/* =================================================================
+   HABIT STACKS — a fixed order through habits you already have.
+
+   The point is to stop deciding. A stack is Japanese → Cello → Shower → Reading, and
+   finishing one is the cue for the next: whatever is on screen answers "what now?".
+
+   It is a way of walking through the SAME habits, not a second habit system:
+     · state.stacks    [{ id, name, habitIds: [in order], on }] — membership and order only
+     · state.stackRun  { date, stackId, paused, open, skipped: [ids] } — today's pass
+   Whether a step is done is never stored here. It is read off the habit itself
+   (doneCount), so a habit finished on the Habits tab, the Lock Screen or the Schedule is
+   done in the stack too, and finishing one here goes through completeHabit like any other
+   tap: tokens, Focus multipliers, streaks, stats and undo all come with it.
+
+   Both live at the top level of the save on purpose: alpha's normalizeHabit is a
+   whitelist and would drop a field kept on the habit, while top-level keys pass through.
+
+   The order never moves on its own — not for a Focus, not for a skip. A habit that isn't
+   on today (its weekdays) or is archived is left out for the day; the stack keeps it.
+   ================================================================= */
+// load()'s pass over the stacks. Hoisted and self-contained: load() runs thousands of
+// lines above here, before this section's `let`s exist (see the boot dead-zone note).
+function sanitizeStacks(src, st) {
+  if (!Array.isArray(src)) return [];
+  const known = new Set((st.habits || []).map(h => h.id));
+  const seen = new Set(), out = [];
+  src.forEach(s => {
+    if (!s || typeof s !== 'object' || typeof s.id !== 'string' || !s.id || seen.has(s.id)) return;
+    seen.add(s.id);
+    const ids = Array.isArray(s.habitIds) ? s.habitIds.filter(id => typeof id === 'string' && known.has(id)) : [];
+    out.push({ id: s.id, name: String(s.name || '').trim().slice(0, 60), habitIds: [...new Set(ids)], on: s.on !== false });
+  });
+  return out;
+}
+function sanitizeStackRun(src, st) {
+  if (!src || typeof src !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(String(src.date || ''))) return null;
+  const stack = (st.stacks || []).find(s => s.id === src.stackId);
+  if (!stack) return null;
+  const skipped = Array.isArray(src.skipped) ? src.skipped.filter(id => stack.habitIds.includes(id)) : [];
+  return { date: src.date, stackId: stack.id, paused: !!src.paused, open: !!src.open, skipped: [...new Set(skipped)] };
+}
+
+function stackList() {
+  return Array.isArray(state.stacks) ? state.stacks.filter(s => s && typeof s.id === 'string' && Array.isArray(s.habitIds)) : [];
+}
+function stackById(id) { return stackList().find(s => s.id === id) || null; }
+function stackName(s) { return (s && String(s.name || '').trim()) || 'Habit stack'; }
+// Today's pass through a stack, or null. A pass belongs to one day; tomorrow starts fresh.
+function stackRun() {
+  const r = state.stackRun;
+  if (!r || r.date !== todayStr() || !stackById(r.stackId)) return null;
+  if (!Array.isArray(r.skipped)) r.skipped = [];
+  return r;
+}
+// Done as far as the stack goes: one rep today. A habit you can repeat doesn't hold the
+// stack up until it's maxed — the stack is about getting through the order.
+function stackStepDone(h) { return doneCount(h) > 0; }
+// What a step is called today: the tier you're on, as everywhere else on the board.
+function stackStepName(h) { return habitToday(h).name || h.name; }
+/* The stack as it stands right now, rebuilt from the habits on every call.
+     steps    today's steps in stack order
+     cur      the step to do now: the first one neither done nor skipped — and once those
+              run out, the skipped ones, in the order they were skipped
+     next     the one after it, by the same rule
+     revisit  cur was skipped earlier and has come back round */
+function stackView(stack, run) {
+  const skipped = run && run.stackId === stack.id ? run.skipped : [];
+  const byId = new Map(state.habits.map(h => [h.id, h]));
+  const steps = stack.habitIds.map(id => byId.get(id))
+    .filter(h => h && !h.archived && isScheduledToday(h))
+    .map(h => ({ h, done: stackStepDone(h), skipped: false }));
+  steps.forEach(s => { s.skipped = !s.done && skipped.includes(s.h.id); });
+  const open = steps.filter(s => !s.done && !s.skipped);
+  const back = skipped.map(id => steps.find(s => s.skipped && s.h.id === id)).filter(Boolean);
+  const queue = open.concat(back);
+  const done = steps.filter(s => s.done).length;
+  return { stack, steps, cur: queue[0] || null, next: queue[1] || null, revisit: !open.length && queue.length > 0,
+           done, total: steps.length, finished: steps.length > 0 && done === steps.length };
+}
+
+/* ---- moving through a stack ---- */
+let stkFlash = null;          // { html, at, curId }: "Nice. Next: Cello", for a few seconds
+let stkSeen = null;           // { stackId, curId }: the step on screen at the last repaint
+let stkEnterAt = 0;           // when the step on screen last changed — its card slides in
+let stkFinishedNow = false;   // the last step was finished in front of you: show the end
+let stkShowAll = false;       // the runner's whole-stack list is unfolded
+const STK_FLASH_MS = 4500;
+
+function startStack(id) {
+  if (!stackById(id)) return;
+  const r = stackRun();
+  // Same stack, same day: carry on from where it was, skips and all.
+  state.stackRun = r && r.stackId === id ? { ...r, paused: false, open: true }
+    : { date: todayStr(), stackId: id, paused: false, open: true, skipped: [] };
+  stkShowAll = false; stkFinishedNow = false;
+  SFX.click(); save(); renderStacks();
+}
+// ✕ on the runner. The stack is still going — Home says "Continue".
+function closeStackRunner() {
+  const r = stackRun();
+  stkFinishedNow = false;
+  if (r && r.open) { r.open = false; save(); }
+  SFX.click(); renderStacks();
+}
+// Something came up. The place is kept (it always is — it's read off the habits), the
+// stopwatch on the step you were on stops counting, and Home says where you left off.
+function pauseStack() {
+  const r = stackRun(); if (!r) return;
+  const v = stackView(stackById(r.stackId), r), h = v.cur && v.cur.h;
+  r.paused = true; r.open = false; stkFinishedNow = false;
+  if (h && h.timer && !h.timer.pausedAt) toggleHabitTimerPause(h.id);
+  SFX.click(); save(); renderStacks();
+  toast(h ? `⏸ Paused at ${stackStepName(h)}` : '⏸ Stack paused', 'var(--cyan)');
+}
+// "Not now", never "done": the habit stays unfinished everywhere, the stack moves on, and
+// the step comes back once the rest are through — or straight away, on "Do now".
+function skipStackStep() {
+  const r = stackRun(); if (!r) return;
+  const v = stackView(stackById(r.stackId), r); if (!v.cur || !v.next) return;
+  const id = v.cur.h.id;
+  r.skipped = r.skipped.filter(x => x !== id).concat(id);   // skipped again: to the back
+  stkSeen = { stackId: r.stackId, curId: v.next.h.id };      // a skip isn't a finish — no "Nice"
+  stkEnterAt = Date.now();
+  stkFlash = { at: Date.now(), curId: v.next.h.id, html: `Skipped for now. Next: <b>${escapeHtml(stackStepName(v.next.h))}</b>` };
+  SFX.click(); save(); renderStacks();
+}
+function unskipStackStep(hid) {
+  const r = stackRun(); if (!r) return;
+  r.skipped = r.skipped.filter(x => x !== hid);
+  r.paused = false; r.open = true; stkShowAll = false;
+  SFX.click(); save(); renderStacks();
+}
+// Notice the step on screen changing between repaints, wherever the tap that changed it
+// happened — here, the Habits tab, the Lock Screen. Finishing the step you were on is
+// what earns "Nice. Next: …"; an undo just moves back quietly.
+function noteStackProgress(v) {
+  const curId = v.cur ? v.cur.h.id : null;
+  if (stkSeen && stkSeen.stackId === v.stack.id && stkSeen.curId !== curId) {
+    stkEnterAt = Date.now();
+    const was = stkSeen.curId && v.steps.find(s => s.h.id === stkSeen.curId);
+    if (was && was.done) {
+      stkFlash = { at: Date.now(), curId, html: v.cur ? `Nice. Next: <b>${escapeHtml(stackStepName(v.cur.h))}</b>` : 'Nice. That\'s the whole stack.' };
+      if (v.finished) stkFinishedNow = true;
+    }
+  }
+  stkSeen = { stackId: v.stack.id, curId };
+}
+// Only while the step it names is still the one on screen: an undo straight after takes it away.
+function stkFlashing(v) {
+  return !!stkFlash && Date.now() - stkFlash.at < STK_FLASH_MS && stkFlash.curId === (v.cur ? v.cur.h.id : null);
+}
+// A repaint rewrites innerHTML, which restarts every animation in it — and one completion
+// repaints several times. A negative delay picks each animation up where it already was.
+function stkSince(at) { return `--d:-${Math.max(0, Date.now() - at)}ms`; }
+
+/* ---- drawing ---- */
+function stackRoleTag(h) {
+  const r = habitRole(h);
+  return r === 'focus' ? '<span class="stk-tag focus">Focus</span>'
+    : r === 'maintain' ? '<span class="stk-tag maintain">Maintain</span>' : '';
+}
+function stackSegsHTML(v) {
+  return `<div class="stk-segs" aria-hidden="true">${v.steps.map(s => `<i class="${
+    s.done ? 'done' : v.cur && v.cur.h.id === s.h.id ? 'cur' : s.skipped ? 'skip' : ''}"></i>`).join('')}</div>`;
+}
+// The chain itself: ✓ done · → the one to do · plain upcoming · skipped, with a way back.
+// `tick` puts a ✓ on the current step, for Home, where the big buttons aren't.
+function stackStepsHTML(v, tick) {
+  return `<ol class="stk-steps">${v.steps.map(s => {
+    const h = s.h, isCur = !!(v.cur && v.cur.h.id === h.id), name = escapeHtml(stackStepName(h));
+    const cls = s.done ? 'done' : isCur ? 'cur' : s.skipped ? 'skip' : '';
+    const end = isCur && tick ? `<button class="stk-tick" data-stk="tick" data-hid="${h.id}" aria-label="Done: ${name}">✓</button>`
+      : s.skipped && !isCur ? `<button class="stk-now-btn" data-stk="unskip" data-hid="${h.id}">Do now</button>` : '';
+    return `<li class="stk-step ${cls}"><span class="stk-mark" aria-hidden="true">${s.done ? '✓' : isCur ? '→' : ''}</span>
+      <span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span><span class="stk-name">${name}</span>
+      ${s.skipped ? '<span class="stk-skipped">skipped</span>' : ''}${stackRoleTag(h)}${end}</li>`;
+  }).join('')}</ol>`;
+}
+// Home: the stack in progress (or the first one not done yet) in full, others as a line.
+function renderHomeStack() {
+  const box = $('#homeStack'); if (!box) return;
+  const r = stackRun();
+  const views = stackList().filter(s => s.on).map(s => stackView(s, r)).filter(v => v.total);
+  const live = r ? views.find(v => v.stack.id === r.stackId && !v.finished) : null;
+  const lead = live || views.find(v => !v.finished) || null;
+  let html = '';
+  if (lead) {
+    const id = lead.stack.id, paused = !!(live && r.paused), going = !!(live && !r.paused);
+    const flash = going && stkFlashing(lead) ? `<div class="stk-line" style="${stkSince(stkFlash.at)}">${stkFlash.html}</div>` : '';
+    const note = paused && lead.cur ? `<div class="stk-note">⏸ Paused at ${escapeHtml(stackStepName(lead.cur.h))} — it's right where you left it.</div>` : '';
+    const go = going ? 'Continue stack <span aria-hidden="true">›</span>' : paused ? '▶ Resume stack' : '▶ Start stack';
+    html += `<div class="stk-card${going ? ' live' : ''}">
+      <div class="stk-head"><span class="stk-kicker">🔗 ${escapeHtml(stackName(lead.stack))}</span>
+        <span class="stk-count">${lead.done} of ${lead.total}</span>
+        ${going ? '<button class="stk-icon" data-stk="pause" aria-label="Pause stack">⏸</button>' : ''}
+        <button class="stk-icon" data-stk="edit" data-id="${id}" aria-label="Edit stack">✎</button></div>
+      ${stackSegsHTML(lead)}${flash}${stackStepsHTML(lead, true)}${note}
+      <button class="stk-go" data-stk="start" data-id="${id}">${go}</button></div>`;
+  }
+  views.filter(v => v !== lead).forEach(v => {
+    html += v.finished
+      ? `<div class="stk-mini done"><span class="stk-mini-name">✓ ${escapeHtml(stackName(v.stack))}</span><span class="stk-count">${v.done} of ${v.total}</span></div>`
+      : `<div class="stk-mini"><span class="stk-mini-name">🔗 ${escapeHtml(stackName(v.stack))}</span><span class="stk-count">${v.done} of ${v.total}</span>
+          <button class="stk-now-btn" data-stk="start" data-id="${v.stack.id}">Start</button></div>`;
+  });
+  box.innerHTML = html;
+}
+// The two ways the step on screen moves forward, given its stopwatch. A habit with a set
+// length starts its timer; one without is simply done. The other is always one tap away.
+function stackActions(h) {
+  const t = h.timer, mins = habitCurrentMinutes(h);
+  if (t && t.pausedAt) return { main: { act: 'hold', label: '▶ Resume timer' }, alt: { act: 'finish', label: '⏹ Finish' } };
+  if (t) return { main: { act: 'finish', label: '⏹ Finish', live: true }, alt: { act: 'hold', label: 'Hold timer' } };
+  if (mins > 0) return { main: { act: 'begin', label: `▶ Start · ${fmtMins(mins)}` }, alt: { act: 'done', label: '✓ Done' } };
+  return { main: { act: 'done', label: '✓ Done' }, alt: { act: 'begin', label: '▶ Time it' } };
+}
+function stackRunnerHTML(v) {
+  const title = escapeHtml(stackName(v.stack));
+  const top = `<div class="stk-run-top">
+      <button class="stk-icon big" data-stk="close" aria-label="Close — the stack keeps your place">✕</button>
+      <div class="stk-run-title"><b>${title}</b><small>${v.done} of ${v.total} done</small></div>
+      <button class="stk-icon big" data-stk="edit" data-id="${v.stack.id}" aria-label="Edit stack">✎</button>
+    </div>${stackSegsHTML(v)}`;
+  if (!v.cur) {
+    return `<div class="stk-run" role="dialog" aria-modal="true" aria-label="${title}">${top}
+      <div class="stk-run-body"><div class="stk-fin"><div class="stk-fin-mark" aria-hidden="true">✓</div>
+        <b>${v.total ? 'Stack complete' : 'Nothing in this stack today'}</b>
+        <small>${v.total ? `${v.done} of ${v.total} — same order tomorrow.` : 'None of its habits are on today.'}</small></div></div>
+      <div class="stk-run-acts"><button class="stk-primary" data-stk="close">Close</button></div></div>`;
+  }
+  const h = v.cur.h, td = habitToday(h), mins = habitCurrentMinutes(h);
+  const lvls = habitLevels(h), lvl = lvls ? lvls[curLevelIndex(h)] : null;
+  const role = habitRole(h), pill = role === 'other' ? '' : ` r-${role}`;
+  const word = v.revisit ? 'Skipped earlier' : 'Now';
+  const k = stkFlashing(v)
+    ? `<div class="stk-k flash" style="${stkSince(stkFlash.at)}"><span class="stk-k-now">${word}</span><span class="stk-k-flash">${stkFlash.html}</span></div>`
+    : `<div class="stk-k"><span class="stk-k-now">${word}</span></div>`;
+  const entering = Date.now() - stkEnterAt < 400;
+  const t = h.timer;
+  const timer = t ? `<div class="stk-timer">⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? '<small>on hold</small>' : ''}</div>` : '';
+  const meta = [stackRoleTag(h), lvl ? `<span style="color:${lvl.color}">${lvl.label}</span>` : '',
+    mins ? `<span>${fmtMins(mins)}</span>` : '',
+    `<span class="hrow-reward${pill}">+${habitFocusReward(h, td.reward)} <i class="tok"></i></span>`].filter(Boolean).join('');
+  const then = v.next
+    ? `<div class="stk-then"><span>Then</span><span class="stk-emoji" aria-hidden="true">${escapeHtml(v.next.h.emoji || '⭐')}</span><b>${escapeHtml(stackStepName(v.next.h))}</b>${v.next.skipped ? '<span class="stk-skipped">skipped</span>' : ''}</div>`
+    : '<div class="stk-then"><span>Last one in the stack.</span></div>';
+  const a = stackActions(h);
+  return `<div class="stk-run" role="dialog" aria-modal="true" aria-label="${title}">${top}
+    <div class="stk-run-body">${k}
+      <div class="stk-now${entering ? ' enter' : ''}"${entering ? ` style="${stkSince(stkEnterAt)}"` : ''}>
+        <div class="stk-now-top"><span class="stk-now-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span><b class="stk-now-name">${escapeHtml(stackStepName(h))}</b></div>
+        <div class="stk-now-meta">${meta}</div>${timer}
+      </div>${then}
+      <button class="stk-all" data-stk="all" aria-expanded="${stkShowAll}">${stkShowAll ? 'Hide the stack ▴' : 'Whole stack ▾'}</button>
+      ${stkShowAll ? stackStepsHTML(v, false) : ''}
+    </div>
+    <div class="stk-run-acts">
+      <div class="stk-acts-row">${v.next ? `<button class="stk-btn" data-stk="skip">${v.revisit ? '↷ Later' : '⏭ Skip'}</button>` : ''}
+        <button class="stk-btn" data-stk="${a.alt.act}">${a.alt.label}</button>
+        <button class="stk-btn" data-stk="pause">⏸ Pause</button></div>
+      <button class="stk-primary${a.main.live ? ' live' : ''}" data-stk="${a.main.act}">${a.main.label}</button>
+    </div></div>`;
+}
+// The runner is open exactly when today's pass says so, so it comes back after a reload
+// or a killed app on the step you were on. A finished stack only shows its end screen to
+// the person who just finished it, not on the next launch.
+function renderStackRunner() {
+  const ov = $('#stkOverlay'); if (!ov) return;
+  const r = stackRun(), stack = r && stackById(r.stackId);
+  const v = stack && stack.on ? stackView(stack, r) : null;
+  const show = !!(r && r.open && v && (!v.finished || stkFinishedNow));
+  ov.classList.toggle('show', show);
+  ov.setAttribute('aria-hidden', show ? 'false' : 'true');
+  document.body.classList.toggle('stk-open', show);
+  if (!show) { ov.innerHTML = ''; return; }
+  const body = ov.querySelector('.stk-run-body'), keep = body ? body.scrollTop : 0;
+  ov.innerHTML = stackRunnerHTML(v);
+  const nb = ov.querySelector('.stk-run-body'); if (nb) nb.scrollTop = keep;
+}
+// Every stack surface at once. renderHomeExtras calls this, so it follows every
+// completion, stopwatch tap and undo in the app without any of them knowing stacks exist.
+function renderStacks() {
+  const r = stackRun(), stack = r && stackById(r.stackId);
+  if (stack) noteStackProgress(stackView(stack, r));
+  renderHomeStack();
+  renderStackRunner();
+  if (stkSheet) renderStackSheet();
+}
+function onStackClick(e) {
+  const b = e.target.closest('[data-stk]'); if (!b) return;
+  e.stopPropagation();                      // Home's own handlers sit on the view above
+  const r = stackRun(), stack = r && stackById(r.stackId);
+  const v = stack ? stackView(stack, r) : null;
+  const curId = v && v.cur ? v.cur.h.id : null;
+  switch (b.dataset.stk) {
+    case 'start': startStack(b.dataset.id); return;
+    case 'close': closeStackRunner(); return;
+    case 'pause': pauseStack(); return;
+    case 'edit': SFX.click(); openStackEditor(b.dataset.id); return;
+    case 'all': stkShowAll = !stkShowAll; SFX.click(); renderStackRunner(); return;
+    case 'skip': skipStackStep(); return;
+    case 'unskip': unskipStackStep(b.dataset.hid); return;
+    // The habit's own verbs, exactly as its row on the Habits tab calls them.
+    case 'tick': completeHabit(b.dataset.hid); return;
+    case 'done': if (curId) completeHabit(curId); return;
+    case 'begin': if (curId) startHabitTimer(curId); return;
+    case 'finish': if (curId) finishTimedHabit(curId); return;
+    case 'hold': if (curId) toggleHabitTimerPause(curId); return;
+  }
+}
+
+/* ---- the editor: a list of stacks, one stack's order, and a picker to add to it ---- */
+let stkSheet = null;          // null, or { view: 'list' | 'edit' | 'add', id }
+let stkNameSave = null;       // the name saves a beat after typing stops, not per key
+function openStackEditor(id) {
+  stkSheet = id && stackById(id) ? { view: 'edit', id } : { view: 'list' };
+  renderStackSheet();
+}
+function flushStackName() { if (stkNameSave) { clearTimeout(stkNameSave); stkNameSave = null; save(); } }
+function closeStackSheet() { flushStackName(); stkSheet = null; renderStackSheet(); renderStacks(); }
+function stackChain(s) {
+  const names = s.habitIds.map(id => state.habits.find(h => h.id === id)).filter(Boolean).map(h => h.name);
+  if (!names.length) return 'No habits yet';
+  return names.slice(0, 4).join(' → ') + (names.length > 4 ? ` → +${names.length - 4}` : '');
+}
+function stackListHTML() {
+  const rows = stackList().map(s => `<div class="stk-li${s.on ? '' : ' off'}">
+      <button class="stk-li-main" data-stk="editStack" data-id="${s.id}"><b>${escapeHtml(stackName(s))}</b><small>${escapeHtml(stackChain(s))}</small></button>
+      <button class="stk-sw${s.on ? ' on' : ''}" data-stk="toggleOn" data-id="${s.id}" role="switch" aria-checked="${s.on}" aria-label="Show ${escapeHtml(stackName(s))} on Home"></button>
+    </div>`).join('');
+  return `<div class="sch-sh-head"><button class="sch-sh-x" data-stk="sheetClose" aria-label="Close">✕</button>
+      <div class="sch-sh-title">Habit stacks</div><button class="sch-add" data-stk="newStack">＋ New</button></div>
+    ${rows || '<div class="sch-empty">No stacks yet.</div>'}
+    <p class="sch-note">A stack is a fixed order through habits you already have — finish one and the next is waiting. A habit that isn't on for the day is left out that day.</p>`;
+}
+function stackEditHTML(s) {
+  const byId = new Map(state.habits.map(h => [h.id, h]));
+  const ids = s.habitIds.filter(id => byId.has(id));
+  const rows = ids.map((id, i) => {
+    const h = byId.get(id), role = habitRole(h);
+    const why = [role === 'focus' ? 'Focus' : role === 'maintain' ? 'Maintain' : '',
+      h.archived ? 'archived — left out' : !isScheduledToday(h) ? 'not on today — left out today' : ''].filter(Boolean).join(' · ');
+    return `<div class="stk-ed-row">
+      <span class="stk-ed-n">${i + 1}</span><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <span class="stk-ed-name"><b>${escapeHtml(h.name)}</b>${why ? `<small>${why}</small>` : ''}</span>
+      <button class="stk-ed-btn" data-stk="up" data-hid="${id}" aria-label="Move ${escapeHtml(h.name)} up"${i === 0 ? ' disabled' : ''}>▲</button>
+      <button class="stk-ed-btn" data-stk="down" data-hid="${id}" aria-label="Move ${escapeHtml(h.name)} down"${i === ids.length - 1 ? ' disabled' : ''}>▼</button>
+      <button class="stk-ed-btn x" data-stk="remove" data-hid="${id}" aria-label="Take ${escapeHtml(h.name)} out of the stack">✕</button>
+    </div>`;
+  }).join('');
+  return `<div class="sch-sh-head"><button class="sch-sh-x" data-stk="toList" aria-label="All stacks">‹</button>
+      <div class="sch-sh-title">Edit stack</div><button class="sch-add" data-stk="sheetClose">Done</button></div>
+    <input class="stk-ed-in" data-stk-in="name" value="${escapeHtml(s.name || '')}" placeholder="Name it — e.g. Morning stack" maxlength="60" autocomplete="off" enterkeyhint="done" aria-label="Stack name">
+    <div class="stk-ed-on"><span><b>Show on Home</b><small>${s.on ? 'On — it’s on Home every day it has something in it.' : 'Off — kept, but hidden until you switch it back on.'}</small></span>
+      <button class="stk-sw${s.on ? ' on' : ''}" data-stk="toggleOn" data-id="${s.id}" role="switch" aria-checked="${s.on}" aria-label="Show on Home"></button></div>
+    <div class="stk-ed-h">The order<small>top to bottom</small></div>
+    ${rows || '<div class="sch-empty">Add habits in the order you do them.</div>'}
+    <button class="sch-wide go" data-stk="toAdd">＋ Add habits</button>
+    <button class="sch-wide danger" data-stk="delStack">Delete stack</button>
+    <p class="sch-note">Taking a habit out of a stack never deletes the habit.</p>`;
+}
+function stackAddHTML(s) {
+  const pool = state.habits.filter(h => !h.archived && !s.habitIds.includes(h.id));
+  const groups = focusPickGroups(pool).filter(g => g.list.length);
+  const body = groups.map(g => `${groups.length > 1 ? `<div class="stk-ed-h">${g.title}</div>` : ''}${g.list.map(h => `
+      <button class="stk-pick" data-stk="add" data-hid="${h.id}"><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+        <span class="stk-ed-name"><b>${escapeHtml(h.name)}</b>${isScheduledToday(h) ? '' : '<small>not on today</small>'}</span>
+        <span class="stk-plus" aria-hidden="true">＋</span></button>`).join('')}`).join('');
+  const inStack = s.habitIds.map(id => state.habits.find(h => h.id === id)).filter(Boolean);
+  return `<div class="sch-sh-head"><button class="sch-sh-x" data-stk="toEdit" aria-label="Back">‹</button>
+      <div class="sch-sh-title">Add to ${escapeHtml(stackName(s))}</div><button class="sch-add" data-stk="toEdit">Done</button></div>
+    <p class="sch-note">Tap them in the order you do them — each one goes on the end.</p>
+    ${inStack.length ? `<div class="stk-added">${inStack.map((h, i) => `<span>${i + 1}. ${escapeHtml(h.name)}</span>`).join('')}</div>` : ''}
+    ${body || '<div class="sch-empty">Every habit is already in this stack.</div>'}`;
+}
+function renderStackSheet() {
+  const sh = $('#stkSheet'), scrim = $('#stkScrim'); if (!sh || !scrim) return;
+  if (!stkSheet) {
+    sh.classList.remove('show'); scrim.classList.remove('show'); sh.setAttribute('aria-hidden', 'true');
+    sh.dataset.view = ''; return;
+  }
+  // Never repaint under someone typing the name: it would close the keyboard mid-word.
+  if (document.activeElement && sh.contains(document.activeElement) && document.activeElement.matches('input')) return;
+  const s = stkSheet.id ? stackById(stkSheet.id) : null;
+  if (stkSheet.view !== 'list' && !s) stkSheet = { view: 'list' };
+  const key = stkSheet.view + ':' + (stkSheet.id || ''), keep = sh.dataset.view === key ? sh.scrollTop : 0;
+  sh.innerHTML = '<div class="sch-grab"></div>' + (stkSheet.view === 'list' ? stackListHTML()
+    : stkSheet.view === 'add' ? stackAddHTML(s) : stackEditHTML(s));
+  sh.dataset.view = key;
+  sh.classList.add('show'); scrim.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
+  sh.scrollTop = keep;
+  if (stkSheet.focusName) { delete stkSheet.focusName; const inp = sh.querySelector('.stk-ed-in'); if (inp) inp.focus(); }
+}
+function onStackSheetClick(e) {
+  const b = e.target.closest('[data-stk]'); if (!b || !stkSheet) return;
+  flushStackName();
+  const s = stkSheet.id ? stackById(stkSheet.id) : null;
+  // A habit deleted since it was added just drops out, so ▲ ▼ never swap with a ghost.
+  if (s) s.habitIds = s.habitIds.filter(id => state.habits.some(h => h.id === id));
+  const at = s ? s.habitIds.indexOf(b.dataset.hid) : -1;
+  switch (b.dataset.stk) {
+    case 'sheetClose': SFX.click(); closeStackSheet(); return;
+    case 'toList': stkSheet = { view: 'list' }; break;
+    case 'toEdit': stkSheet = { view: 'edit', id: stkSheet.id }; break;
+    case 'toAdd': stkSheet = { view: 'add', id: stkSheet.id }; break;
+    case 'editStack': stkSheet = { view: 'edit', id: b.dataset.id }; break;
+    case 'newStack': {
+      const ns = { id: uid(), name: '', habitIds: [], on: true };
+      state.stacks = stackList().concat(ns);
+      save(); stkSheet = { view: 'edit', id: ns.id, focusName: true };
+      break;
+    }
+    case 'toggleOn': { const t = stackById(b.dataset.id); if (!t) return; t.on = !t.on; save(); break; }
+    case 'up': case 'down': {
+      const to = b.dataset.stk === 'up' ? at - 1 : at + 1;
+      if (at < 0 || to < 0 || to >= s.habitIds.length) return;
+      [s.habitIds[at], s.habitIds[to]] = [s.habitIds[to], s.habitIds[at]];
+      save(); break;
+    }
+    case 'remove': {
+      if (at < 0) return;
+      s.habitIds.splice(at, 1);
+      const r = state.stackRun;
+      if (r && r.stackId === s.id && Array.isArray(r.skipped)) r.skipped = r.skipped.filter(x => x !== b.dataset.hid);
+      save(); break;
+    }
+    case 'add': {
+      if (!s || s.habitIds.includes(b.dataset.hid) || !state.habits.some(h => h.id === b.dataset.hid)) return;
+      s.habitIds.push(b.dataset.hid); save(); break;
+    }
+    case 'delStack': {
+      if (!s) return;
+      const snap = undoSnapshot();
+      state.stacks = stackList().filter(x => x.id !== s.id);
+      if (state.stackRun && state.stackRun.stackId === s.id) state.stackRun = null;
+      save(); stkSheet = { view: 'list' };
+      offerUndo(snap, `🗑 ${stackName(s)}`);
+      break;
+    }
+    default: return;
+  }
+  SFX.click(); renderStackSheet(); renderStacks();
+}
+$('#homeStack').addEventListener('click', onStackClick);
+$('#stkOverlay').addEventListener('click', onStackClick);
+$('#stkSheet').addEventListener('click', onStackSheetClick);
+$('#stkSheet').addEventListener('input', e => {
+  if (!stkSheet || e.target.dataset.stkIn !== 'name') return;
+  const s = stackById(stkSheet.id); if (!s) return;
+  s.name = e.target.value.slice(0, 60);
+  clearTimeout(stkNameSave); stkNameSave = setTimeout(() => { stkNameSave = null; save(); }, 500);
+});
+$('#stkSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.stkIn) e.target.blur(); });
+$('#stkScrim').addEventListener('click', () => { SFX.click(); closeStackSheet(); });
+$('#stackSwitch').addEventListener('click', () => { SFX.click(); openStackEditor(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (stkSheet) closeStackSheet();
+  else if ($('#stkOverlay').classList.contains('show')) closeStackRunner();
+});
 
 /* ---- Widget zoom -------------------------------------------------------------------
    Same calibrated scale and the same two controls the Schedule tab has, but the scroller
