@@ -7569,10 +7569,30 @@ function habitUsualMinute(h) {
 function habitBlockMinute(h) { return Number.isFinite(h.scheduledMin) ? h.scheduledMin : habitUsualMinute(h); }
 // Median ACTUAL duration from real play→finish sessions — falls back to the
 // habit's planned/estimated minutes (habitCurrentMinutes) if it's never been timed.
+// A habit with tiers counts only runs of the tier it's on now. Pooled, a 30-minute base
+// and a 45-minute tier 2 said "30" while tier 2 ran: the overrun reminder fired at the
+// base's time and the Schedule drew the base's length.
 function habitMedianActualMinutes(h) {
-  const runs = (state.history || []).filter(e => e && e.kind === 'habit' && historyMatchesHabit(e, h) && Number.isFinite(e.actualElapsedSec));
+  const lv = habitLevels(h), cur = lv ? lv[curLevelIndex(h)] : null;
+  const runs = (state.history || []).filter(e => e && e.kind === 'habit' && historyMatchesHabit(e, h) && Number.isFinite(e.actualElapsedSec)
+    && (!cur || runIsLevel(e, cur)));
   if (runs.length < 2) return null;
   return medianMinute(runs.map(e => Math.round(e.actualElapsedSec / 60)));
+}
+// Was this completion a run of `lvl`? A row carries its exact rung (tierIndex of
+// tierCount); a row with no tier at all was logged before the habit had tiers, so it was
+// the base. A row from a ladder of a different height, or an old easy/medium/hard-only
+// row, can't be placed and counts for no tier.
+function runIsLevel(e, lvl) {
+  if (Number.isFinite(e.tierIndex)) return e.tierIndex === lvl.idx && e.tierCount === lvl.n;
+  return !!lvl.base && !e.level;
+}
+// How long a habit's block is drawn. `remembered` is what the Similar Day Engine or the
+// record day says it took — across every tier, so a habit with tiers is drawn at the
+// length of the tier it's on instead.
+function habitBlockLength(h, remembered) {
+  const own = habitMedianActualMinutes(h) || habitCurrentMinutes(h);
+  return (habitLevels(h) ? own : 0) || remembered || own || 0;
 }
 // PREDICTED blocks for today — what the AI expects, drawn dashed. Estimated start comes
 // from h.scheduledMin (AI-pinned) or the median completion time of the last 14 runs;
@@ -7587,7 +7607,7 @@ function plannedFor(dateStr) {
     return {
       planId: b.id, refId: b.refId, planKind: b.kind,
       habitId: b.kind === 'habit' ? src.id : null,
-      name: src.name, emoji: src.emoji, category: src.category,
+      name: b.kind === 'habit' ? habitToday(src).name : src.name, baseName: src.name, emoji: src.emoji, category: src.category,
       startMin: b.startMin, durMin: b.durMin,
       pinned: true, complete: false, kind: 'predicted', type: b.kind === 'task' ? 'task' : 'habit',
     };
@@ -7624,10 +7644,12 @@ function computeDayBlocks(dateStr) {
       const p = Number.isFinite(h.scheduledMin) ? null : predBlocks.get(h.id);
       return {
       habitId: h.id, refId: h.id, planKind: 'habit',
-      name: h.name, emoji: h.emoji, category: h.category,
+      // Shown as the tier it's on; matched on baseName, the habit's real name, which is
+      // what history and a running block carry.
+      name: habitToday(h).name, baseName: h.name, emoji: h.emoji, category: h.category,
       startMin: Number.isFinite(h.scheduledMin) ? h.scheduledMin
         : (p ? p.startMin : (r ? r.startMin : habitUsualMinute(h))),
-      durMin: (p && p.durMin) || (r && r.durMin) || habitMedianActualMinutes(h) || habitCurrentMinutes(h) || 15,
+      durMin: habitBlockLength(h, (p && p.durMin) || (r && r.durMin)) || 15,
       fromRecord: !!r && !p && !Number.isFinite(h.scheduledMin),
       fromPrediction: !!p,
       predConfidence: p ? p.confidence : null,
@@ -8681,7 +8703,7 @@ function segmentBlock(e, seg, idx, dateStr, endTs) {
   const startMin = Math.floor((s - dayStart) / 60000);
   const endMin = Math.floor((en - dayStart) / 60000);
   return {
-    name: idx > 0 ? `${e.name} (continued)` : e.name, baseName: e.name, emoji: e.emoji, category: e.category,
+    name: idx > 0 ? `${e.name} (continued)` : e.name, baseName: e.baseName || e.name, emoji: e.emoji, category: e.category,
     startMin, endMin, durMin: Math.max(0, endMin - startMin),
     kind: 'actual', type: e.kind === 'task' ? 'task' : 'habit',
     srcId: e.id || null,                    // the habit/quest this was — the Schedule's card opens it
@@ -8693,10 +8715,11 @@ function computeActualBlocks(dateStr) {
   (state.history || [])
     .filter(e => e && (e.kind === 'habit' || e.kind === 'task') && Number.isFinite(e.ts) && dateStrFromTs(e.ts) === dateStr)
     .forEach(e => {
+      const shown = historyRunName(e);
       // An interrupted session was several separate sittings — draw it that way rather
       // than as one unbroken span that covers a gap the user wasn't actually working.
       if (Array.isArray(e.segments) && e.segments.length > 1) {
-        const parts = e.segments.map((seg, i) => segmentBlock(e, seg, i, dateStr, e.ts)).filter(Boolean);
+        const parts = e.segments.map((seg, i) => segmentBlock({ ...e, name: shown, baseName: e.name }, seg, i, dateStr, e.ts)).filter(Boolean);
         if (parts.length) { out.push(...parts); return; }
       }
       const d = new Date(e.ts);
@@ -8704,7 +8727,7 @@ function computeActualBlocks(dateStr) {
       const timed = Number.isFinite(e.actualElapsedSec) && e.actualElapsedSec >= 60;
       const durMin = timed ? Math.round(e.actualElapsedSec / 60) : 0;
       out.push({
-        name: e.name, baseName: e.name, emoji: e.emoji, category: e.category,
+        name: shown, baseName: e.name, emoji: e.emoji, category: e.category,
         startMin: Math.max(0, endMin - durMin), endMin, durMin,
         kind: timed ? 'actual' : 'moment', type: e.kind === 'task' ? 'task' : 'habit',
         hid: e.hid || null, segIndex: 0, srcId: e.id || null,
@@ -8718,13 +8741,26 @@ function computeActualBlocks(dateStr) {
    couldn't show. Reads the live timers instead of history, so the block appears the
    instant ⏸ is tapped and the running stretch grows to `now`. Today only: a timer has no
    meaning on a day it isn't running through. */
+// What a finished run is called on the Schedule: the tier's own name when it was a tier
+// run and the habit's ladder is still the same height. History keeps the base name — it
+// is what everything else matches on — so this is display only.
+function historyRunName(e) {
+  if (e.kind !== 'habit' || !Number.isFinite(e.tierIndex)) return e.name;
+  const h = e.id && (state.habits || []).find(x => x.id === e.id);
+  const lv = h ? habitLevels(h) : null;
+  const l = lv && lv.length === e.tierCount ? lv[e.tierIndex] : null;
+  return (l && l.name) || e.name;
+}
 function computeLiveBlocks(dateStr) {
   if (dateStr !== todayStr()) return [];
   const now = Date.now();
   const out = [];
   const push = (src, kind) => {
     if (!src.timer) return;
-    const e = { id: src.id, name: src.name, emoji: src.emoji, category: src.category, kind };
+    // A habit's running block wears the tier being done; baseName stays the habit's own,
+    // so it still hides that habit's predicted block.
+    const e = { id: src.id, name: kind === 'habit' ? habitToday(src).name : src.name, baseName: src.name,
+                emoji: src.emoji, category: src.category, kind };
     timerSegments(src.timer).forEach((seg, i) => {
       const b = segmentBlock(e, seg, i, dateStr, now);
       if (b) { b.live = true; b.running = !Number.isFinite(seg.e); out.push(b); }
@@ -8977,7 +9013,7 @@ function schedDayModel(dateStr) {
   const nowM = isToday ? nowMinutes() : -1;
   const pastPrediction = b => isToday && b.startMin + (b.durMin || 15) <= nowM;
   const blocks = (isToday || isFuture
-    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name) && !inFiller(b) && !pastPrediction(b)))
+    ? actual.concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.baseName || b.name) && !inFiller(b) && !pastPrediction(b)))
     : actual).concat(rewards);
   blocks.sort((a, b) => a.startMin - b.startMin);
   const gaps = isFuture ? [] : computeGapBlocks(dateStr);
@@ -10384,9 +10420,9 @@ function renderDueSoon() {
 function homeTimeline() {
   const dateStr = todayStr();
   const actual = computeActualBlocks(dateStr);
-  const doneNames = new Set(actual.map(b => b.name));
+  const doneNames = new Set(actual.map(b => b.baseName || b.name));
   return actual
-    .concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.name)))
+    .concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.baseName || b.name)))
     .map(b => ({ ...b, endMin: Number.isFinite(b.endMin) ? b.endMin : b.startMin + (b.durMin || 0) }))
     .sort((a, b) => a.startMin - b.startMin);
 }
@@ -11508,7 +11544,9 @@ function isScreenTimeWin(w) {
 const _predCache = new Map();
 function predictedMinutesFor(src, kind) {
   if (kind === 'task') return src.timedMinutes || 0;
-  const key = src.id + ':' + ((state.history || []).length);
+  // The tier and its minutes are in the key: swiping to another tier, or editing one,
+  // mid-run has to move the reminder, not wait for the history to grow.
+  const key = [src.id, (state.history || []).length, curLevelIndex(src), habitCurrentMinutes(src)].join(':');
   if (_predCache.has(key)) return _predCache.get(key);
   // Same fallback chain the Schedule uses: real runs first, the configured length second.
   const v = habitMedianActualMinutes(src) || habitCurrentMinutes(src) || 0;
@@ -11539,6 +11577,10 @@ function reminderPlan() {
     ];
     running.forEach(({ src, kind }) => {
       if (src.timer.pausedAt) return;                       // paused: the finish line moves
+      // One reminder per run. Once a run has gone past (the in-app nudge below records
+      // it), a finish line that moves later — another tier, a re-worked median — would
+      // only be a second notification for the same sitting.
+      if (overrunToasted.has(src.id + ':' + src.timer.startedAt)) return;
       const mins = predictedMinutesFor(src, kind);
       if (!(mins > 0)) return;                              // nothing predicted, nothing to beat
       const at = timerCrossesAt(src.timer, mins);
@@ -11632,7 +11674,9 @@ function liveItems() {
     const detail = [mins > 0 ? `Usually ${fmtMins(mins)}` : '',
                     parts.total ? `${parts.done}/${parts.total} parts` : ''].filter(Boolean).join(' · ')
                    || (kind === 'task' ? 'Quest' : 'Habit');
-    out.push({ key: `${kind}:${src.id}`, run: String(t.startedAt), kind, name: src.name,
+    // A habit's card is titled with the tier being done. The title is part of the card's
+    // fixed attributes, so a tier swiped mid-run ends this card and starts a fresh one.
+    out.push({ key: `${kind}:${src.id}`, run: String(t.startedAt), kind, name: kind === 'habit' ? habitToday(src).name : src.name,
                emoji: src.emoji || (kind === 'task' ? '🎯' : '⚡'), screenTime: false,
                mode: 'stopwatch', start, end: mins > 0 ? start + Math.round(mins * 60000) : 0,
                pausedAt: t.pausedAt || 0, detail });
