@@ -3418,6 +3418,57 @@
     .stk-li-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-dim); }
     .stk-li.off .stk-li-main { opacity: .55; }
     .sch-wide.danger { margin-top: 22px; background: transparent; color: var(--pink); border-color: rgba(255,59,92,.35); }
+    /* a step's tiers, swiped like a habit row: the runner's card and the editor's rows */
+    .stk-swipe { flex: 1 1 auto; min-width: 0; overflow: hidden; touch-action: pan-y; }
+    .stk-track { display: flex; transition: transform .3s cubic-bezier(.22,.9,.3,1); }
+    .stk-track.dragging { transition: none; }
+    .stk-pane { flex: 0 0 100%; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .stk-now .stk-now-meta { margin-top: 8px; }
+    .stk-now .tier-dots { margin-top: 14px; }
+    .stk-ed-name .stk-pane { flex-direction: row; align-items: center; gap: 6px; min-height: 44px; }
+    .stk-pane-text { flex: 1; min-width: 0; }
+    .stk-chevs { flex: 0 0 auto; color: var(--ink-dim); opacity: .6; font-size: 15px; font-weight: 900; letter-spacing: 1px; }
+    /* The collapsed stack: a bar just above the tabs, on every screen. Everything else
+       that lives on that line (the casino's game tabs, the Tasks dock, the floating ＋
+       and Pass buttons, the undo bar) moves up by its height while it's there. */
+    .stk-dock {
+      position: fixed; z-index: 43; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right));
+      bottom: calc(67px + env(safe-area-inset-bottom)); max-width: 720px; margin: 0 auto; overflow: hidden;
+      border-radius: 16px; background: var(--gs-card); border: 1px solid rgba(255,158,44,.55);
+      box-shadow: 0 -6px 24px rgba(0,0,0,.55), 0 0 18px rgba(255,158,44,.12);
+      display: none;
+    }
+    .stk-dock.show { display: block; animation: stkDockIn .24s cubic-bezier(.22,.9,.3,1) both; }
+    @keyframes stkDockIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .stk-dock-main { display: flex; align-items: center; gap: 10px; width: 100%; height: 52px; padding: 0 8px 0 10px; cursor: pointer;
+      border: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; }
+    .stk-dock-emoji { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+      font-size: 19px; background: rgba(255,158,44,.12); }
+    .stk-dock-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .stk-dock-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ink-dim); }
+    .stk-dock-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14.5px; font-weight: 800; }
+    .stk-dock-clock { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+    .stk-dock-clock b { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--h-live); }
+    .stk-dock-clock.held b { color: var(--ink-dim); }
+    .stk-dock-clock small { font-size: 10px; color: var(--ink-dim); }
+    .stk-dock-up { flex: 0 0 auto; width: 30px; display: grid; place-items: center; color: var(--ink-dim); transform: rotate(180deg); }
+    .stk-dock-prog { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--cyan); transition: width .3s ease; }
+    body.stk-open .stk-dock { display: none; }
+    body.stk-docked main { padding-bottom: calc(96px + 58px + env(safe-area-inset-bottom)); }
+    body.stk-docked .game-tabs, body.stk-docked .task-dock { bottom: calc(67px + 58px + env(safe-area-inset-bottom)); }
+    body.stk-docked .sched-fab, body.stk-docked .pass-fab { bottom: calc(80px + 58px + env(safe-area-inset-bottom)); }
+    body.stk-docked .sched-zoom { bottom: calc(80px + 54px + 10px + 58px + env(safe-area-inset-bottom)); }
+    body.stk-docked:not(.stk-open) #undoBar { bottom: calc(84px + 58px + env(safe-area-inset-bottom)); }
+    body.stk-docked:not(.stk-open) #toast { bottom: calc(28px + 58px + env(safe-area-inset-bottom)); }
+    body.reduced .stk-dock.show { animation: none; }
+    /* reordering: the ≡ grip, the lifted row, the rows sliding out of its way */
+    .stk-grip { flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 11px; cursor: grab;
+      background: transparent; color: var(--ink-dim); font: inherit; font-size: 22px; line-height: 1; touch-action: none; }
+    .stk-grip:active { cursor: grabbing; color: var(--ink); }
+    .stk-ed-list { position: relative; }
+    .stk-ed-list.sorting .stk-ed-row { transition: transform .18s cubic-bezier(.22,.9,.3,1); }
+    .stk-ed-list.sorting .stk-ed-row.lift { position: relative; z-index: 2; transition: none; border-radius: 12px; border-bottom-color: transparent;
+      background: var(--gs-card); box-shadow: 0 10px 28px rgba(0,0,0,.55), 0 0 0 1px rgba(255,158,44,.5); }
   </style>
 </head>
 <body>
@@ -4131,6 +4182,7 @@
   </div>
 
   <!-- Habit stacks: the one-step-at-a-time runner, and the sheet that builds stacks. -->
+  <div class="stk-dock" id="stkDock"></div>
   <div class="stk-overlay" id="stkOverlay" aria-hidden="true"></div>
   <div class="stk-scrim" id="stkScrim"></div>
   <div class="stk-sheet" id="stkSheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
@@ -4318,6 +4370,7 @@ function defaultState() {
     // order only — whether a step is done is read off the habit, never stored twice.
     stacks: [],           // [{ id, name, habitIds: [in order], on }]
     stackRun: null,       // { date, stackId, paused, open, skipped: [ids] } — today's pass
+    stackTiers: {},       // { [stackId]: { [habitId]: { i, n } } } — the tier a step is done at
     // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
     // finished quests are deleted and the habit list changes — so each day's pair is
     // recorded as it happens and never recomputed. See recordPaceToday().
@@ -5064,6 +5117,14 @@ function remapHabitIds(st, remap) {
   });
   (st.stacks || []).forEach(s => { if (s && Array.isArray(s.habitIds)) s.habitIds = [...new Set(s.habitIds.map(fix))]; });
   if (st.stackRun && Array.isArray(st.stackRun.skipped)) st.stackRun.skipped = [...new Set(st.stackRun.skipped.map(fix))];
+  // A tier pick is keyed by habit id. The kept habit's own pick wins over the folded copy's.
+  if (st.stackTiers && typeof st.stackTiers === 'object') Object.keys(st.stackTiers).forEach(sid => {
+    const m = st.stackTiers[sid]; if (!m || typeof m !== 'object') return;
+    const out = {};
+    Object.keys(m).filter(id => !remap.has(id)).forEach(id => { out[id] = m[id]; });
+    Object.keys(m).filter(id => remap.has(id)).forEach(id => { if (!(fix(id) in out)) out[fix(id)] = m[id]; });
+    st.stackTiers[sid] = out;
+  });
   return remap.size;
 }
 
@@ -5335,6 +5396,7 @@ function load(raw) {
     // Stacks too: they hold habit ids, so they're checked against the folded list.
     merged.stacks = sanitizeStacks(merged.stacks, merged);
     merged.stackRun = sanitizeStackRun(merged.stackRun, merged);
+    merged.stackTiers = sanitizeStackTiers(merged.stackTiers, merged);
     return merged;
   } catch (e) {
     // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
@@ -10785,13 +10847,20 @@ function renderHome() { renderDueSoon(); renderHomeExtras(); }
    It is a way of walking through the SAME habits, not a second habit system:
      · state.stacks    [{ id, name, habitIds: [in order], on }] — membership and order only
      · state.stackRun  { date, stackId, paused, open, skipped: [ids] } — today's pass
+     · state.stackTiers { [stackId]: { [habitId]: { i, n } } } — the tier a step is done at
    Whether a step is done is never stored here. It is read off the habit itself
    (doneCount), so a habit finished on the Habits tab, the Lock Screen or the Schedule is
    done in the stack too, and finishing one here goes through completeHabit like any other
    tap: tokens, Focus multipliers, streaks, stats and undo all come with it.
 
-   Both live at the top level of the save on purpose: alpha's normalizeHabit is a
+   All three live at the top level of the save on purpose: alpha's normalizeHabit is a
    whitelist and would drop a field kept on the habit, while top-level keys pass through.
+   (stackTiers is its own key rather than a field on each stack for the same reason: the
+   first stacks build cleans its stacks field by field, and would drop one it never knew.)
+
+   A tier pick doesn't hold a second copy of the habit's tier. Starting the stack moves
+   each step's habit onto the picked tier — the same move as swiping its row — so the
+   timer, the reminder, the payout and the history all follow without knowing why.
 
    The order never moves on its own — not for a Focus, not for a skip. A habit that isn't
    on today (its weekdays) or is archived is left out for the day; the stack keeps it.
@@ -10817,6 +10886,22 @@ function sanitizeStackRun(src, st) {
   const skipped = Array.isArray(src.skipped) ? src.skipped.filter(id => stack.habitIds.includes(id)) : [];
   return { date: src.date, stackId: stack.id, paused: !!src.paused, open: !!src.open, skipped: [...new Set(skipped)] };
 }
+// Picks for stacks and steps that still exist. Whether `i` still fits the habit's ladder
+// is checked on reading (stackTierPick), where habitLevels is safe to call.
+function sanitizeStackTiers(src, st) {
+  const out = {};
+  if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+  (st.stacks || []).forEach(s => {
+    const m = src[s.id]; if (!m || typeof m !== 'object') return;
+    const keep = {};
+    s.habitIds.forEach(id => {
+      const p = m[id];
+      if (p && Number.isInteger(p.i) && Number.isInteger(p.n) && p.i >= 0 && p.i < p.n) keep[id] = { i: p.i, n: p.n };
+    });
+    if (Object.keys(keep).length) out[s.id] = keep;
+  });
+  return out;
+}
 
 function stackList() {
   return Array.isArray(state.stacks) ? state.stacks.filter(s => s && typeof s.id === 'string' && Array.isArray(s.habitIds)) : [];
@@ -10833,8 +10918,49 @@ function stackRun() {
 // Done as far as the stack goes: one rep today. A habit you can repeat doesn't hold the
 // stack up until it's maxed — the stack is about getting through the order.
 function stackStepDone(h) { return doneCount(h) > 0; }
-// What a step is called today: the tier you're on, as everywhere else on the board.
-function stackStepName(h) { return habitToday(h).name || h.name; }
+/* ---- tiers: which rung of a habit's ladder a stack does it at ---- */
+// The tier a stack asks for on a step, as an index into habitLevels(h), or null for "as
+// the habit is". A pick is saved with the ladder's height, so adding or removing a tier
+// later makes it lapse instead of quietly landing on a different rung.
+function stackTierPick(stack, h) {
+  const m = state.stackTiers && state.stackTiers[stack.id], p = m && m[h.id], lv = habitLevels(h);
+  return p && lv && p.n === lv.length && Number.isInteger(p.i) && p.i >= 0 && p.i < lv.length ? p.i : null;
+}
+function setStackTierPick(stack, h, i) {
+  const lv = habitLevels(h);
+  if (!state.stackTiers || typeof state.stackTiers !== 'object' || Array.isArray(state.stackTiers)) state.stackTiers = {};
+  const m = state.stackTiers[stack.id] || (state.stackTiers[stack.id] = {});
+  if (lv && Number.isInteger(i) && i >= 0 && i < lv.length) m[h.id] = { i, n: lv.length };
+  else delete m[h.id];
+  if (!Object.keys(m).length) delete state.stackTiers[stack.id];
+}
+function dropStackTierPick(stackId, hid) {
+  const m = state.stackTiers && state.stackTiers[stackId]; if (!m) return;
+  delete m[hid];
+  if (!Object.keys(m).length) delete state.stackTiers[stackId];
+}
+// The rung starting this stack moves a step to, or null when it leaves the habit be: no
+// pick, already on it, already done today, or a stopwatch already running on it.
+function stackTierMove(stack, h) {
+  const p = stackTierPick(stack, h);
+  return p === null || p === curLevelIndex(h) || stackStepDone(h) || h.timer ? null : p;
+}
+function applyStackTiers(v) {
+  let moved = 0;
+  v.steps.forEach(s => { const p = stackTierMove(v.stack, s.h); if (p !== null) { setHabitTier(s.h, p); moved++; } });
+  return moved;
+}
+// The name the editor shows for a step: its picked tier, or the tier the habit is on.
+function stackPickName(stack, h) {
+  const p = stackTierPick(stack, h);
+  return p === null ? (habitToday(h).name || h.name) : (habitLevels(h)[p].name || h.name);
+}
+// What a step is called: the tier the habit is on, as everywhere else on the board — or,
+// on a stack not started today, the tier starting it will put the habit on.
+function stackStepName(h, v) {
+  const p = v && !v.live ? stackTierMove(v.stack, h) : null;
+  return p === null ? (habitToday(h).name || h.name) : (habitLevels(h)[p].name || h.name);
+}
 /* The stack as it stands right now, rebuilt from the habits on every call.
      steps    today's steps in stack order
      cur      the step to do now: the first one neither done nor skipped — and once those
@@ -10853,7 +10979,8 @@ function stackView(stack, run) {
   const queue = open.concat(back);
   const done = steps.filter(s => s.done).length;
   return { stack, steps, cur: queue[0] || null, next: queue[1] || null, revisit: !open.length && queue.length > 0,
-           done, total: steps.length, finished: steps.length > 0 && done === steps.length };
+           done, total: steps.length, finished: steps.length > 0 && done === steps.length,
+           live: !!(run && run.stackId === stack.id) };
 }
 
 /* ---- moving through a stack ---- */
@@ -10865,15 +10992,21 @@ let stkShowAll = false;       // the runner's whole-stack list is unfolded
 const STK_FLASH_MS = 4500;
 
 function startStack(id) {
-  if (!stackById(id)) return;
+  const stack = stackById(id); if (!stack) return;
   const r = stackRun();
-  // Same stack, same day: carry on from where it was, skips and all.
-  state.stackRun = r && r.stackId === id ? { ...r, paused: false, open: true }
-    : { date: todayStr(), stackId: id, paused: false, open: true, skipped: [] };
+  // Same stack, same day: carry on from where it was, skips, tier switches and all.
+  let moved = 0;
+  if (r && r.stackId === id) state.stackRun = { ...r, paused: false, open: true };
+  else {
+    state.stackRun = { date: todayStr(), stackId: id, paused: false, open: true, skipped: [] };
+    moved = applyStackTiers(stackView(stack, state.stackRun));   // a fresh pass: each step onto its tier
+  }
   stkShowAll = false; stkFinishedNow = false;
-  SFX.click(); save(); renderStacks();
+  SFX.click(); save();
+  if (moved) renderHabits(); else renderStacks();             // the Habits tab's rows changed tier too
 }
-// ✕ on the runner. The stack is still going — Home says "Continue".
+// ⌄ on the runner. The stack is still going: it shrinks to the bar above the tabs (and
+// Home says "Continue"), so the rest of the app is free in the meantime.
 function closeStackRunner() {
   const r = stackRun();
   stkFinishedNow = false;
@@ -10907,6 +11040,27 @@ function unskipStackStep(hid) {
   r.skipped = r.skipped.filter(x => x !== hid);
   r.paused = false; r.open = true; stkShowAll = false;
   SFX.click(); save(); renderStacks();
+}
+// A tier chosen in the moment is the same as swiping the habit's row on the Habits tab:
+// it changes what the habit is today — name, length, payout, reminder — and leaves the
+// stack's own pick for next time alone.
+function switchStackStepTier(hid, i) {
+  const h = state.habits.find(x => x.id === hid), lv = h && habitLevels(h);
+  if (!lv || !Number.isInteger(i) || i < 0 || i >= lv.length || i === curLevelIndex(h)) return;
+  setHabitTier(h, i);
+  SFX.click(); save(); renderHabits();
+}
+// The editor's swipe: rung i for this stack, or null for "As is".
+function pickStackTier(s, hid, i) {
+  const h = state.habits.find(x => x.id === hid);
+  if (!s || !h || !habitLevels(h) || !s.habitIds.includes(hid)) return;
+  setStackTierPick(s, h, i);
+  // Mid-stack, a new pick is for now as well — on a step that hasn't been started.
+  const r = stackRun();
+  const p = r && r.stackId === s.id && stackView(s, r).steps.some(x => x.h === h) ? stackTierMove(s, h) : null;
+  if (p !== null) setHabitTier(h, p);
+  SFX.click(); save();
+  if (p !== null) renderHabits(); else { renderStackSheet(); renderStacks(); }
 }
 // Notice the step on screen changing between repaints, wherever the tap that changed it
 // happened — here, the Habits tab, the Lock Screen. Finishing the step you were on is
@@ -10945,9 +11099,9 @@ function stackSegsHTML(v) {
 // `tick` puts a ✓ on the current step, for Home, where the big buttons aren't.
 function stackStepsHTML(v, tick) {
   return `<ol class="stk-steps">${v.steps.map(s => {
-    const h = s.h, isCur = !!(v.cur && v.cur.h.id === h.id), name = escapeHtml(stackStepName(h));
+    const h = s.h, isCur = !!(v.cur && v.cur.h.id === h.id), name = escapeHtml(stackStepName(h, v));
     const cls = s.done ? 'done' : isCur ? 'cur' : s.skipped ? 'skip' : '';
-    const end = isCur && tick ? `<button class="stk-tick" data-stk="tick" data-hid="${h.id}" aria-label="Done: ${name}">✓</button>`
+    const end = isCur && tick ? `<button class="stk-tick" data-stk="tick" data-id="${v.stack.id}" data-hid="${h.id}" aria-label="Done: ${name}">✓</button>`
       : s.skipped && !isCur ? `<button class="stk-now-btn" data-stk="unskip" data-hid="${h.id}">Do now</button>` : '';
     return `<li class="stk-step ${cls}"><span class="stk-mark" aria-hidden="true">${s.done ? '✓' : isCur ? '→' : ''}</span>
       <span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span><span class="stk-name">${name}</span>
@@ -10983,6 +11137,24 @@ function renderHomeStack() {
   });
   box.innerHTML = html;
 }
+/* A step's tiers swipe the way a habit row on the Habits tab does: every page is drawn up
+   front in a track offset by -index×100%, the finger only nudges the transform, and the
+   choice is made once the slide settles. `mode` says what settling means — 'run' moves
+   the habit itself (the runner), 'pick' sets the stack's tier for it (the editor). */
+function stackSwipeHTML(h, mode, idx, panes) {
+  // Only the page on show is read out; the rest are off to the side until swiped to.
+  const pages = panes.map((p, i) => i === idx ? p : p.replace('<div class="stk-pane"', '<div class="stk-pane" aria-hidden="true"'));
+  return `<div class="stk-swipe"><div class="stk-track" data-mode="${mode}" data-hid="${h.id}" data-idx="${idx}" style="transform:translateX(${-idx * 100}%)">${pages.join('')}</div></div>`;
+}
+const stkChevs = (i, n) => `<span class="stk-chevs" aria-hidden="true">${i > 0 ? '‹' : ''}${i < n - 1 ? '›' : ''}</span>`;
+// The editor's pages: "As is" first, then each rung, easiest first.
+function stackPickSwipeHTML(s, h) {
+  const lv = habitLevels(h), now = lv[curLevelIndex(h)], pick = stackTierPick(s, h), n = lv.length + 1;
+  const tier = l => `<span style="color:${l.color}">${l.label}</span>`;
+  const pane = (i, name, sub) => `<div class="stk-pane"><span class="stk-pane-text"><b>${escapeHtml(name)}</b><small>${sub}</small></span>${stkChevs(i, n)}</div>`;
+  return stackSwipeHTML(h, 'pick', pick === null ? 0 : pick + 1, [pane(0, now.name || h.name, `As is · on ${tier(now)} now`)]
+    .concat(lv.map(l => pane(l.idx + 1, l.name || h.name, `${tier(l)}${l.minutes ? ` · ${fmtMins(l.minutes)}` : ''}`))));
+}
 // The two ways the step on screen moves forward, given its stopwatch. A habit with a set
 // length starts its timer; one without is simply done. The other is always one tap away.
 function stackActions(h) {
@@ -10995,7 +11167,7 @@ function stackActions(h) {
 function stackRunnerHTML(v) {
   const title = escapeHtml(stackName(v.stack));
   const top = `<div class="stk-run-top">
-      <button class="stk-icon big" data-stk="close" aria-label="Close — the stack keeps your place">✕</button>
+      <button class="stk-icon big" data-stk="close" aria-label="Minimise — the stack keeps running"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="stk-run-title"><b>${title}</b><small>${v.done} of ${v.total} done</small></div>
       <button class="stk-icon big" data-stk="edit" data-id="${v.stack.id}" aria-label="Edit stack">✎</button>
     </div>${stackSegsHTML(v)}`;
@@ -11006,8 +11178,8 @@ function stackRunnerHTML(v) {
         <small>${v.total ? `${v.done} of ${v.total} — same order tomorrow.` : 'None of its habits are on today.'}</small></div></div>
       <div class="stk-run-acts"><button class="stk-primary" data-stk="close">Close</button></div></div>`;
   }
-  const h = v.cur.h, td = habitToday(h), mins = habitCurrentMinutes(h);
-  const lvls = habitLevels(h), lvl = lvls ? lvls[curLevelIndex(h)] : null;
+  const h = v.cur.h, td = habitToday(h);
+  const lvls = habitLevels(h), li = lvls ? curLevelIndex(h) : 0;
   const role = habitRole(h), pill = role === 'other' ? '' : ` r-${role}`;
   const word = v.revisit ? 'Skipped earlier' : 'Now';
   const k = stkFlashing(v)
@@ -11016,18 +11188,23 @@ function stackRunnerHTML(v) {
   const entering = Date.now() - stkEnterAt < 400;
   const t = h.timer;
   const timer = t ? `<div class="stk-timer">⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? '<small>on hold</small>' : ''}</div>` : '';
-  const meta = [stackRoleTag(h), lvl ? `<span style="color:${lvl.color}">${lvl.label}</span>` : '',
-    mins ? `<span>${fmtMins(mins)}</span>` : '',
-    `<span class="hrow-reward${pill}">+${habitFocusReward(h, td.reward)} <i class="tok"></i></span>`].filter(Boolean).join('');
+  // One page per tier — swipe to do a different one right now — or the one page it has.
+  const pane = (name, l, minutes, reward) => `<div class="stk-pane"><b class="stk-now-name">${escapeHtml(name)}</b>
+      <div class="stk-now-meta">${[stackRoleTag(h), l ? `<span style="color:${l.color}">${l.label}</span>` : '',
+        minutes ? `<span>${fmtMins(minutes)}</span>` : '',
+        `<span class="hrow-reward${pill}">+${habitFocusReward(h, reward)} <i class="tok"></i></span>`].filter(Boolean).join('')}</div></div>`;
+  const card = lvls
+    ? stackSwipeHTML(h, 'run', li, lvls.map(l => pane(l.name || h.name, l, l.minutes || 0, l.reward)))
+    : `<div class="stk-swipe">${pane(stackStepName(h, v), null, td.minutes, td.reward)}</div>`;
   const then = v.next
-    ? `<div class="stk-then"><span>Then</span><span class="stk-emoji" aria-hidden="true">${escapeHtml(v.next.h.emoji || '⭐')}</span><b>${escapeHtml(stackStepName(v.next.h))}</b>${v.next.skipped ? '<span class="stk-skipped">skipped</span>' : ''}</div>`
+    ? `<div class="stk-then"><span>Then</span><span class="stk-emoji" aria-hidden="true">${escapeHtml(v.next.h.emoji || '⭐')}</span><b>${escapeHtml(stackStepName(v.next.h, v))}</b>${v.next.skipped ? '<span class="stk-skipped">skipped</span>' : ''}</div>`
     : '<div class="stk-then"><span>Last one in the stack.</span></div>';
   const a = stackActions(h);
   return `<div class="stk-run" role="dialog" aria-modal="true" aria-label="${title}">${top}
     <div class="stk-run-body">${k}
       <div class="stk-now${entering ? ' enter' : ''}"${entering ? ` style="${stkSince(stkEnterAt)}"` : ''}>
-        <div class="stk-now-top"><span class="stk-now-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span><b class="stk-now-name">${escapeHtml(stackStepName(h))}</b></div>
-        <div class="stk-now-meta">${meta}</div>${timer}
+        <div class="stk-now-top"><span class="stk-now-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>${card}</div>
+        ${lvls ? tierDotsHTML(lvls, li) : ''}${timer}
       </div>${then}
       <button class="stk-all" data-stk="all" aria-expanded="${stkShowAll}">${stkShowAll ? 'Hide the stack ▴' : 'Whole stack ▾'}</button>
       ${stkShowAll ? stackStepsHTML(v, false) : ''}
@@ -11055,6 +11232,28 @@ function renderStackRunner() {
   ov.innerHTML = stackRunnerHTML(v);
   const nb = ov.querySelector('.stk-run-body'); if (nb) nb.scrollTop = keep;
 }
+// Collapsed, the stack is still running: the rest of the app is free, and a bar above the
+// tabs keeps the step in reach — tap it to open the runner again. Paused or finished, the
+// bar goes; Home's card is where a paused stack waits.
+function renderStackDock() {
+  const dock = $('#stkDock'); if (!dock) return;
+  const r = stackRun(), stack = r && stackById(r.stackId);
+  const v = stack && stack.on && !r.open && !r.paused ? stackView(stack, r) : null;
+  const show = !!(v && v.cur);
+  if (document.body.classList.contains('stk-docked') !== show) {
+    document.body.classList.toggle('stk-docked', show);
+    syncTaskDockRoom();                     // the Tasks form measures its room off the same baseline
+  }
+  dock.classList.toggle('show', show);
+  if (!show) { dock.innerHTML = ''; return; }
+  const h = v.cur.h, t = h.timer, name = escapeHtml(stackStepName(h, v));
+  const clock = t ? `<span class="stk-dock-clock${t.pausedAt ? ' held' : ''}"><b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? '<small>on hold</small>' : ''}</span>` : '';
+  dock.innerHTML = `<button class="stk-dock-main" data-stk="start" data-id="${stack.id}" aria-label="Open ${escapeHtml(stackName(stack))} — now: ${name}">
+      <span class="stk-dock-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <span class="stk-dock-text"><small>🔗 ${escapeHtml(stackName(stack))} · ${v.done} of ${v.total}</small><b>${name}</b></span>
+      ${clock}<span class="stk-dock-up" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+    <i class="stk-dock-prog" style="width:${v.total ? Math.round(v.done / v.total * 100) : 0}%" aria-hidden="true"></i>`;
+}
 // Every stack surface at once. renderHomeExtras calls this, so it follows every
 // completion, stopwatch tap and undo in the app without any of them knowing stacks exist.
 function renderStacks() {
@@ -11062,6 +11261,7 @@ function renderStacks() {
   if (stack) noteStackProgress(stackView(stack, r));
   renderHomeStack();
   renderStackRunner();
+  renderStackDock();
   if (stkSheet) renderStackSheet();
 }
 function onStackClick(e) {
@@ -11079,7 +11279,12 @@ function onStackClick(e) {
     case 'skip': skipStackStep(); return;
     case 'unskip': unskipStackStep(b.dataset.hid); return;
     // The habit's own verbs, exactly as its row on the Habits tab calls them.
-    case 'tick': completeHabit(b.dataset.hid); return;
+    case 'tick': {
+      // Ticked on Home before the stack is started: done at the tier the card shows.
+      const s = stackById(b.dataset.id), h = state.habits.find(x => x.id === b.dataset.hid);
+      if (s && h && !(r && r.stackId === s.id)) { const p = stackTierMove(s, h); if (p !== null) setHabitTier(h, p); }
+      completeHabit(b.dataset.hid); return;
+    }
     case 'done': if (curId) completeHabit(curId); return;
     case 'begin': if (curId) startHabitTimer(curId); return;
     case 'finish': if (curId) finishTimedHabit(curId); return;
@@ -11097,7 +11302,7 @@ function openStackEditor(id) {
 function flushStackName() { if (stkNameSave) { clearTimeout(stkNameSave); stkNameSave = null; save(); } }
 function closeStackSheet() { flushStackName(); stkSheet = null; renderStackSheet(); renderStacks(); }
 function stackChain(s) {
-  const names = s.habitIds.map(id => state.habits.find(h => h.id === id)).filter(Boolean).map(h => h.name);
+  const names = s.habitIds.map(id => state.habits.find(h => h.id === id)).filter(Boolean).map(h => stackPickName(s, h));
   if (!names.length) return 'No habits yet';
   return names.slice(0, 4).join(' → ') + (names.length > 4 ? ` → +${names.length - 4}` : '');
 }
@@ -11118,11 +11323,11 @@ function stackEditHTML(s) {
     const h = byId.get(id), role = habitRole(h);
     const why = [role === 'focus' ? 'Focus' : role === 'maintain' ? 'Maintain' : '',
       h.archived ? 'archived — left out' : !isScheduledToday(h) ? 'not on today — left out today' : ''].filter(Boolean).join(' · ');
+    const name = habitLevels(h) ? stackPickSwipeHTML(s, h) : `<b>${escapeHtml(h.name)}</b>`;
     return `<div class="stk-ed-row">
       <span class="stk-ed-n">${i + 1}</span><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
-      <span class="stk-ed-name"><b>${escapeHtml(h.name)}</b>${why ? `<small>${why}</small>` : ''}</span>
-      <button class="stk-ed-btn" data-stk="up" data-hid="${id}" aria-label="Move ${escapeHtml(h.name)} up"${i === 0 ? ' disabled' : ''}>▲</button>
-      <button class="stk-ed-btn" data-stk="down" data-hid="${id}" aria-label="Move ${escapeHtml(h.name)} down"${i === ids.length - 1 ? ' disabled' : ''}>▼</button>
+      <span class="stk-ed-name">${name}${why ? `<small>${why}</small>` : ''}</span>
+      <button class="stk-grip" data-hid="${id}" aria-label="Reorder ${escapeHtml(h.name)}: drag, or use the arrow keys">≡</button>
       <button class="stk-ed-btn x" data-stk="remove" data-hid="${id}" aria-label="Take ${escapeHtml(h.name)} out of the stack">✕</button>
     </div>`;
   }).join('');
@@ -11131,11 +11336,11 @@ function stackEditHTML(s) {
     <input class="stk-ed-in" data-stk-in="name" value="${escapeHtml(s.name || '')}" placeholder="Name it — e.g. Morning stack" maxlength="60" autocomplete="off" enterkeyhint="done" aria-label="Stack name">
     <div class="stk-ed-on"><span><b>Show on Home</b><small>${s.on ? 'On — it’s on Home every day it has something in it.' : 'Off — kept, but hidden until you switch it back on.'}</small></span>
       <button class="stk-sw${s.on ? ' on' : ''}" data-stk="toggleOn" data-id="${s.id}" role="switch" aria-checked="${s.on}" aria-label="Show on Home"></button></div>
-    <div class="stk-ed-h">The order<small>top to bottom</small></div>
-    ${rows || '<div class="sch-empty">Add habits in the order you do them.</div>'}
+    <div class="stk-ed-h">The order<small>drag ≡ to move one</small></div>
+    ${rows ? `<div class="stk-ed-list">${rows}</div>` : '<div class="sch-empty">Add habits in the order you do them.</div>'}
     <button class="sch-wide go" data-stk="toAdd">＋ Add habits</button>
     <button class="sch-wide danger" data-stk="delStack">Delete stack</button>
-    <p class="sch-note">Taking a habit out of a stack never deletes the habit.</p>`;
+    <p class="sch-note">${ids.some(id => habitLevels(byId.get(id))) ? 'Swipe a habit with tiers to pick the tier this stack does: starting the stack puts it on that tier, and you can still swipe while you’re in it. “As is” leaves it on whatever it’s on. ' : ''}Taking a habit out of a stack never deletes the habit.</p>`;
 }
 function stackAddHTML(s) {
   const pool = state.habits.filter(h => !h.archived && !s.habitIds.includes(h.id));
@@ -11159,6 +11364,7 @@ function renderStackSheet() {
   }
   // Never repaint under someone typing the name: it would close the keyboard mid-word.
   if (document.activeElement && sh.contains(document.activeElement) && document.activeElement.matches('input')) return;
+  if (stkDrag) return;                       // nor under a row being dragged — the drop repaints
   const s = stkSheet.id ? stackById(stkSheet.id) : null;
   if (stkSheet.view !== 'list' && !s) stkSheet = { view: 'list' };
   const key = stkSheet.view + ':' + (stkSheet.id || ''), keep = sh.dataset.view === key ? sh.scrollTop : 0;
@@ -11189,15 +11395,10 @@ function onStackSheetClick(e) {
       break;
     }
     case 'toggleOn': { const t = stackById(b.dataset.id); if (!t) return; t.on = !t.on; save(); break; }
-    case 'up': case 'down': {
-      const to = b.dataset.stk === 'up' ? at - 1 : at + 1;
-      if (at < 0 || to < 0 || to >= s.habitIds.length) return;
-      [s.habitIds[at], s.habitIds[to]] = [s.habitIds[to], s.habitIds[at]];
-      save(); break;
-    }
     case 'remove': {
       if (at < 0) return;
       s.habitIds.splice(at, 1);
+      dropStackTierPick(s.id, b.dataset.hid);
       const r = state.stackRun;
       if (r && r.stackId === s.id && Array.isArray(r.skipped)) r.skipped = r.skipped.filter(x => x !== b.dataset.hid);
       save(); break;
@@ -11211,6 +11412,7 @@ function onStackSheetClick(e) {
       const snap = undoSnapshot();
       state.stacks = stackList().filter(x => x.id !== s.id);
       if (state.stackRun && state.stackRun.stackId === s.id) state.stackRun = null;
+      if (state.stackTiers) delete state.stackTiers[s.id];
       save(); stkSheet = { view: 'list' };
       offerUndo(snap, `🗑 ${stackName(s)}`);
       break;
@@ -11219,7 +11421,134 @@ function onStackSheetClick(e) {
   }
   SFX.click(); renderStackSheet(); renderStacks();
 }
+// The gesture itself, as on the Habits tab: vertical drags stay scrolls (touch-action:
+// pan-y), a drag only becomes a swipe once it's clearly sideways, and the ends resist.
+let stkSwipe = null;
+function onStackPointerDown(e) {
+  stkSwipe = null;
+  if (e.target.closest('button, input')) return;
+  const track = e.target.closest('.stk-swipe')?.querySelector('.stk-track');
+  if (!track || track.children.length < 2) return;
+  const n = track.children.length;
+  stkSwipe = { x: e.clientX, y: e.clientY, id: e.pointerId, track, n, active: false,
+    idx: clamp(parseInt(track.dataset.idx, 10) || 0, 0, n - 1), w: track.getBoundingClientRect().width || 1 };
+}
+function onStackPointerMove(e) {
+  const s = stkSwipe; if (!s) return;
+  const dx = e.clientX - s.x, dy = e.clientY - s.y;
+  if (!s.active) {
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_SLOP) { stkSwipe = null; return; }   // a scroll
+    if (Math.abs(dx) < SWIPE_SLOP) return;
+    s.active = true;
+    s.track.classList.add('dragging');
+    try { s.track.setPointerCapture(s.id); } catch (_) {}      // keep the drag past the card's edge
+  }
+  const off = (s.idx === 0 && dx > 0) || (s.idx === s.n - 1 && dx < 0) ? dx * 0.35 : dx;
+  s.track.style.transform = `translateX(calc(${-s.idx * 100}% + ${off}px))`;
+}
+function onStackPointerUp(e) {
+  const s = stkSwipe; stkSwipe = null;
+  if (!s || !s.active) return;
+  const dx = e.clientX - s.x;
+  const dir = Math.abs(dx) >= Math.min(64, s.w * 0.28) ? (dx < 0 ? 1 : -1) : 0;   // left → harder
+  const to = clamp(s.idx + dir, 0, s.n - 1);
+  s.track.classList.remove('dragging');                   // transition back on: it animates the settle
+  s.track.style.transform = `translateX(${-to * 100}%)`;
+  s.track.dataset.idx = String(to);
+  if (to === s.idx) return;                               // sprang back
+  const { mode, hid } = s.track.dataset;
+  // Commit once the slide has finished, so the repaint lands on a track already sitting there.
+  let done = false;
+  const once = () => {
+    if (done) return; done = true;
+    s.track.removeEventListener('transitionend', once);
+    if (mode === 'run') switchStackStepTier(hid, to);
+    else pickStackTier(stkSheet && stackById(stkSheet.id), hid, to === 0 ? null : to - 1);
+  };
+  s.track.addEventListener('transitionend', once);
+  setTimeout(once, 360);
+}
+/* ---- the editor's order: drag a row by its ≡ ----
+   The row lifts and follows the finger; the rows it passes slide out of its way; letting
+   go puts it there. Positions are measured once at the start, against the list as drawn,
+   and nothing is repainted until the drop — so the rows never jump under the finger. */
+let stkDrag = null;
+// Move one step to position `to` in the stack's order. A habit deleted since it was added
+// drops out first, so positions count only the rows on screen.
+function moveStackStep(s, hid, to) {
+  if (!s) return false;
+  s.habitIds = s.habitIds.filter(id => state.habits.some(h => h.id === id));
+  const at = s.habitIds.indexOf(hid);
+  to = clamp(to, 0, s.habitIds.length - 1);
+  if (at < 0 || to === at) return false;
+  s.habitIds.splice(at, 1);
+  s.habitIds.splice(to, 0, hid);
+  save();
+  return true;
+}
+function stkDragPlace() {
+  const d = stkDrag, dy = d.lastY + d.sheet.scrollTop - d.startY;
+  const mid = d.rows[d.at].top + d.h / 2 + dy;
+  d.to = d.rows.filter((r, j) => j !== d.at && r.top + r.h / 2 < mid).length;
+  d.rows.forEach((r, j) => {
+    if (j === d.at) { r.el.style.transform = `translateY(${dy}px)`; return; }
+    const shift = d.at < d.to && j > d.at && j <= d.to ? -d.h : d.to < d.at && j >= d.to && j < d.at ? d.h : 0;
+    r.el.style.transform = shift ? `translateY(${shift}px)` : '';
+  });
+}
+// Held near the sheet's top or bottom edge, the list scrolls under the row.
+function stkDragScroll() {
+  const d = stkDrag; if (!d) return;
+  const box = d.sheet.getBoundingClientRect(), edge = 56;
+  const v = d.lastY < box.top + edge ? -(box.top + edge - d.lastY) / 4 : d.lastY > box.bottom - edge ? (d.lastY - box.bottom + edge) / 4 : 0;
+  if (v) { const before = d.sheet.scrollTop; d.sheet.scrollTop += v; if (d.sheet.scrollTop !== before) stkDragPlace(); }
+  d.raf = requestAnimationFrame(stkDragScroll);
+}
+function onStackDragDown(e) {
+  const grip = e.target.closest('.stk-grip'); if (!grip || !stkSheet) return;
+  const list = grip.closest('.stk-ed-list'); if (!list) return;
+  const els = [...list.querySelectorAll('.stk-ed-row')], el = grip.closest('.stk-ed-row');
+  e.preventDefault();
+  try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+  stkDrag = { hid: grip.dataset.hid, sheet: $('#stkSheet'), list, at: els.indexOf(el), to: els.indexOf(el), h: el.offsetHeight,
+    rows: els.map(r => ({ el: r, top: r.offsetTop, h: r.offsetHeight })), startY: e.clientY + $('#stkSheet').scrollTop, lastY: e.clientY, raf: 0 };
+  list.classList.add('sorting'); el.classList.add('lift');
+  stkDrag.raf = requestAnimationFrame(stkDragScroll);
+  SFX.click();
+}
+function onStackDragMove(e) { if (!stkDrag) return; e.preventDefault(); stkDrag.lastY = e.clientY; stkDragPlace(); }
+function onStackDragUp() {
+  const d = stkDrag; if (!d) return;
+  stkDrag = null; cancelAnimationFrame(d.raf);
+  const s = stackById(stkSheet && stkSheet.id);
+  if (moveStackStep(s, d.hid, d.to)) SFX.click();
+  // Repaint with no slide: the new order is drawn exactly where the rows already sit.
+  d.list.classList.remove('sorting');
+  renderStackSheet(); renderStacks();
+}
+$('#stkSheet').addEventListener('pointerdown', onStackDragDown);
+$('#stkSheet').addEventListener('pointermove', onStackDragMove);
+$('#stkSheet').addEventListener('pointerup', onStackDragUp);
+$('#stkSheet').addEventListener('pointercancel', onStackDragUp);
+// The ≡ also moves its row with the arrow keys, for anyone not using a pointer.
+$('#stkSheet').addEventListener('keydown', e => {
+  const grip = e.target.closest && e.target.closest('.stk-grip');
+  if (!grip || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || !stkSheet) return;
+  e.preventDefault();
+  const s = stackById(stkSheet.id), hid = grip.dataset.hid; if (!s) return;
+  if (!moveStackStep(s, hid, s.habitIds.indexOf(hid) + (e.key === 'ArrowUp' ? -1 : 1))) return;
+  SFX.click(); renderStackSheet(); renderStacks();
+  const again = $('#stkSheet').querySelector(`.stk-grip[data-hid="${hid}"]`); if (again) again.focus();
+});
+['#stkOverlay', '#stkSheet'].forEach(sel => {
+  const el = $(sel);
+  el.addEventListener('pointerdown', onStackPointerDown);
+  el.addEventListener('pointermove', onStackPointerMove);
+  el.addEventListener('pointerup', onStackPointerUp);
+  el.addEventListener('pointercancel', onStackPointerUp);
+});
 $('#homeStack').addEventListener('click', onStackClick);
+$('#stkDock').addEventListener('click', onStackClick);
 $('#stkOverlay').addEventListener('click', onStackClick);
 $('#stkSheet').addEventListener('click', onStackSheetClick);
 $('#stkSheet').addEventListener('input', e => {
