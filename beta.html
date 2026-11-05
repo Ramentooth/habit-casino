@@ -363,19 +363,12 @@
       display: flex; flex-direction: column; gap: 6px;
     }
     body.more-open .sched-zoom { opacity: 0; pointer-events: none; }    /* same as the FAB */
-    /* Inside the Home widget these stay inline in its header — that card doesn't scroll.
-       `z-index: auto` is not redundant: this is a flex item of .now-head, and z-index
-       applies to flex items even at position:static. Inheriting the 44 above left it
-       stacking over the sticky header (z-index 40) and painting on top of the top bar
-       once the card scrolled under it. */
-    #homeNow .sched-zoom { position: static; z-index: auto; flex-direction: row; margin-left: auto; gap: 4px; }
     .zbtn {
       width: 38px; height: 34px; border-radius: 11px; cursor: pointer; line-height: 1;
       background: var(--gs-ctl, rgba(0,0,0,.35)); border: 1px solid var(--gs-edge, var(--panel-edge));
       color: var(--ink); font-size: 17px; font-weight: 800;
       box-shadow: 0 6px 14px rgba(0,0,0,.45);
     }
-    #homeNow .zbtn { width: 26px; height: 22px; border-radius: 7px; font-size: 14px; box-shadow: none; }
     .zbtn:disabled { opacity: .35; cursor: default; }
     /* Zoom = one CSS variable. Everything positioned off --ph eases to the new scale
        together, so the day glides between zoom levels rather than snapping. */
@@ -482,9 +475,6 @@
       color: var(--ink-dim); opacity: .75; line-height: 1; pointer-events: none;
     }
     .sched-block.gap:hover .gap-q { color: var(--cyan); opacity: 1; }
-    /* Read-only surfaces (the Home widget) shouldn't invite a tap that does nothing. */
-    #homeNow .sched-block.gap { cursor: default; }
-    #homeNow .sched-block.gap:hover { border-color: var(--panel-edge); background: rgba(0,0,0,.34); }
     /* A gap you answered. Deliberately unlike anything the app tracked — a cool slate
        hatch where habits are solid, an italic note where they're upright — because it's
        your own account of the time, not a measured block. It sits behind real blocks
@@ -503,7 +493,6 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .filler-time { font-size: 10px; line-height: 1.2; opacity: .65; white-space: nowrap; pointer-events: none; }
-    #homeNow .sched-block.filler { cursor: default; }
 
     /* ---------- Short blocks: honest bars, names in a right-hand column ----------
        A block shorter than LABEL_MIN_PX keeps its TRUE height and drops its text. It used
@@ -948,35 +937,6 @@
     .sd-exp-detail { font-size: 11px; color: var(--ink-dim); line-height: 1.55; }
     .sd-exp-actions { display: flex; gap: 8px; margin-top: 10px; }
     .sd-done { margin-top: 10px; }
-
-    /* NOW — today's Schedule grid, in a fixed window that scrolls and zooms in place. */
-    .now-card { border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); border-radius: 14px; padding: 12px 14px; }
-    .now-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .now-kicker {
-      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800;
-      letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim);
-    }
-    .now-clock { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
-    /* The window. Fixed height is the whole point — the grid inside grows with the zoom
-       and scrolls, but the card never changes size, so nothing below it ever moves. */
-    .now-scroll {
-      height: 230px; overflow-y: auto; overflow-x: hidden; position: relative;
-      overscroll-behavior: contain;                /* don't hand the scroll to the page at the ends */
-      -webkit-overflow-scrolling: touch;
-    }
-    .now-scroll::-webkit-scrollbar { width: 0; height: 0; }
-    .now-scroll { scrollbar-width: none; }
-    /* The grid's own height animates on the full tab; inside the window that animation
-       would fight the scroll maths, which reads the height to clamp scrollTop. The blocks
-       and gridlines still ease to their new positions, so the zoom still glides. */
-    .now-scroll .sched-grid { transition: none; }
-    /* A 230px window can't carry the tab's full type scale. */
-    .now-scroll .sched-hour { font-size: 10px; }
-    .now-scroll .sched-block { font-size: 10px; padding: 1px 5px; }
-    .now-scroll .sched-block .sb-time { font-size: 9px; }
-    .now-scroll .sched-block.moment b { font-size: 9px; }
-    .now-next { margin-top: 10px; font-size: 14px; color: var(--ink-dim); }
-    .now-next b { color: var(--ink); font-weight: 700; }
 
     /* Habits gives Due Now a full banner and can afford the big empty state; on Home the
        board is one band among three, so an idle one shrinks to a single line. */
@@ -3470,6 +3430,176 @@
     .stk-ed-list.sorting .stk-ed-row { transition: transform .18s cubic-bezier(.22,.9,.3,1); }
     .stk-ed-list.sorting .stk-ed-row.lift { position: relative; z-index: 2; transition: none; border-radius: 12px; border-bottom-color: transparent;
       background: var(--gs-card); box-shadow: 0 10px 28px rgba(0,0,0,.55), 0 0 0 1px rgba(255,158,44,.5); }
+    /* ---------- the stack editor as one page: the stack, then every habit, then Start ---------- */
+    .stk-slot { display: block; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--cyan); }
+    /* 16px like every field (anything smaller zooms the page on iPhone); the greyscale pass's !important box is undone here */
+    .stk-slot-in { display: block; width: 100%; box-sizing: border-box; height: 34px; margin: 6px 0 2px; padding: 0 10px; border-radius: 9px;
+      background: var(--gs-card) !important; border: 1px solid rgba(255,158,44,.45) !important; color: var(--ink) !important;
+      font: inherit; font-weight: 700; -webkit-user-select: text; user-select: text; }
+    .stk-slot-in::placeholder { color: var(--ink-dim); opacity: .6; font-weight: 500; }
+    .stk-ed-h { display: flex; align-items: baseline; }
+    .stk-ed-hbtn { margin-left: auto; height: 30px; padding: 0 2px; border: 0; background: transparent; color: var(--cyan);
+      font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer; }
+    .stk-ed-row.choose { width: 100%; padding: 4px 6px 4px 0; margin: 0 0 6px; cursor: pointer; font: inherit; text-align: left; color: var(--ink);
+      background: rgba(255,158,44,.06); border: 1.5px solid rgba(255,158,44,.55); border-radius: 12px; }
+    .stk-ed-row.choose:active { background: rgba(255,158,44,.16); }
+    .stk-ed-row.choose .stk-ed-name b { font-size: 15px; }
+    .stk-ring { flex: 0 0 auto; width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; border: 2px solid rgba(255,158,44,.8); }
+    .stk-ed-row.choose:active .stk-ring { background: var(--cyan); }
+    #stkSheet { overflow-anchor: none; }   /* the banner appearing above mustn't nudge the slide to the top */
+    .stk-choose { position: sticky; top: 0; z-index: 3; margin: 12px -16px 0; padding: 10px 16px 12px; background: var(--gs-panel);
+      border-bottom: 1px solid var(--gs-edge); }
+    .stk-choose-pick { display: flex; align-items: center; gap: 10px; padding: 8px 4px 8px 12px; border-radius: 12px;
+      border: 1.5px solid var(--cyan); background: rgba(255,158,44,.1); }
+    .stk-choose-pick small { display: block; font-size: 10.5px; letter-spacing: .8px; text-transform: uppercase; color: var(--cyan); }
+    .stk-choose-ask { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+    .stk-choose-ask b { font-size: 15px; }
+    .stk-choose-ask button { flex: 0 0 auto; height: 36px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent;
+      color: var(--ink-dim); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+    .stk-swapped { margin: 12px 0 0; padding: 9px 12px; border-radius: 10px; font-size: 13px; color: var(--ink);
+      background: rgba(255,158,44,.08); border: 1px solid rgba(255,158,44,.3); }
+    .stk-pick.sel { background: rgba(255,158,44,.1); }
+    .stk-pick.sel .stk-plus { background: var(--cyan); color: #1a0f02; }
+    .stk-ed-go { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom)); z-index: 3; margin: 14px -16px 0;
+      padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); background: var(--gs-panel); border-top: 1px solid var(--gs-edge); }
+    .stk-ed-go .stk-primary { height: 54px; font-size: 17px; }
+    .stk-ed-go .stk-primary:disabled { opacity: .35; cursor: default; box-shadow: none; }
+
+    /* ---------- GOALS & MODES ---------- */
+    .plan-cta .mode-btn, .plan-cta .stack-btn, .plan-cta.no-focus .stack-btn { flex: 1 1 0; justify-content: center; }
+    .plan-cta:not(.no-focus) #loadoutSwitch.focus-btn { flex: 1 1 100%; }
+    .mode-btn {
+      display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 52px; padding: 0 14px;
+      border-radius: 14px; cursor: pointer; font: inherit; font-weight: 700; font-size: 15px; color: var(--ink);
+      background: var(--gs-card); border: 1.5px solid var(--gs-edge-hi);
+    }
+    .mode-btn:active { transform: scale(.98); }
+    .mode-btn .mb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mode-btn .mb-go { flex: 0 0 auto; color: var(--ink-dim); font-size: 11px; }
+    #homeGoals:empty { display: none; }
+    /* Home: the week's goals, where the Schedule window used to sit. Home's language —
+       a hairline card, no fill, the orange spent only on the progress bars. */
+    .hg-card { margin: 0 0 4px; padding: 6px 14px 4px; border-radius: 14px; border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); }
+    .hg-head { display: flex; align-items: center; gap: 10px; min-height: 48px; }
+    .hg-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 0;
+      border: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .hg-kicker { font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--ink-dim); }
+    .hg-title small { max-width: 100%; font-size: 12.5px; color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hg-mode { flex: 0 1 auto; max-width: 52%; min-height: 40px; padding: 0 12px; font-size: 14px; border-radius: 12px; }
+    .hg-goal { padding: 11px 0 12px; border-top: 1px solid var(--gs-edge); cursor: pointer; }
+    .hg-goal:active { opacity: .75; }
+    .hg-goal-head { display: flex; align-items: center; gap: 9px; min-height: 26px; }
+    .hg-goal-head > span:first-child { flex: 0 0 auto; font-size: 19px; }
+    .hg-goal-head b { flex: 1; min-width: 0; font-size: 15.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hg-goal .gl-q { padding-top: 9px; }
+    .hg-card .gl-paused { margin: 0; padding: 10px 0 12px; border-top: 1px solid var(--gs-edge); }
+    .hg-card .gl-empty { padding: 10px 0 8px; border-top: 1px solid var(--gs-edge); }
+    .hg-card .sch-wide { margin: 2px 0 12px; }
+    .gl-note { display: flex; align-items: stretch; margin: 0 0 12px; border-radius: 14px; border: 1px solid rgba(255,158,44,.55); }
+    .gl-note-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 6px 12px 14px; border: 0;
+      background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .gl-note-main > span:first-child { font-size: 24px; }
+    .gl-note-main b { display: block; font-size: 15px; }
+    .gl-note-main small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ink-dim); }
+    .gl-note-x { flex: 0 0 auto; width: 44px; border: 0; background: transparent; color: var(--ink-dim); font-size: 15px; cursor: pointer; }
+    #goalsMount { position: relative; }
+    #goalsMount .gl-mode { position: absolute; top: -8px; right: 0; max-width: 46%; min-height: 40px; padding: 0 12px; font-size: 14px; }
+    #goalsMount > .section-title { padding-right: 48%; }
+    #goalsMount > .subtle { margin-top: 6px; }
+    .gl-week { display: flex; align-items: center; gap: 8px; margin: 14px 0 12px; }
+    .gl-wk-btn { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--gs-edge-hi); background: var(--gs-card);
+      color: var(--ink); font: inherit; font-size: 20px; cursor: pointer; }
+    .gl-wk-btn:disabled { opacity: .25; cursor: default; }
+    .gl-wk-mid { flex: 1; min-width: 0; text-align: center; }
+    .gl-wk-mid b { display: block; font-size: 16px; }
+    .gl-wk-mid small { display: block; font-size: 12.5px; color: var(--ink-dim); }
+    .gl-card { margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--gs-edge); background: var(--gs-card); cursor: pointer; }
+    .gl-card:active { border-color: var(--gs-edge-hi); }
+    .gl-card-head { display: flex; align-items: center; gap: 10px; min-height: 32px; }
+    .gl-card-head b { flex: 1; min-width: 0; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gl-e { font-size: 22px; }
+    .gl-lv { flex: 0 0 auto; padding: 3px 9px; border-radius: 8px; font-size: 12px; font-weight: 800; color: var(--cyan); border: 1px solid rgba(255,158,44,.45); }
+    .gl-q { display: flex; align-items: center; gap: 12px; padding: 10px 0 2px; }
+    .gl-q-e { flex: 0 0 26px; text-align: center; font-size: 19px; }
+    .gl-q-n { flex: 1; min-width: 0; }
+    .gl-q-n b { display: block; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gl-q-n small { display: block; margin-top: 1px; font-size: 12px; color: var(--ink-dim); }
+    .gl-bar { display: block; height: 5px; margin-top: 6px; border-radius: 3px; background: var(--gs-ctl); overflow: hidden; }
+    .gl-bar i { display: block; height: 100%; border-radius: 3px; background: var(--cyan); }
+    .gl-q.met .gl-bar i { background: var(--green); }
+    .gl-q.met small { color: var(--green); }
+    .gl-q.exc { opacity: .55; }
+    .gl-foot { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--gs-edge); font-size: 12px; color: var(--ink-dim); }
+    .gl-none, .gl-empty { padding: 10px 0 2px; font-size: 13px; color: var(--ink-dim); line-height: 1.45; }
+    .gl-empty { padding: 4px 2px 6px; }
+    .gl-paused { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 0 12px; font-size: 12.5px; color: var(--ink-dim); }
+    .gl-paused button { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--gs-edge-hi); background: transparent; color: var(--ink);
+      font: inherit; font-size: 12.5px; cursor: pointer; }
+    /* the receipt */
+    .rc-goal { margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--gs-edge); background: var(--gs-card); }
+    .rc-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .rc-head > span:first-child { font-size: 20px; }
+    .rc-head b { font-size: 16px; }
+    .rc-v { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--ink-dim); }
+    .rc-v.met { color: var(--green); }
+    .rc-qs { list-style: none; margin: 8px 0 0; padding: 0; }
+    .rc-q { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--gs-edge); font-size: 14px; }
+    .rc-q-n { flex: 1; min-width: 0; }
+    .rc-q-n small { display: block; font-size: 12px; color: var(--ink-dim); }
+    .rc-q em { flex: 0 0 auto; font-style: normal; font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+    .rc-q.met em { color: var(--green); }
+    .rc-q.excused { opacity: .6; }
+    .rc-lv { margin-top: 8px; font-size: 13px; color: var(--ink-dim); line-height: 1.45; }
+    .rc-lv b { color: var(--ink); }
+    .rc-next { margin-top: 6px; font-size: 12.5px; color: var(--ink-dim); line-height: 1.5; }
+    .rc-next b { color: var(--ink); font-weight: 700; }
+    /* the sheet's insides */
+    .gm-li { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--gs-edge); }
+    .gm-li-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 6px 2px; border: 0;
+      background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .gm-e { flex: 0 0 28px; text-align: center; font-size: 21px; }
+    .gm-li-t, .gm-tg-t { flex: 1; min-width: 0; }
+    .gm-li-t b, .gm-tg-t b { display: block; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gm-li-t small, .gm-tg-t small { display: block; margin-top: 1px; font-size: 12px; color: var(--ink-dim); }
+    .gm-radio { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--gs-edge-hi); }
+    .gm-li.on .gm-radio { border-color: var(--cyan); background: radial-gradient(circle, var(--cyan) 0 5px, transparent 6px); }
+    .gm-li-edit { flex: 0 0 auto; width: 44px; height: 44px; border: 0; border-radius: 11px; background: transparent; color: var(--ink-dim);
+      font: inherit; font-size: 16px; cursor: pointer; }
+    .gm-namerow { display: flex; gap: 8px; }
+    .gm-emoji { flex: 0 0 56px; width: 56px; height: 48px; box-sizing: border-box; padding: 0; border-radius: 12px; text-align: center;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-card); color: var(--ink); font: inherit; font-size: 22px;
+      -webkit-user-select: text; user-select: text; }
+    .gm-namerow .stk-ed-in { flex: 1; min-width: 0; }
+    .gm-tg { display: flex; align-items: center; gap: 12px; min-height: 54px; border-bottom: 1px solid var(--gs-edge); }
+    .gm-tg.dim { opacity: .5; }
+    .gm-level { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--gs-edge-hi); }
+    .gm-level > span:first-child { flex: 1; min-width: 0; }
+    .gm-level b { display: block; font-size: 17px; }
+    .gm-level small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-dim); line-height: 1.35; }
+    .gm-rules { margin: 10px 2px 0; font-size: 13px; color: var(--ink-dim); line-height: 2.1; }
+    .gm-sel { height: 32px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--gs-edge-hi); background: var(--gs-card);
+      color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; }
+    .gm-q { margin: 10px 0 0; padding: 10px 12px 12px; border-radius: 14px; border: 1px solid var(--gs-edge); background: var(--gs-card); }
+    .gm-q-head { display: flex; align-items: center; gap: 10px; }
+    .gm-q-head b { flex: 1; min-width: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gm-tiers { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 8px; }
+    .gm-tier { padding: 3px 8px; border-radius: 7px; font-size: 11.5px; color: var(--ink-dim); border: 1px solid var(--gs-edge); opacity: .55; }
+    .gm-tier.in { opacity: 1; color: var(--ink); border-color: rgba(255,158,44,.45); }
+    .gm-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 7px 0; border-top: 1px solid var(--gs-edge); }
+    .gm-lbl { flex: 1 1 100%; font-size: 11px; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-dim); }
+    .gm-at { font-size: 13px; color: var(--ink-dim); }
+    .gm-stepper { display: inline-flex; align-items: center; gap: 2px; border-radius: 11px; border: 1px solid var(--gs-edge-hi); background: var(--gs-ctl); }
+    .gm-stepper button { width: 40px; height: 38px; padding: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 19px; cursor: pointer; }
+    .gm-stepper button:disabled { opacity: .25; cursor: default; }
+    .gm-stepper b { min-width: 44px; text-align: center; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+    .gm-level .gm-stepper b { display: none; }
+    .gm-seg { display: inline-flex; border-radius: 11px; border: 1px solid var(--gs-edge-hi); overflow: hidden; }
+    .gm-seg button { height: 38px; padding: 0 12px; border: 0; background: transparent; color: var(--ink-dim); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+    .gm-seg button.on { background: var(--cyan); color: #1a0f02; }
+    .gm-next { margin-top: 6px; font-size: 12.5px; color: var(--ink-dim); }
+    .gm-add { margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -3579,13 +3709,13 @@
 
   <main>
     <!-- ===================== HOME =====================
-         The landing screen: where am I right now, what's next, and how's today going.
-         It owns no data of its own — the NOW rail reads the same blocks the Schedule tab
-         draws, and the board below is literally Due Now rendered a second time (see
+         The landing screen: the stack you're in, how the week's goals stand, what's next.
+         It owns no data of its own — the goals card reads the same quotas the Goals tab
+         does, and the board below is literally Due Now rendered a second time (see
          .duenow-mount), so the two can't drift apart. -->
     <section class="view active" id="view-home">
       <div id="homeStack"></div>
-      <div class="now-card" id="homeNow"></div>
+      <div id="homeGoals"></div>
       <div class="home-sec-title">DUE NOW</div>
       <div class="duenow-mount" id="homeDue" data-bare="1"></div>
       <div id="homeToday"></div>
@@ -3596,6 +3726,7 @@
       <div class="plan-cta">
         <span id="todayCtxBadge"></span>
         <button class="focus-btn" id="loadoutSwitch" type="button" title="Choose today's focus"></button>
+        <button class="mode-btn" id="modeSwitch" type="button" title="Mode — what's possible right now"></button>
         <button class="stack-btn" id="stackSwitch" type="button" title="Habit stacks — your habits in a fixed order"><span aria-hidden="true">🔗</span>Stacks</button>
       </div>
       <div class="focus-board" id="focusBoard" style="display:none"></div>
@@ -3851,6 +3982,11 @@
     </section>
 
     <!-- ===================== STATS (analytics) ===================== -->
+    <!-- ===================== GOALS ===================== -->
+    <section class="view" id="view-goals">
+      <div id="goalsMount"></div>
+    </section>
+
     <section class="view" id="view-stats">
       <div class="section-title t1">📊 Analytics</div>
       <div class="subtle" style="margin-bottom:12px">When your habits &amp; quests actually get done — and how hard you're going.</div>
@@ -4194,6 +4330,8 @@
   <div class="stk-overlay" id="stkOverlay" aria-hidden="true"></div>
   <div class="stk-scrim" id="stkScrim"></div>
   <div class="stk-sheet" id="stkSheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
+  <div class="stk-scrim" id="gmScrim"></div>
+  <div class="stk-sheet" id="gmSheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
 
   <div id="toast"></div>
   <!-- Undo bar: appears after completing a habit/quest or claiming a reward, offering a
@@ -4382,6 +4520,16 @@ function defaultState() {
     stacks: [],           // [{ id, name, habitIds: [in order], on }]
     stackRun: null,       // { date, stackId, paused, open, skipped: [ids] } — today's pass
     stackTiers: {},       // { [stackId]: { [habitId]: { i, n } } } — the tier a step is done at
+    stackSlots: {},       // { [stackId]: { [habitId]: 'Deep Work' } } — a slot's name, organisational only
+    stackSwaps: [],       // [{ at, stack, removed, added }] newest last — what floats a habit up the editor's list
+    // Goals & Modes (see GOALS & MODES). Top-level for the same reason as the stacks.
+    modes: defaultModes(), // [{ id, name, emoji, hideGoals, hideHabits }] — what's possible right now
+    activeMode: 'normal',
+    modeDays: {},         // 'YYYY-MM-DD' → the mode that day was lived in, so a week is judged fairly
+    goals: [],            // [{ id, name, emoji, level, wins, misses, promoteAfter, demoteAfter, created, quotas }]
+    goalWeeks: [],        // one receipt per judged Mon–Sun week, newest last
+    goalWeekDone: '',     // the Monday of the last week judged
+    goalReceiptSeen: '',  // the Monday of the last receipt shown on Home
     // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
     // finished quests are deleted and the habit list changes — so each day's pair is
     // recorded as it happens and never recomputed. See recordPaceToday().
@@ -4699,6 +4847,7 @@ const VIEWS = [
   { id: 'casino',   icon: '🎰', label: 'Casino' },
   { id: 'tasks',    icon: '📋', label: 'Tasks' },
   { id: 'habits',   icon: '⚡', label: 'Habits' },
+  { id: 'goals',    icon: '🏁', label: 'Goals' },
   { id: 'prizes',   icon: '🏆', label: 'Winnings' },
   { id: 'schedule', icon: '📅', label: 'Schedule' },
   { id: 'stats',    icon: '📊', label: 'Stats' },
@@ -5130,13 +5279,24 @@ function remapHabitIds(st, remap) {
   });
   (st.stacks || []).forEach(s => { if (s && Array.isArray(s.habitIds)) s.habitIds = [...new Set(s.habitIds.map(fix))]; });
   if (st.stackRun && Array.isArray(st.stackRun.skipped)) st.stackRun.skipped = [...new Set(st.stackRun.skipped.map(fix))];
-  // A tier pick is keyed by habit id. The kept habit's own pick wins over the folded copy's.
-  if (st.stackTiers && typeof st.stackTiers === 'object') Object.keys(st.stackTiers).forEach(sid => {
-    const m = st.stackTiers[sid]; if (!m || typeof m !== 'object') return;
+  // Tier picks and slot names are keyed by habit id. The kept habit's own wins over the folded copy's.
+  const rekey = map => { if (map && typeof map === 'object') Object.keys(map).forEach(sid => {
+    const m = map[sid]; if (!m || typeof m !== 'object') return;
     const out = {};
     Object.keys(m).filter(id => !remap.has(id)).forEach(id => { out[id] = m[id]; });
     Object.keys(m).filter(id => remap.has(id)).forEach(id => { if (!(fix(id) in out)) out[fix(id)] = m[id]; });
-    st.stackTiers[sid] = out;
+    map[sid] = out;
+  }); };
+  rekey(st.stackTiers);
+  rekey(st.stackSlots);
+  (st.stackSwaps || []).forEach(w => { if (w) { w.removed = fix(w.removed); w.added = fix(w.added); } });
+  (st.modes || []).forEach(m => { if (m && Array.isArray(m.hideHabits)) m.hideHabits = [...new Set(m.hideHabits.map(fix))]; });
+  // A quota is keyed by habit too: the kept habit's own quota wins, a folded copy's moves over.
+  (st.goals || []).forEach(g => {
+    if (!g || !Array.isArray(g.quotas)) return;
+    const own = g.quotas.filter(q => q && !remap.has(q.hid)), have = new Set(own.map(q => q.hid));
+    g.quotas = own.concat(g.quotas.filter(q => q && remap.has(q.hid) && !have.has(fix(q.hid)) && have.add(fix(q.hid)))
+      .map(q => ({ ...q, hid: fix(q.hid) })));
   });
   return remap.size;
 }
@@ -5410,6 +5570,16 @@ function load(raw) {
     merged.stacks = sanitizeStacks(merged.stacks, merged);
     merged.stackRun = sanitizeStackRun(merged.stackRun, merged);
     merged.stackTiers = sanitizeStackTiers(merged.stackTiers, merged);
+    merged.stackSlots = sanitizeStackSlots(merged.stackSlots, merged);
+    merged.stackSwaps = sanitizeStackSwaps(merged.stackSwaps);
+    // Goals before modes: a mode's hidden goals are checked against them.
+    merged.goals = sanitizeGoals(merged.goals, merged);
+    merged.modes = sanitizeModes(merged.modes, merged);
+    if (!merged.modes.some(m => m.id === merged.activeMode)) merged.activeMode = 'normal';
+    merged.modeDays = sanitizeModeDays(merged.modeDays);
+    merged.goalWeeks = (Array.isArray(merged.goalWeeks) ? merged.goalWeeks : [])
+      .filter(w => w && /^\d{4}-\d{2}-\d{2}$/.test(String(w.week || '')) && Array.isArray(w.goals)).slice(-26);
+    ['goalWeekDone', 'goalReceiptSeen'].forEach(k => { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(merged[k] || ''))) merged[k] = ''; });
     return merged;
   } catch (e) {
     // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
@@ -5622,9 +5792,10 @@ function dateStrFromTs(ts) {
 }
 // Was this habit on the schedule / actually completed on an arbitrary (usually past) date?
 // Same weekday rule as isScheduledToday, just parameterized to a date string.
+// A habit the day's Mode hid is off that day too (see GOALS & MODES).
 function isScheduledOn(h, dateStr) {
   const dow = new Date(dateStr + 'T00:00:00').getDay();
-  return !Array.isArray(h.days) || h.days[dow] !== false;
+  return (!Array.isArray(h.days) || h.days[dow] !== false) && !hiddenByMode(h, dateStr);
 }
 function habitCompletedOn(h, dateStr) {
   return (state.history || []).some(e => e && e.kind === 'habit' && e.id === h.id && dateStrFromTs(e.ts) === dateStr);
@@ -6072,7 +6243,7 @@ function isComplete(h) { return doneCount(h) >= capOf(h); }
 // A habit shows today only if its weekday is enabled (default: every day).
 function isScheduledToday(h) {
   const dow = new Date().getDay(); // 0=Sun … 6=Sat
-  return !Array.isArray(h.days) || h.days[dow] !== false;
+  return (!Array.isArray(h.days) || h.days[dow] !== false) && !hiddenByMode(h, todayStr());
 }
 function sectionStats(section) {
   let list = state.habits.filter(h => h.section === section && !h.archived && isScheduledToday(h));
@@ -6469,8 +6640,18 @@ function renderInactivePicker() {
   if (title) title.textContent = inactivePickSection === 'all' ? 'Not scheduled today'
     : `Not scheduled today \u00b7 ${inactivePickSection === 'extra' ? 'Extra' : 'Daily'}`;
   if (!list.length) { body.innerHTML = `<div class="subtle" style="padding:14px 16px">Everything in this section is running today.</div>`; return; }
-  body.innerHTML = `<div class="subtle" style="padding:10px 16px">These don't run on ${['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'][new Date().getDay()]}, so they're off today's board. Tap one to edit it \u2014 including the days it runs.</div>`
+  const md = currentMode(), byMode = list.filter(h => hiddenByMode(h, todayStr())).length;
+  const dayName = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'][new Date().getDay()];
+  body.innerHTML = `<div class="subtle" style="padding:10px 16px">${byMode
+      ? `${byMode === list.length ? 'These are' : `${byMode} of these are`} hidden in ${escapeHtml(md.emoji)} ${escapeHtml(md.name)} mode${byMode < list.length ? ` and the rest don't run on ${dayName}` : ''}, so they're off today's board. Tap one to edit it.`
+      : `These don't run on ${dayName}, so they're off today's board. Tap one to edit it \u2014 including the days it runs.`}</div>`
     + list.map(h => {
+      if (hiddenByMode(h, todayStr())) return `
+      <button class="pick-row" data-inactive="${h.id}">
+        <span class="pick-e">${escapeHtml(h.emoji || '\u2B50')}</span>
+        <span class="pick-n">${escapeHtml(h.name)}</span>
+        <span class="pick-days">${escapeHtml(md.emoji)} hidden</span>
+      </button>`;
       const days = (Array.isArray(h.days) && h.days.length === 7) ? h.days : [true, true, true, true, true, true, true];
       return `
       <button class="pick-row" data-inactive="${h.id}">
@@ -7351,7 +7532,7 @@ function toggleHabitTimerPause(id, at) {
   // whole point, and it's what draws the second block as "… (continued)".
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); logEvent('habit_resumed', { entityType: 'habit', entityId: h.id, name: h.name }); }
   else { t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now); logEvent('habit_paused', { entityType: 'habit', entityId: h.id, name: h.name, pauseCount: t.pauseCount }); }
-  SFX.click(); save(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+  SFX.click(); save(); renderHabits(); renderBlockSchedule();
 }
 /* ---- Undo Start: back out of a session you never meant to begin. ----------------------
    Deliberately NOT a completion — no tokens, no history row, no streak, nothing on the
@@ -7363,7 +7544,7 @@ function cancelHabitTimer(id) {
   const snap = undoSnapshot();
   logEvent('habit_start_cancelled', { entityType: 'habit', entityId: h.id, name: h.name, startedAt: h.timer.startedAt, elapsedSecAtCancel: Math.round(timerElapsedSec(h.timer)) });
   h.timer = null;
-  SFX.click(); save(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+  SFX.click(); save(); renderHabits(); renderBlockSchedule();
   toast(`↺ Un-started ${h.name}`, 'var(--cyan)');
   offerUndo(snap, `↺ ${h.emoji || '⚡'} ${h.name}`);
 }
@@ -7388,7 +7569,7 @@ function startOneoffTimer(id) {
   const now = Date.now();
   t.timer = { startedAt: now, pausedAt: null, pausedTotalSec: 0, pauseCount: 0, segments: [{ s: now, e: null }] };
   logEvent('task_started', { entityType: 'task', entityId: t.id, name: t.name, category: t.category || 'Unsorted' });
-  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule();
 }
 function toggleOneoffTimerPause(id, at) {
   const q = state.oneoffs.find(x => x.id === id); if (!q || !q.timer) return;
@@ -7396,7 +7577,7 @@ function toggleOneoffTimerPause(id, at) {
   const now = Number.isFinite(at) ? at : Date.now();
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); logEvent('task_resumed', { entityType: 'task', entityId: q.id, name: q.name }); }
   else { t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now); logEvent('task_paused', { entityType: 'task', entityId: q.id, name: q.name, pauseCount: t.pauseCount }); }
-  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule();
 }
 // Quest twin of cancelHabitTimer — same "no payout, no history, undoable" contract.
 function cancelOneoffTimer(id) {
@@ -7404,7 +7585,7 @@ function cancelOneoffTimer(id) {
   const snap = undoSnapshot();
   logEvent('task_start_cancelled', { entityType: 'task', entityId: q.id, name: q.name, startedAt: q.timer.startedAt, elapsedSecAtCancel: Math.round(timerElapsedSec(q.timer)) });
   q.timer = null;
-  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule(); renderHomeNow();
+  SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule();
   toast(`↺ Un-started ${q.name}`, 'var(--cyan)');
   offerUndo(snap, `↺ ${q.name}`);
 }
@@ -8033,7 +8214,7 @@ function recordDayBlocks(rec) {
     });
   return m;
 }
-// computeDayBlocks runs on every repaint of the Schedule, the Home widget and Due Now, so
+// computeDayBlocks runs on every repaint of the Schedule and Due Now, so
 // the history scan is memoised. The key covers everything that can change the answer.
 let recordCache = null;
 function recordFor(loadout) {
@@ -8395,7 +8576,7 @@ function predictionBias(key) {
   return clamp(medianMinute(errs.slice(-10)), -90, 90);
 }
 
-/* computeDayBlocks runs on every repaint of the Schedule, the Home widget and Due Now,
+/* computeDayBlocks runs on every repaint of the Schedule and Due Now,
    so predictDay is memoised like recordFor is. The clock is bucketed to 15 minutes on
    purpose: the answer should move when you FINISH something (which changes the history
    length, and so the key), not because a minute ticked over. */
@@ -9202,10 +9383,6 @@ let schedOffset = 0;        // 0 = today, negative = past, positive = planning a
 // what the .zoom-N rules below are keyed to.
 const SCHED_ZOOMS = [32, 38, 44, 50, 56, 64, 72, 84, 96, 112, 128, 148, 168, 194, 220];
 let schedZoomIdx = 4;       // Schedule tab — 56px, the old default (index 2 of the old eight)
-// The Home widget draws the SAME grid through a ~230px window, so it keeps its own index
-// on the same scale: a level that reads well across a full page is far too loose in a
-// window a fifth the height. Independent, so zooming one never disturbs the other.
-let homeZoomIdx = 2;        // = 44px
 const SNAP_MIN = 5;         // drags and resizes snap to five minutes
 let schedNextExpiry = Infinity;   // minute-of-day the next on-screen prediction ends (today only)
 function schedPx(idx = schedZoomIdx) { return SCHED_ZOOMS[clamp(idx, 0, SCHED_ZOOMS.length - 1)]; }
@@ -9265,11 +9442,6 @@ function relayoutLanes(rootSel, px) {
     if (leader) { leader.style.top = (trueY - y) + 'px'; leader.style.height = Math.max(0, y - trueY) + 'px'; }
   });
   grid.classList.toggle('has-tiny', anyTiny);
-}
-function applyHomeZoom() {
-  homeZoomIdx = clamp(homeZoomIdx, 0, SCHED_ZOOMS.length - 1);
-  applyZoomWithin('#homeNow', homeZoomIdx);
-  relayoutLanes('#homeNow', schedPx(homeZoomIdx));
 }
 const SCHED_GUTTER = 56;
 /* One grid builder, two callers: the Schedule tab and the Home widget. Everything that
@@ -10282,7 +10454,7 @@ function schedGoDay(delta) {
   schedScrollPending = true;
   SFX.click(); renderBlockSchedule();
 }
-function schedAfterChange() { renderBlockSchedule(); renderHabits(); renderOneoffs(); renderHomeNow(); }
+function schedAfterChange() { renderBlockSchedule(); renderHabits(); renderOneoffs(); }
 $('#view-schedule').addEventListener('click', e => {
   // A hold or a swipe ends in a click the finger never meant.
   if (Date.now() < schedSuppressUntil) { e.preventDefault(); return; }
@@ -10471,7 +10643,6 @@ function schedSetDensity(k, anchorY) {
     window.scrollBy(0, y2 - anchorY);
   } else schedScrollToNow();
 }
-// Shared with the Home widget's own pinch.
 function touchDistance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
 let schedPinch = null;
 $('#view-schedule').addEventListener('touchstart', e => {
@@ -10514,7 +10685,7 @@ $('#schSheet').addEventListener('click', e => {
   const btn = e.target.closest('[data-sh], [data-tl]'); if (!btn || !schedSheet) return;
   if (btn.dataset.tl === 'kid') {
     toggleChildDone(btn.dataset.kid);
-    renderSchedSheet(); renderBlockSchedule(); renderHomeNow();
+    renderSchedSheet(); renderBlockSchedule();
     return;
   }
   const a = btn.dataset.sh;
@@ -10560,7 +10731,7 @@ $('#schSheet').addEventListener('click', e => {
     }
     SFX.coin();
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    renderBlockSchedule(); renderHabits(); renderHomeNow(); renderSchedSheet();
+    renderBlockSchedule(); renderHabits(); renderSchedSheet();
     return;
   }
   if (a === 'emoji') { schedReadAddForm(); schedAddDraft.emoji = btn.dataset.emoji || null; SFX.click(); renderSchedSheet(); return; }
@@ -10702,86 +10873,13 @@ function renderDueSoon() {
 }
 
 /* =================================================================
-   HOME — the landing screen. Three reads, top to bottom: where am I right now,
-   what should I do next, and how is today going compared with the days before it.
+   HOME — the landing screen. Top to bottom: the stack you're in, how this week's
+   goals stand, and what to do next.
 
-   It stores nothing of its own except the pace log. The NOW rail reads the same
-   blocks the Schedule tab draws, and the middle band is Due Now painted a second
+   It stores nothing of its own except the pace log. The goals card is drawn by
+   renderHomeGoals in GOALS & MODES, and the board below it is Due Now painted a second
    time (see renderDueSoon's .duenow-mount loop), so nothing here can drift.
    ================================================================= */
-
-// Today's timeline, as one merged list: what actually happened plus what's still
-// expected. Same two builders the Schedule tab uses, so the two always agree.
-function homeTimeline() {
-  const dateStr = todayStr();
-  const actual = computeActualBlocks(dateStr);
-  const doneNames = new Set(actual.map(b => b.baseName || b.name));
-  return actual
-    .concat(computeDayBlocks(dateStr).filter(b => !doneNames.has(b.baseName || b.name)))
-    .map(b => ({ ...b, endMin: Number.isFinite(b.endMin) ? b.endMin : b.startMin + (b.durMin || 0) }))
-    .sort((a, b) => a.startMin - b.startMin);
-}
-
-/* The widget is a live window onto today's Schedule grid — the same drawing the Schedule
-   tab makes, scrolled and zoomed inside a fixed-height box instead of down the page.
-
-   Scroll position is deliberately sticky: the widget repaints every 30 seconds and on
-   every completion, and a re-render that jumped back to "now" each time would yank the
-   view out from under a finger. So the last position is remembered and restored, and the
-   only things that re-centre on the current time are opening the app and arriving on the
-   Home tab — which is exactly what was asked for. */
-let homeSchedTop = null;    // last scrollTop; null = "not positioned yet, centre on now"
-function homeSchedCentreOnNow() {
-  const sc = $('#homeSchedScroll'); if (!sc) return;
-  const grid = sc.querySelector('.sched-grid'); if (!grid) return;
-  const lo = parseInt(grid.dataset.lo, 10) || 0;
-  const hours = parseInt(grid.dataset.hours, 10) || 1;
-  const px = schedPx(homeZoomIdx);
-  // Height is computed from the scale rather than measured: .sched-grid transitions its
-  // height, so reading offsetHeight straight after a zoom returns the OLD value.
-  const max = Math.max(0, hours * px - sc.clientHeight);
-  sc.scrollTop = clamp((nowMinutes() - lo * 60) / 60 * px - sc.clientHeight / 2, 0, max);
-  homeSchedTop = sc.scrollTop;
-}
-// Called when the Home tab is entered (and at boot) so the widget always opens on now.
-function homeSchedResetScroll() { homeSchedTop = null; }
-
-function renderHomeNow() {
-  const box = $('#homeNow'); if (!box) return;
-  const now = nowMinutes();
-  const blocks = homeTimeline();
-  const next = blocks.find(b => b.startMin > now);
-  const nextLine = next
-    ? `Up next: <b>${escapeHtml(next.emoji || '')} ${escapeHtml(next.name)}</b> · ${escapeHtml(fmtMinOfDay(next.startMin))}`
-    : 'Nothing else scheduled today.';
-  // `px` matters: lane assignment is scale-dependent, and the widget runs its own zoom.
-  const { hours, lo, inner } = schedGridParts(todayStr(), { draggable: false, px: schedPx(homeZoomIdx) });
-
-  // Keep the reader's place across the repaint. Captured before innerHTML wipes the node.
-  const prev = $('#homeSchedScroll');
-  if (prev && homeSchedTop !== null) homeSchedTop = prev.scrollTop;
-
-  box.innerHTML = `
-    <div class="now-head">
-      <span class="now-kicker">Now</span>
-      <span class="now-clock">${escapeHtml(fmtMinOfDay(now))}</span>
-      <span class="sched-zoom">
-        <button class="zbtn" data-act="zoomOut" title="Zoom out">−</button>
-        <button class="zbtn" data-act="zoomIn" title="Zoom in">+</button>
-      </span>
-    </div>
-    <div class="now-scroll" id="homeSchedScroll">
-      <div class="sched-grid zoom-${homeZoomIdx}" data-lo="${lo}" data-hours="${hours}"
-           style="--ph:${schedPx(homeZoomIdx)}px;height:calc(var(--ph) * ${hours})">${inner}</div>
-    </div>
-    <div class="now-next">${nextLine}</div>`;
-
-  applyHomeZoom();                                  // sets the +/- disabled states
-  const sc = $('#homeSchedScroll');
-  if (homeSchedTop === null) homeSchedCentreOnNow();
-  else sc.scrollTop = homeSchedTop;
-  sc.addEventListener('scroll', () => { homeSchedTop = sc.scrollTop; }, { passive: true });
-}
 
 /* ---- Pace ---------------------------------------------------------------------------
    "How close am I to finishing everything I set for today", as one number.
@@ -10848,7 +10946,7 @@ function renderHomeTally() {
 // load can't be written over by a render.
 function renderHomeExtras() {
   renderStacks();
-  renderHomeNow();
+  renderHomeGoals();
   // The pace panel is gone, but the log it fed is not: dayLoadout() reads paceLog to work
   // out which loadout a past day belonged to, which the Similar Day Engine depends on.
   recordPaceToday();
@@ -10865,6 +10963,8 @@ function renderHome() { renderDueSoon(); renderHomeExtras(); }
      · state.stacks    [{ id, name, habitIds: [in order], on }] — membership and order only
      · state.stackRun  { date, stackId, paused, open, skipped: [ids] } — today's pass
      · state.stackTiers { [stackId]: { [habitId]: { i, n } } } — the tier a step is done at
+     · state.stackSlots { [stackId]: { [habitId]: name } } — a slot's label ("Deep Work")
+     · state.stackSwaps [{ at, stack, removed, added }] — every swap, add and removal
    Whether a step is done is never stored here. It is read off the habit itself
    (doneCount), so a habit finished on the Habits tab, the Lock Screen or the Schedule is
    done in the stack too, and finishing one here goes through completeHabit like any other
@@ -10880,7 +10980,14 @@ function renderHome() { renderDueSoon(); renderHomeExtras(); }
    timer, the reminder, the payout and the history all follow without knowing why.
 
    The order never moves on its own — not for a Focus, not for a skip. A habit that isn't
-   on today (its weekdays) or is archived is left out for the day; the stack keeps it.
+   on today (its weekdays, or hidden by the Mode) or is archived is left out for the day;
+   the stack keeps it.
+
+   The editor is one page: the stack on top, every habit that could go in it below, and
+   Start pinned to the bottom. A swap is two taps — a habit from the list, then the slot
+   it replaces — and the habit taken out goes back to the top of the list. Swaps change
+   the stack itself, so tomorrow it opens the way it was left. Slot names are labels only:
+   anything can go in any slot.
    ================================================================= */
 // load()'s pass over the stacks. Hoisted and self-contained: load() runs thousands of
 // lines above here, before this section's `let`s exist (see the boot dead-zone note).
@@ -10918,6 +11025,24 @@ function sanitizeStackTiers(src, st) {
     if (Object.keys(keep).length) out[s.id] = keep;
   });
   return out;
+}
+function sanitizeStackSlots(src, st) {
+  const out = {};
+  if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+  (st.stacks || []).forEach(s => {
+    const m = src[s.id]; if (!m || typeof m !== 'object') return;
+    const keep = {};
+    s.habitIds.forEach(id => { const n = typeof m[id] === 'string' ? m[id].trim().slice(0, 30) : ''; if (n) keep[id] = n; });
+    if (Object.keys(keep).length) out[s.id] = keep;
+  });
+  return out;
+}
+function sanitizeStackSwaps(src) {
+  const id = v => typeof v === 'string' && v ? v : null;
+  return (Array.isArray(src) ? src : [])
+    .filter(w => w && Number.isFinite(w.at) && typeof w.stack === 'string' && (id(w.removed) || id(w.added)))
+    .map(w => ({ at: w.at, stack: w.stack, removed: id(w.removed), added: id(w.added) }))
+    .slice(-200);
 }
 
 function stackList() {
@@ -10958,6 +11083,60 @@ function dropStackTierPick(stackId, hid) {
 }
 // The rung starting this stack moves a step to, or null when it leaves the habit be: no
 // pick, already on it, already done today, or a stopwatch already running on it.
+/* ---- slots and swaps ----
+   A slot's name is kept per habit, so it moves with a drag and passes to whatever is
+   swapped into that slot. Every swap, add and removal is logged: it's what floats a habit
+   back up the editor's list, and what the coach may notice patterns in. */
+function stackSlotName(s, hid) { const m = state.stackSlots && state.stackSlots[s.id]; return m && typeof m[hid] === 'string' ? m[hid] : ''; }
+function setStackSlotName(s, hid, name) {
+  if (!state.stackSlots || typeof state.stackSlots !== 'object' || Array.isArray(state.stackSlots)) state.stackSlots = {};
+  const m = state.stackSlots[s.id] || (state.stackSlots[s.id] = {});
+  name = String(name || '').trim().slice(0, 30);
+  if (name) m[hid] = name; else delete m[hid];
+  if (!Object.keys(m).length) delete state.stackSlots[s.id];
+}
+function noteStackSwap(stackId, removed, added) {
+  if (!Array.isArray(state.stackSwaps)) state.stackSwaps = [];
+  state.stackSwaps.push({ at: Date.now(), stack: stackId, removed: removed || null, added: added || null });
+  if (state.stackSwaps.length > 200) state.stackSwaps = state.stackSwaps.slice(-200);
+}
+// habit id → when it last went into or came out of any stack.
+function stackRecency() {
+  const m = new Map();
+  (state.stackSwaps || []).forEach(w => [w.removed, w.added].forEach(id => { if (id && (m.get(id) || 0) < w.at) m.set(id, w.at); }));
+  return m;
+}
+function addStackStep(s, hid) {
+  if (!s || s.habitIds.includes(hid) || !state.habits.some(h => h.id === hid)) return false;
+  s.habitIds.push(hid);
+  noteStackSwap(s.id, null, hid); save();
+  return true;
+}
+function removeStackStep(s, hid) {
+  const at = s ? s.habitIds.indexOf(hid) : -1; if (at < 0) return false;
+  s.habitIds.splice(at, 1);
+  dropStackTierPick(s.id, hid); setStackSlotName(s, hid, '');
+  const r = state.stackRun;
+  if (r && r.stackId === s.id && Array.isArray(r.skipped)) r.skipped = r.skipped.filter(x => x !== hid);
+  noteStackSwap(s.id, hid, null); save();
+  return true;
+}
+// The new habit takes the old one's place and its slot name. The old one goes back to the
+// list — at the top, having just been swapped — and its tier pick goes with it.
+function swapStackStep(s, outId, inId) {
+  const at = s ? s.habitIds.indexOf(outId) : -1;
+  if (at < 0 || s.habitIds.includes(inId) || !state.habits.some(h => h.id === inId)) return false;
+  s.habitIds[at] = inId;
+  const slot = stackSlotName(s, outId);
+  setStackSlotName(s, outId, ''); setStackSlotName(s, inId, slot);
+  dropStackTierPick(s.id, outId);
+  const r = state.stackRun;
+  if (r && r.stackId === s.id && Array.isArray(r.skipped)) r.skipped = r.skipped.filter(x => x !== outId);
+  noteStackSwap(s.id, outId, inId);
+  logEvent('stack_swap', { stackId: s.id, removed: outId, added: inId, slot: slot || null });
+  save();
+  return true;
+}
 function stackTierMove(stack, h) {
   const p = stackTierPick(stack, h);
   return p === null || p === curLevelIndex(h) || stackStepDone(h) || h.timer ? null : p;
@@ -11310,7 +11489,7 @@ function onStackClick(e) {
 }
 
 /* ---- the editor: a list of stacks, one stack's order, and a picker to add to it ---- */
-let stkSheet = null;          // null, or { view: 'list' | 'edit' | 'add', id }
+let stkSheet = null;          // null, or { view: 'list' | 'edit', id, pick, flash, naming } — pick: a habit waiting for its slot
 let stkNameSave = null;       // the name saves a beat after typing stops, not per key
 function openStackEditor(id) {
   stkSheet = id && stackById(id) ? { view: 'edit', id } : { view: 'list' };
@@ -11333,45 +11512,78 @@ function stackListHTML() {
     ${rows || '<div class="sch-empty">No stacks yet.</div>'}
     <p class="sch-note">A stack is a fixed order through habits you already have — finish one and the next is waiting. A habit that isn't on for the day is left out that day.</p>`;
 }
+// Why a step sits out today, for the editor's row.
+function stackLeftOutWhy(h) {
+  if (h.archived) return 'archived — left out';
+  if (hiddenByMode(h, todayStr())) return `hidden in ${currentMode().name} — left out today`;
+  return isScheduledToday(h) ? '' : 'not on today — left out today';
+}
+// Everything that could go in: not in the stack, not archived, not hidden by the mode.
+// Whatever was swapped in or out most recently floats to the top; the rest keep the
+// Habits tab's order.
+function stackPool(s) {
+  const today = todayStr(), order = new Map(state.habits.map((h, i) => [h.id, i])), recent = stackRecency();
+  const pool = state.habits.filter(h => !h.archived && !s.habitIds.includes(h.id));
+  const shown = pool.filter(h => !hiddenByMode(h, today))
+    .sort((a, b) => (recent.get(b.id) || 0) - (recent.get(a.id) || 0) || order.get(a.id) - order.get(b.id));
+  return { shown, hidden: pool.length - shown.length };
+}
 function stackEditHTML(s) {
   const byId = new Map(state.habits.map(h => [h.id, h]));
   const ids = s.habitIds.filter(id => byId.has(id));
+  const pick = stkSheet.pick && !ids.includes(stkSheet.pick) ? byId.get(stkSheet.pick) || null : null;
   const rows = ids.map((id, i) => {
-    const h = byId.get(id), role = habitRole(h);
-    const why = [role === 'focus' ? 'Focus' : role === 'maintain' ? 'Maintain' : '',
-      h.archived ? 'archived — left out' : !isScheduledToday(h) ? 'not on today — left out today' : ''].filter(Boolean).join(' · ');
+    const h = byId.get(id), role = habitRole(h), slot = stackSlotName(s, id);
+    if (pick) return `<button class="stk-ed-row choose" data-stk="swap" data-hid="${id}" aria-label="Replace ${escapeHtml(slot || h.name)} with ${escapeHtml(pick.name)}">
+        <span class="stk-ed-n">${i + 1}</span><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+        <span class="stk-ed-name">${slot ? `<b>${escapeHtml(slot)}</b><small>${escapeHtml(stackPickName(s, h))}</small>` : `<b>${escapeHtml(stackPickName(s, h))}</b>`}</span>
+        <span class="stk-ring" aria-hidden="true"></span></button>`;
+    const why = [role === 'focus' ? 'Focus' : role === 'maintain' ? 'Maintain' : '', stackLeftOutWhy(h)].filter(Boolean).join(' · ');
     const name = habitLevels(h) ? stackPickSwipeHTML(s, h) : `<b>${escapeHtml(h.name)}</b>`;
+    // Slot names are a label until "Name slots" is on — a field on every row is clutter.
+    const label = stkSheet.naming
+      ? `<input class="stk-slot-in" data-stk-in="slot" data-hid="${id}" value="${escapeHtml(slot)}" placeholder="Slot name — e.g. Reset" maxlength="30" autocomplete="off" enterkeyhint="done" aria-label="Slot name for ${escapeHtml(h.name)}">`
+      : slot ? `<span class="stk-slot">${escapeHtml(slot)}</span>` : '';
     return `<div class="stk-ed-row">
       <span class="stk-ed-n">${i + 1}</span><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
-      <span class="stk-ed-name">${name}${why ? `<small>${why}</small>` : ''}</span>
+      <span class="stk-ed-name">${label}${name}${why ? `<small>${why}</small>` : ''}</span>
       <button class="stk-grip" data-hid="${id}" aria-label="Reorder ${escapeHtml(h.name)}: drag, or use the arrow keys">≡</button>
       <button class="stk-ed-btn x" data-stk="remove" data-hid="${id}" aria-label="Take ${escapeHtml(h.name)} out of the stack">✕</button>
     </div>`;
   }).join('');
+  const { shown, hidden } = stackPool(s);
+  const list = shown.map(h => {
+    const meta = [habitQuotaText(h), habitToday(h).minutes ? fmtMins(habitToday(h).minutes) : '', isScheduledToday(h) ? '' : 'not on today'].filter(Boolean).join(' · ');
+    const sel = pick && pick.id === h.id;
+    return `<button class="stk-pick${sel ? ' sel' : ''}" data-stk="pick" data-hid="${h.id}" aria-pressed="${!!sel}">
+        <span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+        <span class="stk-ed-name"><b>${escapeHtml(habitToday(h).name || h.name)}</b>${meta ? `<small>${meta}</small>` : ''}</span>
+        <span class="stk-plus" aria-hidden="true">${sel ? '✓' : '＋'}</span></button>`;
+  }).join('');
+  const r = stackRun(), v = r && r.stackId === s.id ? stackView(s, r) : null;
+  const go = v && !v.finished ? (r.paused ? '▶ Resume stack' : 'Continue stack <span aria-hidden="true">›</span>') : '▶ Start stack';
+  const banner = pick ? `<div class="stk-choose" role="status">
+      <div class="stk-choose-pick"><span class="stk-emoji" aria-hidden="true">${escapeHtml(pick.emoji || '⭐')}</span>
+        <span class="stk-ed-name"><small>Putting in</small><b>${escapeHtml(pick.name)}</b></span>
+        <button class="stk-ed-btn x" data-stk="unpick" aria-label="Cancel">✕</button></div>
+      <div class="stk-choose-ask"><b>Choose one to replace.</b><button data-stk="append">or add it as step ${ids.length + 1}</button></div>
+    </div>`
+    : stkSheet.flash ? `<div class="stk-swapped" role="status">${stkSheet.flash}</div>` : '';
   return `<div class="sch-sh-head"><button class="sch-sh-x" data-stk="toList" aria-label="All stacks">‹</button>
       <div class="sch-sh-title">Edit stack</div><button class="sch-add" data-stk="sheetClose">Done</button></div>
     <input class="stk-ed-in" data-stk-in="name" value="${escapeHtml(s.name || '')}" placeholder="Name it — e.g. Morning stack" maxlength="60" autocomplete="off" enterkeyhint="done" aria-label="Stack name">
+    ${banner}
+    <div class="stk-ed-h">The stack<small>${pick ? 'tap the one it replaces' : 'drag ≡ to move one'}</small>
+      ${pick || !ids.length ? '' : `<button class="stk-ed-hbtn" data-stk="naming" aria-pressed="${!!stkSheet.naming}">${stkSheet.naming ? 'Done naming' : 'Name slots'}</button>`}</div>
+    ${rows ? `<div class="stk-ed-list${pick ? ' choosing' : ''}">${rows}</div>` : '<div class="sch-empty">Empty — tap a habit below to put it in.</div>'}
+    <div class="stk-ed-h">Your habits<small>${pick ? 'tap another to change your pick' : ids.length ? 'tap one to swap it in' : 'tap them in the order you do them'}</small></div>
+    ${list || '<div class="sch-empty">Every habit is already in this stack.</div>'}
+    ${hidden ? `<p class="sch-note">${hidden} more hidden in ${escapeHtml(currentMode().name)} mode.</p>` : ''}
     <div class="stk-ed-on"><span><b>Show on Home</b><small>${s.on ? 'On — it’s on Home every day it has something in it.' : 'Off — kept, but hidden until you switch it back on.'}</small></span>
       <button class="stk-sw${s.on ? ' on' : ''}" data-stk="toggleOn" data-id="${s.id}" role="switch" aria-checked="${s.on}" aria-label="Show on Home"></button></div>
-    <div class="stk-ed-h">The order<small>drag ≡ to move one</small></div>
-    ${rows ? `<div class="stk-ed-list">${rows}</div>` : '<div class="sch-empty">Add habits in the order you do them.</div>'}
-    <button class="sch-wide go" data-stk="toAdd">＋ Add habits</button>
     <button class="sch-wide danger" data-stk="delStack">Delete stack</button>
-    <p class="sch-note">${ids.some(id => habitLevels(byId.get(id))) ? 'Swipe a habit with tiers to pick the tier this stack does: starting the stack puts it on that tier, and you can still swipe while you’re in it. “As is” leaves it on whatever it’s on. ' : ''}Taking a habit out of a stack never deletes the habit.</p>`;
-}
-function stackAddHTML(s) {
-  const pool = state.habits.filter(h => !h.archived && !s.habitIds.includes(h.id));
-  const groups = focusPickGroups(pool).filter(g => g.list.length);
-  const body = groups.map(g => `${groups.length > 1 ? `<div class="stk-ed-h">${g.title}</div>` : ''}${g.list.map(h => `
-      <button class="stk-pick" data-stk="add" data-hid="${h.id}"><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
-        <span class="stk-ed-name"><b>${escapeHtml(h.name)}</b>${isScheduledToday(h) ? '' : '<small>not on today</small>'}</span>
-        <span class="stk-plus" aria-hidden="true">＋</span></button>`).join('')}`).join('');
-  const inStack = s.habitIds.map(id => state.habits.find(h => h.id === id)).filter(Boolean);
-  return `<div class="sch-sh-head"><button class="sch-sh-x" data-stk="toEdit" aria-label="Back">‹</button>
-      <div class="sch-sh-title">Add to ${escapeHtml(stackName(s))}</div><button class="sch-add" data-stk="toEdit">Done</button></div>
-    <p class="sch-note">Tap them in the order you do them — each one goes on the end.</p>
-    ${inStack.length ? `<div class="stk-added">${inStack.map((h, i) => `<span>${i + 1}. ${escapeHtml(h.name)}</span>`).join('')}</div>` : ''}
-    ${body || '<div class="sch-empty">Every habit is already in this stack.</div>'}`;
+    <p class="sch-note">${ids.some(id => habitLevels(byId.get(id))) ? 'Swipe a habit with tiers to pick the tier this stack does: starting the stack puts it on that tier, and you can still swipe while you’re in it. “As is” leaves it on whatever it’s on. ' : ''}Slot names are only labels — anything can go in any slot. Taking a habit out of a stack never deletes the habit.</p>
+    <div class="stk-ed-go"><button class="stk-primary${v && !v.finished && !r.paused ? ' live' : ''}" data-stk="startHere" data-id="${s.id}" ${ids.length ? '' : 'disabled'}>${go}</button></div>`;
 }
 function renderStackSheet() {
   const sh = $('#stkSheet'), scrim = $('#stkScrim'); if (!sh || !scrim) return;
@@ -11385,25 +11597,29 @@ function renderStackSheet() {
   const s = stkSheet.id ? stackById(stkSheet.id) : null;
   if (stkSheet.view !== 'list' && !s) stkSheet = { view: 'list' };
   const key = stkSheet.view + ':' + (stkSheet.id || ''), keep = sh.dataset.view === key ? sh.scrollTop : 0;
-  sh.innerHTML = '<div class="sch-grab"></div>' + (stkSheet.view === 'list' ? stackListHTML()
-    : stkSheet.view === 'add' ? stackAddHTML(s) : stackEditHTML(s));
+  sh.innerHTML = '<div class="sch-grab"></div>' + (stkSheet.view === 'list' ? stackListHTML() : stackEditHTML(s));
   sh.dataset.view = key;
   sh.classList.add('show'); scrim.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
   sh.scrollTop = keep;
+  // A habit was just picked from the list: back up to the stack, where its slot is chosen.
+  // Next frame, from where the finger was: the slide up is what says "now pick its slot".
+  if (stkSheet.toTop) { delete stkSheet.toTop; requestAnimationFrame(() => sh.scrollTo({ top: 0, behavior: state.settings.reducedMotion ? 'auto' : 'smooth' })); }
   if (stkSheet.focusName) { delete stkSheet.focusName; const inp = sh.querySelector('.stk-ed-in'); if (inp) inp.focus(); }
 }
+// A field still holding focus would block the repaint (see renderStackSheet) — and a tap
+// on a button doesn't always take focus on iOS. Tapping a control is the end of typing.
+function blurSheetInput(sh) { const a = document.activeElement; if (a && sh.contains(a) && a.matches('input')) a.blur(); }
 function onStackSheetClick(e) {
   const b = e.target.closest('[data-stk]'); if (!b || !stkSheet) return;
+  blurSheetInput($('#stkSheet'));
   flushStackName();
   const s = stkSheet.id ? stackById(stkSheet.id) : null;
   // A habit deleted since it was added just drops out, so ▲ ▼ never swap with a ghost.
   if (s) s.habitIds = s.habitIds.filter(id => state.habits.some(h => h.id === id));
-  const at = s ? s.habitIds.indexOf(b.dataset.hid) : -1;
+  if (b.dataset.stk !== 'pick') delete stkSheet.flash;
   switch (b.dataset.stk) {
     case 'sheetClose': SFX.click(); closeStackSheet(); return;
     case 'toList': stkSheet = { view: 'list' }; break;
-    case 'toEdit': stkSheet = { view: 'edit', id: stkSheet.id }; break;
-    case 'toAdd': stkSheet = { view: 'add', id: stkSheet.id }; break;
     case 'editStack': stkSheet = { view: 'edit', id: b.dataset.id }; break;
     case 'newStack': {
       const ns = { id: uid(), name: '', habitIds: [], on: true };
@@ -11412,17 +11628,32 @@ function onStackSheetClick(e) {
       break;
     }
     case 'toggleOn': { const t = stackById(b.dataset.id); if (!t) return; t.on = !t.on; save(); break; }
-    case 'remove': {
-      if (at < 0) return;
-      s.habitIds.splice(at, 1);
-      dropStackTierPick(s.id, b.dataset.hid);
-      const r = state.stackRun;
-      if (r && r.stackId === s.id && Array.isArray(r.skipped)) r.skipped = r.skipped.filter(x => x !== b.dataset.hid);
-      save(); break;
+    case 'remove': if (!removeStackStep(s, b.dataset.hid)) return; break;
+    // A habit from the list. With nothing in the stack yet it just goes in; otherwise it
+    // waits, highlighted, while the page goes back up to the stack to choose its slot.
+    case 'pick': {
+      const hid = b.dataset.hid;
+      if (!s || s.habitIds.includes(hid) || !state.habits.some(h => h.id === hid)) return;
+      if (!s.habitIds.length) { addStackStep(s, hid); break; }
+      stkSheet.pick = stkSheet.pick === hid ? null : hid;
+      stkSheet.naming = false;
+      if (stkSheet.pick) stkSheet.toTop = true;
+      break;
     }
-    case 'add': {
-      if (!s || s.habitIds.includes(b.dataset.hid) || !state.habits.some(h => h.id === b.dataset.hid)) return;
-      s.habitIds.push(b.dataset.hid); save(); break;
+    case 'unpick': stkSheet.pick = null; break;
+    case 'naming': stkSheet.naming = !stkSheet.naming; break;
+    case 'append': if (!stkSheet.pick || !addStackStep(s, stkSheet.pick)) return; stkSheet.pick = null; break;
+    case 'swap': {
+      const out = state.habits.find(h => h.id === b.dataset.hid), inn = state.habits.find(h => h.id === stkSheet.pick);
+      if (!out || !inn || !swapStackStep(s, out.id, inn.id)) return;
+      stkSheet.pick = null;
+      stkSheet.flash = `🔁 <b>${escapeHtml(inn.name)}</b> is in. ${escapeHtml(out.name)} is back at the top of your habits.`;
+      break;
+    }
+    case 'startHere': {
+      if (!s || !s.habitIds.length) return;
+      flushStackName(); stkSheet = null; renderStackSheet();
+      startStack(s.id); return;
     }
     case 'delStack': {
       if (!s) return;
@@ -11430,6 +11661,7 @@ function onStackSheetClick(e) {
       state.stacks = stackList().filter(x => x.id !== s.id);
       if (state.stackRun && state.stackRun.stackId === s.id) state.stackRun = null;
       if (state.stackTiers) delete state.stackTiers[s.id];
+      if (state.stackSlots) delete state.stackSlots[s.id];
       save(); stkSheet = { view: 'list' };
       offerUndo(snap, `🗑 ${stackName(s)}`);
       break;
@@ -11569,9 +11801,10 @@ $('#stkDock').addEventListener('click', onStackClick);
 $('#stkOverlay').addEventListener('click', onStackClick);
 $('#stkSheet').addEventListener('click', onStackSheetClick);
 $('#stkSheet').addEventListener('input', e => {
-  if (!stkSheet || e.target.dataset.stkIn !== 'name') return;
-  const s = stackById(stkSheet.id); if (!s) return;
-  s.name = e.target.value.slice(0, 60);
+  const s = stkSheet && stackById(stkSheet.id); if (!s) return;
+  if (e.target.dataset.stkIn === 'name') s.name = e.target.value.slice(0, 60);
+  else if (e.target.dataset.stkIn === 'slot') setStackSlotName(s, e.target.dataset.hid, e.target.value);
+  else return;
   clearTimeout(stkNameSave); stkNameSave = setTimeout(() => { stkNameSave = null; save(); }, 500);
 });
 $('#stkSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.stkIn) e.target.blur(); });
@@ -11583,50 +11816,685 @@ document.addEventListener('keydown', e => {
   else if ($('#stkOverlay').classList.contains('show')) closeStackRunner();
 });
 
-/* ---- Widget zoom -------------------------------------------------------------------
-   Same calibrated scale and the same two controls the Schedule tab has, but the scroller
-   is a div rather than the window, so every offset is against sc.scrollTop.
+/* =================================================================
+   GOALS & MODES — consistency first, intensity second.
 
-   Zooming holds the MIDDLE of the visible window still. Anchoring on "now" instead would
-   drag you back to the present every time you pressed +, which defeats zooming in on some
-   other part of the day. Positions are computed from SCHED_ZOOMS rather than measured:
-   .sched-grid transitions its height, so a getBoundingClientRect straight after the class
-   change reports the scale we just left.                                              */
-function homeZoomBy(delta) {
-  const sc = $('#homeSchedScroll'); if (!sc) return;
-  const grid = sc.querySelector('.sched-grid'); if (!grid) return;
-  const target = clamp(homeZoomIdx + delta, 0, SCHED_ZOOMS.length - 1);
-  if (target === homeZoomIdx) return;
-  const oldPx = schedPx(homeZoomIdx);
-  const anchorHours = (sc.scrollTop + sc.clientHeight / 2) / oldPx;
-  homeZoomIdx = target;
-  applyHomeZoom();
-  const newPx = schedPx(homeZoomIdx);
-  const hours = parseInt(grid.dataset.hours, 10) || 1;
-  const max = Math.max(0, hours * newPx - sc.clientHeight);
-  sc.scrollTop = clamp(anchorHours * newPx - sc.clientHeight / 2, 0, max);
-  homeSchedTop = sc.scrollTop;
+   Mode → Goal → Habit quota.
+     · A MODE is what's realistically possible right now: Normal, Busy Week, Vacation,
+       Sick, or one of the user's own. It hides goals or habits; it never copies them.
+       The user switches it — nothing switches it for them.
+     · A GOAL is an area to keep alive (Cello, French). The user puts habits in it by
+       hand, one goal per habit, and each one gets a weekly QUOTA: X days a week at Tier N
+       or higher. A goal is met only if every quota it asked for is met. No points, no
+       weights, no percentages: a quota is met or it isn't.
+     · Goals get harder slowly and easier quickly. A missed week drops a level; a run of
+       met weeks (2 unless the user says otherwise) raises one. Each quota climbs its own
+       way — frequency first or tier first — and stops at its caps: the user's frequency
+       cap and the number of tiers the habit has.
+
+     · state.modes      [{ id, name, emoji, hideGoals: [ids], hideHabits: [ids] }]
+     · state.activeMode the mode on now
+     · state.modeDays   { 'YYYY-MM-DD': modeId } — the mode each day was lived in
+     · state.goals      [{ id, name, emoji, level, wins, misses, promoteAfter, demoteAfter,
+                           created, quotas: [{ hid, freq, tier, at, order, cap, since }] }]
+     · state.goalWeeks  one receipt per judged Mon–Sun week, newest last
+     · state.goalWeekDone / goalReceiptSeen — the Monday last judged / last shown on Home
+
+   A hidden habit is simply "not on" that day, like a weekday it doesn't run: the mode
+   check lives inside isScheduledOn/isScheduledToday, so every list, reminder, stack,
+   streak and missed-day log follows it without knowing modes exist. And a week is never
+   held against a goal for what its mode hid — that quota is excused, not missed.
+
+   All of it is top-level in the save (alpha passes unknown top-level keys through), and
+   the load-time cleaners are hoisted and self-contained (see the boot dead-zone note).
+   ================================================================= */
+function defaultModes() {
+  return [
+    { id: 'normal',   name: 'Normal',    emoji: '☀️', hideGoals: [], hideHabits: [] },
+    { id: 'busy',     name: 'Busy Week', emoji: '⏳', hideGoals: [], hideHabits: [] },
+    { id: 'vacation', name: 'Vacation',  emoji: '🌴', hideGoals: [], hideHabits: [] },
+    { id: 'sick',     name: 'Sick',      emoji: '🤒', hideGoals: [], hideHabits: [] },
+  ];
 }
-$('#homeNow').addEventListener('click', e => {
-  const act = e.target.closest('[data-act]')?.dataset.act;
-  if (act === 'zoomIn')  { SFX.click(); homeZoomBy(1); }
-  if (act === 'zoomOut') { SFX.click(); homeZoomBy(-1); }
+function cleanIdList(a, known) {
+  return Array.isArray(a) ? [...new Set(a.filter(id => typeof id === 'string' && known.has(id)))] : [];
+}
+// Normal is always there to come back to, whatever the save says.
+function sanitizeModes(src, st) {
+  const habits = new Set((st.habits || []).map(h => h.id)), goals = new Set((st.goals || []).map(g => g.id));
+  const seen = new Set(), out = [];
+  (Array.isArray(src) ? src : []).forEach(m => {
+    if (!m || typeof m !== 'object' || typeof m.id !== 'string' || !m.id || seen.has(m.id)) return;
+    seen.add(m.id);
+    out.push({ id: m.id, name: String(m.name || '').trim().slice(0, 40) || 'Mode', emoji: String(m.emoji || '').trim().slice(0, 8) || '🧭',
+               hideGoals: cleanIdList(m.hideGoals, goals), hideHabits: cleanIdList(m.hideHabits, habits) });
+  });
+  if (!seen.has('normal')) out.unshift(defaultModes()[0]);
+  return out;
+}
+// A day lived in a mode since deleted is kept: modeOn reads it as Normal.
+function sanitizeModeDays(src) {
+  const out = {};
+  if (src && typeof src === 'object' && !Array.isArray(src)) Object.keys(src).forEach(d => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d) && typeof src[d] === 'string' && src[d]) out[d] = src[d];
+  });
+  return out;
+}
+// One goal per habit, and quotas only for habits that exist. Numbers are held to what the
+// editor allows; whether a tier still exists is checked on reading (quotaAt), where
+// habitLevels is safe to call.
+function sanitizeGoals(src, st) {
+  const known = new Set((st.habits || []).map(h => h.id)), taken = new Set(), seen = new Set(), out = [];
+  const int = (v, lo, hi, d) => Number.isInteger(v) ? Math.max(lo, Math.min(hi, v)) : d;
+  const day = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? v : '';
+  (Array.isArray(src) ? src : []).forEach(g => {
+    if (!g || typeof g !== 'object' || typeof g.id !== 'string' || !g.id || seen.has(g.id)) return;
+    seen.add(g.id);
+    const quotas = [];
+    (Array.isArray(g.quotas) ? g.quotas : []).forEach(q => {
+      if (!q || typeof q.hid !== 'string' || !known.has(q.hid) || taken.has(q.hid)) return;
+      taken.add(q.hid);
+      const cap = int(q.cap, 1, 7, 7);
+      quotas.push({ hid: q.hid, freq: int(q.freq, 1, cap, Math.min(3, cap)), tier: int(q.tier, 1, 99, 1), at: int(q.at, 1, 999, 1),
+                    order: q.order === 'tier' ? 'tier' : 'freq', cap, since: day(q.since) });
+    });
+    out.push({ id: g.id, name: String(g.name || '').trim().slice(0, 40), emoji: String(g.emoji || '').trim().slice(0, 8),
+               level: int(g.level, 1, 999, 1), wins: int(g.wins, 0, 99, 0), misses: int(g.misses, 0, 99, 0),
+               promoteAfter: int(g.promoteAfter, 1, 6, 2), demoteAfter: int(g.demoteAfter, 1, 4, 1),
+               created: day(g.created), quotas });
+  });
+  return out;
+}
+
+/* ---- modes: what's possible right now ---- */
+function modeList() { return Array.isArray(state.modes) && state.modes.length ? state.modes : defaultModes(); }
+function modeById(id) { return modeList().find(m => m.id === id) || null; }
+function currentMode() { return modeById(state.activeMode) || modeById('normal') || modeList()[0]; }
+// The mode a date was lived in. Today and every day ahead: the one on now, since nothing
+// changes it but the user. A past day: what was recorded for it, else the last record
+// before it (a mode stays on until it's changed), else Normal.
+function modeOn(dateStr) {
+  if (!dateStr || dateStr >= todayStr()) return currentMode();
+  const log = state.modeDays || {};
+  let id = log[dateStr];
+  if (!id) {
+    let best = '';
+    for (const d in log) if (d < dateStr && d > best) best = d;
+    id = best ? log[best] : 'normal';
+  }
+  return modeById(id) || modeById('normal') || modeList()[0];
+}
+function modeHides(m, h) {
+  if (!m || !h) return false;
+  if ((m.hideHabits || []).includes(h.id)) return true;
+  const g = goalOfHabit(h.id);
+  return !!g && (m.hideGoals || []).includes(g.id);
+}
+function hiddenByMode(h, dateStr) { return modeHides(modeOn(dateStr), h); }
+function modeHiddenCount(m) { return state.habits.filter(h => !h.archived && modeHides(m, h)).length; }
+// Stamp today with the mode it's being lived in, so a week can be judged on the days as
+// they actually were. Kept 190 days, like the planner's.
+function noteModeDay() {
+  if (!state.modeDays || typeof state.modeDays !== 'object' || Array.isArray(state.modeDays)) state.modeDays = {};
+  const t = todayStr(), id = currentMode().id;
+  if (state.modeDays[t] === id) return false;
+  state.modeDays[t] = id;
+  const cut = addDays(t, -190);
+  Object.keys(state.modeDays).forEach(d => { if (d < cut) delete state.modeDays[d]; });
+  return true;
+}
+function setMode(id) {
+  const m = modeById(id); if (!m || m.id === currentMode().id) return false;
+  state.activeMode = m.id;
+  noteModeDay();
+  logEvent('mode_changed', { mode: m.id, name: m.name });
+  save(); fullRender();
+  return true;
+}
+
+/* ---- goals ---- */
+function goalList() { return Array.isArray(state.goals) ? state.goals.filter(g => g && typeof g.id === 'string' && Array.isArray(g.quotas)) : []; }
+function goalById(id) { return goalList().find(g => g.id === id) || null; }
+function goalOfHabit(hid) { return goalList().find(g => g.quotas.some(q => q.hid === hid)) || null; }
+function goalName(g) { return (g && String(g.name || '').trim()) || 'Untitled goal'; }
+function goalEmoji(g) { return (g && String(g.emoji || '').trim()) || '🏁'; }
+// A goal's quotas with their habits. A habit deleted since just drops out.
+function goalQuotas(g) {
+  const byId = new Map(state.habits.map(h => [h.id, h]));
+  return g.quotas.map(q => ({ q, h: byId.get(q.hid) })).filter(x => x.h);
+}
+function goalHiddenNow(g) { return (currentMode().hideGoals || []).includes(g.id); }
+
+/* ---- the quota ladder ----
+   A quota is stored as what the user set and the goal level they set it at. What it asks
+   at any other level is worked out from there, so it is a pure function of the level: a
+   promotion and the demotion after it always land on exactly the same numbers. */
+function habitTierCount(h) { const lv = habitLevels(h); return lv ? lv.length : 1; }
+// Frequency stops at the user's cap, and never asks for more days than the habit runs.
+function quotaCap(q, h) {
+  const runs = Array.isArray(h.days) ? h.days.filter(Boolean).length : 7;
+  return clamp(Math.min(q.cap || 7, runs || 1), 1, 7);
+}
+// One level up: the side that scales first moves until its cap, then the other. Both
+// capped: nowhere to go, and the quota stays put.
+function quotaUp(v, order, cap, top) {
+  const more = v.freq < cap ? { freq: v.freq + 1, tier: v.tier } : null;
+  const harder = v.tier < top ? { freq: v.freq, tier: v.tier + 1 } : null;
+  return (order === 'tier' ? harder || more : more || harder) || v;
+}
+// One level down from where the user set it: the tier comes off first and the frequency
+// last, whichever way the quota climbs — when a week is too much, keep showing up and
+// make it lighter. Floor: once a week at Tier 1.
+function quotaDown(v) {
+  if (v.tier > 1) return { freq: v.freq, tier: v.tier - 1 };
+  if (v.freq > 1) return { freq: v.freq - 1, tier: v.tier };
+  return v;
+}
+function quotaAt(q, level, h) {
+  const cap = quotaCap(q, h), top = habitTierCount(h);
+  let v = { freq: clamp(q.freq, 1, cap), tier: clamp(q.tier, 1, top) };
+  for (let L = q.at; L < level; L++) v = quotaUp(v, q.order, cap, top);
+  for (let L = q.at; L > level; L--) v = quotaDown(v);
+  return v;
+}
+// The level past which this quota can't climb: each level adds one to frequency or tier.
+function quotaTop(q, h) {
+  const v = quotaAt(q, q.at, h);
+  return q.at + (quotaCap(q, h) - v.freq) + (habitTierCount(h) - v.tier);
+}
+function goalMaxLevel(g) {
+  return Math.max(1, g.level, ...goalQuotas(g).map(({ q, h }) => quotaTop(q, h)));
+}
+
+/* ---- counting a week ---- */
+// Days in [from, to] the habit was done at `tier` or higher. A day counts once however
+// many reps and however high the tier: a quota is about showing up, not total hours.
+function quotaDoneDays(h, tier, from, to) {
+  const days = new Set();
+  (state.history || []).forEach(e => {
+    if (!e || e.kind !== 'habit' || e.id !== h.id || !Number.isFinite(e.ts)) return;
+    const d = dateStrFromTs(e.ts);
+    if (d >= from && d <= to && (Number.isInteger(e.tierIndex) ? e.tierIndex + 1 : 1) >= tier) days.add(d);
+  });
+  return days.size;
+}
+// Days in [from, to] it could have happened: the habit runs that weekday and the day's
+// mode didn't hide it (isScheduledOn knows both), counted from when the quota began.
+function quotaOpenDays(g, q, h, from, to) {
+  if (h.archived) return 0;
+  let n = 0;
+  const start = [from, q.since, g.created].filter(Boolean).sort().pop();
+  for (let d = start; d <= to; d = addDays(d, 1)) if (isScheduledOn(h, d)) n++;
+  return n;
+}
+// A closed week, one quota. Excused = the week left fewer open days than it asks for.
+function quotaWeek(g, q, h, mon, level) {
+  const sun = addDays(mon, 6), need = quotaAt(q, level, h);
+  const done = quotaDoneDays(h, need.tier, mon, sun), open = quotaOpenDays(g, q, h, mon, sun);
+  return { hid: h.id, name: h.name, emoji: h.emoji || '⭐', freq: need.freq, tier: need.tier, done, open,
+           status: done >= need.freq ? 'met' : open < need.freq ? 'excused' : 'missed' };
+}
+// This week so far, for the screens. Nothing is judged here.
+function quotaNow(g, q, h) {
+  const today = todayStr(), mon = wcWeekStart(today), need = quotaAt(q, g.level, h);
+  const done = quotaDoneDays(h, need.tier, mon, today);
+  const excused = done < need.freq && quotaOpenDays(g, q, h, mon, addDays(mon, 6)) < need.freq;
+  return { ...need, done: Math.min(done, need.freq), met: done >= need.freq, left: Math.max(0, need.freq - done), excused };
+}
+function quotaLeftText(n) {
+  return n.met ? 'quota met' : n.excused ? 'not asked this week' : `${n.left} completion${n.left === 1 ? '' : 's'} remaining`;
+}
+function habitQuotaText(h) {
+  const g = goalOfHabit(h.id); if (!g) return '';
+  const n = quotaNow(g, g.quotas.find(q => q.hid === h.id), h);
+  return `${n.met ? '✓ ' : ''}${n.done}/${n.freq} this week · Tier ${n.tier}+`;
+}
+
+/* ---- judging a week ----
+   Quick to demote, slow to promote: `demoteAfter` missed weeks in a row (1 unless the
+   user changes it) drop a level, `promoteAfter` met weeks in a row raise one. A quota the
+   week made impossible is excused — but a week that excused anything can't count toward
+   a promotion. A week that asked nothing at all (the goal hidden all week, or nothing
+   logged anywhere in the app) changes nothing. */
+function judgeGoalWeek(g, mon, idle) {
+  const level = g.level;
+  const rows = goalQuotas(g).map(({ q, h }) => quotaWeek(g, q, h, mon, level));
+  const asked = rows.filter(r => r.status !== 'excused');
+  const result = idle || !asked.length ? 'paused' : asked.every(r => r.status === 'met') ? 'met' : 'missed';
+  const partial = result === 'met' && asked.length < rows.length;
+  if (result === 'met') {
+    g.misses = 0;
+    if (!partial) g.wins = Math.min(g.promoteAfter, (g.wins || 0) + 1);
+    if (g.wins >= g.promoteAfter && g.level < goalMaxLevel(g)) { g.level++; g.wins = 0; }
+  } else if (result === 'missed') {
+    g.wins = 0; g.misses = (g.misses || 0) + 1;
+    if (g.misses >= g.demoteAfter) { if (g.level > 1) g.level--; g.misses = 0; }
+  }
+  return { id: g.id, name: goalName(g), emoji: goalEmoji(g), result, partial, level, newLevel: g.level,
+           wins: g.wins, promoteAfter: g.promoteAfter, misses: g.misses, demoteAfter: g.demoteAfter, quotas: rows,
+           next: goalQuotas(g).map(({ q, h }) => ({ hid: h.id, name: h.name, emoji: h.emoji || '⭐', ...quotaAt(q, g.level, h) })) };
+}
+function weekWasIdle(mon) {
+  const sun = addDays(mon, 6);
+  return !(state.history || []).some(e => {
+    if (!e || e.kind !== 'habit' || !Number.isFinite(e.ts)) return false;
+    const d = dateStrFromTs(e.ts);
+    return d >= mon && d <= sun;
+  });
+}
+// Judge every week that has closed since the last look. The very first look only marks
+// the place: weeks from before there were goals are never judged.
+function rollGoalWeeks() {
+  const thisMon = wcWeekStart(todayStr());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(state.goalWeekDone || '')) { state.goalWeekDone = addDays(thisMon, -7); return true; }
+  if (!Array.isArray(state.goalWeeks)) state.goalWeeks = [];
+  let changed = false;
+  for (let mon = addDays(state.goalWeekDone, 7), n = 0; mon < thisMon && n < 60; mon = addDays(mon, 7), n++) {
+    const idle = weekWasIdle(mon), goals = goalList().map(g => judgeGoalWeek(g, mon, idle));
+    const modes = [...new Set([0, 1, 2, 3, 4, 5, 6].map(i => modeOn(addDays(mon, i)).id))];
+    if (goals.length) state.goalWeeks.push({ week: mon, idle, modes, goals });
+    goals.forEach(r => { if (r.newLevel !== r.level) logEvent('goal_level_changed', { entityType: 'goal', entityId: r.id, name: r.name, from: r.level, to: r.newLevel, week: mon }); });
+    state.goalWeekDone = mon; changed = true;
+  }
+  if (state.goalWeeks.length > 26) state.goalWeeks = state.goalWeeks.slice(-26);
+  return changed;
+}
+// Today stamped with its mode, and any week that has closed judged. fullRender and the
+// 30-second tick both call this, so a week can turn over with the app sitting open.
+function goalsTick() {
+  const stamped = noteModeDay(), rolled = rollGoalWeeks();
+  if (stamped || rolled) save();
+  return rolled;
+}
+
+/* ---- editing ---- */
+function newGoal() {
+  const g = { id: uid(), name: '', emoji: '', level: 1, wins: 0, misses: 0, promoteAfter: 2, demoteAfter: 1, created: todayStr(), quotas: [] };
+  state.goals = goalList().concat(g);
+  logEvent('goal_created', { entityType: 'goal', entityId: g.id });
+  save();
+  return g;
+}
+// A habit counts toward one goal. It starts at three days a week (or every day it runs,
+// if that's fewer) at Tier 1, anchored at the goal's current level.
+function addGoalHabit(g, hid) {
+  const h = state.habits.find(x => x.id === hid);
+  if (!g || !h || goalOfHabit(hid)) return false;
+  g.quotas.push({ hid, freq: Math.min(3, quotaCap({ cap: 7 }, h)), tier: 1, at: g.level, order: 'freq', cap: 7, since: todayStr() });
+  save();
+  return true;
+}
+// Change what a quota asks for NOW. It's re-anchored at the current level first, so the
+// numbers on screen are the ones being changed and only the climb from here moves.
+function editQuota(g, hid, field, value) {
+  const q = g && g.quotas.find(x => x.hid === hid), h = q && state.habits.find(x => x.id === hid);
+  if (!q || !h) return false;
+  Object.assign(q, quotaAt(q, g.level, h), { at: g.level });
+  if (field === 'freq') { q.freq = clamp(value, 1, quotaCap({ cap: 7 }, h)); q.cap = Math.max(q.cap, q.freq); }
+  else if (field === 'tier') q.tier = clamp(value, 1, habitTierCount(h));
+  else if (field === 'cap') { q.cap = clamp(value, 1, 7); q.freq = Math.min(q.freq, q.cap); }
+  else if (field === 'order') q.order = value === 'tier' ? 'tier' : 'freq';
+  else return false;
+  save();
+  return true;
+}
+function setGoalLevel(g, level) {
+  const to = clamp(level, 1, goalMaxLevel(g));
+  if (!g || to === g.level) return false;
+  logEvent('goal_level_set', { entityType: 'goal', entityId: g.id, from: g.level, to });
+  g.level = to; g.wins = 0; g.misses = 0;
+  save();
+  return true;
+}
+
+/* ---- the screens ---- */
+function goalWeekRange(mon) {
+  const f = s => { const d = new Date(s + 'T00:00:00'); return `${PLAN_MON[d.getMonth()]} ${d.getDate()}`; };
+  return `${f(mon)} – ${f(addDays(mon, 6))}`;
+}
+// One row per habit: this week's count against its quota, in words and as a bar.
+function quotaRowsHTML(g) {
+  return goalQuotas(g).map(({ q, h }) => {
+    const n = quotaNow(g, q, h);
+    return `<div class="gl-q${n.met ? ' met' : ''}${n.excused ? ' exc' : ''}">
+        <span class="gl-q-e" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+        <span class="gl-q-n"><b>${escapeHtml(h.name)}</b><small>${n.done}/${n.freq} at Tier ${n.tier}+ · ${quotaLeftText(n)}</small>
+          <span class="gl-bar"><i style="width:${Math.round(n.done / n.freq * 100)}%"></i></span></span>
+      </div>`;
+  }).join('');
+}
+function goalCardHTML(g) {
+  const rows = quotaRowsHTML(g);
+  const top = g.level >= goalMaxLevel(g);
+  const foot = !g.quotas.length ? '' : top ? 'Top level — every quota is at its caps'
+    : `${g.wins}/${g.promoteAfter} met week${g.promoteAfter === 1 ? '' : 's'} toward Level ${g.level + 1}`;
+  return `<div class="gl-card" data-gm="goal" data-id="${g.id}" role="button" tabindex="0" aria-label="Edit ${escapeHtml(goalName(g))}">
+      <div class="gl-card-head"><span class="gl-e" aria-hidden="true">${escapeHtml(goalEmoji(g))}</span><b>${escapeHtml(goalName(g))}</b>
+        <span class="gl-lv">Level ${g.level}</span></div>
+      ${rows || '<div class="gl-none">No habits yet — tap to add the ones that count toward it.</div>'}
+      ${foot ? `<div class="gl-foot">${foot}</div>` : ''}
+    </div>`;
+}
+function receiptGoalHTML(r) {
+  const verdict = r.result === 'met' ? '<span class="rc-v met">✓ Goal completed</span>'
+    : r.result === 'missed' ? '<span class="rc-v miss">Not met</span>'
+    : `<span class="rc-v">Paused — ${r.idle ? 'nothing logged that week' : 'nothing was asked of it that week'}</span>`;
+  const lv = r.newLevel > r.level ? `Level ${r.level} → <b>Level ${r.newLevel}</b> ⬆`
+    : r.newLevel < r.level ? `Level ${r.level} → <b>Level ${r.newLevel}</b> · eased off a level`
+    : `Stays at <b>Level ${r.level}</b>`;
+  const why = r.result === 'met' && r.newLevel === r.level
+    ? (r.partial ? ' · some quotas were excused, so this week doesn’t count toward the next level'
+      : r.wins >= r.promoteAfter ? ' · already at the top level' : ` · ${r.wins}/${r.promoteAfter} met weeks toward Level ${r.level + 1}`)
+    : r.result === 'missed' && r.newLevel === r.level && r.level > 1 ? ` · ${r.misses}/${r.demoteAfter} missed weeks` : '';
+  const qs = r.quotas.map(x => `<li class="rc-q ${x.status}"><span aria-hidden="true">${escapeHtml(x.emoji)}</span>
+      <span class="rc-q-n">${escapeHtml(x.name)}<small>${Math.min(x.done, x.freq)}/${x.freq} at Tier ${x.tier}+</small></span>
+      <em>${x.status === 'met' ? '✓ met' : x.status === 'missed' ? 'not met' : 'excused'}</em></li>`).join('');
+  const next = r.next.length ? `<div class="rc-next">Next week: ${r.next.map(n => `${escapeHtml(n.name)} <b>${n.freq}× at Tier ${n.tier}+</b>`).join(' · ')}</div>` : '';
+  return `<div class="rc-goal"><div class="rc-head"><span aria-hidden="true">${escapeHtml(r.emoji)}</span><b>${escapeHtml(r.name)}</b>${verdict}</div>
+      ${qs ? `<ul class="rc-qs">${qs}</ul>` : ''}<div class="rc-lv">${lv}${why}</div>${next}</div>`;
+}
+function receiptHTML(w) {
+  const names = (w.modes || []).map(id => modeById(id)).filter(Boolean).filter(m => m.id !== 'normal');
+  return `${names.length ? `<p class="sch-note">Lived in: ${names.map(m => `${m.emoji} ${escapeHtml(m.name)}`).join(', ')}${(w.modes || []).includes('normal') ? ' and Normal' : ''}.</p>` : ''}
+    ${w.goals.map(receiptGoalHTML).join('')}`;
+}
+let goalsWeekBack = 0;    // 0 = this week; n = the receipt n weeks back
+function renderGoals() {
+  const box = $('#goalsMount'); if (!box) return;
+  const m = currentMode(), weeks = state.goalWeeks || [];
+  goalsWeekBack = clamp(goalsWeekBack, 0, weeks.length);
+  const past = goalsWeekBack ? weeks[weeks.length - goalsWeekBack] : null;
+  const mon = past ? past.week : wcWeekStart(todayStr());
+  let body;
+  if (past) body = receiptHTML(past);
+  else {
+    const goals = goalList(), shown = goals.filter(g => !goalHiddenNow(g)), paused = goals.filter(goalHiddenNow);
+    body = shown.map(goalCardHTML).join('')
+      + (paused.length ? `<div class="gl-paused">Paused in ${escapeHtml(m.emoji)} ${escapeHtml(m.name)}: ${paused.map(g =>
+          `<button data-gm="goal" data-id="${g.id}">${escapeHtml(goalEmoji(g))} ${escapeHtml(goalName(g))}</button>`).join('')}</div>` : '')
+      + (goals.length ? '' : '<div class="gl-empty">No goals yet. A goal is an area you want to keep alive — Cello, French, Fitness — made of habits you already have, each with a weekly quota.</div>')
+      + '<button class="sch-wide go" data-gm="newGoal">＋ New goal</button>';
+  }
+  // The Mode button sits beside the title rather than after it: the description has to
+  // follow the title directly to fold behind its ⓘ.
+  box.innerHTML = `<button class="mode-btn gl-mode" data-gm="modes" aria-label="Mode: ${escapeHtml(m.name)} — change"><span aria-hidden="true">${escapeHtml(m.emoji)}</span><span class="mb-name">${escapeHtml(m.name)}</span><span class="mb-go" aria-hidden="true">▾</span></button>
+    <div class="section-title">🏁 Goals</div>
+    <div class="subtle">Consistency first, intensity second. Each habit in a goal has a weekly quota — how many days, at what tier or higher. Miss a week and a goal eases off a level; meet it two weeks running (you can change that per goal) and it climbs one.</div>
+    <div class="gl-week">
+      <button class="gl-wk-btn" data-gm="weekBack" ${goalsWeekBack < weeks.length ? '' : 'disabled'} aria-label="Earlier week">‹</button>
+      <div class="gl-wk-mid"><b>${past ? 'Receipt' : 'This week'}</b><small>${goalWeekRange(mon)}</small></div>
+      <button class="gl-wk-btn" data-gm="weekFwd" ${goalsWeekBack ? '' : 'disabled'} aria-label="Later week">›</button>
+    </div>
+    ${body}`;
+}
+// Home: this week's goals in one card, where the Schedule window used to be — always
+// there, even before the first goal, so the feature can't hide behind ⋯ More. Last
+// week's receipt sits above it until it's been seen.
+function homeGoalHTML(g) {
+  const rows = quotaRowsHTML(g);
+  return `<div class="hg-goal" data-gm="goal" data-id="${g.id}" role="button" tabindex="0" aria-label="Edit ${escapeHtml(goalName(g))}">
+      <div class="hg-goal-head"><span aria-hidden="true">${escapeHtml(goalEmoji(g))}</span><b>${escapeHtml(goalName(g))}</b>
+        <span class="gl-lv">Level ${g.level}</span></div>
+      ${rows || '<div class="gl-none">No habits yet — tap to add the ones that count toward it.</div>'}
+    </div>`;
+}
+function renderHomeGoals() {
+  const box = $('#homeGoals'); if (!box) return;
+  let note = '';
+  const w = (state.goalWeeks || []).slice(-1)[0];
+  if (w && w.week > (state.goalReceiptSeen || '') && w.goals.some(r => r.result !== 'paused')) {
+    const judged = w.goals.filter(r => r.result !== 'paused'), met = judged.filter(r => r.result === 'met').length;
+    const up = w.goals.filter(r => r.newLevel > r.level).map(r => escapeHtml(r.name));
+    note = `<div class="gl-note"><button class="gl-note-main" data-gm="receipt">
+        <span aria-hidden="true">🧾</span><span><b>Last week: ${met} of ${judged.length} goal${judged.length === 1 ? '' : 's'} completed</b>
+        <small>${up.length ? `${up.join(', ')} levelled up · ` : ''}See the receipt ›</small></span></button>
+      <button class="gl-note-x" data-gm="receiptSeen" aria-label="Dismiss">✕</button></div>`;
+  }
+  const m = currentMode(), hidden = modeHiddenCount(m);
+  const goals = goalList(), shown = goals.filter(g => !goalHiddenNow(g)), paused = goals.filter(goalHiddenNow);
+  const modeLine = paused.length || hidden
+    ? `<div class="gl-paused">${escapeHtml(m.emoji)} ${escapeHtml(m.name)}${hidden ? ` hides ${hidden} habit${hidden === 1 ? '' : 's'}` : ''}${paused.length
+        ? ` · paused: ${paused.map(g => `<button data-gm="goal" data-id="${g.id}">${escapeHtml(goalEmoji(g))} ${escapeHtml(goalName(g))}</button>`).join('')}` : ''}</div>`
+    : '';
+  box.innerHTML = `${note}<div class="hg-card">
+      <div class="hg-head">
+        <button class="hg-title" data-gm="toGoals"><span class="hg-kicker">Goals ›</span><small>This week · ${goalWeekRange(wcWeekStart(todayStr()))}</small></button>
+        <button class="mode-btn hg-mode" data-gm="modes" aria-label="Mode: ${escapeHtml(m.name)} — change"><span aria-hidden="true">${escapeHtml(m.emoji)}</span><span class="mb-name">${escapeHtml(m.name)}</span><span class="mb-go" aria-hidden="true">▾</span></button>
+      </div>
+      ${shown.map(homeGoalHTML).join('')}
+      ${modeLine}
+      ${goals.length ? '' : `<div class="gl-empty">No goals yet. A goal is an area you want to keep alive — Cello, French, Fitness — made of habits you already have, each with a weekly quota.</div>
+        <button class="sch-wide go" data-gm="newGoal">＋ New goal</button>`}
+    </div>`;
+}
+
+/* ---- the sheet: choosing a mode, editing one, editing a goal, a receipt ---- */
+let gmSheet = null;       // null, or { view: 'modes' | 'mode' | 'goal' | 'receipt', id, adding, week }
+let gmDirty = false;      // something behind the sheet changed: repaint everything on close
+let gmInputSave = null;
+function openGm(view, id) { gmSheet = { view, id: id || null }; renderGmSheet(); }
+function flushGmInput() { if (gmInputSave) { clearTimeout(gmInputSave); gmInputSave = null; save(); } }
+function closeGm() {
+  flushGmInput();
+  gmSheet = null; renderGmSheet();
+  if (gmDirty) { gmDirty = false; fullRender(); } else { renderGoals(); renderHomeGoals(); }
+}
+function gmHead(title, back, right) {
+  return `<div class="sch-sh-head">${back ? `<button class="sch-sh-x" data-gm="${back}" aria-label="Back">‹</button>` : '<button class="sch-sh-x" data-gm="close" aria-label="Close">✕</button>'}
+    <div class="sch-sh-title">${title}</div>${right || '<button class="sch-add" data-gm="close">Done</button>'}</div>`;
+}
+function modeListHTML() {
+  const cur = currentMode();
+  const rows = modeList().map(m => {
+    const g = (m.hideGoals || []).length, n = modeHiddenCount(m);
+    const what = [g ? `${g} goal${g === 1 ? '' : 's'}` : '', n ? `${n} habit${n === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+    return `<div class="gm-li${m.id === cur.id ? ' on' : ''}">
+        <button class="gm-li-main" data-gm="useMode" data-id="${m.id}" role="radio" aria-checked="${m.id === cur.id}">
+          <span class="gm-e" aria-hidden="true">${escapeHtml(m.emoji)}</span>
+          <span class="gm-li-t"><b>${escapeHtml(m.name)}</b><small>${what ? `Hides ${what}` : 'Shows everything'}</small></span>
+          <span class="gm-radio" aria-hidden="true"></span></button>
+        <button class="gm-li-edit" data-gm="editMode" data-id="${m.id}" aria-label="Edit ${escapeHtml(m.name)}">✎</button>
+      </div>`;
+  }).join('');
+  return gmHead('Mode') + `<div role="radiogroup" aria-label="Mode">${rows}</div>
+    <button class="sch-wide go" data-gm="newMode">＋ New mode</button>
+    <p class="sch-note">A mode is what's realistically possible right now. It only hides goals and habits — nothing is deleted, switching back brings it all back, and a week is never held against a goal for what its mode hid. Nothing switches it but you.</p>`;
+}
+function modeEditHTML(m) {
+  const goals = goalList(), hg = new Set(m.hideGoals || []), hh = new Set(m.hideHabits || []);
+  const sw = (on, attrs, label) => `<button class="stk-sw${on ? ' on' : ''}" ${attrs} role="switch" aria-checked="${on}" aria-label="${label}"></button>`;
+  const goalRows = goals.map(g => `<div class="gm-tg"><span class="gm-e" aria-hidden="true">${escapeHtml(goalEmoji(g))}</span>
+      <span class="gm-tg-t"><b>${escapeHtml(goalName(g))}</b><small>${hg.has(g.id) ? 'Hidden — its habits too' : 'Shown'}</small></span>
+      ${sw(!hg.has(g.id), `data-gm="modeGoal" data-id="${g.id}"`, `Show ${escapeHtml(goalName(g))} in ${escapeHtml(m.name)}`)}</div>`).join('');
+  const habitRows = state.habits.filter(h => !h.archived).map(h => {
+    const g = goalOfHabit(h.id), byGoal = !!g && hg.has(g.id);
+    return `<div class="gm-tg${byGoal ? ' dim' : ''}"><span class="gm-e" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <span class="gm-tg-t"><b>${escapeHtml(h.name)}</b><small>${byGoal ? `Hidden with ${escapeHtml(goalName(g))}` : hh.has(h.id) ? 'Hidden' : 'Shown'}</small></span>
+      ${byGoal ? '' : sw(!hh.has(h.id), `data-gm="modeHabit" data-id="${h.id}"`, `Show ${escapeHtml(h.name)} in ${escapeHtml(m.name)}`)}</div>`;
+  }).join('');
+  return gmHead(m.id === currentMode().id ? 'Edit mode · on now' : 'Edit mode', 'toModes')
+    + `<div class="gm-namerow"><input class="gm-emoji" data-gm-in="modeEmoji" value="${escapeHtml(m.emoji)}" maxlength="8" autocomplete="off" aria-label="Mode emoji">
+        <input class="stk-ed-in" data-gm-in="modeName" value="${escapeHtml(m.name)}" placeholder="Name it — e.g. Exam week" maxlength="40" autocomplete="off" enterkeyhint="done" aria-label="Mode name"></div>
+      ${goals.length ? `<div class="stk-ed-h">Goals in this mode</div>${goalRows}` : ''}
+      <div class="stk-ed-h">Habits in this mode</div>${habitRows || '<div class="sch-empty">No habits yet.</div>'}
+      ${m.id === 'normal' ? '' : '<button class="sch-wide danger" data-gm="delMode">Delete mode</button>'}
+      <p class="sch-note">A hidden habit is off for the day, exactly like a weekday it doesn't run: it leaves your lists, stacks and reminders, and missing it never breaks a streak.</p>`;
+}
+function quotaEditHTML(g, q, h) {
+  const now = quotaAt(q, g.level, h), cap = quotaCap(q, h), top = habitTierCount(h), runs = quotaCap({ cap: 7 }, h);
+  const lv = habitLevels(h), next = quotaUp(now, q.order, cap, top);
+  const step = (f, v, ok, label) => `<button data-gm="q" data-hid="${h.id}" data-f="${f}" data-v="${v}" ${ok ? '' : 'disabled'} aria-label="${label}">${v > (f === 'tier' ? now.tier : f === 'cap' ? cap : now.freq) ? '+' : '−'}</button>`;
+  const tiers = lv ? lv.map((l, i) => `<span class="gm-tier${i + 1 >= now.tier ? ' in' : ''}">T${i + 1}${l.minutes ? ` · ${fmtMins(l.minutes)}` : ''}</span>`).join('')
+    : '<span class="gm-tier in">One tier — add tiers to the habit to scale by tier</span>';
+  return `<div class="gm-q">
+      <div class="gm-q-head"><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span><b>${escapeHtml(h.name)}</b>
+        <button class="stk-ed-btn x" data-gm="removeHabit" data-hid="${h.id}" aria-label="Take ${escapeHtml(h.name)} out of this goal">✕</button></div>
+      <div class="gm-tiers">${tiers}</div>
+      <div class="gm-row"><span class="gm-lbl">This week</span>
+        <span class="gm-stepper">${step('freq', now.freq - 1, now.freq > 1, 'One day fewer')}<b>${now.freq}×</b>${step('freq', now.freq + 1, now.freq < runs, 'One day more')}</span>
+        <span class="gm-at">at</span>
+        <span class="gm-stepper">${step('tier', now.tier - 1, now.tier > 1, 'Easier tier')}<b>Tier ${now.tier}+</b>${step('tier', now.tier + 1, now.tier < top, 'Harder tier')}</span></div>
+      <div class="gm-row"><span class="gm-lbl">Gets harder by</span>
+        <span class="gm-seg"><button data-gm="q" data-hid="${h.id}" data-f="order" data-v="freq" class="${q.order === 'freq' ? 'on' : ''}" aria-pressed="${q.order === 'freq'}">Frequency first</button><button data-gm="q" data-hid="${h.id}" data-f="order" data-v="tier" class="${q.order === 'tier' ? 'on' : ''}" aria-pressed="${q.order === 'tier'}">Tier first</button></span></div>
+      <div class="gm-row"><span class="gm-lbl">Frequency cap</span>
+        <span class="gm-stepper">${step('cap', cap - 1, cap > now.freq, 'Lower the cap')}<b>${cap}×</b>${step('cap', cap + 1, cap < runs, 'Raise the cap')}</span>
+        <span class="gm-at">a week${runs < 7 ? ` · runs ${runs} days` : ''}</span></div>
+      <div class="gm-next">${next === now ? 'At both caps — this quota stops climbing.' : `Next level: ${next.freq}× at Tier ${next.tier}+`}</div>
+    </div>`;
+}
+function goalEditHTML(g) {
+  const max = goalMaxLevel(g), qs = goalQuotas(g);
+  const pool = state.habits.filter(h => !h.archived && !goalOfHabit(h.id));
+  const sel = (key, opts, v) => `<select class="gm-sel" data-gm-sel="${key}">${opts.map(o => `<option value="${o}"${o === v ? ' selected' : ''}>${o}</option>`).join('')}</select>`;
+  const adding = gmSheet.adding ? `<div class="gm-add">${pool.map(h => `<button class="stk-pick" data-gm="addHabit" data-hid="${h.id}">
+        <span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span><span class="stk-ed-name"><b>${escapeHtml(h.name)}</b></span>
+        <span class="stk-plus" aria-hidden="true">＋</span></button>`).join('') || '<div class="sch-empty">Every habit is already in a goal.</div>'}
+      <p class="sch-note">A habit counts toward one goal, so habits already in another goal aren't listed.</p></div>` : '';
+  return gmHead('Edit goal')
+    + `<div class="gm-namerow"><input class="gm-emoji" data-gm-in="goalEmoji" value="${escapeHtml(g.emoji || '')}" placeholder="🏁" maxlength="8" autocomplete="off" aria-label="Goal emoji">
+        <input class="stk-ed-in" data-gm-in="goalName" value="${escapeHtml(g.name || '')}" placeholder="Name it — e.g. French" maxlength="40" autocomplete="off" enterkeyhint="done" aria-label="Goal name"></div>
+      <div class="gm-level"><span><b>Level ${g.level}</b><small>${max > g.level ? `Can climb to Level ${max} before every quota is at its caps` : qs.length ? 'Top level — every quota is at its caps' : 'Add a habit to give it a quota'}</small></span>
+        <span class="gm-stepper"><button data-gm="level" data-v="${g.level - 1}" ${g.level > 1 ? '' : 'disabled'} aria-label="Level down">−</button><button data-gm="level" data-v="${g.level + 1}" ${g.level < max ? '' : 'disabled'} aria-label="Level up">+</button></span></div>
+      <div class="gm-rules">Up a level after ${sel('promoteAfter', [2, 3, 4], g.promoteAfter)} met weeks in a row.
+        Down a level after ${sel('demoteAfter', [1, 2], g.demoteAfter)} missed week${g.demoteAfter === 1 ? '' : 's'} in a row.</div>
+      <div class="stk-ed-h">Habits &amp; quotas<small>each one climbs its own way</small></div>
+      ${qs.map(({ q, h }) => quotaEditHTML(g, q, h)).join('') || '<div class="sch-empty">No habits yet.</div>'}
+      <button class="sch-wide go" data-gm="adding" aria-expanded="${!!gmSheet.adding}">${gmSheet.adding ? 'Done adding' : '＋ Add a habit'}</button>
+      ${adding}
+      <button class="sch-wide danger" data-gm="delGoal">Delete goal</button>
+      <p class="sch-note">The goal is met for the week only if every quota is. A completion counts once a day, at the tier asked or higher. A quota the week made impossible — its habit hidden by the mode, or not on enough days — is excused rather than missed.</p>`;
+}
+function renderGmSheet() {
+  const sh = $('#gmSheet'), scrim = $('#gmScrim'); if (!sh || !scrim) return;
+  if (!gmSheet) {
+    sh.classList.remove('show'); scrim.classList.remove('show'); sh.setAttribute('aria-hidden', 'true');
+    sh.dataset.view = ''; return;
+  }
+  // Never repaint under someone typing: it would close the keyboard mid-word.
+  if (document.activeElement && sh.contains(document.activeElement) && document.activeElement.matches('input')) return;
+  const m = gmSheet.view === 'mode' ? modeById(gmSheet.id) : null, g = gmSheet.view === 'goal' ? goalById(gmSheet.id) : null;
+  if ((gmSheet.view === 'mode' && !m) || (gmSheet.view === 'goal' && !g)) { gmSheet = gmSheet.view === 'mode' ? { view: 'modes' } : null; return renderGmSheet(); }
+  const week = gmSheet.view === 'receipt' ? (state.goalWeeks || []).find(w => w.week === gmSheet.week) : null;
+  if (gmSheet.view === 'receipt' && !week) { gmSheet = null; return renderGmSheet(); }
+  const key = gmSheet.view + ':' + (gmSheet.id || gmSheet.week || ''), keep = sh.dataset.view === key ? sh.scrollTop : 0;
+  sh.innerHTML = '<div class="sch-grab"></div>' + (gmSheet.view === 'modes' ? modeListHTML() : m ? modeEditHTML(m) : g ? goalEditHTML(g)
+    : gmHead(`🧾 ${goalWeekRange(week.week)}`) + receiptHTML(week));
+  sh.dataset.view = key;
+  sh.classList.add('show'); scrim.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
+  sh.scrollTop = keep;
+  if (gmSheet.focusName) { delete gmSheet.focusName; const inp = sh.querySelector('.stk-ed-in'); if (inp) inp.focus(); }
+}
+function onGmClick(e) {
+  const b = e.target.closest('[data-gm]'); if (!b) return;
+  blurSheetInput($('#gmSheet'));
+  flushGmInput();
+  const g = gmSheet && gmSheet.view === 'goal' ? goalById(gmSheet.id) : null;
+  const m = gmSheet && gmSheet.view === 'mode' ? modeById(gmSheet.id) : null;
+  switch (b.dataset.gm) {
+    case 'close': SFX.click(); closeGm(); return;
+    case 'modes': gmSheet = { view: 'modes' }; break;
+    case 'toGoals': SFX.click(); switchView('goals'); return;
+    case 'toModes': gmSheet = { view: 'modes' }; break;
+    case 'useMode': {
+      SFX.click();
+      const to = modeById(b.dataset.id);
+      gmSheet = null; renderGmSheet(); gmDirty = false;
+      if (to && setMode(to.id)) toast(`${to.emoji} ${to.name} mode`, 'var(--cyan)');
+      return;
+    }
+    case 'editMode': gmSheet = { view: 'mode', id: b.dataset.id }; break;
+    case 'newMode': {
+      const nm = { id: uid(), name: '', emoji: '🧭', hideGoals: [], hideHabits: [] };
+      state.modes = modeList().concat(nm); save();
+      gmSheet = { view: 'mode', id: nm.id, focusName: true };
+      break;
+    }
+    case 'modeGoal': case 'modeHabit': {
+      if (!m) return;
+      const list = b.dataset.gm === 'modeGoal' ? 'hideGoals' : 'hideHabits';
+      const set = new Set(m[list] || []);
+      if (set.has(b.dataset.id)) set.delete(b.dataset.id); else set.add(b.dataset.id);
+      m[list] = [...set];
+      if (m.id === currentMode().id) gmDirty = true;
+      save(); break;
+    }
+    case 'delMode': {
+      if (!m || m.id === 'normal') return;
+      const snap = undoSnapshot();
+      state.modes = modeList().filter(x => x.id !== m.id);
+      if (state.activeMode === m.id) { state.activeMode = 'normal'; noteModeDay(); gmDirty = true; }
+      save(); gmSheet = { view: 'modes' };
+      offerUndo(snap, `🗑 ${m.name || 'Mode'}`);
+      break;
+    }
+    case 'goal': goalsWeekBack = 0; gmSheet = { view: 'goal', id: b.dataset.id }; break;
+    case 'newGoal': { const ng = newGoal(); gmSheet = { view: 'goal', id: ng.id, focusName: true, adding: true }; break; }
+    case 'level': if (!g || !setGoalLevel(g, parseInt(b.dataset.v, 10))) return; gmDirty = true; break;
+    case 'q': {
+      if (!g) return;
+      const v = b.dataset.f === 'order' ? b.dataset.v : parseInt(b.dataset.v, 10);
+      if (!editQuota(g, b.dataset.hid, b.dataset.f, v)) return;
+      gmDirty = true; break;
+    }
+    case 'adding': if (!g) return; gmSheet.adding = !gmSheet.adding; break;
+    case 'addHabit': if (!addGoalHabit(g, b.dataset.hid)) return; gmDirty = true; break;
+    case 'removeHabit': {
+      if (!g) return;
+      const snap = undoSnapshot(), h = state.habits.find(x => x.id === b.dataset.hid);
+      g.quotas = g.quotas.filter(q => q.hid !== b.dataset.hid);
+      save(); gmDirty = true;
+      offerUndo(snap, `${h ? h.name : 'Habit'} out of ${goalName(g)}`);
+      break;
+    }
+    case 'delGoal': {
+      if (!g) return;
+      const snap = undoSnapshot();
+      state.goals = goalList().filter(x => x.id !== g.id);
+      modeList().forEach(x => { x.hideGoals = (x.hideGoals || []).filter(id => id !== g.id); });
+      save(); gmSheet = null; gmDirty = true;
+      offerUndo(snap, `🗑 ${goalName(g)}`);
+      SFX.click(); closeGm(); return;
+    }
+    case 'receipt': {
+      const w = (state.goalWeeks || []).slice(-1)[0]; if (!w) return;
+      state.goalReceiptSeen = w.week; save();
+      gmSheet = { view: 'receipt', week: w.week }; renderHomeGoals();
+      break;
+    }
+    case 'receiptSeen': {
+      const w = (state.goalWeeks || []).slice(-1)[0]; if (!w) return;
+      state.goalReceiptSeen = w.week; save(); SFX.click(); renderHomeGoals(); return;
+    }
+    case 'weekBack': goalsWeekBack++; SFX.click(); renderGoals(); return;
+    case 'weekFwd': goalsWeekBack = Math.max(0, goalsWeekBack - 1); SFX.click(); renderGoals(); return;
+    default: return;
+  }
+  SFX.click(); renderGmSheet();
+  if (gmDirty && gmSheet && gmSheet.view !== 'mode') { renderGoals(); renderHomeGoals(); }
+}
+['#gmSheet', '#goalsMount', '#homeGoals'].forEach(sel => $(sel).addEventListener('click', onGmClick));
+$('#modeSwitch').addEventListener('click', () => { SFX.click(); openGm('modes'); });
+['#goalsMount', '#homeGoals'].forEach(sel => $(sel).addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.gl-card[data-gm], .hg-goal[data-gm]')) { e.preventDefault(); e.target.click(); }
+}));
+$('#gmSheet').addEventListener('input', e => {
+  const k = e.target.dataset.gmIn; if (!k || !gmSheet) return;
+  const obj = k.startsWith('goal') ? goalById(gmSheet.id) : modeById(gmSheet.id); if (!obj) return;
+  const v = e.target.value;
+  if (k === 'goalName' || k === 'modeName') obj.name = v.slice(0, 40); else obj.emoji = v.trim().slice(0, 8);
+  gmDirty = true;
+  clearTimeout(gmInputSave); gmInputSave = setTimeout(() => { gmInputSave = null; save(); }, 500);
 });
-// Two-finger pinch, mirroring the Schedule tab's gesture. One finger still scrolls.
-let homePinch = null;
-$('#homeNow').addEventListener('touchstart', e => {
-  if (e.touches.length !== 2 || !e.target.closest('.sched-grid')) return;
-  homePinch = { distance: touchDistance(e.touches[0], e.touches[1]) };
-}, { passive: true });
-$('#homeNow').addEventListener('touchmove', e => {
-  if (!homePinch || e.touches.length !== 2) return;
-  e.preventDefault();
-  const distance = touchDistance(e.touches[0], e.touches[1]);
-  const ratio = distance / Math.max(1, homePinch.distance);
-  if (ratio > 1.12 || ratio < 0.89) { homeZoomBy(ratio > 1 ? 1 : -1); homePinch.distance = distance; }
-}, { passive: false });
-$('#homeNow').addEventListener('touchend', e => { if (e.touches.length < 2) homePinch = null; }, { passive: true });
-$('#homeNow').addEventListener('touchcancel', () => { homePinch = null; }, { passive: true });
+$('#gmSheet').addEventListener('change', e => {
+  const k = e.target.dataset.gmSel, g = gmSheet && goalById(gmSheet.id); if (!k || !g) return;
+  g[k] = parseInt(e.target.value, 10) || g[k];
+  save(); gmDirty = true; renderGmSheet();
+});
+$('#gmSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.gmIn) e.target.blur(); });
+// Leaving a name or emoji field is when the rest of the sheet catches up with it.
+$('#gmSheet').addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.gmIn) setTimeout(renderGmSheet, 0); });
+$('#gmScrim').addEventListener('click', () => { SFX.click(); closeGm(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) closeGm(); });
 
 // The Habit Pass "clear all dailies" goal, once a day. This used to be the all-done token
 // bonus; the payout, the consecutive-day streak and the 7-day jackpot are all gone, but the
@@ -12783,7 +13651,7 @@ window.HCNative.onLiveCommands = cmds => {
   try { localStorage.setItem(LIVE_APPLIED_KEY, JSON.stringify([...seen].slice(-100))); } catch (e) {}
   HCBridge.send({ op: 'liveAck', ids });
   if (changed) {
-    renderHabits(); renderOneoffs(); renderPrizes(); renderHomeNow(); renderBlockSchedule();
+    renderHabits(); renderOneoffs(); renderPrizes(); renderBlockSchedule();
     lastLivePush = ''; syncLive();
   }
 };
@@ -15227,6 +16095,24 @@ function appContext() {
     if (plannedDays.length) L.push(`  - Planned ahead: ${plannedDays.slice(0, 10).map(d => `${d}${(state.dayPlans[d].context ? ` [${state.dayPlans[d].context}]` : ' [unclassified]')}`).join(', ')}`);
   }
 
+  // --- Goals & Modes: the user's own system. The coach reads it and never edits it. ---
+  const goalsCtx = goalList(), modeCtx = currentMode();
+  if (goalsCtx.length || modeCtx.id !== 'normal') {
+    L.push('', `GOALS & QUOTAS (Mode → Goal → weekly habit quota; run by the user by hand). Mode now: ${modeCtx.name}${modeHiddenCount(modeCtx) ? ` (hides ${modeHiddenCount(modeCtx)} habits)` : ''}.`);
+    goalsCtx.forEach(g => {
+      const qs = goalQuotas(g).map(({ q, h }) => { const n = quotaNow(g, q, h); return `${h.name} ${n.done}/${n.freq} days at Tier ${n.tier}+ (${q.order === 'tier' ? 'tier' : 'frequency'} first, cap ${quotaCap(q, h)}×)`; }).join('; ');
+      const past = (state.goalWeeks || []).slice(-6).map(w => { const r = w.goals.find(x => x.id === g.id); return r ? `${r.result === 'met' ? '✓' : r.result === 'missed' ? '✗' : '–'}${(w.modes || []).filter(id => id !== 'normal').length ? `[${w.modes.filter(id => id !== 'normal').map(id => (modeById(id) || {}).name || id).join('/')}]` : ''}` : ''; }).filter(Boolean).join(' ');
+      L.push(`  - "${goalName(g)}" Level ${g.level}${goalHiddenNow(g) ? ' [hidden in this mode]' : ''}: ${qs || 'no habits yet'}${past ? ` · last weeks, oldest first: ${past}` : ''}`);
+    });
+  }
+  const swapsCtx = (state.stackSwaps || []).filter(w => w.removed && w.added && w.at > Date.now() - 30 * 86400000);
+  if (swapsCtx.length) {
+    const nameOf = id => (state.habits.find(h => h.id === id) || {}).name || 'a deleted habit';
+    const outs = {}; swapsCtx.forEach(w => { outs[w.removed] = (outs[w.removed] || 0) + 1; });
+    const top = Object.entries(outs).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id, n]) => `${nameOf(id)} ×${n}`).join(', ');
+    L.push('', `STACK SWAPS (last 30 days, ${swapsCtx.length}): most often swapped out — ${top}. Latest: ${swapsCtx.slice(-3).map(w => `${nameOf(w.added)} in for ${nameOf(w.removed)}`).join('; ')}.`);
+  }
+
   // --- One-off quests ---
   L.push('OPEN QUESTS:');
   if (!state.oneoffs.length) L.push('  (none)');
@@ -15394,6 +16280,10 @@ The app models the user's DAY, not just isolated habits: it finds past days that
 - IF THE MODEL IS ABSENT, SAY NOTHING ABOUT IT. A save with too little history produces none of those sections. Don't speculate about the user's rhythm from the habit list alone.
 - WHERE TODAY STANDS is measured at the CURRENT HOUR against the same hour on similar days. Never compare a half-finished day to a finished one, and never call the user "behind" on the strength of a whole-day percentage at 9am.
 - ONE SMALL CHANGE AT A TIME. If you suggest an adjustment, make it the smallest one that the data actually points at, and say what you'd expect to see change and by when. Don't stack three suggestions.
+
+GOALS, MODES & STACKS
+- GOALS & QUOTAS and STACK SWAPS below are the user's own system, run by hand: they pick the mode, put habits in goals, set every quota and how it scales, and levels move only by the fixed weekly rules. Watch it and say what you see — a quota that keeps missing, a goal that falls apart in Busy Week, a habit that keeps getting swapped out — but never propose a change to a goal, quota, mode, stack or level. There is no proposal type for them ("goalDef" is the Habit Pass, a different thing).
+- A missed quota is not a debt. Say "1 completion left this week", never "you owe a session".
 
 OUTPUT FORMAT
 Respond with ONE JSON object, no markdown fences:
@@ -16100,6 +16990,13 @@ function renderTodayContext() {
   el.innerHTML = ctx
     ? `<span class="ctx-badge">🧭 ${escapeHtml(ctx)} day</span>`
     : (dayPlan(todayStr()) ? `<span class="ctx-badge">📅 planned day · streak-safe</span>` : '');
+  // The Mode button: what's possible right now.
+  const mb = $('#modeSwitch');
+  if (mb) {
+    const m = currentMode();
+    mb.innerHTML = `<span aria-hidden="true">${escapeHtml(m.emoji)}</span><span class="mb-name">${escapeHtml(m.name)}</span><span class="mb-go" aria-hidden="true">▾</span>`;
+    mb.setAttribute('aria-label', `Mode: ${m.name} — change`);
+  }
   // The Focus button: what today is about, one tap from changing it.
   const sw = $('#loadoutSwitch');
   if (sw) {
@@ -16965,7 +17862,7 @@ function finishGapCheckin(answer, wasTyped) {
   gapPending = null; checkinKind = 'reflect';
   save();
   $('#checkinOverlay').classList.remove('show');
-  renderBlockSchedule(); renderHomeNow();
+  renderBlockSchedule();
 }
 
 // Browser TTS — free, best-effort; silently does nothing if unsupported.
@@ -17331,8 +18228,9 @@ function switchView(name) {
   $('#moreTab').classList.toggle('active', moreViews().includes(name));
   $$('#moreSheet .more-row').forEach(r => r.classList.toggle('active', r.dataset.view === name));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
-  if (name === 'home') { homeSchedResetScroll(); renderHome(); }   // arriving re-centres on now
+  if (name === 'home') renderHome();
   if (name === 'habits') renderHabits();
+  if (name === 'goals') renderGoals();
   if (name === 'tasks') renderTasks();
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
   if (name === 'chat') renderChat();
@@ -20271,6 +21169,7 @@ $('#recoverOverlay').addEventListener('click', e => {
 function fullRender() {
   document.body.classList.toggle('reduced', state.settings.reducedMotion);
   displayTokens = state.tokens;
+  goalsTick();      // stamp today's Mode and judge any week that has closed, before anything reads them
   renderTopbar();
   renderNav();      // the bar is markup-free — this is what puts tabs on screen at all
   renderHabits();
@@ -20283,6 +21182,7 @@ function fullRender() {
   ultraView = -2; renderUltra();
   renderDie($('#die1'), 1); renderDie($('#die2'), 1);
   renderPrizes();
+  renderGoals();
   renderChat();
   renderSettings();
   passEnsureWeek();      // roll the pass week / seed goals if needed
@@ -20378,6 +21278,8 @@ setInterval(() => {
   if (runAutoLoad()) { save(); if (!editorIsOpen()) fullRender(); }
   renderTopbar();
   renderHappyBanners();
+  // A week can close with the app open: judge it, and put the receipt on Home.
+  if (goalsTick()) { renderHomeGoals(); if (!gmSheet) renderGoals(); }
   if ($('#view-habits').classList.contains('active') && editingHabitId === null) renderHabits(); // ×N tags come/go
   // Home is the most time-sensitive view in the app: the NOW dot creeps along its block,
   // the block itself hands over to the next one, and Due Now's one-hour window moves.
