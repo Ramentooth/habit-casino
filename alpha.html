@@ -3224,6 +3224,7 @@
        Last in the sheet so nothing in the greyscale pass above can outrank it. */
     #homeStack:empty { display: none; }
     .plan-cta #loadoutSwitch.focus-btn { flex: 1 1 0; }
+    .plan-cta.no-focus .stack-btn { flex: 1 1 100%; justify-content: center; }
     .stack-btn {
       flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 52px; padding: 0 15px;
       border-radius: 14px; cursor: pointer; font: inherit; font-weight: 700; font-size: 15px; color: var(--ink);
@@ -3890,6 +3891,13 @@
       </div>
 
       <div class="panel set-section">
+        <div class="section-title t2">🎯 Focus</div>
+        <div class="subtle">Focuses rank your habits for the day — Focus pays ×1.5, Maintain ×1.25 — and Auto Focus can switch them by weekday. Off, every habit is on one plain list at its plain reward. Your Focuses are kept exactly as they are for whenever you switch them back on.</div>
+        <div class="row between" style="margin-top:10px"><span>Use Focuses</span><label class="toggle"><input type="checkbox" id="focusOn"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="hint" id="focusOnState"></div>
+      </div>
+
+      <div class="panel set-section">
         <div class="section-title t1">🎯 One-Off Quests</div>
         <div class="subtle">Quests live on the 📋 Tasks tab — add them with the quick-add bar and tap one to edit it. Set how many tokens each difficulty tier pays here.</div>
         <div id="tierRewards">
@@ -4317,6 +4325,9 @@ function defaultState() {
                card10: { rare: 60, epic: 30, legendary: 10 } },
     },
     settings: { sound: true, reducedMotion: false, cloudCompress: false, schedDensity: 'detailed',
+                // Settings → 🎯 Focus. Off runs the app as "No focus" (see currentLoadout);
+                // every Focus, its Maintain list, its days and its tier memory are kept.
+                focusOn: true,
                 // Analytics → Weekly Comparison: how many COMPLETED weeks feed the
                 // weekday averages and the typical range. One of the WC_RANGES widths.
                 weekCmpWeeks: 12,
@@ -4965,6 +4976,8 @@ function normalizeHabit(h) {
 // The payout multipliers, by group. Change them here.
 function focusMultipliers() { return { focus: 1.5, maintain: 1.25, other: 1 }; }
 function isNoFocus(name) { return !name || name === 'Default'; }
+// Settings → 🎯 Focus. Off, the whole app runs as "No focus" — see currentLoadout().
+function focusFeatureOn() { return !(state.settings && state.settings.focusOn === false); }
 function focusActive() { return !isNoFocus(currentLoadout()); }
 // The name a Focus is shown under: its renamed name if it has one.
 function focusLabel(name) {
@@ -6026,6 +6039,10 @@ function ensureContext(name) {
 function dayPlan(dateStr) { return (state.dayPlans || {})[dateStr] || null; }
 function todayContext() { const p = dayPlan(todayStr()); return p ? p.context : null; }
 function currentLoadout() {
+  // Focus switched off in Settings: everything reads "No focus" — plain rewards, one list,
+  // No focus's tier memory. activeLoadout is left alone, so switching it back on returns
+  // to the Focus you were on.
+  if (!focusFeatureOn()) return 'Default';
   const list = Array.isArray(state.loadouts) && state.loadouts.length ? state.loadouts : ['Default'];
   return list.includes(state.activeLoadout) ? state.activeLoadout : list[0];
 }
@@ -6248,13 +6265,13 @@ function focusRoleRowsHTML(h) {
 
 function habitEditHeadHTML(h, lvls) {
   const role = habitRole(h);
-  const where = `${h.section === 'extra' ? '✨ Extra' : '🗓️ Daily'} · ${focusActive()
-    ? `${FOCUS_ROLE_WORD[role]} in ${focusLabel(currentLoadout())}` : habitLoadoutLabel(h)}`;
+  const where = `${h.section === 'extra' ? '✨ Extra' : '🗓️ Daily'}${!focusFeatureOn() ? '' : ` · ${focusActive()
+    ? `${FOCUS_ROLE_WORD[role]} in ${focusLabel(currentLoadout())}` : habitLoadoutLabel(h)}`}`;
   const menu = !editMoreOpen ? '' : `
         <div class="tt-menu" role="menu">
           <button data-act="editSec" data-sec="repeats">↻ Repeats<small>${h.repeatable ? `up to ${h.cap}/day` : 'off'}</small></button>
           <button data-act="editSec" data-sec="why">💭 Why it matters</button>
-          <button data-act="editSec" data-sec="where">🎯 Section &amp; focus</button>
+          <button data-act="editSec" data-sec="where">${focusFeatureOn() ? '🎯 Section &amp; focus' : '🗓️ Section'}</button>
           <button data-act="addTier">🎚 Difficulty tiers<small>${lvls ? lvls.length : 'none'}</small></button>
           <button data-act="copyHabit">⧉ Copy from another habit</button>
           <hr>
@@ -6270,14 +6287,14 @@ function habitEditHeadHTML(h, lvls) {
         <button class="tt-icon" data-act="editMore" aria-label="More" aria-expanded="${editMoreOpen}">⋯</button>
         ${menu}
       </div>
-      ${ttTray('where', 'Section & focus', 'Daily habits are your everyday rotation; Extra ones are optional bonuses that never break a streak. In each Focus a habit is Focus, Maintain or Other: it stays on the board either way — the group sets its place and what it pays.', `
+      ${ttTray('where', focusFeatureOn() ? 'Section & focus' : 'Section', 'Daily habits are your everyday rotation; Extra ones are optional bonuses that never break a streak.' + (focusFeatureOn() ? ' In each Focus a habit is Focus, Maintain or Other: it stays on the board either way — the group sets its place and what it pays.' : ''), `
         <div class="tt-tray-row">
           <select class="sect-in" data-f="section" title="Section">
             <option value="daily" ${h.section !== 'extra' ? 'selected' : ''}>🗓️ Daily</option>
             <option value="extra" ${h.section === 'extra' ? 'selected' : ''}>✨ Extra</option>
           </select>
         </div>
-        ${focusRoleRowsHTML(h)}`)}
+        ${focusFeatureOn() ? focusRoleRowsHTML(h) : ''}`)}
       ${ttTray('repeats', 'Repeats', 'A repeatable habit can be completed more than once a day and pays out every time, up to the cap. Its subtasks start fresh for each round.', `
         <div class="tt-tray-row">
           <label class="pill rep-toggle"><input type="checkbox" data-f="repeatable" ${h.repeatable ? 'checked' : ''}> ↻ repeatable</label>
@@ -13450,11 +13467,27 @@ function activateLoadout(name) {
   applyLoadoutStock();       // arriving on a stocked loadout stocks it for today
   return changed;
 }
+/* Settings → 🎯 Focus, on or off. Off is "No focus" everywhere without touching a single
+   Focus: the groups, Maintain lists, Auto Focus days and stock all wait, and switching
+   back on picks up where they were — or where Auto Focus says today belongs.
+   The one thing that would visibly jump is tiers, which each Focus remembers on its own,
+   so each habit is kept on the tier it's on now, whichever way the switch goes. */
+function setFocusFeature(on) {
+  if (focusFeatureOn() === on) return;
+  const keep = state.habits.map(h => [h, habitLevels(h) ? curLevelIndex(h) : -1]);
+  state.settings.focusOn = on;
+  if (on) runAutoLoad();
+  keep.forEach(([h, i]) => { if (i >= 0 && i !== curLevelIndex(h)) setHabitTier(h, i); });
+  reconcileLoadoutStock();   // a Focus's unclaimed bonus goes back on its shelf, or comes back
+  applyLoadoutStock();
+  logEvent('focus_feature_toggled', { on });
+  SFX.click(); save(); fullRender();
+}
 /* Returns true when it moved the stamp, i.e. when there is something worth saving.
    Deliberately does NOT save() itself: at boot this runs before the unreadable-save
    warning, where a write would land on top of whatever is still down there. */
 function runAutoLoad() {
-  if (!state.autoLoad) return false;
+  if (!state.autoLoad || !focusFeatureOn()) return false;   // Focus off: nothing to switch to
   const today = todayStr();
   if (state.autoLoadStamp === today) return false;
   const name = loadoutForDay(new Date().getDay());
@@ -14434,6 +14467,14 @@ $('#statsBody').addEventListener('click', e => {
 /* =================================================================
    SETTINGS VIEW
    ================================================================= */
+function renderFocusSetting() {
+  const box = $('#focusOn'), note = $('#focusOnState'); if (!box || !note) return;
+  const on = focusFeatureOn(), n = (state.loadouts || []).filter(k => !isNoFocus(k)).length;
+  box.checked = on;
+  note.textContent = on
+    ? `On — today: ${focusLabel(currentLoadout())}${state.autoLoad ? ' · Auto Focus on' : ''}.`
+    : `Off — the app runs as “No focus”.${n ? ` Your ${n} Focus${n === 1 ? ' is' : 'es are'} saved as ${n === 1 ? 'it is' : 'they are'}.` : ''}`;
+}
 function renderPassSettings() {
   const p = state.pass;
   $('#passEnabled').checked   = p.enabled !== false;
@@ -14530,6 +14571,7 @@ function renderSettings() {
   renderScreenTime();
   renderCategories();
   renderPassSettings();
+  renderFocusSetting();
   renderGameConfigs();
   $('#soundToggle').checked = state.settings.sound;
   $('#motionToggle').checked = state.settings.reducedMotion;
@@ -16061,6 +16103,9 @@ function renderTodayContext() {
   // The Focus button: what today is about, one tap from changing it.
   const sw = $('#loadoutSwitch');
   if (sw) {
+    // Focus switched off in Settings: no button, and Stacks gets the row to itself.
+    sw.style.display = focusFeatureOn() ? '' : 'none';
+    sw.parentElement.classList.toggle('no-focus', !focusFeatureOn());
     const on = focusActive();
     sw.classList.toggle('none', !on);
     sw.innerHTML = `<span class="fb-icon" aria-hidden="true">🎯</span>
@@ -17314,6 +17359,7 @@ $('#wildGrid').addEventListener('click', e => { const b = e.target.closest('[dat
 
 // Habit Pass settings (bound once — elements persist)
 $('#passEnabled').addEventListener('change', e => { state.pass.enabled = e.target.checked; save(); updatePassFab(); });
+$('#focusOn').addEventListener('change', e => setFocusFeature(e.target.checked));
 $('#passWeekly').addEventListener('change', e => { state.pass.weeklyReset = e.target.checked; save(); refreshPassUI(); });
 $('#passSrcDailies').addEventListener('change', e => { state.pass.xpSources.dailies = e.target.checked; save(); });
 $('#passSrcTasks').addEventListener('change', e => { state.pass.xpSources.tasks = e.target.checked; save(); });
@@ -18227,6 +18273,7 @@ let focusDraft = null;      // { key, name, roles: {habitId: role}, days, order,
 // is a ⋯ away. Only 'edit' — from the empty Focus section's "tap to pick them" — goes
 // straight to the active Focus's editor, because that tap is about choosing its habits.
 function openFocusMenu(screen) {
+  if (!focusFeatureOn()) return;            // switched off in Settings
   const cur = currentLoadout();
   if (screen !== 'edit' || isNoFocus(cur)) { focusScreen = 'list'; focusDraft = null; }
   else { focusDraft = focusDraftFor(cur); focusScreen = 'edit'; }
