@@ -3273,13 +3273,16 @@
     .mq-sub { position: relative; max-width: 78%; margin: -4px 0 14px; font-size: 14px; line-height: 1.45; color: #f0d6b8; }
     .mq-cta { position: relative; height: 46px; padding: 0 18px; border-radius: 14px; border: 0; cursor: pointer;
       background: var(--cyan); color: #1a0f02; font: inherit; font-weight: 800; font-size: 15.5px; }
-    .mq-rows { position: relative; display: flex; flex-direction: column; gap: 7px; max-width: 80%; }
-    .mq-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 5px 10px 5px 8px; border-radius: 14px;
+    /* Full width: with ▶ and ✓ on every row, 80% left too little room for a name. */
+    .mq-rows { position: relative; display: flex; flex-direction: column; gap: 7px; }
+    .mq-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 46px; padding: 5px 8px; border-radius: 14px;
       cursor: pointer; text-align: left; font: inherit; color: var(--ink);
       border: 1px solid rgba(255,255,255,.11); background: rgba(10,5,2,.74); }
-    .mq-row:active { transform: scale(.985); }
-    .mq-row.done { cursor: default; border-color: rgba(255,158,44,.28); }
-    .mq-row.done:active { transform: none; }
+    .mq-row.done { border-color: rgba(255,158,44,.28); }
+    .mq-row.live { border-color: rgba(255,158,44,.6); }
+    /* The Habits tab's own ▶ ✓ / ⏸ ↺ ⏹, a size up to suit this card's taller rows. */
+    .mq-row .hrow-check { width: 32px; height: 32px; font-size: 15px; border-radius: 9px; }
+    .mq-row .row-chip { flex: 0 0 auto; font-size: 12.5px; padding: 2px 7px; }
     .mq-e { flex: 0 0 30px; text-align: center; font-size: 21px; line-height: 1; }
     .mq-n { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 7px; overflow: hidden; white-space: nowrap; }
     .mq-n b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 700; }
@@ -3288,7 +3291,6 @@
     .mq-mark { flex: 0 0 auto; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%;
       border: 2px solid rgba(255,255,255,.38); font-size: 14px; font-weight: 900; color: #1a0f02; }
     .mq-mark.on { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 10px rgba(255,158,44,.6); }
-    .mq-mark.plus { border-color: rgba(255,255,255,.55); color: var(--ink); font-size: 19px; font-weight: 400; line-height: 1; }
     /* The count lives inside the bar, big enough to read at arm's length. */
     .mq-bar { position: relative; height: 38px; margin: 14px 22px 2px; border-radius: 999px;
       background: rgba(0,0,0,.62); border: 1px solid rgba(255,255,255,.15); }
@@ -3318,6 +3320,15 @@
     .mq-none { padding: 4px 2px 6px; font-size: 13.5px; line-height: 1.45; color: #d9c2a6; }
     .mq-rule { padding: 2px 0 8px; font-size: 15px; line-height: 1.45; }
     .mq-rule b { color: var(--cyan); }
+    /* The pop-up a tap on a pick opens: substitute it, or open the habit. */
+    .mq-pick-why { margin: 0 2px 14px; font-size: 14.5px; line-height: 1.45; color: var(--ink-dim); }
+    .mq-swap { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; min-height: 52px; margin-bottom: 10px;
+      padding: 10px 14px; border-radius: 14px; border: 0; cursor: pointer; text-align: left; font: inherit; background: var(--cyan); color: #1a0f02; }
+    .mq-swap-t { font-weight: 800; font-size: 16px; }
+    .mq-swap small { font-size: 13px; line-height: 1.35; opacity: .82; }
+    .mq-swap:disabled { cursor: default; opacity: .45; }
+    .mq-swap.ghost { background: rgba(255,255,255,.06); border: 1px solid var(--panel-edge); color: var(--ink); }
+    .mq-swap + .gm-next { margin: -4px 2px 12px; }
     .mq-ctls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .mq-ctl { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
     .mq-ctl small { font-size: 11px; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-dim); }
@@ -5182,6 +5193,7 @@ function remapHabitIds(st, remap) {
     const seen = new Set();
     r[k] = r[k].filter(p => p && typeof p.hid === 'string' && !seen.has(fix(p.hid)) && seen.add(fix(p.hid))).map(p => ({ ...p, hid: fix(p.hid) }));
   }));
+  Object.values(st.metaDays || {}).forEach(r => { if (r && Array.isArray(r.subbed)) r.subbed = [...new Set(r.subbed.map(fix))]; });
   return remap.size;
 }
 
@@ -11948,7 +11960,7 @@ function renderHomeGoals() {
 }
 
 /* ---- the sheet: choosing a mode, editing one, editing a goal, a receipt ---- */
-let gmSheet = null;       // null, or { view: 'modes' | 'mode' | 'goal' | 'receipt' | 'meta', id, adding, week }
+let gmSheet = null;       // null, or { view: 'modes' | 'mode' | 'goal' | 'receipt' | 'meta' | 'metaPick', id, adding, week }
 let gmDirty = false;      // something behind the sheet changed: repaint everything on close
 let gmInputSave = null;
 function openGm(view, id) { gmSheet = { view, id: id || null }; renderGmSheet(); }
@@ -12055,8 +12067,9 @@ function renderGmSheet() {
   if ((gmSheet.view === 'mode' && !m) || (gmSheet.view === 'goal' && !g)) { gmSheet = gmSheet.view === 'mode' ? { view: 'modes' } : null; return renderGmSheet(); }
   const week = gmSheet.view === 'receipt' ? (state.goalWeeks || []).find(w => w.week === gmSheet.week) : null;
   if (gmSheet.view === 'receipt' && !week) { gmSheet = null; return renderGmSheet(); }
+  if (gmSheet.view === 'metaPick' && !metaPickOpen(gmSheet.id)) { gmSheet = null; return renderGmSheet(); }
   const key = gmSheet.view + ':' + (gmSheet.id || gmSheet.week || ''), keep = sh.dataset.view === key ? sh.scrollTop : 0;
-  sh.innerHTML = '<div class="sch-grab"></div>' + (gmSheet.view === 'meta' ? metaSheetHTML() : gmSheet.view === 'modes' ? modeListHTML() : m ? modeEditHTML(m) : g ? goalEditHTML(g)
+  sh.innerHTML = '<div class="sch-grab"></div>' + (gmSheet.view === 'meta' ? metaSheetHTML() : gmSheet.view === 'metaPick' ? metaPickSheetHTML(gmSheet.id) : gmSheet.view === 'modes' ? modeListHTML() : m ? modeEditHTML(m) : g ? goalEditHTML(g)
     : gmHead(`🧾 ${goalWeekRange(week.week)}`) + receiptHTML(week));
   sh.dataset.view = key;
   sh.classList.add('show'); scrim.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
@@ -12076,6 +12089,15 @@ function onGmClick(e) {
     case 'meta': gmSheet = { view: 'meta' }; break;
     case 'metaLevel': if (!setMetaLevel(parseInt(b.dataset.v, 10))) return; metaSync(); gmDirty = true; break;
     case 'metaSet': if (!editMeta(b.dataset.f, parseInt(b.dataset.v, 10))) return; metaSync(); gmDirty = true; break;
+    case 'metaSub': {
+      const snap = undoSnapshot(), out = state.habits.find(x => x.id === b.dataset.hid), inH = metaSubstitute(b.dataset.hid);
+      if (!inH) return;
+      SFX.click(); gmDirty = true; closeGm();
+      toast(`🔁 ${inH.emoji || '⭐'} ${inH.name} in for ${out.name}`, 'var(--cyan)');
+      offerUndo(snap, `🔁 ${out.emoji || '⭐'} ${out.name}`);
+      return;
+    }
+    case 'metaEdit': SFX.click(); gmSheet = null; renderGmSheet(); openEditor('habit', b.dataset.hid); return;
     case 'toModes': gmSheet = { view: 'modes' }; break;
     case 'useMode': {
       SFX.click();
@@ -12185,33 +12207,33 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) c
    attention TODAY, so nobody has to read every quota and build the day by hand:
    "Complete 2 of 3 — Laundry, Vibe coding, French speaking". Any two will do.
 
-   The picks come from fixed rules anyone can follow, never a model:
+   The picks come from one rule anyone can follow, never a model (the user's, 2026-11-08):
      · a candidate is a habit in a goal whose quota still wants something this week,
        that is on today (its weekdays, and not hidden by the Mode) and not done today
-     · each gets a score (metaScore), biggest part first —
-         urgency   completions left ÷ days left to do them in (2 left, 2 days: 1)
-         pace      behind (+) or ahead (−) of an even spread over the week's open days
-         dormancy  days since it was last done at all — a moderate nudge
-         repeat    a push away from yesterday's picks, unless the habit is tight
-     · then they're taken greedily, each further pick from a goal already on the list
-       marked down, so the day spreads across goals unless one is genuinely far behind.
+     · the one with the smallest share of its week done goes first — 1 of 4 (25%), then
+       2 of 6 (33%), then 3 of 6 (50%). Only a tie looks further: more left than days to
+       do them in first, then longest since it was last done, then the goals' own order.
+       metaScore folds those into one number that sorts the same way.
    Every pick keeps the reason it was picked (`why`), for the sheet and the coach.
 
    The list is made once, the first time the day is seen, and then left alone. A pick
    only leaves it for a clear reason — the Mode hid it, it left its goal, its quota
-   stopped asking — and the gap is filled from the same ranking. A pick done today never
-   leaves. Once enough are done the day is met for good, and EXTRA unlocks: optional,
-   counted toward the weekly quotas as usual, never toward today.
+   stopped asking, or the user substituted it because it can't be done today — and the
+   gap is filled from the same ranking. A substituted habit stays off the card until
+   tomorrow (`subbed`). A pick done today never leaves. Once enough are done the day is
+   met for good, and EXTRA unlocks: the rest of the ranking, optional, counted toward the
+   weekly quotas as usual, never toward today.
 
-   The level sets the size. Level L shows L+1 and asks for L (the curve is data, so a
-   later build can change it). It moves by the user's own rules — by default up after 5
+   The level sets the size, and the card shows only what it asks for — Level L shows L
+   and asks for L, so nothing on it is optional and nothing waits behind it but Extra
+   (the curve is data). It moves by the user's own rules — by default up after 5
    good days in any 7, down after 2 missed in any 3 — one level at a time, between the
    user's floor and ceiling, and the count starts fresh after every move. A day with
    nothing to suggest, or one the app never saw, counts neither way.
 
      · state.metaQuota { level, min, max, up: { n, of }, down: { n, of }, since, curve }
      · state.metaDays  { 'YYYY-MM-DD': { level, show, need, picks: [{ hid, tier, why }],
-                                         extras, metAt, result, done, newLevel } }
+                                         extras, subbed, metAt, result, done, newLevel } }
      · state.metaDone  the last day judged
 
    Goal Speedrun is this list as a stack: speedrunStack() makes it on demand and
@@ -12220,8 +12242,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) c
 function defaultMetaQuota() {
   return { level: 2, min: 1, max: 4, up: { n: 5, of: 7 }, down: { n: 2, of: 3 }, since: '', curve: null };
 }
-// Level L → [how many it shows, how many it asks for].
-function metaDefaultCurve() { return [[2, 1], [3, 2], [4, 3], [5, 4], [6, 5]]; }
+// Level L → [how many it shows, how many it asks for]. The same: no spare on the card,
+// so the day never looks bigger than it is (the user's call, 2026-11-08).
+function metaDefaultCurve() { return [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]]; }
 // load()'s pass. Hoisted and self-contained, like the goals' (see the boot dead-zone note).
 function sanitizeMetaQuota(src) {
   const d = defaultMetaQuota(), s = src && typeof src === 'object' && !Array.isArray(src) ? src : {};
@@ -12250,6 +12273,8 @@ function sanitizeMetaDays(src, st) {
     const r = src[d];
     const rec = { level: int(r.level, 1, 1), show: int(r.show, 0, 0), need: int(r.need, 0, 0), picks: list(r.picks), extras: list(r.extras),
                   metAt: Number.isFinite(r.metAt) ? r.metAt : null };
+    const subbed = [...new Set((Array.isArray(r.subbed) ? r.subbed : []).filter(id => typeof id === 'string' && known.has(id)))];
+    if (subbed.length) rec.subbed = subbed;
     if (['met', 'missed', 'rest'].includes(r.result)) rec.result = r.result;
     if (Number.isInteger(r.done)) rec.done = r.done;
     if (Number.isInteger(r.newLevel)) rec.newLevel = r.newLevel;
@@ -12299,48 +12324,27 @@ function metaCandidates(dateStr) {
   }));
   return out;
 }
-// The rules as numbers. `recent` = [yesterday's picks, the day before's], as id sets.
-function metaScore(c, recent) {
-  const urgency = Math.min(1, c.left / Math.max(1, c.ahead));
-  const expected = c.freq * (c.all - c.ahead) / Math.max(1, c.all);
-  const pace = clamp((expected - c.before) / c.freq, -1, 1);
-  const dormancy = clamp((c.gap - 1) / 5, 0, 1);
-  const repeat = urgency >= 0.75 ? 0 : (recent[0].has(c.h.id) ? 1 : 0) + (recent[1].has(c.h.id) ? 0.5 : 0);
-  return { urgency, pace, dormancy, repeat, score: 10 * urgency + 4 * pace + 1.5 * dormancy - 1.5 * repeat };
+// The rule as one number, bigger first. The share of the week done is weighted so far
+// above the rest that they can only ever break a tie: two shares with denominators of 7 or
+// less differ by at least 1/42, which ×100 is more than the other two can add together.
+function metaScore(c) {
+  const share = c.before / Math.max(1, c.freq);                  // done this week, before today
+  const urgency = Math.min(1, c.left / Math.max(1, c.ahead));     // 1: needed every day left
+  const dormancy = clamp((c.gap - 1) / 5, 0, 1);                  // 1: not done in six days or more
+  return { share, urgency, dormancy, score: 100 * (1 - share) + urgency + dormancy / 100 };
 }
-// Why a habit made the list, in words — the strongest reason only.
-function metaWhy(c, s) {
+// Why a habit made the list, in words.
+function metaWhy(c) {
   const days = n => n >= 7 ? 'a week or more' : `${n} day${n === 1 ? '' : 's'}`;
   if (c.left <= 0) return { k: 'dormant', text: `Quota met — but not done in ${days(c.gap)}` };
-  if (s.urgency >= 1) return { k: 'tight', text: `${c.left} more needed and ${c.ahead} day${c.ahead === 1 ? '' : 's'} left to do ${c.left === 1 ? 'it' : 'them'}` };
-  if (s.pace > 0.15) return { k: 'behind', text: `Behind this week — ${c.before} of ${c.freq} so far` };
-  if (s.dormancy >= 0.6) return { k: 'dormant', text: `Not done in ${days(c.gap)}` };
-  if (s.pace < -0.15) return { k: 'ahead', text: `Ahead this week — ${c.left} more to go` };
-  return { k: 'left', text: `${c.left} more this week` };
+  const text = `${c.before} of ${c.freq} this week — ${Math.round(100 * c.before / Math.max(1, c.freq))}% done`;
+  return c.left >= c.ahead ? { k: 'tight', text: `${text}, needed every day left` } : { k: 'behind', text };
 }
-// What's still wanted on `dateStr`, best first. Ties keep the goals' own order.
+// What's still wanted on `dateStr`, the least done first. Ties keep the goals' own order.
 function metaRanked(dateStr) {
-  const recent = [1, 2].map(n => {
-    const r = metaDays()[addDays(dateStr, -n)];
-    return new Set(r && Array.isArray(r.picks) ? r.picks.map(p => p.hid) : []);
-  });
   return metaCandidates(dateStr).filter(c => c.left > 0 && !c.doneToday)
-    .map((c, i) => { const s = metaScore(c, recent); return { ...c, ...s, i, why: metaWhy(c, s) }; })
+    .map((c, i) => ({ ...c, ...metaScore(c), i, why: metaWhy(c) }))
     .sort((a, b) => b.score - a.score || a.i - b.i);
-}
-// n from a ranked list, spread across goals: each pick from a goal already on the list
-// (`goalIds`, then each one taken) costs the next from that goal 1.5.
-function metaTake(ranked, n, goalIds) {
-  const per = new Map(), pool = ranked.slice(), out = [];
-  const adj = c => c.score - 1.5 * (per.get(c.g.id) || 0);
-  (goalIds || []).forEach(id => per.set(id, (per.get(id) || 0) + 1));
-  while (out.length < n && pool.length) {
-    let best = 0;
-    pool.forEach((c, i) => { if (adj(c) > adj(pool[best])) best = i; });
-    const c = pool.splice(best, 1)[0];
-    out.push(c); per.set(c.g.id, (per.get(c.g.id) || 0) + 1);
-  }
-  return out;
 }
 // Done on `dateStr` at the tier the pick asks for, or higher.
 function metaPickDone(p, dateStr) {
@@ -12363,9 +12367,8 @@ function metaSync() {
     rec = days[today] = { level: cfg.level, show: size.show, need: size.need, picks: [], extras: [], metAt: null };
     // Made after some of the day has gone by (the app opened late, a tick on the Lock
     // Screen): what was already done today and was still wanted goes on first, so it counts.
-    const none = [new Set(), new Set()];
     metaCandidates(today).filter(c => c.doneToday && c.before < c.freq)
-      .map(c => { const was = { ...c, left: c.left + 1 }; return { ...was, ...metaScore(was, none), why: metaWhy(was, metaScore(was, none)) }; })
+      .map(c => { const was = { ...c, left: c.left + 1 }; return { ...was, ...metaScore(was), why: metaWhy(was) }; })
       .sort((a, b) => b.score - a.score).slice(0, size.show).forEach(c => rec.picks.push(metaPick(c)));
     changed = true;
   }
@@ -12373,20 +12376,25 @@ function metaSync() {
   if (!Array.isArray(rec.extras)) rec.extras = [];
   const cands = new Map(metaCandidates(today).map(c => [c.h.id, c]));
   const before = JSON.stringify([rec.picks, rec.extras, rec.need, rec.level]);
-  // The level was changed by hand today: the list takes its new size, unless it's met.
-  if (!rec.metAt && rec.level !== cfg.level) { const size = metaSize(cfg.level); Object.assign(rec, { level: cfg.level, show: size.show }); }
-  // A pick stays if it's done, or if it's still on today and its quota still wants it.
-  rec.picks = rec.picks.filter(p => metaPickDone(p, today) || (cands.has(p.hid) && cands.get(p.hid).left > 0));
-  rec.picks.forEach(p => { const c = cands.get(p.hid); if (c && !metaPickDone(p, today)) { p.tier = c.tier; if (!p.why) p.why = metaWhy(c, metaScore(c, [new Set(), new Set()])); } });
+  const subbed = new Set(rec.subbed || []);
+  // The level was changed by hand today, or a list made by an older build carries a spare:
+  // the list takes its new size, unless it's met.
+  if (!rec.metAt) { const size = metaSize(cfg.level); if (rec.level !== cfg.level || rec.show !== size.show) Object.assign(rec, { level: cfg.level, show: size.show }); }
+  // A pick stays if it's done, or if it's still on today, its quota still wants it, and it
+  // wasn't substituted.
+  rec.picks = rec.picks.filter(p => metaPickDone(p, today) || (cands.has(p.hid) && cands.get(p.hid).left > 0 && !subbed.has(p.hid)));
+  rec.picks.forEach(p => { const c = cands.get(p.hid); if (c && !metaPickDone(p, today)) { p.tier = c.tier; if (!p.why) p.why = metaWhy(c); } });
+  // Too many: the undone pick furthest along its week leaves first.
+  const rank = p => cands.has(p.hid) ? metaScore(cands.get(p.hid)).score : -Infinity;
   while (rec.picks.length > rec.show) {
-    const i = rec.picks.map(p => metaPickDone(p, today)).lastIndexOf(false);
-    if (i < 0) break;
-    rec.picks.splice(i, 1);
+    const undone = rec.picks.filter(p => !metaPickDone(p, today));
+    if (!undone.length) break;
+    rec.picks.splice(rec.picks.indexOf(undone.reduce((a, b) => rank(b) <= rank(a) ? b : a)), 1);
   }
   if (!rec.metAt && rec.picks.length < rec.show) {
     const have = new Set(rec.picks.map(p => p.hid));
-    const goalIds = rec.picks.map(p => (goalOfHabit(p.hid) || {}).id).filter(Boolean);
-    metaTake(metaRanked(today).filter(c => !have.has(c.h.id)), rec.show - rec.picks.length, goalIds).forEach(c => rec.picks.push(metaPick(c)));
+    metaRanked(today).filter(c => !have.has(c.h.id) && !subbed.has(c.h.id)).slice(0, rec.show - rec.picks.length)
+      .forEach(c => rec.picks.push(metaPick(c)));
   }
   if (!rec.metAt) rec.need = Math.min(metaSize(rec.level).need, rec.picks.length);
   const done = rec.picks.filter(p => metaPickDone(p, today)).length;
@@ -12398,18 +12406,46 @@ function metaSync() {
   // up when something on it stops being possible today.
   if (rec.metAt) {
     const have = new Set(rec.picks.map(p => p.hid));
-    rec.extras = rec.extras.filter(p => !have.has(p.hid) && (metaPickDone(p, today) || cands.has(p.hid)));
+    rec.extras = rec.extras.filter(p => !have.has(p.hid) && (metaPickDone(p, today) || (cands.has(p.hid) && !subbed.has(p.hid))));
     if (rec.extras.length < 5) {                  // five is plenty to keep going with
       rec.extras.forEach(p => have.add(p.hid));
+      subbed.forEach(id => have.add(id));         // can't be done today: not as an extra either
       const wanted = metaRanked(today).filter(c => !have.has(c.h.id));
       const dormant = [...cands.values()].filter(c => c.left <= 0 && !c.doneToday && c.gap >= 3 && !have.has(c.h.id))
-        .sort((a, b) => b.gap - a.gap).map(c => ({ ...c, why: metaWhy(c, null) }));
+        .sort((a, b) => b.gap - a.gap).map(c => ({ ...c, why: metaWhy(c) }));
       wanted.concat(dormant).slice(0, 5 - rec.extras.length).forEach(c => rec.extras.push(metaPick(c)));
     }
   }
   if (JSON.stringify([rec.picks, rec.extras, rec.need, rec.level]) !== before) changed = true;
   if (changed) save();
   return changed;
+}
+
+/* ---- substituting a pick ----
+   For a pick that can't be done today: the next habit the ranking would pick takes its
+   place, in the same spot, and the one swapped out stays off today's card. Only before the
+   day is met, only for a pick not done and not running, and only when something is left
+   to swap in — so the card keeps asking for the same number. */
+function metaSubNext(hid) {
+  const rec = metaToday(); if (!rec) return null;
+  const skip = new Set((rec.picks || []).concat(rec.extras || []).map(p => p.hid).concat(rec.subbed || [], hid));
+  return metaRanked(todayStr()).find(c => !skip.has(c.h.id)) || null;
+}
+// A pick a tap can still swap or change: on today's list, not done, the day not met yet.
+function metaPickOpen(hid) {
+  const rec = metaToday(), p = rec && !rec.metAt && (rec.picks || []).find(x => x.hid === hid);
+  return !!p && !!state.habits.find(x => x.id === hid) && !metaPickDone(p, todayStr());
+}
+// Returns the habit swapped in, or null when nothing changed.
+function metaSubstitute(hid) {
+  const today = todayStr(), rec = metaToday(), h = state.habits.find(x => x.id === hid);
+  if (!metaPickOpen(hid) || h.timer) return null;
+  const next = metaSubNext(hid); if (!next) return null;
+  rec.subbed = (rec.subbed || []).concat(hid);
+  rec.picks.splice(rec.picks.findIndex(p => p.hid === hid), 1, metaPick(next));
+  logEvent('meta_substituted', { date: today, out: hid, in: next.h.id });
+  save();
+  return next.h;
 }
 
 /* ---- judging a day, and the level ---- */
@@ -12521,18 +12557,31 @@ function metaName(p, h) {
   const lv = habitLevels(h), l = lv ? lv[clamp(p.tier - 1, 0, lv.length - 1)] : null;
   return { name: l ? (l.name || h.name) : h.name, mins: l ? l.minutes || 0 : h.timedMinutes || 0, tiered: !!lv };
 }
-function metaRowHTML(p, extra) {
+function metaRowHTML(p) {
   const h = state.habits.find(x => x.id === p.hid); if (!h) return '';
   // A tier named "Cello 60 min" already says how long; the length is shown only when it doesn't.
   const { name, mins, tiered } = metaName(p, h);
-  const done = metaPickDone(p, todayStr());
-  const mark = done ? '<span class="mq-mark on" aria-hidden="true">✓</span>'
-    : `<span class="mq-mark${extra ? ' plus' : ''}" aria-hidden="true">${extra ? '+' : ''}</span>`;
-  return `<button class="mq-row${done ? ' done' : ''}" ${done ? 'aria-disabled="true"' : `data-mq="do" data-hid="${h.id}"`}
-      aria-label="${escapeHtml(name)}${done ? ' — done' : ' — mark done'}"${p.why ? ` title="${escapeHtml(p.why.text)}"` : ''}>
+  const done = metaPickDone(p, todayStr()), t = h.timer, label = escapeHtml(name);
+  // The same buttons the habit has on the Habits tab: ▶ starts its stopwatch and ✓ completes
+  // it untimed; while it runs, ⏸/▶ holds, ↺ un-starts and ⏹ finishes. The clock replaces the
+  // length and tier notes, which is what makes room for the extra buttons.
+  let chip = '', right;
+  if (t) {
+    chip = `<span class="row-chip live">⏱<b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? ' ⏸' : ''}</span>`;
+    right = `<button class="hrow-check timer-btn" data-mq="pause" aria-label="${t.pausedAt ? 'Resume' : 'Pause'} ${label}" style="color:var(--cyan)">${t.pausedAt ? '▶' : '⏸'}</button>
+      <button class="hrow-check timer-btn" data-mq="cancel" aria-label="Undo start" title="Undo start — no tokens, nothing logged" style="color:var(--ink-dim)">↺</button>
+      <button class="hrow-check timer-btn" data-mq="finish" aria-label="Finish ${label}" style="color:var(--green)">⏹</button>`;
+  } else if (done) right = '<span class="mq-mark on" aria-label="Done">✓</span>';
+  // Done today, but below the tier the quota asks for — nothing left to tap here.
+  else if (isComplete(h)) right = '<span class="mq-mark" aria-label="Done below the tier asked"></span>';
+  else right = `<button class="hrow-check timer-btn" data-mq="start" aria-label="Start ${label}" style="color:var(--purple)">▶</button>
+      <button class="hrow-check" data-mq="do" aria-label="Quick complete ${label}">✓</button>`;
+  // A tap anywhere else on the row: a pick still to do opens its menu (substitute it, or
+  // open the habit); anything else opens the habit, as a row on the Habits tab does.
+  return `<div class="mq-row${done ? ' done' : ''}${t ? ' live' : ''}" data-mq="row" data-hid="${h.id}"${p.why ? ` title="${escapeHtml(p.why.text)}"` : ''}>
       <span class="mq-e" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
-      <span class="mq-n"><b>${escapeHtml(name)}</b>${mins && !detectMinutes(name) ? `<small>${metaMins(mins)}</small>` : ''}${tiered && p.tier > 1 ? `<small class="mq-tier">Tier ${p.tier}+</small>` : ''}</span>
-      ${mark}</button>`;
+      <span class="mq-n"><b>${label}</b>${!t && mins && !detectMinutes(name) ? `<small>${metaMins(mins)}</small>` : ''}${!t && tiered && p.tier > 1 ? `<small class="mq-tier">Tier ${p.tier}+</small>` : ''}</span>
+      ${chip}${right}</div>`;
 }
 // A small scene behind the title: sun, ridges, a pagoda. Decoration only.
 function metaScene() { return `<svg class="mq-scene" viewBox="0 0 220 130" aria-hidden="true" preserveAspectRatio="xMaxYMin slice">
@@ -12562,19 +12611,19 @@ function renderHomeMeta() {
   }
   const today = todayStr(), n = rec.picks.length, need = rec.need, met = !!rec.metAt;
   const done = rec.picks.filter(p => metaPickDone(p, today)).length, shown = Math.min(done, need);
-  const title = need === n ? (n === 1 ? 'Complete 1 task' : `Complete all ${n} tasks`) : `Complete ${need} of ${n} tasks`;
+  const title = need === n ? `Complete ${n} task${n === 1 ? '' : 's'}` : `Complete ${need} of ${n} tasks`;
   const bar = `<div class="mq-bar${met ? ' met' : ''}" role="progressbar" aria-label="Today's goal" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${shown}">
       <i style="width:${need ? Math.round(shown / need * 100) : 0}%"></i><b>${shown} / ${need}${met ? ' ✓' : ''}</b></div>`;
   let after;
   if (!met) after = `<div class="mq-lock"><span aria-hidden="true">🔒</span> Complete today's goal to unlock extra progress <span aria-hidden="true">↓</span></div>`;
   else {
-    const rows = (rec.extras || []).map(p => metaRowHTML(p, true)).join('');
+    const rows = (rec.extras || []).map(metaRowHTML).join('');
     after = `<div class="mq-extra"><button class="mq-extra-h" data-mq="extras" aria-expanded="${metaExtrasOpen}">
         <span>Extra progress (optional)</span><span class="mq-caret${metaExtrasOpen ? ' up' : ''}" aria-hidden="true">⌃</span></button>
-      ${metaExtrasOpen ? rows || '<div class="mq-none">Nothing else is wanted this week. The rest of the day is yours.</div>' : ''}</div>`;
+      ${metaExtrasOpen ? rows || '<div class="mq-none">Nothing else is left for today. The rest of the day is yours.</div>' : ''}</div>`;
   }
   box.innerHTML = `<div class="mq-card${met ? ' met' : ''}">${metaScene()}${head}<div class="mq-title">${title}</div>
-    <div class="mq-rows">${rec.picks.map(p => metaRowHTML(p, false)).join('')}</div>${bar}${after}</div>`;
+    <div class="mq-rows">${rec.picks.map(metaRowHTML).join('')}</div>${bar}${after}</div>`;
   if (met && metaJustMet && Date.now() - metaJustMet < 4000 && metaCheered !== today) {
     metaCheered = today;
     SFX.win();
@@ -12583,25 +12632,61 @@ function renderHomeMeta() {
     toast('🎯 Today\'s goal complete — extra progress unlocked', 'var(--cyan)');
   }
 }
-// A tap on the card is the same as ticking the habit anywhere else — completeHabit, with
-// its tokens and undo — done at the tier the quota asks for if the habit sits below it.
+// A pick only counts at the tier its quota asks for, so a habit sitting below it is moved
+// up before it is ticked or timed. Not once it has been done today: that tier is spent.
+function metaLiftTier(h) {
+  const p = metaEntry(metaToday(), h.id), lv = habitLevels(h);
+  if (p && lv && doneCount(h) === 0) { const want = clamp(p.tier - 1, 0, lv.length - 1); if (curLevelIndex(h) < want) setHabitTier(h, want); }
+}
+// ✓ on the card is the same as ticking the habit anywhere else — completeHabit, with its
+// tokens and undo.
 function metaDo(hid) {
   const h = state.habits.find(x => x.id === hid); if (!h || isComplete(h)) return;
   if (h.timer) { finishTimedHabit(hid); return; }
-  const p = metaEntry(metaToday(), hid), lv = habitLevels(h);
-  if (p && lv && doneCount(h) === 0) { const want = clamp(p.tier - 1, 0, lv.length - 1); if (curLevelIndex(h) < want) setHabitTier(h, want); }
+  metaLiftTier(h);
   completeHabit(hid);
 }
+// ▶ on the card is the Habits tab's ▶: the same open stopwatch, ended by ⏹.
+function metaStart(hid) {
+  const h = state.habits.find(x => x.id === hid); if (!h || h.timer || isComplete(h)) return;
+  metaLiftTier(h);
+  startHabitTimer(hid);
+}
+// Home also runs the Habits tab's click handler, so everything with a data-mq stops here.
 $('#homeMeta').addEventListener('click', e => {
   const b = e.target.closest('[data-mq]');
   if (b) {
     e.stopPropagation();
-    if (b.dataset.mq === 'do') metaDo(b.dataset.hid);
-    else if (b.dataset.mq === 'extras') { metaExtrasOpen = !metaExtrasOpen; SFX.click(); renderHomeMeta(); }
+    const hid = b.closest('[data-hid]')?.dataset.hid;
+    switch (b.dataset.mq) {
+      case 'do': metaDo(hid); break;
+      case 'start': metaStart(hid); break;
+      case 'pause': toggleHabitTimerPause(hid); break;
+      case 'cancel': cancelHabitTimer(hid); break;
+      case 'finish': finishTimedHabit(hid); break;
+      case 'row': SFX.click(); if (metaPickOpen(hid)) openGm('metaPick', hid); else openEditor('habit', hid); break;
+      case 'extras': metaExtrasOpen = !metaExtrasOpen; SFX.click(); renderHomeMeta(); break;
+    }
     return;
   }
   onGmClick(e);
 });
+
+/* ---- the pop-up a tap on a pick opens ---- */
+function metaPickSheetHTML(hid) {
+  const p = metaToday().picks.find(x => x.hid === hid), h = state.habits.find(x => x.id === hid);
+  const next = metaSubNext(hid), can = !!next && !h.timer;
+  const swapIn = next ? `${escapeHtml(next.h.emoji || '⭐')} ${escapeHtml(metaName(metaPick(next), next.h).name)}` : '';
+  const why = h.timer ? 'It\'s running — finish it, or undo the start, before substituting it.'
+    : !next ? 'Nothing else is wanted today, so there\'s nothing to swap in.' : '';
+  return gmHead(`${escapeHtml(h.emoji || '⭐')} ${escapeHtml(metaName(p, h).name)}`)
+    + `${p.why ? `<p class="mq-pick-why">${escapeHtml(p.why.text)}</p>` : ''}
+      <button class="mq-swap" data-gm="metaSub" data-hid="${h.id}" ${can ? '' : 'disabled'}>
+        <span class="mq-swap-t">🔁 Substitute this task</span>${next ? `<small>Swaps in ${swapIn} — ${escapeHtml(next.why.text)}</small>` : ''}</button>
+      ${why ? `<div class="gm-next">${why}</div>` : ''}
+      <button class="mq-swap ghost" data-gm="metaEdit" data-hid="${h.id}"><span class="mq-swap-t">✎ Edit habit</span></button>
+      <p class="sch-note">For a day it can't be done. It stays off today's goal until tomorrow, and still counts toward its weekly quota if you do it anyway.</p>`;
+}
 
 /* ---- the sheet: rules and limits ---- */
 function metaSheetHTML() {
@@ -12616,7 +12701,7 @@ function metaSheetHTML() {
       <span><b>${escapeHtml(metaName(p, h).name)}</b><small>${escapeHtml(p.why ? p.why.text : 'Picked earlier today')}</small></span></li>`;
   }).join('') : '';
   return gmHead('Today\'s goal')
-    + `<div class="gm-level"><span><b>Level ${cfg.level}</b><small>Shows ${size.show}, asks for ${size.need}</small></span>
+    + `<div class="gm-level"><span><b>Level ${cfg.level}</b><small>${size.show > size.need ? `Shows ${size.show}, asks for ${size.need}` : `${size.need} task${size.need === 1 ? '' : 's'} a day`}</small></span>
         <span class="gm-stepper"><button data-gm="metaLevel" data-v="${cfg.level - 1}" ${cfg.level > cfg.min ? '' : 'disabled'} aria-label="Level down">−</button><button data-gm="metaLevel" data-v="${cfg.level + 1}" ${cfg.level < cfg.max ? '' : 'disabled'} aria-label="Level up">+</button></span></div>
       <div class="stk-ed-h">What makes it harder</div>
       <div class="mq-rule">Up a level after <b>${days(cfg.up.n)}</b> you finish it, in any <b>${days(cfg.up.of)}</b>.</div>
@@ -12628,7 +12713,7 @@ function metaSheetHTML() {
       <div class="gm-next">${cfg.level <= cfg.min ? `At your lowest level — it won't go below Level ${cfg.min}.` : `${pr.down} of ${cfg.down.n} so far.`}</div>
       <div class="stk-ed-h">Limits</div>
       <div class="mq-ctls">${ctl('min', cfg.min, 1, cfg.max, 'Lowest level')}${ctl('max', cfg.max, cfg.min, top, 'Highest level')}</div>
-      ${why ? `<div class="stk-ed-h">Why today's picks</div><ul class="mq-why">${why}</ul>` : ''}
+      ${why ? `<div class="stk-ed-h">Why today's picks</div><p class="mq-rule">The habits with the least of their week done go first.</p><ul class="mq-why">${why}</ul>` : ''}
       <p class="sch-note">A good day is one where you finish today's goal; a missed day is one where you don't. A day with nothing to suggest, or one the app never saw, counts neither way. It moves one level at a time, and the count starts again after every move. Extra progress never counts toward today — it only counts toward your weekly quotas.</p>`;
 }
 
@@ -16245,8 +16330,9 @@ function appContext() {
   if (metaCtx && metaCtx.picks.length) {
     const mc = metaCfg(), nameOf = id => (state.habits.find(h => h.id === id) || {}).name || 'a deleted habit';
     const past = Object.keys(metaDays()).sort().filter(d => d < todayStr()).slice(-7).map(d => ({ met: '✓', missed: '✗', rest: '–' })[metaDays()[d].result] || '·').join('');
-    L.push('', `TODAY'S GOAL (Daily Meta Quota: picked by fixed rules from the weekly quotas; its level moves by the user's own rules). Level ${mc.level} (floor ${mc.min}, ceiling ${mc.max}; up after ${mc.up.n} good days in any ${mc.up.of}, down after ${mc.down.n} missed in any ${mc.down.of}).`);
+    L.push('', `TODAY'S GOAL (Daily Meta Quota: picked by a fixed rule from the weekly quotas — the habits with the least of their week done go first; its level moves by the user's own rules). Level ${mc.level} (floor ${mc.min}, ceiling ${mc.max}; up after ${mc.up.n} good days in any ${mc.up.of}, down after ${mc.down.n} missed in any ${mc.down.of}).`);
     L.push(`  - Today: complete ${metaCtx.need} of ${metaCtx.picks.length}${metaCtx.metAt ? ' — MET' : ''}: ${metaCtx.picks.map(p => `${nameOf(p.hid)}${metaPickDone(p, todayStr()) ? ' ✓' : ''} (${p.why ? p.why.text : 'picked'})`).join('; ')}`);
+    if ((metaCtx.subbed || []).length) L.push(`  - Substituted today (the user said it can't be done today): ${metaCtx.subbed.map(nameOf).join(', ')}`);
     if (past) L.push(`  - Last days, oldest first (✓ met, ✗ missed, – nothing asked): ${past}`);
   }
   const swapsCtx = (state.stackSwaps || []).filter(w => w.removed && w.added && w.at > Date.now() - 30 * 86400000);
