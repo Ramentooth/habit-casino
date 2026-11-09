@@ -336,80 +336,6 @@
     .spec-hint { font-size: 12px; color: var(--cyan); margin-top: 2px; }
 
     /* ---------- Block Schedule ---------- */
-    .sched-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-    .sched-day { text-align: center; line-height: 1.25; }
-    .sched-day b { font-family: 'Orbitron', sans-serif; font-size: 15px; letter-spacing: .5px; color: var(--cyan); }
-    .sched-day .subtle { display: block; font-size: 11px; }
-    .sched-key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--ink-dim); margin-bottom: 10px; }
-    .sched-key i { display: inline-block; width: 16px; height: 9px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
-    .sched-key .k-actual { background: var(--cyan); }
-    .sched-key .k-pred   { border: 1px dashed var(--cyan); background: transparent; }
-    .sched-key .k-moment { background: var(--ink-dim); height: 3px; }
-    .sched-key .k-reward { background: var(--gold); }
-    /* Rewards read as a different species from habits: gold-leaning, dashed-free, and
-       tagged so a glance tells you "that's when I cashed in", not "that's work I did". */
-    .sched-block.reward {
-      border-style: solid; border-left-width: 3px;
-      background: color-mix(in srgb, var(--sb) 26%, var(--gs-card, #1b1b1f));   /* opaque, like every other block */
-      box-shadow: inset 0 0 12px color-mix(in srgb, var(--sb) 14%, transparent);
-    }
-    .sched-block.reward b::before { content: '🎁 '; }
-    .sched-block.reward.moment { background: transparent; box-shadow: none; border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); }
-    /* Fixed to the screen, stacked directly above the ＋ FAB. A day can be thousands of
-       pixels tall, and these used to scroll off with the legend after one flick. */
-    .sched-zoom {
-      position: fixed; z-index: 44; right: 14px;
-      bottom: calc(80px + 54px + 10px + env(safe-area-inset-bottom));   /* clear of the FAB */
-      display: flex; flex-direction: column; gap: 6px;
-    }
-    body.more-open .sched-zoom { opacity: 0; pointer-events: none; }    /* same as the FAB */
-    .zbtn {
-      width: 38px; height: 34px; border-radius: 11px; cursor: pointer; line-height: 1;
-      background: var(--gs-ctl, rgba(0,0,0,.35)); border: 1px solid var(--gs-edge, var(--panel-edge));
-      color: var(--ink); font-size: 17px; font-weight: 800;
-      box-shadow: 0 6px 14px rgba(0,0,0,.45);
-    }
-    .zbtn:disabled { opacity: .35; cursor: default; }
-    /* Zoom = one CSS variable. Everything positioned off --ph eases to the new scale
-       together, so the day glides between zoom levels rather than snapping. */
-    .sched-grid { position: relative; transition: height .28s cubic-bezier(.4,0,.2,1); touch-action: pan-y; }
-    .sched-hour, .sched-sub, .sched-now, .sched-block {
-      transition: top .28s cubic-bezier(.4,0,.2,1), height .28s cubic-bezier(.4,0,.2,1);
-    }
-    .sched-block.dragging { transition: none; z-index: 5; }
-    .sched-hour {
-      position: absolute; left: 0; right: 0; border-top: 1px solid var(--panel-edge);
-      font-size: 11px; color: var(--ink-dim); padding-left: 2px; pointer-events: none;
-    }
-    /* Quarter/half-hour lines are always present; the zoom class decides which show, so
-       toggling them costs no re-render and can't fight the transition. */
-    .sched-sub {
-      position: absolute; left: 40px; right: 0; border-top: 1px dashed var(--panel-edge);
-      opacity: 0; pointer-events: none; height: 0;
-      transition: top .28s cubic-bezier(.4,0,.2,1), opacity .2s ease;
-    }
-    .sched-sub span { position: absolute; left: -38px; top: -7px; font-size: 9.5px; color: var(--ink-dim); opacity: .8; }
-    /* Detail appears as you zoom in: half-hours from ~96px/hour, quarters from ~168px.
-       Index ranges doubled along with SCHED_ZOOMS — old 4-5 → 8-11, old 6-7 → 12-14. */
-    .sched-grid.zoom-8 .sched-sub.half, .sched-grid.zoom-9 .sched-sub.half,
-    .sched-grid.zoom-10 .sched-sub.half, .sched-grid.zoom-11 .sched-sub.half { opacity: .5; }
-    .sched-grid.zoom-12 .sched-sub.half, .sched-grid.zoom-12 .sched-sub.quarter,
-    .sched-grid.zoom-13 .sched-sub.half, .sched-grid.zoom-13 .sched-sub.quarter,
-    .sched-grid.zoom-14 .sched-sub.half, .sched-grid.zoom-14 .sched-sub.quarter { opacity: .5; }
-    /* Five-minute lines only at the deepest two stops — the scale where a five-minute
-       drag is a visible distance rather than a rounding error. */
-    .sched-grid.zoom-13 .sched-sub.fine, .sched-grid.zoom-14 .sched-sub.fine { opacity: .22; }
-    /* Draggable blocks: touch-action:none so a vertical drag resizes (or, after a hold,
-       moves) the block instead of scrolling the page out from under it. No callout or text
-       selection either — on a phone the hold that lifts a block would otherwise open one. */
-    .sched-block.draggable {
-      cursor: ns-resize; touch-action: none;
-      -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
-    }
-    .sched-block.dragging { cursor: grabbing; }
-    .sched-block.dragging { box-shadow: 0 6px 20px rgba(0,0,0,.6); border-style: solid; opacity: 1; }
-    /* Lifted by a hold: now it moves. The outline says so before the finger does. */
-    .sched-block.lifted { outline: 2px solid var(--sb); outline-offset: 1px; box-shadow: 0 10px 26px rgba(0,0,0,.7); }
     /* The live readout while a block is moved or resized, pinned to the edge that's moving,
        so you always know exactly where it will land. */
     .sched-tip {
@@ -418,124 +344,6 @@
       font-size: 11px; font-weight: 800; background: var(--gs-lite, #e8e8ec); color: var(--gs-on-lite, #14141a);
       box-shadow: 0 4px 12px rgba(0,0,0,.5);
     }
-    .sb-unpin {
-      position: absolute; top: 2px; right: 3px; width: 18px; height: 18px; padding: 0;
-      display: grid; place-items: center; border-radius: 6px; cursor: pointer; font-size: 11px;
-      background: rgba(0,0,0,.45); border: 1px solid var(--panel-edge); color: var(--ink-dim);
-    }
-    .sb-unpin:hover { color: #fff; }
-    /* Blocks live in here, already inset past the hour labels, so their left/width
-       percentages are of the block area alone. */
-    .sched-lanes { position: absolute; left: 56px; right: 6px; top: 0; bottom: 0; }
-    .sched-now { position: absolute; left: 48px; right: 0; border-top: 2px solid var(--h-live); box-shadow: 0 0 8px var(--h-live); z-index: 3; }
-    .sched-now::before { content: ''; position: absolute; left: 0; top: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--h-live); }
-    .sched-block {
-      position: absolute; overflow: hidden; border-radius: 6px; padding: 1px 6px; font-size: 11px;
-      /* OPAQUE, not a 16%-of-transparent wash. Two blocks that graze each other used to
-         blend into a muddy third colour and you couldn't tell where either one ended;
-         now the one in front simply covers the one behind, the way the solid outline
-         around it always did. Mixed toward the card colour so it stays a dark tint. */
-      background: color-mix(in srgb, var(--sb) 20%, var(--gs-card, #1b1b1f));
-      border: 1px solid color-mix(in srgb, var(--sb) 55%, var(--gs-card, #1b1b1f));
-      border-left: 3px solid var(--sb);
-    }
-    .sched-block b { display: block; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sched-block .sb-time { display: block; opacity: .7; font-size: 10px; line-height: 1.2; white-space: nowrap; }
-    /* Predicted = dashed; actually-done = solid. Its fill is opaque too, just darker, so a
-       prediction sitting over a real block still reads as one thing at a time. `opacity`
-       on the element would make the whole thing translucent again — the border included. */
-    .sched-block.predicted {
-      border-style: dashed; border-left-style: dashed;
-      background: color-mix(in srgb, var(--sb) 9%, var(--gs-card, #1b1b1f));
-      color: var(--ink-dim);
-    }
-    .sched-block.predicted b { color: var(--ink); }
-    /* Untimed completions are SOLID: they really happened, they just have no measurable
-       length. Dashed is reserved for predictions, so the two can never be confused.
-       Left deliberately transparent: a moment is a tick on the timeline, not a span, and
-       boxing it would claim a duration it doesn't have. */
-    .sched-block.moment {
-      background: transparent; border: 0; border-left: 0; padding-left: 0;
-      border-top: 2px solid color-mix(in srgb, var(--sb) 85%, transparent); border-radius: 0;
-    }
-    .sched-block.moment b { font-size: 10px; opacity: .85; line-height: 1.2; }
-
-    /* An unaccounted stretch. Deliberately the quietest thing on the grid — recessed
-       rather than highlighted, because it marks an absence, not an event. Sits behind
-       everything (z-index 0) so a real block landing inside it still reads on top. */
-    .sched-block.gap {
-      z-index: 0; border: 1px dashed var(--panel-edge); border-radius: 8px;
-      background: repeating-linear-gradient(135deg,
-        rgba(255,255,255,.028) 0 8px, rgba(255,255,255,0) 8px 16px), rgba(0,0,0,.34);
-      display: grid; place-items: center; cursor: pointer; padding: 0;
-    }
-    .sched-block.gap:hover { border-color: var(--cyan); background: rgba(255,158,44,.06); }
-    .gap-q {
-      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 20px;
-      color: var(--ink-dim); opacity: .75; line-height: 1; pointer-events: none;
-    }
-    .sched-block.gap:hover .gap-q { color: var(--cyan); opacity: 1; }
-    /* A gap you answered. Deliberately unlike anything the app tracked — a cool slate
-       hatch where habits are solid, an italic note where they're upright — because it's
-       your own account of the time, not a measured block. It sits behind real blocks
-       (z-index 0) like the gap it replaced, and it pushes predictions out of its span
-       entirely (see schedGridParts) so an answered stretch stays uncluttered. */
-    .sched-block.filler {
-      z-index: 0; display: flex; flex-direction: column; gap: 1px; padding: 4px 8px; cursor: pointer;
-      border: 1px solid rgba(143,179,217,.30); border-left: 3px solid #8fb3d9; border-radius: 8px;
-      background: repeating-linear-gradient(45deg,
-        rgba(143,179,217,.11) 0 6px, rgba(143,179,217,.04) 6px 12px), #151b24;
-      color: #cfe0f3;
-    }
-    .sched-block.filler:hover { border-color: rgba(143,179,217,.55); }
-    .filler-name {
-      font-style: italic; font-weight: 600; font-size: 12px; line-height: 1.25; pointer-events: none;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .filler-time { font-size: 10px; line-height: 1.2; opacity: .65; white-space: nowrap; pointer-events: none; }
-
-    /* ---------- Short blocks: honest bars, names in a right-hand column ----------
-       A block shorter than LABEL_MIN_PX keeps its TRUE height and drops its text. It used
-       to be inflated to 18px so the name would fit, which at low zoom meant two things
-       done five minutes apart drew as two 18px boxes almost on top of each other and read
-       as simultaneous. The bar now says when, the label column says what. */
-    .sched-block.tiny { padding: 0; min-height: 0; }
-    .sched-block.tiny > b, .sched-block.tiny > .sb-time { display: none; }
-    .sched-block.tiny:not(.moment) { border-radius: 2px; border-width: 0 0 0 3px; background: var(--sb); }
-    .sched-labels { position: absolute; left: 58%; right: 4px; top: 0; bottom: 0; pointer-events: none; display: none; }
-    .sched-grid.has-tiny .sched-labels { display: block; }
-    .sched-grid.has-tiny .sched-lanes { right: 44%; }
-    .sched-lanes, .sched-labels { transition: right .28s cubic-bezier(.4,0,.2,1), left .28s cubic-bezier(.4,0,.2,1); }
-    .sb-label {
-      position: absolute; left: 0; right: 0; display: none; overflow: visible;
-      font-size: 10.5px; line-height: 1.25; padding-left: 5px;
-      border-left: 3px solid var(--sb); transition: top .28s cubic-bezier(.4,0,.2,1);
-    }
-    .sb-label.show { display: block; }
-    .sb-label b { display: block; color: var(--ink); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sb-label .sbl-time { display: none; }         /* the bar already says when; the name is what didn't fit */
-    /* The elbow. JS sets top/height so it reaches from the bar's real minute down to
-       wherever the label had to be nudged to avoid the label above it. */
-    .sb-leader {
-      position: absolute; left: -10px; width: 10px; border-top: 1px dashed var(--sb);
-      border-left: 1px dashed var(--sb); opacity: .65; pointer-events: none;
-    }
-    /* A session still running, drawn live rather than reconstructed from history. */
-    .sched-block.running { animation: schedPulse 2.4s ease-in-out infinite; }
-    @keyframes schedPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
-    /* Resize grips on a predicted block's top and bottom edges. Only present once the
-       block is tall enough for the two edges to be distinguishable (.resizable). */
-    .sb-grip { position: absolute; left: 0; right: 0; height: 9px; display: none; touch-action: none; cursor: ns-resize; z-index: 2; }
-    .sched-block.resizable .sb-grip { display: block; }
-    .sb-grip.t { top: -1px; }
-    .sb-grip.b { bottom: -1px; }
-    .sb-grip::after {
-      content: ''; position: absolute; left: 50%; width: 22px; height: 2px; margin-left: -11px;
-      border-radius: 2px; background: var(--sb); opacity: .55;
-    }
-    .sb-grip.t::after { top: 1px; }
-    .sb-grip.b::after { bottom: 1px; }
-    .sched-block.resizing { transition: none; z-index: 5; border-style: solid; box-shadow: 0 6px 20px rgba(0,0,0,.6); }
 
     /* ---------- Check-in multiple choice ---------- */
     .mc-opt { width: 100%; text-align: left; margin-bottom: 6px; }
@@ -2230,7 +2038,6 @@
     .redeem-lock, .hh-banner, .quest-add, .oneoff-section, .pool-group {
       background: var(--gs-panel); border-color: var(--gs-edge);
     }
-    .sched-grid, .sched-hour, .sched-sub { border-color: var(--gs-edge); }
 
     /* --- cards ------------------------------------------------------------ */
     .hrow, .qrow, .prize, .editrow, .aw-row, .claim-card, .hedit, .prize-edit,
@@ -2244,8 +2051,8 @@
     .prize      { --pz: var(--gs-edge-hi) !important; }
     .aw-row     { --aw: var(--gs-edge-hi) !important; }
     /* Schedule blocks are the one exemption: their --sb is chosen per block in
-       schedGridParts (category colour for real blocks, greys for predictions and for
-       uncategorised ones), because on the grid colour is how you read the day. */
+       schedCardHTML (the category colour, a faint white when there's none), because on
+       the timeline colour is how you read the day. */
     .hrow.done, .hrow.arch { background: var(--gs-card) !important; }
     .hrow.done { border-color: var(--gs-edge-hi) !important; }
     .hrow.done .hrow-name { text-decoration-color: var(--gs-edge-hi); }
@@ -2256,8 +2063,8 @@
     .ai-msg.err       { background: var(--gs-card); border-color: var(--gs-edge-hi); }
 
     /* --- secondary controls: DARK, shaped by their border ------------------ */
-    .btn.ghost, .btn.sm, .chip, .tier-chip, .zbtn, .prize-more, .del,
-    .day-dot, .sb-unpin, .iconbtn, .game-tab,
+    .btn.ghost, .btn.sm, .chip, .tier-chip, .prize-more, .del,
+    .day-dot, .iconbtn, .game-tab,
     .name-in, .num-in, .sect-in, .emoji-in, input, textarea, select, .loadout-button {
       background: var(--gs-ctl) !important;
       border: 1px solid var(--gs-edge) !important;
@@ -2305,9 +2112,6 @@
       background: var(--gs-card); border: 1px solid var(--gs-edge-hi);
       box-shadow: 0 8px 18px rgba(0,0,0,.5); animation: none;
     }
-    .sched-key i { background: var(--gs-edge-hi) !important; border-color: var(--gs-edge-hi) !important; }
-    .sched-now { border-top-color: var(--gs-edge-hi) !important; box-shadow: none !important; }
-    .sched-now::before { background: var(--gs-edge-hi) !important; }
 
     /* --- Editor sheet ------------------------------------------------------ */
     .edit-overlay {
@@ -2616,9 +2420,6 @@
     .prize-dots:hover { background: rgba(255,255,255,.08) !important; }
 
     /* ---------- Month calendar (Schedule → tap the day) ---------- */
-    .sched-day[data-act] { cursor: pointer; }
-    .sched-day[data-act]:active { opacity: .65; }
-    .sched-day .sched-cal { font-size: 10px; opacity: .65; vertical-align: 2px; }
     .pass-modal.cal-modal {
       top: 50%; transform: translate(-50%, -50%);
       width: min(360px, 94vw); height: auto; max-height: min(86vh, 620px);
@@ -2674,7 +2475,6 @@
 
        Last in the sheet on purpose: it sits after the greyscale layer, and every
        class here is new, so nothing older can reach it and it reaches nothing older.
-       The Home widget still draws the original grid with the .sched-* rules above.
 
        Orange (--cyan, re-pointed by the colour hierarchy) is spent on four things
        only: what's done, what's now, the selected card, and primary actions.
@@ -3179,7 +2979,7 @@
     .fr-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .fr-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* ---------- HABIT STACKS: Home's card, the one-step runner, and the editor sheet ----------
+    /* ---------- HABIT STACKS: Home's list, the one-step runner, and the editor sheet ----------
        Home's language: hairlines, no glow, ONE accent — orange marks the step you're on.
        Last in the sheet so nothing in the greyscale pass above can outrank it. */
     #homeStack:empty { display: none; }
@@ -3191,15 +2991,6 @@
       background: var(--gs-card); border: 1.5px solid var(--gs-edge-hi);
     }
     .stack-btn:active { transform: scale(.98); }
-    .stk-card { border: 1px solid var(--gs-edge); border-radius: 14px; padding: 10px 14px 14px; margin-bottom: 14px; }
-    .stk-card.live { border-color: rgba(255,158,44,.55); }
-    .stk-head { display: flex; align-items: center; gap: 6px; min-height: 34px; }
-    .stk-kicker {
-      flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--ink-dim);
-    }
-    .stk-count { flex: 0 0 auto; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
     .stk-icon {
       flex: 0 0 auto; width: 36px; height: 36px; padding: 0; border-radius: 10px; border: 0; cursor: pointer;
       background: transparent; color: var(--ink-dim); font-size: 15px;
@@ -3231,32 +3022,12 @@
     }
     .stk-tag.focus { color: var(--h1); }
     .stk-tag.maintain { color: var(--yellow); }
-    .stk-tick {
-      flex: 0 0 auto; width: 44px; height: 38px; border-radius: 11px; cursor: pointer; padding: 0;
-      border: 1px solid var(--gs-edge-hi); background: var(--gs-ctl); color: var(--ink); font-size: 17px; font-weight: 900;
-    }
     .stk-now-btn {
       flex: 0 0 auto; height: 36px; padding: 0 12px; border-radius: 10px; cursor: pointer;
       border: 1px solid var(--gs-edge-hi); background: transparent; color: var(--ink); font: inherit; font-size: 13px; font-weight: 700;
     }
-    .stk-go {
-      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; margin-top: 12px;
-      border-radius: 14px; border: 0; cursor: pointer; background: var(--cyan); color: #1a0f02;
-      font: inherit; font-weight: 800; font-size: 16px;
-    }
-    .stk-go:active, .stk-primary:active, .stk-btn:active, .stk-tick:active, .stk-now-btn:active { transform: scale(.985); }
-    .stk-note { margin: 8px 2px 0; font-size: 13px; color: var(--ink-dim); line-height: 1.45; }
-    .stk-mini {
-      display: flex; align-items: center; gap: 10px; min-height: 48px; margin-bottom: 10px; padding: 4px 6px 4px 14px;
-      border: 1px solid var(--gs-edge); border-radius: 12px;
-    }
-    .stk-mini-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 14px; }
-    .stk-mini.done { opacity: .6; padding-right: 14px; }
-    /* The cue after a step: in, held, gone — with its space folding away on Home. */
-    .stk-line { box-sizing: border-box; overflow: hidden; padding-bottom: 4px; font-size: 14.5px; color: var(--ink);
-      animation: stkLine 4.5s ease both; animation-delay: var(--d, 0ms); }
-    .stk-line b, .stk-k-flash b { color: var(--cyan); }
-    @keyframes stkLine { 0% { opacity: 0; max-height: 0; } 6%, 80% { opacity: 1; max-height: 30px; } 100% { opacity: 0; max-height: 0; padding-bottom: 0; } }
+    .stk-primary:active, .stk-btn:active, .stk-now-btn:active { transform: scale(.985); }
+    .stk-k-flash b { color: var(--cyan); }
 
     /* The runner: one step at a time, buttons where a thumb already is. */
     .stk-overlay { position: fixed; inset: 0; z-index: 74; display: none; background: var(--gs-bg); }
@@ -3418,7 +3189,6 @@
     body.stk-docked main { padding-bottom: calc(96px + 58px + env(safe-area-inset-bottom)); }
     body.stk-docked .game-tabs, body.stk-docked .task-dock { bottom: calc(67px + 58px + env(safe-area-inset-bottom)); }
     body.stk-docked .sched-fab, body.stk-docked .pass-fab { bottom: calc(80px + 58px + env(safe-area-inset-bottom)); }
-    body.stk-docked .sched-zoom { bottom: calc(80px + 54px + 10px + 58px + env(safe-area-inset-bottom)); }
     body.stk-docked:not(.stk-open) #undoBar { bottom: calc(84px + 58px + env(safe-area-inset-bottom)); }
     body.stk-docked:not(.stk-open) #toast { bottom: calc(28px + 58px + env(safe-area-inset-bottom)); }
     body.reduced .stk-dock.show { animation: none; }
@@ -3478,25 +3248,127 @@
     .mode-btn .mb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mode-btn .mb-go { flex: 0 0 auto; color: var(--ink-dim); font-size: 11px; }
     #homeGoals:empty { display: none; }
-    /* Home: the week's goals, where the Schedule window used to sit. Home's language —
-       a hairline card, no fill, the orange spent only on the progress bars. */
-    .hg-card { margin: 0 0 4px; padding: 6px 14px 4px; border-radius: 14px; border: 1px solid var(--gs-edge, rgba(255,255,255,.16)); }
-    .hg-head { display: flex; align-items: center; gap: 10px; min-height: 48px; }
-    .hg-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 0;
+    /* ---------- Home, top to bottom: Today's Goal, the goals strip, the stack list ----------
+       Today's Goal is the one card on Home allowed a glow and a picture: it's what to read
+       first. Everything under it goes back to Home's hairlines. */
+    #homeMeta:empty { display: none; }
+    .mq-card {
+      position: relative; overflow: hidden; margin: 2px 0 20px; padding: 14px 14px 14px; border-radius: 20px;
+      border: 1.5px solid rgba(255,158,44,.78);
+      background: radial-gradient(130% 80% at 88% 0%, rgba(255,138,31,.42), transparent 62%),
+                  linear-gradient(180deg, #2b1306 0%, #170a03 58%, #0f0702 100%);
+      box-shadow: 0 0 0 1px rgba(255,158,44,.12), 0 12px 34px rgba(255,120,20,.22), inset 0 1px 0 rgba(255,210,150,.14);
+    }
+    .mq-scene { position: absolute; top: 0; right: 0; width: 62%; height: 132px; pointer-events: none;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 45%); mask-image: linear-gradient(90deg, transparent, #000 45%); }
+    .mq-k { position: relative; display: flex; align-items: center; gap: 10px; }
+    .mq-k > span { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 2.6px; text-transform: uppercase; color: #ffc27a; }
+    .mq-lv { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 9px; cursor: pointer;
+      border: 1px solid rgba(255,158,44,.45); background: rgba(0,0,0,.5); color: #ffc27a; font: inherit; font-weight: 700; font-size: 14px; }
+    .mq-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+    .mq-bars i { width: 3px; border-radius: 1px; background: currentColor; }
+    .mq-bars i:nth-child(1) { height: 5px; } .mq-bars i:nth-child(2) { height: 8px; } .mq-bars i:nth-child(3) { height: 12px; }
+    .mq-title { position: relative; margin: 6px 0 12px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 28px; line-height: 1.1;
+      color: #fff4e6; text-shadow: 0 2px 12px rgba(0,0,0,.65); }
+    .mq-sub { position: relative; max-width: 78%; margin: -4px 0 14px; font-size: 14px; line-height: 1.45; color: #f0d6b8; }
+    .mq-cta { position: relative; height: 46px; padding: 0 18px; border-radius: 14px; border: 0; cursor: pointer;
+      background: var(--cyan); color: #1a0f02; font: inherit; font-weight: 800; font-size: 15.5px; }
+    .mq-rows { position: relative; display: flex; flex-direction: column; gap: 7px; max-width: 80%; }
+    .mq-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 5px 10px 5px 8px; border-radius: 14px;
+      cursor: pointer; text-align: left; font: inherit; color: var(--ink);
+      border: 1px solid rgba(255,255,255,.11); background: rgba(10,5,2,.74); }
+    .mq-row:active { transform: scale(.985); }
+    .mq-row.done { cursor: default; border-color: rgba(255,158,44,.28); }
+    .mq-row.done:active { transform: none; }
+    .mq-e { flex: 0 0 30px; text-align: center; font-size: 21px; line-height: 1; }
+    .mq-n { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 7px; overflow: hidden; white-space: nowrap; }
+    .mq-n b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 700; }
+    .mq-n small { flex: 0 0 auto; font-size: 13px; color: #d9c2a6; }
+    .mq-n small.mq-tier { color: var(--cyan); }
+    .mq-mark { flex: 0 0 auto; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.38); font-size: 14px; font-weight: 900; color: #1a0f02; }
+    .mq-mark.on { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 10px rgba(255,158,44,.6); }
+    .mq-mark.plus { border-color: rgba(255,255,255,.55); color: var(--ink); font-size: 19px; font-weight: 400; line-height: 1; }
+    /* The count lives inside the bar, big enough to read at arm's length. */
+    .mq-bar { position: relative; height: 38px; margin: 14px 22px 2px; border-radius: 999px;
+      background: rgba(0,0,0,.62); border: 1px solid rgba(255,255,255,.15); }
+    .mq-bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: linear-gradient(180deg, #ffb347, #ff8a1f);
+      transition: width .45s cubic-bezier(.22,.9,.3,1); }
+    .mq-bar > b { position: relative; display: flex; align-items: center; justify-content: center; height: 100%;
+      font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,.65); font-variant-numeric: tabular-nums; }
+    .mq-bar.met { border-color: rgba(255,200,130,.95); box-shadow: 0 0 24px rgba(255,140,30,.55); }
+    .mq-bar.met::before, .mq-bar.met::after {
+      content: ''; position: absolute; top: 50%; width: 14px; height: 30px; margin-top: -15px; pointer-events: none;
+      background: linear-gradient(var(--cyan), var(--cyan)) 100% 50% / 12px 3px no-repeat,
+                  linear-gradient(32deg, transparent 45%, var(--cyan) 45% 62%, transparent 62%) 0 0 / 14px 11px no-repeat,
+                  linear-gradient(-32deg, transparent 45%, var(--cyan) 45% 62%, transparent 62%) 0 100% / 14px 11px no-repeat;
+    }
+    .mq-bar.met::before { left: -20px; }
+    .mq-bar.met::after { right: -20px; transform: scaleX(-1); }
+    .mq-lock { position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.08); font-size: 14.5px; color: #e8d2b8; text-align: center; }
+    .mq-extra { position: relative; margin-top: 12px; border-top: 1px solid rgba(255,255,255,.1); animation: fadeUp .3s ease; }
+    .mq-extra-h { display: flex; align-items: center; width: 100%; min-height: 42px; padding: 4px 2px; border: 0; background: transparent; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13.5px; letter-spacing: 2px; text-transform: uppercase; color: #e8d2b8; }
+    .mq-extra-h span:first-child { flex: 1; text-align: left; }
+    .mq-caret { font-size: 17px; transform: rotate(180deg); transition: transform .2s; }
+    .mq-caret.up { transform: none; }
+    .mq-extra .mq-row { margin-bottom: 7px; }
+    .mq-none { padding: 4px 2px 6px; font-size: 13.5px; line-height: 1.45; color: #d9c2a6; }
+    .mq-rule { padding: 2px 0 8px; font-size: 15px; line-height: 1.45; }
+    .mq-rule b { color: var(--cyan); }
+    .mq-ctls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mq-ctl { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .mq-ctl small { font-size: 11px; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-dim); }
+    .mq-ctl .gm-stepper { justify-content: space-between; }
+    .mq-why { list-style: none; margin: 0; padding: 0; }
+    .mq-why li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--gs-edge); }
+    .mq-why b { display: block; font-size: 14.5px; }
+    .mq-why small { display: block; font-size: 12.5px; color: var(--ink-dim); }
+    /* The two headings under it: the week, then the routines. */
+    .hx-head { display: flex; align-items: center; gap: 10px; margin: 0 2px 10px; }
+    .hx-title { flex: 1; min-width: 0; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 22px; color: var(--ink); }
+    .hx-link { flex: 0 0 auto; padding: 8px 0 8px 8px; border: 0; background: transparent; color: var(--cyan); font: inherit; font-size: 15px; cursor: pointer; }
+    .hx-mode { flex: 0 1 auto; min-width: 0; max-width: 40%; height: 32px; padding: 0 10px; border-radius: 999px; cursor: pointer; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--gs-edge-hi); background: transparent; color: var(--ink); font: inherit; font-size: 13px; }
+    .hg-row { display: flex; gap: 8px; margin: 0 0 22px; overflow-x: auto; scrollbar-width: none; }
+    .hg-row::-webkit-scrollbar { display: none; }
+    .hg-mini { flex: 1 0 74px; max-width: 170px; display: flex; flex-direction: column; gap: 5px; padding: 9px 10px 10px; border-radius: 14px;
+      cursor: pointer; text-align: left; font: inherit; color: var(--ink); border: 1px solid var(--gs-edge-hi); background: var(--gs-card); }
+    .hg-mini:active { transform: scale(.98); }
+    .hg-mini-top { display: flex; align-items: center; gap: 6px; }
+    .hg-mini-e { flex: 0 0 auto; font-size: 20px; line-height: 1; }
+    .hg-mini-top small { flex: 1; text-align: right; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .hg-mini > b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 700; }
+    .hg-mini-bar { display: block; height: 5px; border-radius: 3px; background: var(--gs-ctl); overflow: hidden; }
+    .hg-mini-bar i { display: block; height: 100%; border-radius: 3px; background: var(--cyan); }
+    .hg-mini.met .hg-mini-top small { color: var(--green); }
+    .hg-mini.off { opacity: .45; }
+    .hs-new { flex: 0 0 auto; height: 36px; padding: 0 12px; border-radius: 12px; cursor: pointer;
+      border: 1px solid var(--gs-edge-hi); background: transparent; color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; }
+    .hs-row { display: flex; align-items: center; gap: 4px; min-height: 58px; margin-bottom: 8px; padding: 3px 8px 3px 2px; border-radius: 14px;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-card); }
+    .hs-row.sp { border: 1.5px solid rgba(255,158,44,.82); box-shadow: 0 0 16px rgba(255,140,30,.18); }
+    .hs-row.live:not(.sp) { border-color: rgba(255,158,44,.5); }
+    .hs-row.done { opacity: .6; }
+    .hs-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 4px 6px;
       border: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-    .hg-kicker { font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--ink-dim); }
-    .hg-title small { max-width: 100%; font-size: 12.5px; color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .hg-mode { flex: 0 1 auto; max-width: 52%; min-height: 40px; padding: 0 12px; font-size: 14px; border-radius: 12px; }
-    .hg-goal { padding: 11px 0 12px; border-top: 1px solid var(--gs-edge); cursor: pointer; }
-    .hg-goal:active { opacity: .75; }
-    .hg-goal-head { display: flex; align-items: center; gap: 9px; min-height: 26px; }
-    .hg-goal-head > span:first-child { flex: 0 0 auto; font-size: 19px; }
-    .hg-goal-head b { flex: 1; min-width: 0; font-size: 15.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .hg-goal .gl-q { padding-top: 9px; }
-    .hg-card .gl-paused { margin: 0; padding: 10px 0 12px; border-top: 1px solid var(--gs-edge); }
-    .hg-card .gl-empty { padding: 10px 0 8px; border-top: 1px solid var(--gs-edge); }
-    .hg-card .sch-wide { margin: 2px 0 12px; }
+    .hs-main:disabled { cursor: default; }
+    .hs-ic { flex: 0 0 34px; text-align: center; font-size: 23px; line-height: 1; }
+    .hs-row.sp .hs-ic { color: var(--cyan); }
+    .hs-t { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .hs-t b, .hs-t small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hs-t b { font-size: 16.5px; font-weight: 700; }
+    .hs-t small { font-size: 13px; color: var(--ink-dim); }
+    .hs-play { flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border-radius: 50%; border: 0; cursor: pointer;
+      background: #8d8d8d; color: #121212; }
+    .hs-play svg { width: 18px; height: 18px; margin-left: 3px; }
+    .hs-play:active { transform: scale(.94); }
+    .hs-row.sp .hs-play { background: var(--cyan); color: #fff; box-shadow: 0 0 12px rgba(255,140,30,.45); }
+    .hs-play.done { background: transparent; box-shadow: none; color: var(--green); font-size: 20px; font-weight: 900; cursor: default; }
+    .hs-empty { margin: -2px 2px 18px; font-size: 13.5px; line-height: 1.45; color: var(--ink-dim); }
+    #homeStack + .home-sec-title { margin-top: 18px; }
     .gl-note { display: flex; align-items: stretch; margin: 0 0 12px; border-radius: 14px; border: 1px solid rgba(255,158,44,.55); }
     .gl-note-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 6px 12px 14px; border: 0;
       background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
@@ -3709,13 +3581,15 @@
 
   <main>
     <!-- ===================== HOME =====================
-         The landing screen: the stack you're in, how the week's goals stand, what's next.
-         It owns no data of its own — the goals card reads the same quotas the Goals tab
+         The landing screen, priorities before execution: what's the least to do today
+         (Today's Goal), how the week stands (the goals strip), which routine to run (the
+         stacks). It owns no data of its own — the strip reads the same quotas the Goals tab
          does, and the board below is literally Due Now rendered a second time (see
          .duenow-mount), so the two can't drift apart. -->
     <section class="view active" id="view-home">
-      <div id="homeStack"></div>
+      <div id="homeMeta"></div>
       <div id="homeGoals"></div>
+      <div id="homeStack"></div>
       <div class="home-sec-title">DUE NOW</div>
       <div class="duenow-mount" id="homeDue" data-bare="1"></div>
       <div id="homeToday"></div>
@@ -4530,6 +4404,10 @@ function defaultState() {
     goalWeeks: [],        // one receipt per judged Mon–Sun week, newest last
     goalWeekDone: '',     // the Monday of the last week judged
     goalReceiptSeen: '',  // the Monday of the last receipt shown on Home
+    // Today's Goal, the Daily Meta Quota (see TODAY'S GOAL). Top-level like the goals.
+    metaQuota: defaultMetaQuota(), // { level, min, max, up: { n, of }, down: { n, of }, since, curve }
+    metaDays: {},         // 'YYYY-MM-DD' → { level, show, need, picks, extras, metAt, result, … } — 60 kept
+    metaDone: '',         // the last day judged
     // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
     // finished quests are deleted and the habit list changes — so each day's pair is
     // recorded as it happens and never recomputed. See recordPaceToday().
@@ -5298,6 +5176,12 @@ function remapHabitIds(st, remap) {
     g.quotas = own.concat(g.quotas.filter(q => q && remap.has(q.hid) && !have.has(fix(q.hid)) && have.add(fix(q.hid)))
       .map(q => ({ ...q, hid: fix(q.hid) })));
   });
+  // Today's Goal remembers its picks by habit id.
+  Object.values(st.metaDays || {}).forEach(r => ['picks', 'extras'].forEach(k => {
+    if (!r || !Array.isArray(r[k])) return;
+    const seen = new Set();
+    r[k] = r[k].filter(p => p && typeof p.hid === 'string' && !seen.has(fix(p.hid)) && seen.add(fix(p.hid))).map(p => ({ ...p, hid: fix(p.hid) }));
+  }));
   return remap.size;
 }
 
@@ -5580,6 +5464,9 @@ function load(raw) {
     merged.goalWeeks = (Array.isArray(merged.goalWeeks) ? merged.goalWeeks : [])
       .filter(w => w && /^\d{4}-\d{2}-\d{2}$/.test(String(w.week || '')) && Array.isArray(w.goals)).slice(-26);
     ['goalWeekDone', 'goalReceiptSeen'].forEach(k => { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(merged[k] || ''))) merged[k] = ''; });
+    merged.metaQuota = sanitizeMetaQuota(merged.metaQuota);
+    merged.metaDays = sanitizeMetaDays(merged.metaDays, merged);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(merged.metaDone || ''))) merged.metaDone = '';
     return merged;
   } catch (e) {
     // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
@@ -9326,42 +9213,19 @@ function computeRewardBlocks(dateStr) {
 // other. Without this a busy hour renders as one illegible pile of text.
 // Walk in start order, close a cluster whenever a block starts after everything so far has
 // ended, then within the cluster drop each block into the first lane that's free.
-/* Blocks used to be inflated to an 18px floor so their names would fit. That made the
-   chart lie: at 32px/hour an 18px floor is 34 minutes, so two things done five minutes
-   apart drew as two nearly-touching boxes and read as simultaneous — you could not tell a
-   busy ten minutes from a busy hour.
-
-   Geometry now always tells the truth. A bar is drawn at its real height, floored only at
-   BAR_MIN_PX so a brief one is still visible at all. When that leaves it too short to
-   hold text (< LABEL_MIN_PX), the block goes "tiny": the bar stays honest and its NAME
-   moves out to a column on the right, joined back by a leader line. Zoom in and the label
-   returns inside the block. */
-const BAR_MIN_PX = 3;         // a bar is never invisible, but never inflated either
-// The schedule's two greys. Predictions keep the darker one (they haven't happened); a real
-// block with no category gets the lighter one, so it can't be mistaken for a prediction.
-const SB_GREY = '#6f6f7a', SB_UNSORTED = '#a9a9b4';
-const LABEL_MIN_PX = 15;      // below this a block cannot hold a legible line of text
-const LABEL_H = 15;           // vertical pitch between two labels in the right column
-function blockFloorPx() { return BAR_MIN_PX; }
-// Drawn height of a block at a given scale, in pixels — the single source of truth for
-// "is this tall enough to read?", shared by the renderer and the zoom relayout.
-function blockDrawnPx(durMin, px) { return Math.max(BAR_MIN_PX, (durMin || 0) / 60 * px); }
-function isTinyBlock(durMin, px) { return blockDrawnPx(durMin, px) < LABEL_MIN_PX; }
-
-function layoutLanes(blocks, px, floorPx, gapPx = 2) {
+function layoutLanes(blocks, px, floorPx, gapPx) {
   // How many minutes the shortest drawable block occupies AT THIS ZOOM. This used to be a
   // flat 12 minutes while blocks rendered with a 24px floor — at 56px/hour that floor is
   // 25.7 minutes, so anything starting within ~26 minutes of a short block was declared
   // non-overlapping, given the same lane, and drawn straight through it. The reservation
   // has to be the rendered size, and the rendered size depends on the scale.
-  const pxPerHour = px || schedPx();
   let cluster = [], lanes = [], clusterEnd = -1;
   const closeCluster = () => { cluster.forEach(b => { b.laneCount = lanes.length; }); cluster = []; lanes = []; clusterEnd = -1; };
   blocks.forEach(b => {
-    // +2px so neighbours never graze: reserving the exact drawn height leaves them
-    // touching, and sub-pixel rounding then reads as a 1px overlap at some scales. (The
-    // Schedule tab passes 1: its blocks are drawn a pixel short of their length already.)
-    const end = b.startMin + Math.max(b.durMin, ((Number.isFinite(floorPx) ? floorPx : blockFloorPx()) + gapPx) / pxPerHour * 60);
+    // gapPx keeps neighbours from grazing: reserving the exact drawn height leaves them
+    // touching, and sub-pixel rounding then reads as a 1px overlap at some scales. The
+    // Schedule tab passes 1, since its blocks are already drawn a pixel short of their length.
+    const end = b.startMin + Math.max(b.durMin, (floorPx + gapPx) / px * 60);
     if (b.startMin >= clusterEnd && cluster.length) closeCluster();
     let lane = lanes.findIndex(laneEnd => laneEnd <= b.startMin);
     if (lane === -1) { lane = lanes.length; lanes.push(end); } else { lanes[lane] = end; }
@@ -9374,93 +9238,14 @@ function layoutLanes(blocks, px, floorPx, gapPx = 2) {
 }
 
 let schedOffset = 0;        // 0 = today, negative = past, positive = planning ahead
-// Zoom: pixels per hour. Higher zoom also splits the hour into finer gridlines so short
-// gaps between habits become visible instead of collapsing into one band.
-// Small steps so each press is a glide rather than a jump.
-// Fifteen stops rather than eight — a midpoint interleaved between each of the original
-// eight, so every press moves about half as far and the day glides instead of jumping.
-// The originals are still exactly on even indices (32 44 56 72 96 128 168 220), which is
-// what the .zoom-N rules below are keyed to.
-const SCHED_ZOOMS = [32, 38, 44, 50, 56, 64, 72, 84, 96, 112, 128, 148, 168, 194, 220];
-let schedZoomIdx = 4;       // Schedule tab — 56px, the old default (index 2 of the old eight)
 const SNAP_MIN = 5;         // drags and resizes snap to five minutes
 let schedNextExpiry = Infinity;   // minute-of-day the next on-screen prediction ends (today only)
-function schedPx(idx = schedZoomIdx) { return SCHED_ZOOMS[clamp(idx, 0, SCHED_ZOOMS.length - 1)]; }
-// Zoom without re-rendering: only --ph changes, and CSS transitions carry every block,
-// gridline and the now-marker to their new positions together.
-// EVERY lookup is scoped to a root element. There are two .sched-grid nodes in the
-// document now, and a bare $('.sched-grid') would always return Home's — it comes first
-// in the markup — silently zooming the widget when you pressed + on the Schedule tab.
-function applyZoomWithin(rootSel, idx) {
-  const root = $(rootSel); if (!root) return;
-  const grid = root.querySelector('.sched-grid'); if (!grid) return;
-  grid.style.setProperty('--ph', schedPx(idx) + 'px');
-  grid.className = 'sched-grid zoom-' + idx;
-  const zi = root.querySelector('[data-act="zoomIn"]'), zo = root.querySelector('[data-act="zoomOut"]');
-  if (zi) zi.disabled = idx >= SCHED_ZOOMS.length - 1;
-  if (zo) zo.disabled = idx <= 0;
-}
-/* Lane assignment depends on the scale (see layoutLanes), so it has to be redone whenever
-   the scale changes — at 32px/hour two blocks need to sit side by side that at 220px/hour
-   have room to stack. Rather than re-rendering, which would throw away the DOM the zoom
-   transition is currently animating and turn the glide into a snap, this recomputes from
-   the timings each block already carries and rewrites only its horizontal geometry. The
-   vertical glide keeps running underneath, untouched. */
-function relayoutLanes(rootSel, px) {
-  const root = $(rootSel); if (!root) return;
-  const grid = root.querySelector('.sched-grid'); if (!grid) return;
-  const loMin = (parseInt(grid.dataset.lo, 10) || 0) * 60;
-  const items = [...root.querySelectorAll('.sched-block:not(.gap):not(.filler)')].map(el => ({
-    el,
-    startMin: parseInt(el.dataset.start, 10) || 0,
-    durMin: parseInt(el.dataset.dur, 10) || 0,
-    label: grid.querySelector(`.sb-label[data-lbl="${el.dataset.idx}"]`),
-  })).sort((a, b) => a.startMin - b.startMin);
-  if (!items.length) { grid.classList.remove('has-tiny'); return; }
-  layoutLanes(items, px);
-  // Labels are pushed DOWN only, never up, so a label always sits at or below the block
-  // it names and its leader line only ever has to reach downward.
-  let anyTiny = false, prevLabelY = -Infinity;
-  items.forEach(b => {
-    const lanes = Math.max(1, b.laneCount || 1), wpct = 100 / lanes;
-    b.el.style.left = (b.lane * wpct) + '%';
-    b.el.style.width = `calc(${wpct}% - 5px)`;
-    const tiny = isTinyBlock(b.durMin, px);
-    b.el.classList.toggle('tiny', tiny);
-    b.el.classList.toggle('resizable', b.el.classList.contains('draggable') && blockDrawnPx(b.durMin, px) >= 26);
-    if (!b.label) return;
-    b.label.classList.toggle('show', tiny);
-    if (!tiny) return;
-    anyTiny = true;
-    const trueY = (b.startMin - loMin) / 60 * px;
-    const y = Math.max(trueY, prevLabelY + LABEL_H);
-    prevLabelY = y;
-    b.label.style.top = y + 'px';
-    // The elbow: runs from the bar's real position down to wherever the label had to be
-    // nudged. Without it a pushed-down label would be pointing at the wrong minute.
-    const leader = b.label.querySelector('.sb-leader');
-    if (leader) { leader.style.top = (trueY - y) + 'px'; leader.style.height = Math.max(0, y - trueY) + 'px'; }
-  });
-  grid.classList.toggle('has-tiny', anyTiny);
-}
-const SCHED_GUTTER = 56;
-/* One grid builder, two callers: the Schedule tab and the Home widget. Everything that
-   makes the grid a grid — the framing hours, the lines, the now-marker, the laid-out
-   blocks — is computed here exactly once, so the widget is the same drawing at a
-   different scale rather than a second implementation that can drift.
 
-   `opts.draggable === false` strips the drag affordances (the .draggable class, the data-
-   attributes the drag reads, and the ✕ unpin button). The widget is read-only: dragging a
-   block inside a 230px scroller would fight the scroll, and a control that looks live but
-   isn't is worse than no control.
-
-   Returns the pieces rather than a finished string so each caller can wrap them in its
-   own chrome. */
 /* The day as DATA, no markup: what happened, what's still expected, the rewards, the
-   unaccounted gaps and the answered ones, and the hours that frame them. Two renderers
-   read it — the Home widget's compact grid (schedGridParts, below) and the Schedule tab's
-   card timeline — so the two can look nothing alike and still never disagree about what
-   happened when. Fresh objects every call: the renderers write lane positions onto them. */
+   unaccounted gaps and the answered ones, and the hours that frame them. The Schedule
+   tab's card timeline draws it and its sheets look blocks up in it, so they can never
+   disagree about what happened when. Fresh objects every call: the timeline writes lane
+   positions onto them. */
 function schedDayModel(dateStr) {
   const isToday = dateStr === todayStr();
   const isFuture = daysBetween(todayStr(), dateStr) > 0;
@@ -9498,118 +9283,6 @@ function schedDayModel(dateStr) {
   return { dateStr, blocks, gaps, fillers, lo, hi, isToday, isFuture, nextExpiry };
 }
 
-function schedGridParts(dateStr, opts = {}) {
-  const draggable = opts.draggable !== false;
-  const m = schedDayModel(dateStr);
-  const { isToday, isFuture, lo, hi, gaps, fillers } = m;
-  const blocks = m.blocks;
-  const px = opts.px || schedPx();
-  layoutLanes(blocks, px);
-  // Gaps are laid out separately and drawn FIRST: a gap is the backdrop behind an
-  // unaccounted stretch, so it takes the full width and must never push a real block
-  // into a second lane the way another overlapping block would.
-  gaps.forEach(g => { g.lane = 0; g.laneCount = 1; });
-  fillers.forEach(g => { g.lane = 0; g.laneCount = 1; });   // same backdrop treatment as a gap
-  blocks.unshift(...gaps, ...fillers);
-
-  // Every vertical position is expressed as `calc(var(--ph) * hours)` rather than a baked
-  // pixel value. Zooming then only has to change --ph on the grid — no re-render — so the
-  // whole day glides between scales instead of snapping.
-  const at = hours => `calc(var(--ph) * ${+hours.toFixed(4)})`;
-
-  const hourLines = [];
-  for (let h = lo; h <= hi; h++) {
-    hourLines.push(`<div class="sched-hour" style="top:${at(h - lo)}">${escapeHtml(fmtMinOfDay(h * 60))}</div>`);
-    // Quarter-hour lines are always in the DOM; CSS reveals them as the zoom class grows,
-    // which is what makes a 15-minute gap visible instead of one undifferentiated band.
-    if (h < hi) {
-      // Five-minute lines exist so the five-minute snap has something to land against;
-      // CSS keeps them hidden until the deepest zooms, where they're the whole point.
-      for (let m = 5; m < 60; m += 5) {
-        const cls = m === 30 ? 'half' : (m % 15 === 0 ? 'quarter' : 'fine');
-        hourLines.push(`<div class="sched-sub ${cls}" style="top:${at((h - lo) + m / 60)}"><span>${escapeHtml(fmtMinOfDay(h * 60 + m))}</span></div>`);
-      }
-    }
-  }
-  const nowLine = isToday && nowMinutes() >= lo * 60 && nowMinutes() <= hi * 60
-    ? `<div class="sched-now" style="top:${at((nowMinutes() - lo * 60) / 60)}"></div>` : '';
-
-  // Names for blocks too short to hold them, drawn in a column to the right. Built in the
-  // same pass as the blocks so the two can never fall out of step; which of them are
-  // actually shown is decided by relayoutLanes, because that answer changes with zoom.
-  const labelEls = [];
-  const blockEls = blocks.map((b, i) => {
-    if (b.kind === 'filler') {
-      const s0 = Math.round(b.startMin), e0 = Math.round(b.endMin);
-      const span = `${fmtMinOfDay(s0)}–${fmtMinOfDay(e0)} · ${fmtMins(e0 - s0)}`;
-      return `<div class="sched-block filler" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${s0}"
-        data-gapstart="${b.startMin}" data-gapend="${b.endMin}" data-gapdate="${b.gapDate}"
-        title="${escapeHtml(`${b.name} · ${span} — your answer; tap to change it`)}"
-        style="top:${at((b.startMin - lo * 60) / 60)};height:${at(b.durMin / 60)};left:0;width:calc(100% - 5px)">
-        <span class="filler-name">✎ ${escapeHtml(b.name)}</span><span class="filler-time">${escapeHtml(span)}</span>
-      </div>`;
-    }
-    if (b.kind === 'gap') {
-      const span = `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay(b.endMin)} · ${fmtMins(b.durMin)}`;
-      return `<div class="sched-block gap" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"
-        data-gapstart="${b.startMin}" data-gapend="${b.endMin}" data-gapdate="${b.gapDate}"
-        title="${escapeHtml(`Nothing logged ${span} — tap to say what you were doing`)}"
-        style="top:${at((b.startMin - lo * 60) / 60)};height:${at(b.durMin / 60)};left:0;width:calc(100% - 5px)">
-        <span class="gap-q">?</span>
-      </div>`;
-    }
-    const topH = (b.startMin - lo * 60) / 60;
-    const top = at(topH);
-    // True height, floored only enough to stay visible. No inflation — see BAR_MIN_PX.
-    const height = `max(${BAR_MIN_PX}px, ${at(b.durMin / 60)})`;
-    // Colour means CATEGORY here — the one place in the greyscale app that it does.
-    const col = (b.kind === 'predicted' || b.type === 'reward') ? SB_GREY
-      : (categoryColor(b.category) || SB_UNSORTED);
-    const lanes = Math.max(1, b.laneCount || 1);
-    const widthPct = 100 / lanes;
-    const timeLabel = b.kind === 'moment'
-      ? `✓ ${fmtMinOfDay(b.startMin)}`
-      : `${fmtMinOfDay(b.startMin)}–${fmtMinOfDay((b.startMin + b.durMin) % 1440)} · ${fmtMins(Math.round(b.durMin))}`;
-    const title = `${b.type === 'reward' ? '🎁 reward · ' : ''}${b.emoji || ''} ${b.name} — ${b.kind === 'predicted' ? 'predicted · drag to change its length, hold to move it · ' : (b.hid && !b.live ? 'drag to change its length, hold to move it — corrects what really happened · ' : '')}${timeLabel}`;
-    // Predictions are always draggable — no mode to enter. Anything that already happened
-    // stays put: it's a record, not a plan, so moving it would be rewriting history.
-    // Predictions move to re-plan; finished blocks move to CORRECT the record. Both use
-    // the same gesture; where the change is written is what differs (see endSchedDrag).
-    const editHist = draggable && b.hid && !b.live && b.type !== 'reward';
-    const drag = draggable && ((b.kind === 'predicted' && b.refId) || editHist);
-    const pin = b.pinned ? ' 📌' : '';
-    const tiny = isTinyBlock(b.durMin, px);
-    labelEls.push(`<div class="sb-label${tiny ? ' show' : ''}" data-lbl="${i}" style="--sb:${col}">
-      <i class="sb-leader"></i>
-      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
-      <span class="sbl-time">${escapeHtml(timeLabel)}</span>
-    </div>`);
-    // Positioned inside .sched-lanes, which is already inset past the hour gutter — so
-    // these percentages are of the block area alone and the gutter never enters the math.
-    // Tall enough to show a time? Show it — during a drag it doubles as the readout.
-    // Measured at the ACTUAL scale, not a hardcoded 96px/hour: a second line needs ~30px,
-    // and at 32px/hour almost nothing has that, so the label was being clipped rather
-    // than omitted. Draggable blocks always keep it — that's their live drag readout.
-    const showTime = !tiny && (b.durMin / 60 * px >= 30) && lanes <= 2;
-    // Grips only make sense once the block is tall enough to have two distinguishable
-    // edges; relayoutLanes re-decides this on zoom, since zoom doesn't re-render.
-    const resizable = drag && blockDrawnPx(b.durMin, px) >= 26;
-    // start/dur ride on EVERY block, not just the draggable ones: relayoutLanes() rebuilds
-    // the lane assignment from the DOM when the zoom changes, and it needs their timing.
-    return `<div class="sched-block ${b.kind}${b.type === 'reward' ? ' reward' : ''}${drag ? ' draggable' : ''}${resizable ? ' resizable' : ''}${tiny ? ' tiny' : ''}${b.running ? ' running' : ''}"
-      title="${escapeHtml(title)}" data-idx="${i}" data-dur="${Math.round(b.durMin)}" data-start="${b.startMin}"${drag ? (editHist ? ` data-hid="${b.hid}" data-seg="${b.segIndex || 0}"` : ` data-ref="${b.refId}" data-refkind="${b.planKind || 'habit'}"`) : ''}
-      style="top:${top};height:${height};left:${b.lane * widthPct}%;width:calc(${widthPct}% - 5px);--sb:${col}">
-      <b>${escapeHtml(b.emoji || '')} ${escapeHtml(b.name)}${pin}</b>
-      ${showTime || drag ? `<span class="sb-time">${escapeHtml(timeLabel)}</span>` : ''}
-      ${drag ? `<div class="sb-grip t" data-grip="top"></div><div class="sb-grip b" data-grip="bot"></div>` : ''}
-      ${drag && b.pinned && !editHist ? `<button class="sb-unpin" data-act="unpin" title="Back to my usual time">✕</button>` : ''}
-    </div>`;
-  }).join('');
-
-  return { blocks, lo, hi, hours: hi - lo, isToday, isFuture, nextExpiry: m.nextExpiry,
-    inner: `${hourLines.join('')}${nowLine}<div class="sched-lanes">${blockEls}</div><div class="sched-labels">${labelEls.join('')}</div>` };
-}
-
 /* =================================================================
    SCHEDULE — the day as a calm vertical timeline.
 
@@ -9633,8 +9306,8 @@ function schedGridParts(dateStr, opts = {}) {
    any drag, which was harmless on 3px bars and would make a screen of cards impossible to
    scroll — so changing a block now waits for a deliberate hold.
 
-   The data comes from schedDayModel, the same model the Home widget draws, so the two can
-   never disagree about what happened when.
+   The data comes from schedDayModel, and the sheets look their blocks up in the same model,
+   so the timeline and its sheets can never disagree about what happened when.
    ================================================================= */
 const SCHED_DENSITIES = {
   detailed: { label: 'Detailed', sub: 'More space per hour. Easier to see details.', px: 84 },
@@ -10873,12 +10546,12 @@ function renderDueSoon() {
 }
 
 /* =================================================================
-   HOME — the landing screen. Top to bottom: the stack you're in, how this week's
-   goals stand, and what to do next.
+   HOME — the landing screen, priorities before execution. Top to bottom: Today's Goal
+   (renderHomeMeta, the loudest thing on the page), how the week's goals stand
+   (renderHomeGoals, small), the stacks (renderHomeStack, Goal Speedrun first), and Due Now.
 
-   It stores nothing of its own except the pace log. The goals card is drawn by
-   renderHomeGoals in GOALS & MODES, and the board below it is Due Now painted a second
-   time (see renderDueSoon's .duenow-mount loop), so nothing here can drift.
+   It stores nothing of its own except the pace log. The board at the bottom is Due Now
+   painted a second time (see renderDueSoon's .duenow-mount loop), so nothing here can drift.
    ================================================================= */
 
 /* ---- Pace ---------------------------------------------------------------------------
@@ -10945,7 +10618,9 @@ function renderHomeTally() {
 // calls save(), which is safe here: save() is a no-op while saveLocked, so a degraded
 // load can't be written over by a render.
 function renderHomeExtras() {
+  metaSync();           // first: Goal Speedrun is made from today's list
   renderStacks();
+  renderHomeMeta();
   renderHomeGoals();
   // The pace panel is gone, but the log it fed is not: dayLoadout() reads paceLog to work
   // out which loadout a past day belonged to, which the Similar Day Engine depends on.
@@ -11005,6 +10680,9 @@ function sanitizeStacks(src, st) {
 }
 function sanitizeStackRun(src, st) {
   if (!src || typeof src !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(String(src.date || ''))) return null;
+  // Goal Speedrun is made on the fly from Today's Goal (isSpeedrun), never saved as a stack.
+  if (src.stackId === 'speedrun') return { date: src.date, stackId: 'speedrun', paused: !!src.paused, open: !!src.open,
+    skipped: [...new Set((Array.isArray(src.skipped) ? src.skipped : []).filter(id => typeof id === 'string'))] };
   const stack = (st.stacks || []).find(s => s.id === src.stackId);
   if (!stack) return null;
   const skipped = Array.isArray(src.skipped) ? src.skipped.filter(id => stack.habitIds.includes(id)) : [];
@@ -11048,7 +10726,7 @@ function sanitizeStackSwaps(src) {
 function stackList() {
   return Array.isArray(state.stacks) ? state.stacks.filter(s => s && typeof s.id === 'string' && Array.isArray(s.habitIds)) : [];
 }
-function stackById(id) { return stackList().find(s => s.id === id) || null; }
+function stackById(id) { return isSpeedrun(id) ? speedrunStack() : stackList().find(s => s.id === id) || null; }
 function stackName(s) { return (s && String(s.name || '').trim()) || 'Habit stack'; }
 // Today's pass through a stack, or null. A pass belongs to one day; tomorrow starts fresh.
 function stackRun() {
@@ -11065,6 +10743,7 @@ function stackStepDone(h) { return doneCount(h) > 0; }
 // the habit is". A pick is saved with the ladder's height, so adding or removing a tier
 // later makes it lapse instead of quietly landing on a different rung.
 function stackTierPick(stack, h) {
+  if (stack && stack.auto) return speedrunTierPick(h);
   const m = state.stackTiers && state.stackTiers[stack.id], p = m && m[h.id], lv = habitLevels(h);
   return p && lv && p.n === lv.length && Number.isInteger(p.i) && p.i >= 0 && p.i < lv.length ? p.i : null;
 }
@@ -11267,7 +10946,10 @@ function noteStackProgress(v) {
     stkEnterAt = Date.now();
     const was = stkSeen.curId && v.steps.find(s => s.h.id === stkSeen.curId);
     if (was && was.done) {
-      stkFlash = { at: Date.now(), curId, html: v.cur ? `Nice. Next: <b>${escapeHtml(stackStepName(v.cur.h))}</b>` : 'Nice. That\'s the whole stack.' };
+      const met = v.stack.auto && Date.now() - metaJustMet < 5000;
+      stkFlash = { at: Date.now(), curId, html: met
+        ? `🎯 Today's goal done — the rest is optional.${v.cur ? ` Next: <b>${escapeHtml(stackStepName(v.cur.h))}</b>` : ''}`
+        : v.cur ? `Nice. Next: <b>${escapeHtml(stackStepName(v.cur.h))}</b>` : 'Nice. That\'s the whole stack.' };
       if (v.finished) stkFinishedNow = true;
     }
   }
@@ -11292,46 +10974,43 @@ function stackSegsHTML(v) {
     s.done ? 'done' : v.cur && v.cur.h.id === s.h.id ? 'cur' : s.skipped ? 'skip' : ''}"></i>`).join('')}</div>`;
 }
 // The chain itself: ✓ done · → the one to do · plain upcoming · skipped, with a way back.
-// `tick` puts a ✓ on the current step, for Home, where the big buttons aren't.
-function stackStepsHTML(v, tick) {
+function stackStepsHTML(v) {
   return `<ol class="stk-steps">${v.steps.map(s => {
     const h = s.h, isCur = !!(v.cur && v.cur.h.id === h.id), name = escapeHtml(stackStepName(h, v));
     const cls = s.done ? 'done' : isCur ? 'cur' : s.skipped ? 'skip' : '';
-    const end = isCur && tick ? `<button class="stk-tick" data-stk="tick" data-id="${v.stack.id}" data-hid="${h.id}" aria-label="Done: ${name}">✓</button>`
-      : s.skipped && !isCur ? `<button class="stk-now-btn" data-stk="unskip" data-hid="${h.id}">Do now</button>` : '';
+    const end = s.skipped && !isCur ? `<button class="stk-now-btn" data-stk="unskip" data-hid="${h.id}">Do now</button>` : '';
     return `<li class="stk-step ${cls}"><span class="stk-mark" aria-hidden="true">${s.done ? '✓' : isCur ? '→' : ''}</span>
       <span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span><span class="stk-name">${name}</span>
       ${s.skipped ? '<span class="stk-skipped">skipped</span>' : ''}${stackRoleTag(h)}${end}</li>`;
   }).join('')}</ol>`;
 }
-// Home: the stack in progress (or the first one not done yet) in full, others as a line.
+// Home: the stacks as a list — below Today's Goal and the goals, since which routine to
+// run comes after what matters today. Goal Speedrun first, then the user's own in their
+// order. Tapping a row edits it; ▶ runs it (or carries on with the one going).
+const STK_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>';
+function stackRowHTML(v, r) {
+  const s = v.stack, live = !!(r && r.stackId === s.id), paused = live && r.paused, going = live && !r.paused;
+  const name = escapeHtml(stackName(s));
+  const sub = s.auto ? speedrunSub(v)
+    : v.finished ? `Done today · ${v.done} of ${v.total}`
+    : paused && v.cur ? `⏸ Paused at ${stackStepName(v.cur.h)} · ${v.done} of ${v.total}`
+    : going && v.cur ? `Now: ${stackStepName(v.cur.h)} · ${v.done} of ${v.total}`
+    : stackChain(s);
+  const play = v.finished
+    ? `<span class="hs-play done" aria-label="${name}: done today">✓</span>`
+    : `<button class="hs-play" data-stk="start" data-id="${s.id}" aria-label="${going ? 'Continue' : paused ? 'Resume' : 'Start'} ${name}">${STK_PLAY}</button>`;
+  return `<div class="hs-row${s.auto ? ' sp' : ''}${going ? ' live' : ''}${v.finished ? ' done' : ''}">
+      <button class="hs-main" data-stk="${s.auto ? 'start' : 'edit'}" data-id="${s.id}" ${s.auto && v.finished ? 'disabled' : ''}>
+        <span class="hs-ic" aria-hidden="true">${s.auto ? '⚡' : '🔗'}</span>
+        <span class="hs-t"><b>${name}</b><small>${escapeHtml(sub)}</small></span></button>${play}</div>`;
+}
 function renderHomeStack() {
   const box = $('#homeStack'); if (!box) return;
-  const r = stackRun();
-  const views = stackList().filter(s => s.on).map(s => stackView(s, r)).filter(v => v.total);
-  const live = r ? views.find(v => v.stack.id === r.stackId && !v.finished) : null;
-  const lead = live || views.find(v => !v.finished) || null;
-  let html = '';
-  if (lead) {
-    const id = lead.stack.id, paused = !!(live && r.paused), going = !!(live && !r.paused);
-    const flash = going && stkFlashing(lead) ? `<div class="stk-line" style="${stkSince(stkFlash.at)}">${stkFlash.html}</div>` : '';
-    const note = paused && lead.cur ? `<div class="stk-note">⏸ Paused at ${escapeHtml(stackStepName(lead.cur.h))} — it's right where you left it.</div>` : '';
-    const go = going ? 'Continue stack <span aria-hidden="true">›</span>' : paused ? '▶ Resume stack' : '▶ Start stack';
-    html += `<div class="stk-card${going ? ' live' : ''}">
-      <div class="stk-head"><span class="stk-kicker">🔗 ${escapeHtml(stackName(lead.stack))}</span>
-        <span class="stk-count">${lead.done} of ${lead.total}</span>
-        ${going ? '<button class="stk-icon" data-stk="pause" aria-label="Pause stack">⏸</button>' : ''}
-        <button class="stk-icon" data-stk="edit" data-id="${id}" aria-label="Edit stack">✎</button></div>
-      ${stackSegsHTML(lead)}${flash}${stackStepsHTML(lead, true)}${note}
-      <button class="stk-go" data-stk="start" data-id="${id}">${go}</button></div>`;
-  }
-  views.filter(v => v !== lead).forEach(v => {
-    html += v.finished
-      ? `<div class="stk-mini done"><span class="stk-mini-name">✓ ${escapeHtml(stackName(v.stack))}</span><span class="stk-count">${v.done} of ${v.total}</span></div>`
-      : `<div class="stk-mini"><span class="stk-mini-name">🔗 ${escapeHtml(stackName(v.stack))}</span><span class="stk-count">${v.done} of ${v.total}</span>
-          <button class="stk-now-btn" data-stk="start" data-id="${v.stack.id}">Start</button></div>`;
-  });
-  box.innerHTML = html;
+  const r = stackRun(), sp = speedrunStack();
+  const views = (sp ? [sp] : []).concat(stackList().filter(s => s.on)).map(s => stackView(s, r)).filter(v => v.total);
+  box.innerHTML = `<div class="hx-head"><span class="hx-title">Habit Stacks</span>
+      <button class="hs-new" data-stk="newStack"><span aria-hidden="true">＋</span> New Stack</button></div>
+    ${views.map(v => stackRowHTML(v, r)).join('') || '<div class="hs-empty">A stack is a fixed order through habits you already have — finish one and the next is waiting.</div>'}`;
 }
 /* A step's tiers swipe the way a habit row on the Habits tab does: every page is drawn up
    front in a track offset by -index×100%, the finger only nudges the transform, and the
@@ -11364,14 +11043,14 @@ function stackRunnerHTML(v) {
   const title = escapeHtml(stackName(v.stack));
   const top = `<div class="stk-run-top">
       <button class="stk-icon big" data-stk="close" aria-label="Minimise — the stack keeps running"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="stk-run-title"><b>${title}</b><small>${v.done} of ${v.total} done</small></div>
+      <div class="stk-run-title"><b>${title}</b><small>${v.stack.auto ? escapeHtml(speedrunRunSub()) : `${v.done} of ${v.total} done`}</small></div>
       <button class="stk-icon big" data-stk="edit" data-id="${v.stack.id}" aria-label="Edit stack">✎</button>
     </div>${stackSegsHTML(v)}`;
   if (!v.cur) {
     return `<div class="stk-run" role="dialog" aria-modal="true" aria-label="${title}">${top}
       <div class="stk-run-body"><div class="stk-fin"><div class="stk-fin-mark" aria-hidden="true">✓</div>
-        <b>${v.total ? 'Stack complete' : 'Nothing in this stack today'}</b>
-        <small>${v.total ? `${v.done} of ${v.total} — same order tomorrow.` : 'None of its habits are on today.'}</small></div></div>
+        <b>${!v.total ? 'Nothing in this stack today' : v.stack.auto ? 'All done for today' : 'Stack complete'}</b>
+        <small>${!v.total ? 'None of its habits are on today.' : v.stack.auto ? 'Today\'s goal and every extra — done.' : `${v.done} of ${v.total} — same order tomorrow.`}</small></div></div>
       <div class="stk-run-acts"><button class="stk-primary" data-stk="close">Close</button></div></div>`;
   }
   const h = v.cur.h, td = habitToday(h);
@@ -11403,7 +11082,7 @@ function stackRunnerHTML(v) {
         ${lvls ? tierDotsHTML(lvls, li) : ''}${timer}
       </div>${then}
       <button class="stk-all" data-stk="all" aria-expanded="${stkShowAll}">${stkShowAll ? 'Hide the stack ▴' : 'Whole stack ▾'}</button>
-      ${stkShowAll ? stackStepsHTML(v, false) : ''}
+      ${stkShowAll ? stackStepsHTML(v) : ''}
     </div>
     <div class="stk-run-acts">
       <div class="stk-acts-row">${v.next ? `<button class="stk-btn" data-stk="skip">${v.revisit ? '↷ Later' : '⏭ Skip'}</button>` : ''}
@@ -11446,7 +11125,7 @@ function renderStackDock() {
   const clock = t ? `<span class="stk-dock-clock${t.pausedAt ? ' held' : ''}"><b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? '<small>on hold</small>' : ''}</span>` : '';
   dock.innerHTML = `<button class="stk-dock-main" data-stk="start" data-id="${stack.id}" aria-label="Open ${escapeHtml(stackName(stack))} — now: ${name}">
       <span class="stk-dock-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
-      <span class="stk-dock-text"><small>🔗 ${escapeHtml(stackName(stack))} · ${v.done} of ${v.total}</small><b>${name}</b></span>
+      <span class="stk-dock-text"><small>${stack.auto ? '⚡' : '🔗'} ${escapeHtml(stackName(stack))} · ${v.done} of ${v.total}</small><b>${name}</b></span>
       ${clock}<span class="stk-dock-up" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
     <i class="stk-dock-prog" style="width:${v.total ? Math.round(v.done / v.total * 100) : 0}%" aria-hidden="true"></i>`;
 }
@@ -11474,13 +11153,14 @@ function onStackClick(e) {
     case 'all': stkShowAll = !stkShowAll; SFX.click(); renderStackRunner(); return;
     case 'skip': skipStackStep(); return;
     case 'unskip': unskipStackStep(b.dataset.hid); return;
-    // The habit's own verbs, exactly as its row on the Habits tab calls them.
-    case 'tick': {
-      // Ticked on Home before the stack is started: done at the tier the card shows.
-      const s = stackById(b.dataset.id), h = state.habits.find(x => x.id === b.dataset.hid);
-      if (s && h && !(r && r.stackId === s.id)) { const p = stackTierMove(s, h); if (p !== null) setHabitTier(h, p); }
-      completeHabit(b.dataset.hid); return;
+    case 'newStack': {
+      SFX.click();
+      const ns = { id: uid(), name: '', habitIds: [], on: true };
+      state.stacks = stackList().concat(ns);
+      save(); stkSheet = { view: 'edit', id: ns.id, focusName: true }; renderStackSheet();
+      return;
     }
+    // The habit's own verbs, exactly as its row on the Habits tab calls them.
     case 'done': if (curId) completeHabit(curId); return;
     case 'begin': if (curId) startHabitTimer(curId); return;
     case 'finish': if (curId) finishTimedHabit(curId); return;
@@ -11492,6 +11172,7 @@ function onStackClick(e) {
 let stkSheet = null;          // null, or { view: 'list' | 'edit', id, pick, flash, naming } — pick: a habit waiting for its slot
 let stkNameSave = null;       // the name saves a beat after typing stops, not per key
 function openStackEditor(id) {
+  if (isSpeedrun(id)) { openGm('meta'); return; }   // made by Today's Goal: its settings are its editor
   stkSheet = id && stackById(id) ? { view: 'edit', id } : { view: 'list' };
   renderStackSheet();
 }
@@ -12101,10 +11782,13 @@ function rollGoalWeeks() {
 }
 // Today stamped with its mode, and any week that has closed judged. fullRender and the
 // 30-second tick both call this, so a week can turn over with the app sitting open.
+// Today's Goal rides the same tick: yesterday judged (and the level moved) before
+// today's list is made, and the list made after the week's goal levels have moved.
 function goalsTick() {
-  const stamped = noteModeDay(), rolled = rollGoalWeeks();
-  if (stamped || rolled) save();
-  return rolled;
+  const stamped = noteModeDay(), rolled = rollGoalWeeks(), judged = rollMetaDays();
+  if (stamped || rolled || judged) save();
+  const listed = metaSync();
+  return rolled || judged || listed;
 }
 
 /* ---- editing ---- */
@@ -12213,7 +11897,8 @@ function renderGoals() {
       + (paused.length ? `<div class="gl-paused">Paused in ${escapeHtml(m.emoji)} ${escapeHtml(m.name)}: ${paused.map(g =>
           `<button data-gm="goal" data-id="${g.id}">${escapeHtml(goalEmoji(g))} ${escapeHtml(goalName(g))}</button>`).join('')}</div>` : '')
       + (goals.length ? '' : '<div class="gl-empty">No goals yet. A goal is an area you want to keep alive — Cello, French, Fitness — made of habits you already have, each with a weekly quota.</div>')
-      + '<button class="sch-wide go" data-gm="newGoal">＋ New goal</button>';
+      + '<button class="sch-wide go" data-gm="newGoal">＋ New goal</button>'
+      + `<button class="sch-wide" data-gm="meta">🎯 Today's goal · Level ${metaCfg().level} — rules &amp; limits</button>`;
   }
   // The Mode button sits beside the title rather than after it: the description has to
   // follow the title directly to fold behind its ⓘ.
@@ -12227,17 +11912,9 @@ function renderGoals() {
     </div>
     ${body}`;
 }
-// Home: this week's goals in one card, where the Schedule window used to be — always
-// there, even before the first goal, so the feature can't hide behind ⋯ More. Last
-// week's receipt sits above it until it's been seen.
-function homeGoalHTML(g) {
-  const rows = quotaRowsHTML(g);
-  return `<div class="hg-goal" data-gm="goal" data-id="${g.id}" role="button" tabindex="0" aria-label="Edit ${escapeHtml(goalName(g))}">
-      <div class="hg-goal-head"><span aria-hidden="true">${escapeHtml(goalEmoji(g))}</span><b>${escapeHtml(goalName(g))}</b>
-        <span class="gl-lv">Level ${g.level}</span></div>
-      ${rows || '<div class="gl-none">No habits yet — tap to add the ones that count toward it.</div>'}
-    </div>`;
-}
+// Home: the week at a glance, under Today's Goal and deliberately quieter — one small
+// card per goal, its days done against its days asked. Informational: Today's Goal has
+// already done the deciding. Tap one to edit it. Last week's receipt sits above until seen.
 function renderHomeGoals() {
   const box = $('#homeGoals'); if (!box) return;
   let note = '';
@@ -12250,26 +11927,28 @@ function renderHomeGoals() {
         <small>${up.length ? `${up.join(', ')} levelled up · ` : ''}See the receipt ›</small></span></button>
       <button class="gl-note-x" data-gm="receiptSeen" aria-label="Dismiss">✕</button></div>`;
   }
-  const m = currentMode(), hidden = modeHiddenCount(m);
-  const goals = goalList(), shown = goals.filter(g => !goalHiddenNow(g)), paused = goals.filter(goalHiddenNow);
-  const modeLine = paused.length || hidden
-    ? `<div class="gl-paused">${escapeHtml(m.emoji)} ${escapeHtml(m.name)}${hidden ? ` hides ${hidden} habit${hidden === 1 ? '' : 's'}` : ''}${paused.length
-        ? ` · paused: ${paused.map(g => `<button data-gm="goal" data-id="${g.id}">${escapeHtml(goalEmoji(g))} ${escapeHtml(goalName(g))}</button>`).join('')}` : ''}</div>`
-    : '';
-  box.innerHTML = `${note}<div class="hg-card">
-      <div class="hg-head">
-        <button class="hg-title" data-gm="toGoals"><span class="hg-kicker">Goals ›</span><small>This week · ${goalWeekRange(wcWeekStart(todayStr()))}</small></button>
-        <button class="mode-btn hg-mode" data-gm="modes" aria-label="Mode: ${escapeHtml(m.name)} — change"><span aria-hidden="true">${escapeHtml(m.emoji)}</span><span class="mb-name">${escapeHtml(m.name)}</span><span class="mb-go" aria-hidden="true">▾</span></button>
-      </div>
-      ${shown.map(homeGoalHTML).join('')}
-      ${modeLine}
-      ${goals.length ? '' : `<div class="gl-empty">No goals yet. A goal is an area you want to keep alive — Cello, French, Fitness — made of habits you already have, each with a weekly quota.</div>
-        <button class="sch-wide go" data-gm="newGoal">＋ New goal</button>`}
-    </div>`;
+  const goals = goalList();
+  if (!goals.length) { box.innerHTML = note; return; }      // Today's Goal carries the "set one up" prompt
+  const m = currentMode();
+  const cards = goals.map(g => {
+    const off = goalHiddenNow(g), asked = goalQuotas(g).map(({ q, h }) => quotaNow(g, q, h)).filter(n => !n.excused);
+    const done = asked.reduce((t, n) => t + n.done, 0), need = asked.reduce((t, n) => t + n.freq, 0);
+    const met = asked.length > 0 && asked.every(n => n.met);
+    return `<button class="hg-mini${off ? ' off' : ''}${met ? ' met' : ''}" data-gm="goal" data-id="${g.id}"
+        aria-label="${escapeHtml(goalName(g))}: ${off ? 'paused in this mode' : `${done} of ${need} this week`}">
+        <span class="hg-mini-top"><span class="hg-mini-e" aria-hidden="true">${escapeHtml(goalEmoji(g))}</span>
+          <small>${off ? 'paused' : need ? `${done} / ${need}${met ? ' ✓' : ''}` : '—'}</small></span>
+        <b>${escapeHtml(goalName(g))}</b>
+        <span class="hg-mini-bar" aria-hidden="true"><i style="width:${need ? Math.round(done / need * 100) : 0}%"></i></span></button>`;
+  }).join('');
+  box.innerHTML = `${note}<div class="hx-head"><span class="hx-title">Your Goals</span>
+      ${m.id !== 'normal' ? `<button class="hx-mode" data-gm="modes" aria-label="Mode: ${escapeHtml(m.name)} — change">${escapeHtml(m.emoji)} ${escapeHtml(m.name)}</button>` : ''}
+      <button class="hx-link" data-gm="toGoals">This week <span aria-hidden="true">›</span></button></div>
+    <div class="hg-row">${cards}</div>`;
 }
 
 /* ---- the sheet: choosing a mode, editing one, editing a goal, a receipt ---- */
-let gmSheet = null;       // null, or { view: 'modes' | 'mode' | 'goal' | 'receipt', id, adding, week }
+let gmSheet = null;       // null, or { view: 'modes' | 'mode' | 'goal' | 'receipt' | 'meta', id, adding, week }
 let gmDirty = false;      // something behind the sheet changed: repaint everything on close
 let gmInputSave = null;
 function openGm(view, id) { gmSheet = { view, id: id || null }; renderGmSheet(); }
@@ -12277,7 +11956,7 @@ function flushGmInput() { if (gmInputSave) { clearTimeout(gmInputSave); gmInputS
 function closeGm() {
   flushGmInput();
   gmSheet = null; renderGmSheet();
-  if (gmDirty) { gmDirty = false; fullRender(); } else { renderGoals(); renderHomeGoals(); }
+  if (gmDirty) { gmDirty = false; fullRender(); } else { renderGoals(); renderHomeMeta(); renderHomeGoals(); }
 }
 function gmHead(title, back, right) {
   return `<div class="sch-sh-head">${back ? `<button class="sch-sh-x" data-gm="${back}" aria-label="Back">‹</button>` : '<button class="sch-sh-x" data-gm="close" aria-label="Close">✕</button>'}
@@ -12377,7 +12056,7 @@ function renderGmSheet() {
   const week = gmSheet.view === 'receipt' ? (state.goalWeeks || []).find(w => w.week === gmSheet.week) : null;
   if (gmSheet.view === 'receipt' && !week) { gmSheet = null; return renderGmSheet(); }
   const key = gmSheet.view + ':' + (gmSheet.id || gmSheet.week || ''), keep = sh.dataset.view === key ? sh.scrollTop : 0;
-  sh.innerHTML = '<div class="sch-grab"></div>' + (gmSheet.view === 'modes' ? modeListHTML() : m ? modeEditHTML(m) : g ? goalEditHTML(g)
+  sh.innerHTML = '<div class="sch-grab"></div>' + (gmSheet.view === 'meta' ? metaSheetHTML() : gmSheet.view === 'modes' ? modeListHTML() : m ? modeEditHTML(m) : g ? goalEditHTML(g)
     : gmHead(`🧾 ${goalWeekRange(week.week)}`) + receiptHTML(week));
   sh.dataset.view = key;
   sh.classList.add('show'); scrim.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
@@ -12394,6 +12073,9 @@ function onGmClick(e) {
     case 'close': SFX.click(); closeGm(); return;
     case 'modes': gmSheet = { view: 'modes' }; break;
     case 'toGoals': SFX.click(); switchView('goals'); return;
+    case 'meta': gmSheet = { view: 'meta' }; break;
+    case 'metaLevel': if (!setMetaLevel(parseInt(b.dataset.v, 10))) return; metaSync(); gmDirty = true; break;
+    case 'metaSet': if (!editMeta(b.dataset.f, parseInt(b.dataset.v, 10))) return; metaSync(); gmDirty = true; break;
     case 'toModes': gmSheet = { view: 'modes' }; break;
     case 'useMode': {
       SFX.click();
@@ -12470,13 +12152,13 @@ function onGmClick(e) {
     default: return;
   }
   SFX.click(); renderGmSheet();
-  if (gmDirty && gmSheet && gmSheet.view !== 'mode') { renderGoals(); renderHomeGoals(); }
+  if (gmDirty && gmSheet && gmSheet.view !== 'mode') { renderGoals(); renderHomeMeta(); renderHomeGoals(); renderStacks(); }
 }
 ['#gmSheet', '#goalsMount', '#homeGoals'].forEach(sel => $(sel).addEventListener('click', onGmClick));
 $('#modeSwitch').addEventListener('click', () => { SFX.click(); openGm('modes'); });
-['#goalsMount', '#homeGoals'].forEach(sel => $(sel).addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.gl-card[data-gm], .hg-goal[data-gm]')) { e.preventDefault(); e.target.click(); }
-}));
+$('#goalsMount').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.gl-card[data-gm]')) { e.preventDefault(); e.target.click(); }
+});
 $('#gmSheet').addEventListener('input', e => {
   const k = e.target.dataset.gmIn; if (!k || !gmSheet) return;
   const obj = k.startsWith('goal') ? goalById(gmSheet.id) : modeById(gmSheet.id); if (!obj) return;
@@ -12495,6 +12177,460 @@ $('#gmSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.targ
 $('#gmSheet').addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.gmIn) setTimeout(renderGmSheet, 0); });
 $('#gmScrim').addEventListener('click', () => { SFX.click(); closeGm(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) closeGm(); });
+
+/* =================================================================
+   TODAY'S GOAL — the Daily Meta Quota: the few habits worth doing today.
+
+   Weekly goals decide what has to happen over the week. This decides what deserves
+   attention TODAY, so nobody has to read every quota and build the day by hand:
+   "Complete 2 of 3 — Laundry, Vibe coding, French speaking". Any two will do.
+
+   The picks come from fixed rules anyone can follow, never a model:
+     · a candidate is a habit in a goal whose quota still wants something this week,
+       that is on today (its weekdays, and not hidden by the Mode) and not done today
+     · each gets a score (metaScore), biggest part first —
+         urgency   completions left ÷ days left to do them in (2 left, 2 days: 1)
+         pace      behind (+) or ahead (−) of an even spread over the week's open days
+         dormancy  days since it was last done at all — a moderate nudge
+         repeat    a push away from yesterday's picks, unless the habit is tight
+     · then they're taken greedily, each further pick from a goal already on the list
+       marked down, so the day spreads across goals unless one is genuinely far behind.
+   Every pick keeps the reason it was picked (`why`), for the sheet and the coach.
+
+   The list is made once, the first time the day is seen, and then left alone. A pick
+   only leaves it for a clear reason — the Mode hid it, it left its goal, its quota
+   stopped asking — and the gap is filled from the same ranking. A pick done today never
+   leaves. Once enough are done the day is met for good, and EXTRA unlocks: optional,
+   counted toward the weekly quotas as usual, never toward today.
+
+   The level sets the size. Level L shows L+1 and asks for L (the curve is data, so a
+   later build can change it). It moves by the user's own rules — by default up after 5
+   good days in any 7, down after 2 missed in any 3 — one level at a time, between the
+   user's floor and ceiling, and the count starts fresh after every move. A day with
+   nothing to suggest, or one the app never saw, counts neither way.
+
+     · state.metaQuota { level, min, max, up: { n, of }, down: { n, of }, since, curve }
+     · state.metaDays  { 'YYYY-MM-DD': { level, show, need, picks: [{ hid, tier, why }],
+                                         extras, metAt, result, done, newLevel } }
+     · state.metaDone  the last day judged
+
+   Goal Speedrun is this list as a stack: speedrunStack() makes it on demand and
+   stackById finds it. It is never saved into state.stacks, so nothing can edit it.
+   ================================================================= */
+function defaultMetaQuota() {
+  return { level: 2, min: 1, max: 4, up: { n: 5, of: 7 }, down: { n: 2, of: 3 }, since: '', curve: null };
+}
+// Level L → [how many it shows, how many it asks for].
+function metaDefaultCurve() { return [[2, 1], [3, 2], [4, 3], [5, 4], [6, 5]]; }
+// load()'s pass. Hoisted and self-contained, like the goals' (see the boot dead-zone note).
+function sanitizeMetaQuota(src) {
+  const d = defaultMetaQuota(), s = src && typeof src === 'object' && !Array.isArray(src) ? src : {};
+  const int = (v, lo, hi, def) => Number.isInteger(v) ? Math.max(lo, Math.min(hi, v)) : def;
+  const curve = Array.isArray(s.curve) && s.curve.length && s.curve.length <= 12
+    && s.curve.every(r => Array.isArray(r) && Number.isInteger(r[0]) && Number.isInteger(r[1]) && r[1] >= 1 && r[0] >= r[1] && r[0] <= 12)
+    ? s.curve.map(r => [r[0], r[1]]) : null;
+  const top = (curve || metaDefaultCurve()).length;
+  const min = int(s.min, 1, top, d.min), max = int(s.max, min, top, Math.max(min, Math.min(d.max, top)));
+  const rule = (r, dr) => { const of = int(r && r.of, 1, 14, dr.of); return { n: int(r && r.n, 1, of, Math.min(dr.n, of)), of }; };
+  return { level: int(s.level, min, max, Math.max(min, Math.min(d.level, max))), min, max,
+           up: rule(s.up, d.up), down: rule(s.down, d.down),
+           since: /^\d{4}-\d{2}-\d{2}$/.test(String(s.since || '')) ? s.since : '', curve };
+}
+function sanitizeMetaDays(src, st) {
+  const known = new Set((st.habits || []).map(h => h.id)), out = {};
+  if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+  const int = (v, lo, d) => Number.isInteger(v) && v >= lo ? v : d;
+  const list = a => {
+    const seen = new Set();
+    return (Array.isArray(a) ? a : []).filter(p => p && typeof p.hid === 'string' && known.has(p.hid) && !seen.has(p.hid) && seen.add(p.hid))
+      .map(p => ({ hid: p.hid, tier: int(p.tier, 1, 1),
+                   why: p.why && typeof p.why.text === 'string' ? { k: String(p.why.k || ''), text: p.why.text.slice(0, 120) } : null }));
+  };
+  Object.keys(src).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && src[d] && typeof src[d] === 'object').sort().slice(-60).forEach(d => {
+    const r = src[d];
+    const rec = { level: int(r.level, 1, 1), show: int(r.show, 0, 0), need: int(r.need, 0, 0), picks: list(r.picks), extras: list(r.extras),
+                  metAt: Number.isFinite(r.metAt) ? r.metAt : null };
+    if (['met', 'missed', 'rest'].includes(r.result)) rec.result = r.result;
+    if (Number.isInteger(r.done)) rec.done = r.done;
+    if (Number.isInteger(r.newLevel)) rec.newLevel = r.newLevel;
+    out[d] = rec;
+  });
+  return out;
+}
+
+function metaCfg() {
+  if (!state.metaQuota || typeof state.metaQuota !== 'object') state.metaQuota = defaultMetaQuota();
+  return state.metaQuota;
+}
+function metaCurve() { const c = metaCfg().curve; return Array.isArray(c) && c.length ? c : metaDefaultCurve(); }
+function metaSize(level) { const c = metaCurve(), r = c[clamp(level, 1, c.length) - 1]; return { show: r[0], need: r[1] }; }
+function metaDays() {
+  if (!state.metaDays || typeof state.metaDays !== 'object' || Array.isArray(state.metaDays)) state.metaDays = {};
+  return state.metaDays;
+}
+function metaToday() { return metaDays()[todayStr()] || null; }
+function metaEntry(rec, hid) { return rec ? (rec.picks || []).concat(rec.extras || []).find(p => p.hid === hid) || null : null; }
+function isSpeedrun(id) { return id === 'speedrun'; }
+
+/* ---- choosing ---- */
+// Whole days since the habit was last done at all, before `dateStr`. 7 = a week or more.
+function metaGap(h, dateStr) {
+  let last = '';
+  (state.history || []).forEach(e => {
+    if (!e || e.kind !== 'habit' || e.id !== h.id || !Number.isFinite(e.ts)) return;
+    const d = dateStrFromTs(e.ts);
+    if (d < dateStr && d > last) last = d;
+  });
+  return last ? Math.min(7, daysBetween(last, dateStr)) : 7;
+}
+// Every habit in a goal that's on for `dateStr`, with where its quota stands that day.
+function metaCandidates(dateStr) {
+  const mon = wcWeekStart(dateStr), sun = addDays(mon, 6), out = [];
+  goalList().forEach(g => goalQuotas(g).forEach(({ q, h }) => {
+    if (h.archived || !isScheduledOn(h, dateStr)) return;      // off today: its weekdays, or the Mode
+    const need = quotaAt(q, g.level, h);
+    const before = dateStr > mon ? quotaDoneDays(h, need.tier, mon, addDays(dateStr, -1)) : 0;
+    const doneToday = quotaDoneDays(h, need.tier, dateStr, dateStr) > 0;
+    out.push({ g, q, h, freq: need.freq, tier: need.tier, before, doneToday,
+               left: need.freq - before - (doneToday ? 1 : 0),
+               ahead: quotaOpenDays(g, q, h, dateStr, sun),     // days still open, today included
+               all: quotaOpenDays(g, q, h, mon, sun),
+               gap: metaGap(h, dateStr) });
+  }));
+  return out;
+}
+// The rules as numbers. `recent` = [yesterday's picks, the day before's], as id sets.
+function metaScore(c, recent) {
+  const urgency = Math.min(1, c.left / Math.max(1, c.ahead));
+  const expected = c.freq * (c.all - c.ahead) / Math.max(1, c.all);
+  const pace = clamp((expected - c.before) / c.freq, -1, 1);
+  const dormancy = clamp((c.gap - 1) / 5, 0, 1);
+  const repeat = urgency >= 0.75 ? 0 : (recent[0].has(c.h.id) ? 1 : 0) + (recent[1].has(c.h.id) ? 0.5 : 0);
+  return { urgency, pace, dormancy, repeat, score: 10 * urgency + 4 * pace + 1.5 * dormancy - 1.5 * repeat };
+}
+// Why a habit made the list, in words — the strongest reason only.
+function metaWhy(c, s) {
+  const days = n => n >= 7 ? 'a week or more' : `${n} day${n === 1 ? '' : 's'}`;
+  if (c.left <= 0) return { k: 'dormant', text: `Quota met — but not done in ${days(c.gap)}` };
+  if (s.urgency >= 1) return { k: 'tight', text: `${c.left} more needed and ${c.ahead} day${c.ahead === 1 ? '' : 's'} left to do ${c.left === 1 ? 'it' : 'them'}` };
+  if (s.pace > 0.15) return { k: 'behind', text: `Behind this week — ${c.before} of ${c.freq} so far` };
+  if (s.dormancy >= 0.6) return { k: 'dormant', text: `Not done in ${days(c.gap)}` };
+  if (s.pace < -0.15) return { k: 'ahead', text: `Ahead this week — ${c.left} more to go` };
+  return { k: 'left', text: `${c.left} more this week` };
+}
+// What's still wanted on `dateStr`, best first. Ties keep the goals' own order.
+function metaRanked(dateStr) {
+  const recent = [1, 2].map(n => {
+    const r = metaDays()[addDays(dateStr, -n)];
+    return new Set(r && Array.isArray(r.picks) ? r.picks.map(p => p.hid) : []);
+  });
+  return metaCandidates(dateStr).filter(c => c.left > 0 && !c.doneToday)
+    .map((c, i) => { const s = metaScore(c, recent); return { ...c, ...s, i, why: metaWhy(c, s) }; })
+    .sort((a, b) => b.score - a.score || a.i - b.i);
+}
+// n from a ranked list, spread across goals: each pick from a goal already on the list
+// (`goalIds`, then each one taken) costs the next from that goal 1.5.
+function metaTake(ranked, n, goalIds) {
+  const per = new Map(), pool = ranked.slice(), out = [];
+  const adj = c => c.score - 1.5 * (per.get(c.g.id) || 0);
+  (goalIds || []).forEach(id => per.set(id, (per.get(id) || 0) + 1));
+  while (out.length < n && pool.length) {
+    let best = 0;
+    pool.forEach((c, i) => { if (adj(c) > adj(pool[best])) best = i; });
+    const c = pool.splice(best, 1)[0];
+    out.push(c); per.set(c.g.id, (per.get(c.g.id) || 0) + 1);
+  }
+  return out;
+}
+// Done on `dateStr` at the tier the pick asks for, or higher.
+function metaPickDone(p, dateStr) {
+  const h = state.habits.find(x => x.id === p.hid);
+  return !!h && quotaDoneDays(h, p.tier, dateStr, dateStr) > 0;
+}
+function metaPick(c) { return { hid: c.h.id, tier: c.tier, why: c.why }; }
+
+/* ---- today's list ----
+   Made if there isn't one, kept honest if there is. Returns true (having saved) when
+   anything changed. Home calls it on every repaint and the tick calls it too, so a
+   completion anywhere — the Habits tab, a stack, the Lock Screen — lands here. */
+let metaJustMet = 0;          // when today's goal was met with the app open: the celebration
+function metaSync() {
+  const today = todayStr(), cfg = metaCfg(), days = metaDays();
+  let rec = days[today], changed = false;
+  if (!rec) {
+    if (!goalList().length) return false;
+    const size = metaSize(cfg.level);
+    rec = days[today] = { level: cfg.level, show: size.show, need: size.need, picks: [], extras: [], metAt: null };
+    // Made after some of the day has gone by (the app opened late, a tick on the Lock
+    // Screen): what was already done today and was still wanted goes on first, so it counts.
+    const none = [new Set(), new Set()];
+    metaCandidates(today).filter(c => c.doneToday && c.before < c.freq)
+      .map(c => { const was = { ...c, left: c.left + 1 }; return { ...was, ...metaScore(was, none), why: metaWhy(was, metaScore(was, none)) }; })
+      .sort((a, b) => b.score - a.score).slice(0, size.show).forEach(c => rec.picks.push(metaPick(c)));
+    changed = true;
+  }
+  if (!Array.isArray(rec.picks)) rec.picks = [];
+  if (!Array.isArray(rec.extras)) rec.extras = [];
+  const cands = new Map(metaCandidates(today).map(c => [c.h.id, c]));
+  const before = JSON.stringify([rec.picks, rec.extras, rec.need, rec.level]);
+  // The level was changed by hand today: the list takes its new size, unless it's met.
+  if (!rec.metAt && rec.level !== cfg.level) { const size = metaSize(cfg.level); Object.assign(rec, { level: cfg.level, show: size.show }); }
+  // A pick stays if it's done, or if it's still on today and its quota still wants it.
+  rec.picks = rec.picks.filter(p => metaPickDone(p, today) || (cands.has(p.hid) && cands.get(p.hid).left > 0));
+  rec.picks.forEach(p => { const c = cands.get(p.hid); if (c && !metaPickDone(p, today)) { p.tier = c.tier; if (!p.why) p.why = metaWhy(c, metaScore(c, [new Set(), new Set()])); } });
+  while (rec.picks.length > rec.show) {
+    const i = rec.picks.map(p => metaPickDone(p, today)).lastIndexOf(false);
+    if (i < 0) break;
+    rec.picks.splice(i, 1);
+  }
+  if (!rec.metAt && rec.picks.length < rec.show) {
+    const have = new Set(rec.picks.map(p => p.hid));
+    const goalIds = rec.picks.map(p => (goalOfHabit(p.hid) || {}).id).filter(Boolean);
+    metaTake(metaRanked(today).filter(c => !have.has(c.h.id)), rec.show - rec.picks.length, goalIds).forEach(c => rec.picks.push(metaPick(c)));
+  }
+  if (!rec.metAt) rec.need = Math.min(metaSize(rec.level).need, rec.picks.length);
+  const done = rec.picks.filter(p => metaPickDone(p, today)).length;
+  if (!rec.metAt && rec.need > 0 && done >= rec.need) {
+    rec.metAt = Date.now(); metaJustMet = Date.now(); changed = true;
+    logEvent('meta_quota_met', { date: today, level: rec.level, need: rec.need, shown: rec.picks.length });
+  }
+  // Extra: unlocked once the day is met. The same kind of list — kept, and only topped
+  // up when something on it stops being possible today.
+  if (rec.metAt) {
+    const have = new Set(rec.picks.map(p => p.hid));
+    rec.extras = rec.extras.filter(p => !have.has(p.hid) && (metaPickDone(p, today) || cands.has(p.hid)));
+    if (rec.extras.length < 5) {                  // five is plenty to keep going with
+      rec.extras.forEach(p => have.add(p.hid));
+      const wanted = metaRanked(today).filter(c => !have.has(c.h.id));
+      const dormant = [...cands.values()].filter(c => c.left <= 0 && !c.doneToday && c.gap >= 3 && !have.has(c.h.id))
+        .sort((a, b) => b.gap - a.gap).map(c => ({ ...c, why: metaWhy(c, null) }));
+      wanted.concat(dormant).slice(0, 5 - rec.extras.length).forEach(c => rec.extras.push(metaPick(c)));
+    }
+  }
+  if (JSON.stringify([rec.picks, rec.extras, rec.need, rec.level]) !== before) changed = true;
+  if (changed) save();
+  return changed;
+}
+
+/* ---- judging a day, and the level ---- */
+// How many of the last `of` days up to `d` came out as `result`, counting only days after
+// the last level change. Today counts as met the moment it is, never as missed.
+function metaCount(result, d, of) {
+  const cfg = metaCfg(), days = metaDays();
+  let n = 0;
+  for (let i = 0; i < of; i++) {
+    const day = addDays(d, -i);
+    if (cfg.since && day <= cfg.since) break;
+    const r = days[day];
+    if (r && (r.result || (r.metAt ? 'met' : '')) === result) n++;
+  }
+  return n;
+}
+function metaJudge(d, result) {
+  const cfg = metaCfg();
+  if (result === 'met' && cfg.level < cfg.max && metaCount('met', d, cfg.up.of) >= cfg.up.n) { cfg.level++; cfg.since = d; }
+  else if (result === 'missed' && cfg.level > cfg.min && metaCount('missed', d, cfg.down.of) >= cfg.down.n) { cfg.level--; cfg.since = d; }
+}
+// Close out every day since the last look, oldest first. The first look only marks the
+// place: no day from before Today's Goal existed is judged.
+function rollMetaDays() {
+  const yest = addDays(todayStr(), -1), cfg = metaCfg(), days = metaDays();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(state.metaDone || '')) { state.metaDone = yest; return true; }
+  let changed = false;
+  for (let d = addDays(state.metaDone, 1), n = 0; d <= yest && n < 60; d = addDays(d, 1), n++) {
+    const rec = days[d];
+    if (rec && !rec.result) {
+      rec.done = (rec.picks || []).filter(p => metaPickDone(p, d)).length;
+      rec.result = !rec.need ? 'rest' : rec.metAt || rec.done >= rec.need ? 'met' : 'missed';
+      const from = cfg.level;
+      metaJudge(d, rec.result);
+      rec.newLevel = cfg.level;
+      if (cfg.level !== from) logEvent('meta_level_changed', { date: d, from, to: cfg.level, result: rec.result });
+    }
+    state.metaDone = d; changed = true;
+  }
+  if (state.metaDone < yest) { state.metaDone = yest; changed = true; }   // away for more than 60 days
+  const keys = Object.keys(days).sort();
+  if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete days[k]);
+  return changed;
+}
+// Where the two counts stand right now, for the sheet.
+function metaProgress() {
+  const cfg = metaCfg(), today = todayStr();
+  return { up: metaCount('met', today, cfg.up.of), down: metaCount('missed', addDays(today, -1), cfg.down.of) };
+}
+
+/* ---- the user's controls ---- */
+// A level set by hand starts a fresh count, today included.
+function setMetaLevel(level) {
+  const cfg = metaCfg(), to = clamp(level, cfg.min, cfg.max);
+  if (to === cfg.level) return false;
+  logEvent('meta_level_set', { from: cfg.level, to });
+  cfg.level = to; cfg.since = addDays(todayStr(), -1);
+  save();
+  return true;
+}
+function editMeta(field, v) {
+  const cfg = metaCfg(), top = metaCurve().length, was = cfg.level;
+  if (field === 'min') cfg.min = clamp(v, 1, cfg.max);
+  else if (field === 'max') cfg.max = clamp(v, cfg.min, top);
+  else if (field === 'upN') cfg.up.n = clamp(v, 1, cfg.up.of);
+  else if (field === 'upOf') { cfg.up.of = clamp(v, 1, 14); cfg.up.n = Math.min(cfg.up.n, cfg.up.of); }
+  else if (field === 'downN') cfg.down.n = clamp(v, 1, cfg.down.of);
+  else if (field === 'downOf') { cfg.down.of = clamp(v, 1, 14); cfg.down.n = Math.min(cfg.down.n, cfg.down.of); }
+  else return false;
+  cfg.level = clamp(cfg.level, cfg.min, cfg.max);
+  if (cfg.level !== was) cfg.since = addDays(todayStr(), -1);
+  save();
+  return true;
+}
+
+/* ---- Goal Speedrun ----
+   Before the day is met: the picks. After: the picks (the ones left are optional now)
+   and then the extras — the card's list, in the card's order. */
+function speedrunStack() {
+  const rec = metaToday(); if (!rec || !Array.isArray(rec.picks) || !rec.picks.length) return null;
+  const ids = rec.picks.map(p => p.hid);
+  if (rec.metAt) (rec.extras || []).forEach(p => { if (!ids.includes(p.hid)) ids.push(p.hid); });
+  return { id: 'speedrun', name: 'Goal Speedrun', habitIds: ids, on: true, auto: true };
+}
+// The rung a speedrun step is done at: the one its quota asks for, when the habit sits below it.
+function speedrunTierPick(h) {
+  const p = metaEntry(metaToday(), h.id), lv = habitLevels(h); if (!p || !lv) return null;
+  const want = clamp(p.tier - 1, 0, lv.length - 1);
+  return curLevelIndex(h) < want ? want : null;
+}
+function speedrunSub(v) {
+  const rec = metaToday(); if (!rec) return '';
+  if (!rec.metAt) return `Complete today's goal (${rec.need} task${rec.need === 1 ? '' : 's'})`;
+  return v && v.finished ? 'All done for today' : 'Continue making progress';
+}
+// The runner's line under the title: today's goal first, then that the rest is extra.
+function speedrunRunSub() {
+  const rec = metaToday(); if (!rec) return '';
+  if (rec.metAt) return 'Today\'s goal ✓ — the rest is extra';
+  return `${rec.picks.filter(p => metaPickDone(p, todayStr())).length} of ${rec.need} for today's goal`;
+}
+
+/* ---- the card ---- */
+let metaExtrasOpen = true;
+let metaCheered = '';         // the day the celebration last played, so a repaint can't replay it
+function metaMins(m) { return m < 60 ? `${m} min` : fmtMins(m); }
+// What a pick is called: the tier its quota asks for, so the card names what counts.
+function metaName(p, h) {
+  const lv = habitLevels(h), l = lv ? lv[clamp(p.tier - 1, 0, lv.length - 1)] : null;
+  return { name: l ? (l.name || h.name) : h.name, mins: l ? l.minutes || 0 : h.timedMinutes || 0, tiered: !!lv };
+}
+function metaRowHTML(p, extra) {
+  const h = state.habits.find(x => x.id === p.hid); if (!h) return '';
+  // A tier named "Cello 60 min" already says how long; the length is shown only when it doesn't.
+  const { name, mins, tiered } = metaName(p, h);
+  const done = metaPickDone(p, todayStr());
+  const mark = done ? '<span class="mq-mark on" aria-hidden="true">✓</span>'
+    : `<span class="mq-mark${extra ? ' plus' : ''}" aria-hidden="true">${extra ? '+' : ''}</span>`;
+  return `<button class="mq-row${done ? ' done' : ''}" ${done ? 'aria-disabled="true"' : `data-mq="do" data-hid="${h.id}"`}
+      aria-label="${escapeHtml(name)}${done ? ' — done' : ' — mark done'}"${p.why ? ` title="${escapeHtml(p.why.text)}"` : ''}>
+      <span class="mq-e" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <span class="mq-n"><b>${escapeHtml(name)}</b>${mins && !detectMinutes(name) ? `<small>${metaMins(mins)}</small>` : ''}${tiered && p.tier > 1 ? `<small class="mq-tier">Tier ${p.tier}+</small>` : ''}</span>
+      ${mark}</button>`;
+}
+// A small scene behind the title: sun, ridges, a pagoda. Decoration only.
+function metaScene() { return `<svg class="mq-scene" viewBox="0 0 220 130" aria-hidden="true" preserveAspectRatio="xMaxYMin slice">
+  <defs><radialGradient id="mqSun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd27a"/><stop offset=".6" stop-color="#ffab3d"/><stop offset="1" stop-color="#ff8a1f" stop-opacity="0"/></radialGradient></defs>
+  <circle cx="162" cy="44" r="40" fill="url(#mqSun)" opacity=".75"/><circle cx="162" cy="44" r="25" fill="#ffb347" opacity=".9"/>
+  <path d="M0 96 L38 64 L62 80 L96 48 L128 74 L160 58 L196 82 L220 70 L220 130 L0 130 Z" fill="#7a3510" opacity=".55"/>
+  <path d="M30 130 L70 92 L98 108 L130 84 L170 104 L220 90 L220 130 Z" fill="#3d1806" opacity=".85"/>
+  <g fill="#1c0b03"><rect x="176" y="86" width="22" height="18"/><path d="M168 88 L208 88 L201 80 L175 80 Z"/><rect x="181" y="70" width="12" height="10"/>
+    <path d="M173 72 L201 72 L195 64 L179 64 Z"/><rect x="185" y="56" width="4" height="8"/><path d="M180 104 L206 104 L206 130 L176 130 Z"/></g>
+  <g fill="#ffb347" opacity=".9"><rect x="182" y="92" width="3" height="4"/><rect x="190" y="92" width="3" height="4"/><rect x="186" y="74" width="2.5" height="3"/></g>
+</svg>`; }
+function renderHomeMeta() {
+  const box = $('#homeMeta'); if (!box) return;
+  const cfg = metaCfg(), rec = metaToday();
+  const lv = `<button class="mq-lv" data-gm="meta" aria-label="Today's goal, Level ${cfg.level}: rules and limits"><span class="mq-bars" aria-hidden="true"><i></i><i></i><i></i></span>Lv ${cfg.level}</button>`;
+  const head = `<div class="mq-k"><span>Today's goal</span>${lv}</div>`;
+  if (!goalList().length) {
+    box.innerHTML = `<div class="mq-card">${metaScene()}${head}<div class="mq-title">Set your first goal</div>
+      <p class="mq-sub">Put a few habits in a goal with a weekly quota, and this card picks the ones worth doing each day.</p>
+      <button class="mq-cta" data-gm="newGoal">＋ New goal</button></div>`;
+    return;
+  }
+  if (!rec || !rec.picks.length) {
+    box.innerHTML = `<div class="mq-card">${metaScene()}${head}<div class="mq-title">Nothing needed today</div>
+      <p class="mq-sub">Every quota is met for the week, or nothing in a goal is on today. Today counts neither way.</p></div>`;
+    return;
+  }
+  const today = todayStr(), n = rec.picks.length, need = rec.need, met = !!rec.metAt;
+  const done = rec.picks.filter(p => metaPickDone(p, today)).length, shown = Math.min(done, need);
+  const title = need === n ? (n === 1 ? 'Complete 1 task' : `Complete all ${n} tasks`) : `Complete ${need} of ${n} tasks`;
+  const bar = `<div class="mq-bar${met ? ' met' : ''}" role="progressbar" aria-label="Today's goal" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${shown}">
+      <i style="width:${need ? Math.round(shown / need * 100) : 0}%"></i><b>${shown} / ${need}${met ? ' ✓' : ''}</b></div>`;
+  let after;
+  if (!met) after = `<div class="mq-lock"><span aria-hidden="true">🔒</span> Complete today's goal to unlock extra progress <span aria-hidden="true">↓</span></div>`;
+  else {
+    const rows = (rec.extras || []).map(p => metaRowHTML(p, true)).join('');
+    after = `<div class="mq-extra"><button class="mq-extra-h" data-mq="extras" aria-expanded="${metaExtrasOpen}">
+        <span>Extra progress (optional)</span><span class="mq-caret${metaExtrasOpen ? ' up' : ''}" aria-hidden="true">⌃</span></button>
+      ${metaExtrasOpen ? rows || '<div class="mq-none">Nothing else is wanted this week. The rest of the day is yours.</div>' : ''}</div>`;
+  }
+  box.innerHTML = `<div class="mq-card${met ? ' met' : ''}">${metaScene()}${head}<div class="mq-title">${title}</div>
+    <div class="mq-rows">${rec.picks.map(p => metaRowHTML(p, false)).join('')}</div>${bar}${after}</div>`;
+  if (met && metaJustMet && Date.now() - metaJustMet < 4000 && metaCheered !== today) {
+    metaCheered = today;
+    SFX.win();
+    const r = box.querySelector('.mq-bar'), at = r && r.getBoundingClientRect();
+    burst(at ? { x: at.left + at.width / 2, y: at.top + at.height / 2, count: 70 } : { count: 70 });
+    toast('🎯 Today\'s goal complete — extra progress unlocked', 'var(--cyan)');
+  }
+}
+// A tap on the card is the same as ticking the habit anywhere else — completeHabit, with
+// its tokens and undo — done at the tier the quota asks for if the habit sits below it.
+function metaDo(hid) {
+  const h = state.habits.find(x => x.id === hid); if (!h || isComplete(h)) return;
+  if (h.timer) { finishTimedHabit(hid); return; }
+  const p = metaEntry(metaToday(), hid), lv = habitLevels(h);
+  if (p && lv && doneCount(h) === 0) { const want = clamp(p.tier - 1, 0, lv.length - 1); if (curLevelIndex(h) < want) setHabitTier(h, want); }
+  completeHabit(hid);
+}
+$('#homeMeta').addEventListener('click', e => {
+  const b = e.target.closest('[data-mq]');
+  if (b) {
+    e.stopPropagation();
+    if (b.dataset.mq === 'do') metaDo(b.dataset.hid);
+    else if (b.dataset.mq === 'extras') { metaExtrasOpen = !metaExtrasOpen; SFX.click(); renderHomeMeta(); }
+    return;
+  }
+  onGmClick(e);
+});
+
+/* ---- the sheet: rules and limits ---- */
+function metaSheetHTML() {
+  const cfg = metaCfg(), size = metaSize(cfg.level), pr = metaProgress(), rec = metaToday(), top = metaCurve().length;
+  const ctl = (f, v, lo, hi, label) => `<label class="mq-ctl"><small>${label}</small><span class="gm-stepper">
+      <button data-gm="metaSet" data-f="${f}" data-v="${v - 1}" ${v > lo ? '' : 'disabled'} aria-label="${label}: fewer">−</button><b>${v}</b>
+      <button data-gm="metaSet" data-f="${f}" data-v="${v + 1}" ${v < hi ? '' : 'disabled'} aria-label="${label}: more">+</button></span></label>`;
+  const days = n => `${n} day${n === 1 ? '' : 's'}`;
+  const why = rec ? rec.picks.map(p => {
+    const h = state.habits.find(x => x.id === p.hid); if (!h) return '';
+    return `<li><span class="stk-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <span><b>${escapeHtml(metaName(p, h).name)}</b><small>${escapeHtml(p.why ? p.why.text : 'Picked earlier today')}</small></span></li>`;
+  }).join('') : '';
+  return gmHead('Today\'s goal')
+    + `<div class="gm-level"><span><b>Level ${cfg.level}</b><small>Shows ${size.show}, asks for ${size.need}</small></span>
+        <span class="gm-stepper"><button data-gm="metaLevel" data-v="${cfg.level - 1}" ${cfg.level > cfg.min ? '' : 'disabled'} aria-label="Level down">−</button><button data-gm="metaLevel" data-v="${cfg.level + 1}" ${cfg.level < cfg.max ? '' : 'disabled'} aria-label="Level up">+</button></span></div>
+      <div class="stk-ed-h">What makes it harder</div>
+      <div class="mq-rule">Up a level after <b>${days(cfg.up.n)}</b> you finish it, in any <b>${days(cfg.up.of)}</b>.</div>
+      <div class="mq-ctls">${ctl('upN', cfg.up.n, 1, cfg.up.of, 'Good days')}${ctl('upOf', cfg.up.of, cfg.up.n, 14, 'Out of')}</div>
+      <div class="gm-next">${cfg.level >= cfg.max ? `At your highest level — it won't go past Level ${cfg.max}.` : `${pr.up} of ${cfg.up.n} so far.`}</div>
+      <div class="stk-ed-h">What makes it easier</div>
+      <div class="mq-rule">Down a level after <b>${days(cfg.down.n)}</b> you miss it, in any <b>${days(cfg.down.of)}</b>.</div>
+      <div class="mq-ctls">${ctl('downN', cfg.down.n, 1, cfg.down.of, 'Missed days')}${ctl('downOf', cfg.down.of, cfg.down.n, 14, 'Out of')}</div>
+      <div class="gm-next">${cfg.level <= cfg.min ? `At your lowest level — it won't go below Level ${cfg.min}.` : `${pr.down} of ${cfg.down.n} so far.`}</div>
+      <div class="stk-ed-h">Limits</div>
+      <div class="mq-ctls">${ctl('min', cfg.min, 1, cfg.max, 'Lowest level')}${ctl('max', cfg.max, cfg.min, top, 'Highest level')}</div>
+      ${why ? `<div class="stk-ed-h">Why today's picks</div><ul class="mq-why">${why}</ul>` : ''}
+      <p class="sch-note">A good day is one where you finish today's goal; a missed day is one where you don't. A day with nothing to suggest, or one the app never saw, counts neither way. It moves one level at a time, and the count starts again after every move. Extra progress never counts toward today — it only counts toward your weekly quotas.</p>`;
+}
 
 // The Habit Pass "clear all dailies" goal, once a day. This used to be the all-done token
 // bonus; the payout, the consecutive-day streak and the 7-day jackpot are all gone, but the
@@ -16105,6 +16241,14 @@ function appContext() {
       L.push(`  - "${goalName(g)}" Level ${g.level}${goalHiddenNow(g) ? ' [hidden in this mode]' : ''}: ${qs || 'no habits yet'}${past ? ` · last weeks, oldest first: ${past}` : ''}`);
     });
   }
+  const metaCtx = metaToday();
+  if (metaCtx && metaCtx.picks.length) {
+    const mc = metaCfg(), nameOf = id => (state.habits.find(h => h.id === id) || {}).name || 'a deleted habit';
+    const past = Object.keys(metaDays()).sort().filter(d => d < todayStr()).slice(-7).map(d => ({ met: '✓', missed: '✗', rest: '–' })[metaDays()[d].result] || '·').join('');
+    L.push('', `TODAY'S GOAL (Daily Meta Quota: picked by fixed rules from the weekly quotas; its level moves by the user's own rules). Level ${mc.level} (floor ${mc.min}, ceiling ${mc.max}; up after ${mc.up.n} good days in any ${mc.up.of}, down after ${mc.down.n} missed in any ${mc.down.of}).`);
+    L.push(`  - Today: complete ${metaCtx.need} of ${metaCtx.picks.length}${metaCtx.metAt ? ' — MET' : ''}: ${metaCtx.picks.map(p => `${nameOf(p.hid)}${metaPickDone(p, todayStr()) ? ' ✓' : ''} (${p.why ? p.why.text : 'picked'})`).join('; ')}`);
+    if (past) L.push(`  - Last days, oldest first (✓ met, ✗ missed, – nothing asked): ${past}`);
+  }
   const swapsCtx = (state.stackSwaps || []).filter(w => w.removed && w.added && w.at > Date.now() - 30 * 86400000);
   if (swapsCtx.length) {
     const nameOf = id => (state.habits.find(h => h.id === id) || {}).name || 'a deleted habit';
@@ -16282,7 +16426,7 @@ The app models the user's DAY, not just isolated habits: it finds past days that
 - ONE SMALL CHANGE AT A TIME. If you suggest an adjustment, make it the smallest one that the data actually points at, and say what you'd expect to see change and by when. Don't stack three suggestions.
 
 GOALS, MODES & STACKS
-- GOALS & QUOTAS and STACK SWAPS below are the user's own system, run by hand: they pick the mode, put habits in goals, set every quota and how it scales, and levels move only by the fixed weekly rules. Watch it and say what you see — a quota that keeps missing, a goal that falls apart in Busy Week, a habit that keeps getting swapped out — but never propose a change to a goal, quota, mode, stack or level. There is no proposal type for them ("goalDef" is the Habit Pass, a different thing).
+- GOALS & QUOTAS and STACK SWAPS below are the user's own system, run by hand: they pick the mode, put habits in goals, set every quota and how it scales, and levels move only by the fixed weekly rules. Watch it and say what you see — a quota that keeps missing, a goal that falls apart in Busy Week, a habit that keeps getting swapped out — but never propose a change to a goal, quota, mode, stack or level — Today's Goal and its level included. You can explain why today's picks were picked (the reasons are listed). There is no proposal type for them ("goalDef" is the Habit Pass, a different thing).
 - A missed quota is not a debt. Say "1 completion left this week", never "you owe a session".
 
 OUTPUT FORMAT
@@ -21279,7 +21423,7 @@ setInterval(() => {
   renderTopbar();
   renderHappyBanners();
   // A week can close with the app open: judge it, and put the receipt on Home.
-  if (goalsTick()) { renderHomeGoals(); if (!gmSheet) renderGoals(); }
+  if (goalsTick()) { renderHomeMeta(); renderHomeGoals(); renderStacks(); if (!gmSheet) renderGoals(); }
   if ($('#view-habits').classList.contains('active') && editingHabitId === null) renderHabits(); // ×N tags come/go
   // Home is the most time-sensitive view in the app: the NOW dot creeps along its block,
   // the block itself hands over to the next one, and Due Now's one-hour window moves.
