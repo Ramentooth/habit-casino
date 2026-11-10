@@ -12207,13 +12207,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) c
    attention TODAY, so nobody has to read every quota and build the day by hand:
    "Complete 2 of 3 — Laundry, Vibe coding, French speaking". Any two will do.
 
-   The picks come from one rule anyone can follow, never a model (the user's, 2026-11-08):
+   The picks come from fixed rules anyone can follow, never a model:
      · a candidate is a habit in a goal whose quota still wants something this week,
        that is on today (its weekdays, and not hidden by the Mode) and not done today
-     · the one with the smallest share of its week done goes first — 1 of 4 (25%), then
-       2 of 6 (33%), then 3 of 6 (50%). Only a tie looks further: more left than days to
-       do them in first, then longest since it was last done, then the goals' own order.
-       metaScore folds those into one number that sorts the same way.
+     · each gets a score (metaScore), biggest part first —
+         urgency   completions left ÷ days left to do them in (2 left, 2 days: 1)
+         pace      behind (+) or ahead (−) of an even spread over the week's open days
+         dormancy  days since it was last done at all — a moderate nudge
+         repeat    a push away from yesterday's picks, unless the habit is tight
+     · then they're taken greedily, each further pick from a goal already on the list
+       marked down, so the day spreads across goals unless one is genuinely far behind.
+   (Ranking purely by the share of the week done was tried on 2026-11-08 and put back the
+   same day at the user's request: they want the count remaining, not percentages.)
    Every pick keeps the reason it was picked (`why`), for the sheet and the coach.
 
    The list is made once, the first time the day is seen, and then left alone. A pick
@@ -12324,27 +12329,48 @@ function metaCandidates(dateStr) {
   }));
   return out;
 }
-// The rule as one number, bigger first. The share of the week done is weighted so far
-// above the rest that they can only ever break a tie: two shares with denominators of 7 or
-// less differ by at least 1/42, which ×100 is more than the other two can add together.
-function metaScore(c) {
-  const share = c.before / Math.max(1, c.freq);                  // done this week, before today
-  const urgency = Math.min(1, c.left / Math.max(1, c.ahead));     // 1: needed every day left
-  const dormancy = clamp((c.gap - 1) / 5, 0, 1);                  // 1: not done in six days or more
-  return { share, urgency, dormancy, score: 100 * (1 - share) + urgency + dormancy / 100 };
+// The rules as numbers. `recent` = [yesterday's picks, the day before's], as id sets.
+function metaScore(c, recent) {
+  const urgency = Math.min(1, c.left / Math.max(1, c.ahead));
+  const expected = c.freq * (c.all - c.ahead) / Math.max(1, c.all);
+  const pace = clamp((expected - c.before) / c.freq, -1, 1);
+  const dormancy = clamp((c.gap - 1) / 5, 0, 1);
+  const repeat = urgency >= 0.75 ? 0 : (recent[0].has(c.h.id) ? 1 : 0) + (recent[1].has(c.h.id) ? 0.5 : 0);
+  return { urgency, pace, dormancy, repeat, score: 10 * urgency + 4 * pace + 1.5 * dormancy - 1.5 * repeat };
 }
-// Why a habit made the list, in words.
-function metaWhy(c) {
+// Why a habit made the list, in words — the strongest reason only.
+function metaWhy(c, s) {
   const days = n => n >= 7 ? 'a week or more' : `${n} day${n === 1 ? '' : 's'}`;
   if (c.left <= 0) return { k: 'dormant', text: `Quota met — but not done in ${days(c.gap)}` };
-  const text = `${c.before} of ${c.freq} this week — ${Math.round(100 * c.before / Math.max(1, c.freq))}% done`;
-  return c.left >= c.ahead ? { k: 'tight', text: `${text}, needed every day left` } : { k: 'behind', text };
+  if (s.urgency >= 1) return { k: 'tight', text: `${c.left} more needed and ${c.ahead} day${c.ahead === 1 ? '' : 's'} left to do ${c.left === 1 ? 'it' : 'them'}` };
+  if (s.pace > 0.15) return { k: 'behind', text: `Behind this week — ${c.before} of ${c.freq} so far` };
+  if (s.dormancy >= 0.6) return { k: 'dormant', text: `Not done in ${days(c.gap)}` };
+  if (s.pace < -0.15) return { k: 'ahead', text: `Ahead this week — ${c.left} more to go` };
+  return { k: 'left', text: `${c.left} more this week` };
 }
-// What's still wanted on `dateStr`, the least done first. Ties keep the goals' own order.
+// What's still wanted on `dateStr`, best first. Ties keep the goals' own order.
 function metaRanked(dateStr) {
+  const recent = [1, 2].map(n => {
+    const r = metaDays()[addDays(dateStr, -n)];
+    return new Set(r && Array.isArray(r.picks) ? r.picks.map(p => p.hid) : []);
+  });
   return metaCandidates(dateStr).filter(c => c.left > 0 && !c.doneToday)
-    .map((c, i) => ({ ...c, ...metaScore(c), i, why: metaWhy(c) }))
+    .map((c, i) => { const s = metaScore(c, recent); return { ...c, ...s, i, why: metaWhy(c, s) }; })
     .sort((a, b) => b.score - a.score || a.i - b.i);
+}
+// n from a ranked list, spread across goals: each pick from a goal already on the list
+// (`goalIds`, then each one taken) costs the next from that goal 1.5.
+function metaTake(ranked, n, goalIds) {
+  const per = new Map(), pool = ranked.slice(), out = [];
+  const adj = c => c.score - 1.5 * (per.get(c.g.id) || 0);
+  (goalIds || []).forEach(id => per.set(id, (per.get(id) || 0) + 1));
+  while (out.length < n && pool.length) {
+    let best = 0;
+    pool.forEach((c, i) => { if (adj(c) > adj(pool[best])) best = i; });
+    const c = pool.splice(best, 1)[0];
+    out.push(c); per.set(c.g.id, (per.get(c.g.id) || 0) + 1);
+  }
+  return out;
 }
 // Done on `dateStr` at the tier the pick asks for, or higher.
 function metaPickDone(p, dateStr) {
@@ -12367,8 +12393,9 @@ function metaSync() {
     rec = days[today] = { level: cfg.level, show: size.show, need: size.need, picks: [], extras: [], metAt: null };
     // Made after some of the day has gone by (the app opened late, a tick on the Lock
     // Screen): what was already done today and was still wanted goes on first, so it counts.
+    const none = [new Set(), new Set()];
     metaCandidates(today).filter(c => c.doneToday && c.before < c.freq)
-      .map(c => { const was = { ...c, left: c.left + 1 }; return { ...was, ...metaScore(was), why: metaWhy(was) }; })
+      .map(c => { const was = { ...c, left: c.left + 1 }; return { ...was, ...metaScore(was, none), why: metaWhy(was, metaScore(was, none)) }; })
       .sort((a, b) => b.score - a.score).slice(0, size.show).forEach(c => rec.picks.push(metaPick(c)));
     changed = true;
   }
@@ -12383,17 +12410,17 @@ function metaSync() {
   // A pick stays if it's done, or if it's still on today, its quota still wants it, and it
   // wasn't substituted.
   rec.picks = rec.picks.filter(p => metaPickDone(p, today) || (cands.has(p.hid) && cands.get(p.hid).left > 0 && !subbed.has(p.hid)));
-  rec.picks.forEach(p => { const c = cands.get(p.hid); if (c && !metaPickDone(p, today)) { p.tier = c.tier; if (!p.why) p.why = metaWhy(c); } });
-  // Too many: the undone pick furthest along its week leaves first.
-  const rank = p => cands.has(p.hid) ? metaScore(cands.get(p.hid)).score : -Infinity;
+  rec.picks.forEach(p => { const c = cands.get(p.hid); if (c && !metaPickDone(p, today)) { p.tier = c.tier; if (!p.why) p.why = metaWhy(c, metaScore(c, [new Set(), new Set()])); } });
+  // Too many: the undone ones at the end — the list is in ranked order — leave first.
   while (rec.picks.length > rec.show) {
-    const undone = rec.picks.filter(p => !metaPickDone(p, today));
-    if (!undone.length) break;
-    rec.picks.splice(rec.picks.indexOf(undone.reduce((a, b) => rank(b) <= rank(a) ? b : a)), 1);
+    const i = rec.picks.map(p => metaPickDone(p, today)).lastIndexOf(false);
+    if (i < 0) break;
+    rec.picks.splice(i, 1);
   }
   if (!rec.metAt && rec.picks.length < rec.show) {
     const have = new Set(rec.picks.map(p => p.hid));
-    metaRanked(today).filter(c => !have.has(c.h.id) && !subbed.has(c.h.id)).slice(0, rec.show - rec.picks.length)
+    const goalIds = rec.picks.map(p => (goalOfHabit(p.hid) || {}).id).filter(Boolean);
+    metaTake(metaRanked(today).filter(c => !have.has(c.h.id) && !subbed.has(c.h.id)), rec.show - rec.picks.length, goalIds)
       .forEach(c => rec.picks.push(metaPick(c)));
   }
   if (!rec.metAt) rec.need = Math.min(metaSize(rec.level).need, rec.picks.length);
@@ -12412,7 +12439,7 @@ function metaSync() {
       subbed.forEach(id => have.add(id));         // can't be done today: not as an extra either
       const wanted = metaRanked(today).filter(c => !have.has(c.h.id));
       const dormant = [...cands.values()].filter(c => c.left <= 0 && !c.doneToday && c.gap >= 3 && !have.has(c.h.id))
-        .sort((a, b) => b.gap - a.gap).map(c => ({ ...c, why: metaWhy(c) }));
+        .sort((a, b) => b.gap - a.gap).map(c => ({ ...c, why: metaWhy(c, null) }));
       wanted.concat(dormant).slice(0, 5 - rec.extras.length).forEach(c => rec.extras.push(metaPick(c)));
     }
   }
@@ -12422,14 +12449,16 @@ function metaSync() {
 }
 
 /* ---- substituting a pick ----
-   For a pick that can't be done today: the next habit the ranking would pick takes its
-   place, in the same spot, and the one swapped out stays off today's card. Only before the
+   For a pick that can't be done today: the habit the list would have filled the gap with
+   — the next most urgent, spread across goals like the rest — takes its place, in the same
+   spot, and the one swapped out stays off today's card. Only before the
    day is met, only for a pick not done and not running, and only when something is left
    to swap in — so the card keeps asking for the same number. */
 function metaSubNext(hid) {
   const rec = metaToday(); if (!rec) return null;
   const skip = new Set((rec.picks || []).concat(rec.extras || []).map(p => p.hid).concat(rec.subbed || [], hid));
-  return metaRanked(todayStr()).find(c => !skip.has(c.h.id)) || null;
+  const goalIds = (rec.picks || []).filter(p => p.hid !== hid).map(p => (goalOfHabit(p.hid) || {}).id).filter(Boolean);
+  return metaTake(metaRanked(todayStr()).filter(c => !skip.has(c.h.id)), 1, goalIds)[0] || null;
 }
 // A pick a tap can still swap or change: on today's list, not done, the day not met yet.
 function metaPickOpen(hid) {
@@ -12713,7 +12742,7 @@ function metaSheetHTML() {
       <div class="gm-next">${cfg.level <= cfg.min ? `At your lowest level — it won't go below Level ${cfg.min}.` : `${pr.down} of ${cfg.down.n} so far.`}</div>
       <div class="stk-ed-h">Limits</div>
       <div class="mq-ctls">${ctl('min', cfg.min, 1, cfg.max, 'Lowest level')}${ctl('max', cfg.max, cfg.min, top, 'Highest level')}</div>
-      ${why ? `<div class="stk-ed-h">Why today's picks</div><p class="mq-rule">The habits with the least of their week done go first.</p><ul class="mq-why">${why}</ul>` : ''}
+      ${why ? `<div class="stk-ed-h">Why today's picks</div><ul class="mq-why">${why}</ul>` : ''}
       <p class="sch-note">A good day is one where you finish today's goal; a missed day is one where you don't. A day with nothing to suggest, or one the app never saw, counts neither way. It moves one level at a time, and the count starts again after every move. Extra progress never counts toward today — it only counts toward your weekly quotas.</p>`;
 }
 
@@ -16330,7 +16359,7 @@ function appContext() {
   if (metaCtx && metaCtx.picks.length) {
     const mc = metaCfg(), nameOf = id => (state.habits.find(h => h.id === id) || {}).name || 'a deleted habit';
     const past = Object.keys(metaDays()).sort().filter(d => d < todayStr()).slice(-7).map(d => ({ met: '✓', missed: '✗', rest: '–' })[metaDays()[d].result] || '·').join('');
-    L.push('', `TODAY'S GOAL (Daily Meta Quota: picked by a fixed rule from the weekly quotas — the habits with the least of their week done go first; its level moves by the user's own rules). Level ${mc.level} (floor ${mc.min}, ceiling ${mc.max}; up after ${mc.up.n} good days in any ${mc.up.of}, down after ${mc.down.n} missed in any ${mc.down.of}).`);
+    L.push('', `TODAY'S GOAL (Daily Meta Quota: picked by fixed rules from the weekly quotas — the most urgent first, by completions left against days left; its level moves by the user's own rules). Level ${mc.level} (floor ${mc.min}, ceiling ${mc.max}; up after ${mc.up.n} good days in any ${mc.up.of}, down after ${mc.down.n} missed in any ${mc.down.of}).`);
     L.push(`  - Today: complete ${metaCtx.need} of ${metaCtx.picks.length}${metaCtx.metAt ? ' — MET' : ''}: ${metaCtx.picks.map(p => `${nameOf(p.hid)}${metaPickDone(p, todayStr()) ? ' ✓' : ''} (${p.why ? p.why.text : 'picked'})`).join('; ')}`);
     if ((metaCtx.subbed || []).length) L.push(`  - Substituted today (the user said it can't be done today): ${metaCtx.subbed.map(nameOf).join(', ')}`);
     if (past) L.push(`  - Last days, oldest first (✓ met, ✗ missed, – nothing asked): ${past}`);
