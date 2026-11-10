@@ -14089,6 +14089,8 @@ const CANVAS_STALE_MS = 15 * 60 * 1000;     // syncs on its own once the last on
 const CANVAS_BACK_DAYS = 14;                 // overdue work older than this isn't offered
 const CANVAS_KEEP_DAYS = 180;                // a decision is kept this long past its due date
 const CANVAS_MAX_ITEMS = 150;
+const CANVAS_PARALLEL = 4;                   // courses asked at once
+const CANVAS_DEADLINE_MS = 120000;           // a whole sync gives up after two minutes
 function loadCanvasSettings() {
   try {
     const v = JSON.parse(localStorage.getItem(CANVAS_SETTINGS_KEY)) || {};
@@ -14099,6 +14101,8 @@ let canvasCfg = loadCanvasSettings();
 function saveCanvasSettings() { try { localStorage.setItem(CANVAS_SETTINGS_KEY, JSON.stringify(canvasCfg)); } catch (e) {} }
 let canvasSupported = false;   // the iPhone app reported a build that can fetch Canvas
 let canvasBusy = false, canvasLastTry = 0, canvasSeq = 0;
+let canvasRun = 0;              // which sync is current: one past its deadline is ignored
+let canvasProgress = null;      // { done, total } courses while a sync runs
 const canvasWaiting = new Map();
 let canvasCourse = '';          // the course filter: '' = all courses
 const canvasSel = new Set();    // assignment ids ticked for a bulk Import / Dismiss
@@ -14204,22 +14208,35 @@ async function canvasGetAll(path, get, host) {
   }
   return out;
 }
-// Courses, then each course's assignments with the user's own submission on each.
-async function canvasFetchItems(get, host, today, now) {
-  const courses = await canvasGetAll('/api/v1/courses?enrollment_state=active&per_page=100', get, host);
-  const out = [];
-  for (const c of courses) {
-    if (!c || c.id == null || c.access_restricted_by_date) continue;
-    let list;
-    try {
-      list = await canvasGetAll(`/api/v1/courses/${encodeURIComponent(c.id)}/assignments?per_page=100&order_by=due_at&include%5B%5D=submission`, get, host);
-    } catch (e) {
-      if (e.kind === 'token' || e.kind === 'net' || e.kind === 'timeout') throw e;
-      continue;                     // one course hiding its assignments doesn't stop the rest
+// Courses the user takes, then each one's assignments with the user's own submission on
+// each. Four courses are asked at once: one after another, a student with a dozen courses
+// waited long enough to think it had hung (2026-11-09). `onProgress(done, total)` reports
+// courses finished; `alive()` going false (the sync passed its deadline) stops asking.
+async function canvasFetchItems(get, host, today, now, onProgress, alive) {
+  const live = () => !alive || alive();
+  const courses = (await canvasGetAll('/api/v1/courses?enrollment_state=active&enrollment_type=student&per_page=100', get, host))
+    .filter(c => c && c.id != null && !c.access_restricted_by_date);
+  const per = new Array(courses.length);
+  let next = 0, done = 0, failed = null;
+  if (onProgress) onProgress(0, courses.length);
+  const worker = async () => {
+    while (next < courses.length && !failed && live()) {
+      const i = next++, c = courses[i];
+      let list = [];
+      try {
+        list = await canvasGetAll(`/api/v1/courses/${encodeURIComponent(c.id)}/assignments?per_page=100&order_by=due_at&include%5B%5D=submission`, get, host);
+      } catch (e) {
+        if (e.kind === 'token' || e.kind === 'net' || e.kind === 'timeout') { failed = failed || e; return; }
+        // anything else: one course hiding its assignments doesn't stop the rest
+      }
+      per[i] = list.map(a => canvasItem(a, c, today, now)).filter(Boolean);
+      done++;
+      if (onProgress && live()) onProgress(done, courses.length);
     }
-    list.forEach(a => { const it = canvasItem(a, c, today, now); if (it) out.push(it); });
-  }
-  return out;
+  };
+  await Promise.all(Array.from({ length: Math.min(CANVAS_PARALLEL, courses.length) }, worker));
+  if (failed) throw failed;
+  return per.flat().filter(Boolean);
 }
 
 /* ---- the bridge ---- */
@@ -14248,16 +14265,23 @@ function canvasErrText(e) {
   if (k === 'notCanvas' || st === 404) return 'That address didn\'t answer like Canvas. Check it in Settings → Canvas.';
   if (st === 403) return 'Canvas refused the request (403). Your school may not allow access tokens.';
   if (k === 'net' || k === 'timeout') return 'Couldn\'t reach Canvas. Check the connection and try again.';
+  if (k === 'slow') return 'Canvas took over two minutes, so the sync stopped. Tap ⟳ to try again.';
   return `Canvas answered ${st || 'with an error'}. Try again in a bit.`;
 }
 async function canvasSync(manual) {
   if (canvasBusy) return;
   const why = canvasBlocker();
   if (why) { if (manual) toast('🎓 ' + why, 'var(--pink)'); return; }
-  canvasBusy = true; canvasLastTry = Date.now();
-  renderCanvasInbox(); renderCanvasSettings();
+  canvasBusy = true; canvasLastTry = Date.now(); canvasProgress = null;
+  const run = ++canvasRun, alive = () => run === canvasRun && canvasBusy;
+  let timer = null;
   try {
-    const list = await canvasFetchItems(canvasGet, canvasCfg.host, todayStr(), Date.now());
+    renderCanvasInbox(); renderCanvasSettings();
+    // Never longer than CANVAS_DEADLINE_MS: past it the spinner stops and says so, and the
+    // requests still out are ignored when they come back.
+    const deadline = new Promise((_, no) => { timer = setTimeout(() => no(canvasErr('slow')), CANVAS_DEADLINE_MS); });
+    const progress = (done, total) => { if (alive()) { canvasProgress = { done, total }; renderCanvasInbox(); renderCanvasSettings(); } };
+    const list = await Promise.race([canvasFetchItems(canvasGet, canvasCfg.host, todayStr(), Date.now(), progress, alive), deadline]);
     const box = canvasInbox();      // read after the wait: an undo or a cloud load may have swapped `state`
     canvasMerge(box, list, todayStr());
     box.lastSync = Date.now(); box.error = '';
@@ -14266,7 +14290,8 @@ async function canvasSync(manual) {
     canvasInbox().error = canvasErrText(e);
     if (manual) toast('🎓 ' + canvasInbox().error, 'var(--pink)');
   } finally {
-    canvasBusy = false;
+    clearTimeout(timer);
+    canvasBusy = false; canvasProgress = null; canvasRun++;
     save(); renderCanvasInbox(); renderCanvasSettings();
   }
 }
@@ -14347,6 +14372,10 @@ function canvasDue(it) {
   return { text: d.days < 0 ? d.label : `Due ${d.label}`, cls: d.cls };
 }
 const canvasKey = it => it.cid || it.course;
+function canvasSyncingText() {
+  const p = canvasProgress;
+  return p && p.total ? `Syncing… ${p.done} of ${p.total} course${p.total === 1 ? '' : 's'}` : 'Syncing…';
+}
 function canvasShown() { return canvasInbox().items.filter(it => !canvasCourse || canvasKey(it) === canvasCourse); }
 function renderCanvasInbox() {
   const host = $('#canvasInbox'); if (!host) return;
@@ -14355,13 +14384,13 @@ function renderCanvasInbox() {
   const shown = canvasShown(), ids = new Set(shown.map(it => it.id));
   [...canvasSel].forEach(id => { if (!ids.has(id)) canvasSel.delete(id); });
   const n = items.length, k = canvasSel.size, folded = box.folded;
-  const when = canvasBusy ? 'Syncing…' : box.lastSync ? `Last sync: ${canvasAgo(box.lastSync)}` : '';
+  const when = canvasBusy ? canvasSyncingText() : box.lastSync ? `Last sync: ${canvasAgo(box.lastSync)}` : '';
   const sub = box.error && !canvasBusy ? `<span class="cv-err">${escapeHtml(box.error)}</span>`
     : `<span class="cv-when-in">${when ? escapeHtml(when) : 'Review and import assignments from Canvas'}</span><span class="cv-when-out">Review and import assignments from Canvas</span>`;
   let body;
   if (!n) {
     const setup = !box.lastSync && why;
-    body = `<div class="cv-empty">${setup ? escapeHtml(why) : 'Nothing waiting. New assignments show up here after each sync.'}
+    body = `<div class="cv-empty">${setup ? escapeHtml(why) : canvasBusy ? 'Looking through your courses for assignments…' : 'Nothing waiting. New assignments show up here after each sync.'}
       ${setup && HCBridge.present && canvasSupported ? '<br><button class="btn ghost sm" data-cv="settings">Set up Canvas</button>' : ''}</div>`;
   } else {
     const courses = [...new Map(items.map(it => [canvasKey(it), it.course])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
@@ -14439,7 +14468,7 @@ function renderCanvasSettings() {
   st.textContent = !HCBridge.present ? 'This device can\'t reach Canvas. Sync from the Habit Casino iPhone app; the inbox follows you to every device signed in to Cloud Save.'
     : !canvasSupported ? 'This copy of the iPhone app is older than Canvas sync. Rebuild it from Xcode, then come back here.'
     : !canvasCfg.host || !canvasCfg.token ? 'Add both to connect.'
-    : canvasBusy ? 'Syncing…'
+    : canvasBusy ? canvasSyncingText()
     : box.error ? box.error
     : box.lastSync ? `Connected. Last sync ${canvasAgo(box.lastSync)}; ${box.items.length} waiting in the inbox.`
     : 'Ready. Tap Sync now.';
