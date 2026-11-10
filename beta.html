@@ -960,6 +960,73 @@
     body.quad-dragging .quad-body { overflow: hidden; }   /* no scroll-fighting mid-drag */
     #taskMatrix .qrow { touch-action: none; }             /* the drag owns the gesture */
 
+    /* ---- Canvas Inbox (Tasks): assignments from Canvas, waiting to be let in. ---- */
+    #canvasInbox:empty { display: none; }
+    .cv-inbox { margin-top: 14px; padding: 12px 12px 12px; border-radius: 16px; border: 1.5px solid rgba(255,158,44,.62);
+      background: rgba(14,8,3,.86); box-shadow: 0 0 18px rgba(255,158,44,.10); }
+    .cv-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .cv-logo { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; font-size: 24px; border-radius: 12px;
+      background: rgba(255,158,44,.12); }
+    .cv-titles { flex: 1 1 auto; min-width: 0; }
+    .cv-title { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--ink); }
+    .cv-badge { flex: 0 0 auto; font-size: 12.5px; font-weight: 800; padding: 2px 9px; border-radius: 999px; color: #ffb75e;
+      background: rgba(255,158,44,.16); border: 1px solid rgba(255,158,44,.42); }
+    .cv-sub { margin-top: 2px; font-size: 13px; color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cv-sub .cv-err { color: #ff8a7a; white-space: normal; }
+    .cv-when { flex: 0 0 auto; font-size: 13px; color: var(--ink-dim); white-space: nowrap; }
+    .cv-when-in { display: none; }
+    .cv-refresh { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px; border: 1px solid rgba(255,255,255,.14); cursor: pointer;
+      background: rgba(255,255,255,.05); color: var(--ink); font-size: 19px; font-family: inherit; display: grid; place-items: center; }
+    .cv-refresh span { display: block; line-height: 1; }
+    .cv-refresh.spin span { animation: cvSpin 1s linear infinite; }
+    .cv-refresh:disabled { cursor: default; }
+    @keyframes cvSpin { to { transform: rotate(360deg); } }
+    .cv-caret { flex: 0 0 auto; color: var(--ink-dim); font-size: 13px; transition: transform .2s; }
+    .cv-inbox.folded .cv-caret { transform: rotate(180deg); }
+    .cv-inbox.folded .cv-body { display: none; }
+    .cv-body { margin-top: 12px; }
+    .cv-rows { display: flex; flex-direction: column; gap: 7px; }
+    .cv-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 7px 8px 7px 10px; border-radius: 12px; cursor: pointer;
+      background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); }
+    /* !important: the greyscale pass paints every input with its own !important rule. */
+    .cv-check { -webkit-appearance: none; appearance: none; flex: 0 0 auto; width: 22px; height: 22px; margin: 0; padding: 0; border-radius: 6px; cursor: pointer;
+      border: 1.5px solid rgba(255,255,255,.38) !important; background: rgba(0,0,0,.35) !important; display: grid; place-items: center; }
+    .cv-check:checked { background: var(--cyan) !important; border-color: var(--cyan) !important; }
+    .cv-check:checked::after { content: '✓'; color: #1a0f02; font-size: 14px; font-weight: 900; line-height: 1; }
+    .cv-bar { flex: 0 0 4px; align-self: stretch; border-radius: 3px; background: var(--cc); }
+    .cv-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+    .cv-main b { font-size: 15.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cv-main small { font-size: 13px; color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cv-due { flex: 0 0 auto; font-size: 13.5px; color: #e6d3bd; white-space: nowrap; }
+    .cv-due-in { display: none; }
+    .cv-due.late, .cv-due-in.late { color: #ff8a7a; }
+    .cv-due.today, .cv-due-in.today { color: var(--cyan); }
+    .cv-ok, .cv-no { flex: 0 0 auto; width: 42px; height: 34px; border-radius: 9px; border: 1.5px solid; cursor: pointer;
+      font-size: 17px; font-weight: 900; font-family: inherit; display: grid; place-items: center; }
+    .cv-ok { color: #3ddc68; border-color: rgba(61,220,104,.6); background: rgba(61,220,104,.10); }
+    .cv-no { color: #ff5d5d; border-color: rgba(255,93,93,.6); background: rgba(255,93,93,.10); }
+    .cv-ok:active, .cv-no:active, .cv-bulk:active, .cv-refresh:active { transform: scale(.94); }
+    .cv-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+    .cv-course { flex: 0 1 auto; max-width: 100%; min-width: 0; font: inherit; font-size: 16px; font-weight: 700; color: var(--ink);
+      padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); }
+    .cv-all { margin-left: auto; display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; }
+    .cv-bulk { flex: 0 0 auto; padding: 8px 13px; border-radius: 10px; border: 1.5px solid; font: inherit; font-weight: 800; cursor: pointer; }
+    .cv-bulk.dismiss { color: var(--ink-dim); border-color: rgba(255,255,255,.24); background: rgba(255,255,255,.04); }
+    .cv-bulk.import { color: var(--cyan); border-color: var(--cyan); background: rgba(255,158,44,.12); }
+    .cv-bulk:disabled { opacity: .45; cursor: default; }
+    .cv-empty { padding: 10px 4px 4px; font-size: 14px; line-height: 1.45; color: var(--ink-dim); text-align: center; }
+    .cv-empty .btn { margin-top: 10px; }
+    /* A phone: the due date tucks under the course, and the sync time under the title. */
+    @media (max-width: 560px) {
+      .cv-when { display: none; }
+      .cv-when-in { display: inline; }
+      .cv-when-out { display: none; }
+      .cv-due { display: none; }
+      .cv-due-in { display: inline; }
+      .cv-all { margin-left: 0; }
+      .cv-bulk { flex: 1 1 auto; }
+    }
+
     /* Editor: due date + quadrant picker */
     .date-in {
       background: var(--gs-ctl); border: 1px solid var(--gs-edge); color: var(--ink);
@@ -3288,6 +3355,13 @@
     .mq-n b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 700; }
     .mq-n small { flex: 0 0 auto; font-size: 13px; color: #d9c2a6; }
     .mq-n small.mq-tier { color: var(--cyan); }
+    .mq-n small.mq-tier.low { color: #ff8a7a; }
+    /* A tiered pick's rungs, swiped like a habit row on the Habits tab (.hrow-track). */
+    .mq-row { touch-action: pan-y; }
+    .mq-swipe { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    .mq-track { display: flex; transition: transform .3s cubic-bezier(.22,.9,.3,1); }
+    .mq-track.dragging { transition: none; }
+    .mq-pane { flex: 0 0 100%; min-width: 0; display: flex; align-items: center; gap: 6px; }
     .mq-mark { flex: 0 0 auto; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%;
       border: 2px solid rgba(255,255,255,.38); font-size: 14px; font-weight: 900; color: #1a0f02; }
     .mq-mark.on { border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 10px rgba(255,158,44,.6); }
@@ -3662,6 +3736,8 @@
         <div class="hh-banner" id="hhBannerTasks"></div>
         <div class="oneoff-layout"><div class="quest-list" id="oneoffGrid"></div></div>
         <div class="matrix-wrap" id="taskMatrix" style="display:none"></div>
+        <!-- Canvas Inbox: under Unsorted in Matrix, under the list in List. -->
+        <div id="canvasInbox"></div>
         <!-- Add / List / Matrix, one third each, DOCKED to the bottom of the screen the
              same way the casino's game bar is: fixed above the tab bar rather than sticky
              inside the scroller, so the row never drifts with the list. The quick-add form
@@ -4092,6 +4168,25 @@
         </div>
       </div>
 
+      <div class="panel set-section" id="canvasSettings">
+        <div class="section-title t2">🎓 Canvas</div>
+        <div class="subtle">Brings your Canvas assignments into the Canvas Inbox on the Tasks tab. The iPhone app does the fetching. The address and token stay on this device: they're not part of your save and never go to the cloud.</div>
+        <div class="row between" style="margin-top:12px;flex-wrap:nowrap;gap:8px">
+          <span style="flex:0 0 auto">School address</span>
+          <input class="name-in" id="canvasHost" placeholder="yourschool.instructure.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url" style="flex:1;min-width:0">
+        </div>
+        <div class="row between" style="margin-top:8px;flex-wrap:nowrap;gap:8px">
+          <span style="flex:0 0 auto">Access token</span>
+          <input type="password" class="name-in" id="canvasToken" placeholder="Paste from Canvas" autocomplete="off" style="flex:1;min-width:0">
+        </div>
+        <div class="hint" style="margin-top:8px">To make a token: in Canvas, open Account → Settings, then tap ＋ New Access Token. Paste it here once.</div>
+        <div class="row" style="margin-top:10px;gap:8px">
+          <button class="btn ghost sm" id="canvasSyncBtn">⟳ Sync now</button>
+          <button class="btn ghost sm" id="canvasForgetBtn">Remove token</button>
+        </div>
+        <div class="hint" id="canvasStatus" data-noinfo="1" style="margin-top:8px"></div>
+      </div>
+
       <div class="panel set-section">
         <div class="section-title t2">💾 Data</div>
         <div class="row" style="margin-top:12px">
@@ -4418,6 +4513,9 @@ function defaultState() {
     // Today's Goal, the Daily Meta Quota (see TODAY'S GOAL). Top-level like the goals.
     metaQuota: defaultMetaQuota(), // { level, min, max, up: { n, of }, down: { n, of }, since, curve }
     metaDays: {},         // 'YYYY-MM-DD' → { level, show, need, picks, extras, metAt, result, … } — 60 kept
+    // Canvas Inbox: assignments waiting to be imported or dismissed, and what was decided.
+    // The token is NOT here — see CANVAS INBOX.
+    canvasInbox: { items: [], dismissed: {}, imported: {}, lastSync: 0, error: '', folded: false },
     metaDone: '',         // the last day judged
     // Home's pace tracker. A past day's denominator can't be rebuilt after the fact —
     // finished quests are deleted and the habit list changes — so each day's pair is
@@ -5326,6 +5424,8 @@ function load(raw) {
         quadrant: ['q1', 'q2', 'q3', 'q4'].includes(t.quadrant) ? t.quadrant : null,
         createdAt: Number.isFinite(t.createdAt) ? t.createdAt : null,
         createdBy: t.createdBy === 'ai' ? 'ai' : undefined,
+        // The Canvas assignment this quest came from, so it is never imported twice.
+        canvasId: typeof t.canvasId === 'string' && t.canvasId ? t.canvasId.slice(0, 40) : undefined,
         // Same running-stopwatch shape habits use, so a quest can be timed and land on
         // the Block Schedule as a real span instead of a zero-length mark.
         timer: (t.timer && Number.isFinite(t.timer.startedAt))
@@ -5479,6 +5579,7 @@ function load(raw) {
     merged.metaQuota = sanitizeMetaQuota(merged.metaQuota);
     merged.metaDays = sanitizeMetaDays(merged.metaDays, merged);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(merged.metaDone || ''))) merged.metaDone = '';
+    merged.canvasInbox = sanitizeCanvasInbox(merged.canvasInbox);
     return merged;
   } catch (e) {
     // ⚠️ THE MOST DANGEROUS PATH IN THE APP. Anything thrown by the ~150 lines of
@@ -6858,6 +6959,7 @@ function renderOneoffs() {
     grid.innerHTML = sortedOneoffs(state.oneoffs).map(t => oneoffCardHTML(t)).join('');
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
+  renderCanvasInbox();
   renderHomeExtras();   // quests count toward Home's tally and pace
 }
 function renderTaskViewBar() {
@@ -12237,7 +12339,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) c
    nothing to suggest, or one the app never saw, counts neither way.
 
      · state.metaQuota { level, min, max, up: { n, of }, down: { n, of }, since, curve }
-     · state.metaDays  { 'YYYY-MM-DD': { level, show, need, picks: [{ hid, tier, why }],
+     · state.metaDays  { 'YYYY-MM-DD': { level, show, need, picks: [{ hid, tier, why, own }],
                                          extras, subbed, metAt, result, done, newLevel } }
      · state.metaDone  the last day judged
 
@@ -12271,8 +12373,9 @@ function sanitizeMetaDays(src, st) {
   const list = a => {
     const seen = new Set();
     return (Array.isArray(a) ? a : []).filter(p => p && typeof p.hid === 'string' && known.has(p.hid) && !seen.has(p.hid) && seen.add(p.hid))
-      .map(p => ({ hid: p.hid, tier: int(p.tier, 1, 1),
-                   why: p.why && typeof p.why.text === 'string' ? { k: String(p.why.k || ''), text: p.why.text.slice(0, 120) } : null }));
+      .map(p => Object.assign({ hid: p.hid, tier: int(p.tier, 1, 1),
+                   why: p.why && typeof p.why.text === 'string' ? { k: String(p.why.k || ''), text: p.why.text.slice(0, 120) } : null },
+                   p.own === true ? { own: true } : {}));   // the user swiped this row's tier
   };
   Object.keys(src).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && src[d] && typeof src[d] === 'object').sort().slice(-60).forEach(d => {
     const r = src[d];
@@ -12561,7 +12664,7 @@ function speedrunStack() {
 }
 // The rung a speedrun step is done at: the one its quota asks for, when the habit sits below it.
 function speedrunTierPick(h) {
-  const p = metaEntry(metaToday(), h.id), lv = habitLevels(h); if (!p || !lv) return null;
+  const p = metaEntry(metaToday(), h.id), lv = habitLevels(h); if (!p || !lv || p.own) return null;
   const want = clamp(p.tier - 1, 0, lv.length - 1);
   return curLevelIndex(h) < want ? want : null;
 }
@@ -12586,11 +12689,31 @@ function metaName(p, h) {
   const lv = habitLevels(h), l = lv ? lv[clamp(p.tier - 1, 0, lv.length - 1)] : null;
   return { name: l ? (l.name || h.name) : h.name, mins: l ? l.minutes || 0 : h.timedMinutes || 0, tiered: !!lv };
 }
+// The rung a row shows, and the one its ▶ / ✓ do: the tier the quota asks for while the
+// habit sits below it, unless the user swiped this row; then whatever they picked, even a
+// rung that won't count. Once done or running, it's simply where the habit is.
+function metaTierIdx(p, h) {
+  const lv = habitLevels(h); if (!lv) return null;
+  const cur = curLevelIndex(h);
+  if (!p || p.own || doneCount(h) > 0 || h.timer) return cur;
+  return Math.max(cur, clamp(p.tier - 1, 0, lv.length - 1));
+}
+// A swipe on a Today's Goal row moves the habit's tier, exactly as a swipe on the Habits tab
+// does, and marks the pick so the card stops moving it back up to the tier asked.
+function metaSetTier(hid, i) {
+  const h = state.habits.find(x => x.id === hid); if (!h) return;
+  const p = metaEntry(metaToday(), hid);
+  setHabitTier(h, i);
+  if (p) p.own = true;
+  save();
+}
 function metaRowHTML(p) {
   const h = state.habits.find(x => x.id === p.hid); if (!h) return '';
-  // A tier named "Cello 60 min" already says how long; the length is shown only when it doesn't.
-  const { name, mins, tiered } = metaName(p, h);
-  const done = metaPickDone(p, todayStr()), t = h.timer, label = escapeHtml(name);
+  const done = metaPickDone(p, todayStr()), t = h.timer, lv = habitLevels(h);
+  const idx = metaTierIdx(p, h), want = lv ? clamp(p.tier - 1, 0, lv.length - 1) : 0;
+  // Done, a row is named for the tier that counted; otherwise for the rung ▶ / ✓ will do.
+  const nameAt = i => { const l = lv && !done ? lv[i] : null; return l ? { name: l.name || h.name, mins: l.minutes || 0 } : metaName(p, h); };
+  const { name } = nameAt(idx), label = escapeHtml(name);
   // The same buttons the habit has on the Habits tab: ▶ starts its stopwatch and ✓ completes
   // it untimed; while it runs, ⏸/▶ holds, ↺ un-starts and ⏹ finishes. The clock replaces the
   // length and tier notes, which is what makes room for the extra buttons.
@@ -12607,9 +12730,23 @@ function metaRowHTML(p) {
       <button class="hrow-check" data-mq="do" aria-label="Quick complete ${label}">✓</button>`;
   // A tap anywhere else on the row: a pick still to do opens its menu (substitute it, or
   // open the habit); anything else opens the habit, as a row on the Habits tab does.
+  // One pane per rung, laid out like the Habits tab's carousel: swipe left for harder,
+  // right for easier. A rung below the one asked says so, since doing it won't count.
+  const pane = (i, chevs) => {
+    const { name: nm, mins } = nameAt(i), low = !!lv && !done && i < want;
+    const tag = t ? '' : lv && !done ? `<small class="mq-tier${low ? ' low' : ''}"${low ? '' : ` style="color:${lv[i].color}"`}>${low ? 'won’t count' : `Tier ${i + 1}`}</small>`
+      : lv && p.tier > 1 ? `<small class="mq-tier">Tier ${p.tier}+</small>` : '';
+    const ch = chevs ? `<span class="lvl-chevs" aria-hidden="true">${i > 0 ? '<span class="lvl-chev">‹</span>' : ''}${i < lv.length - 1 ? '<span class="lvl-chev">›</span>' : ''}</span>` : '';
+    return `<span class="mq-n"><b>${escapeHtml(nm)}</b>${!t && mins && !detectMinutes(nm) ? `<small>${metaMins(mins)}</small>` : ''}${tag}</span>${ch}`;
+  };
+  // Swipeable while it's still to do. Done or running, the row shows the one rung that matters.
+  const body = lv && lv.length > 1 && !done && !t && !isComplete(h)
+    ? `<div class="mq-swipe"><div class="mq-track" data-idx="${idx}" style="transform:translateX(${-idx * 100}%)">${
+        lv.map((l, i) => `<div class="mq-pane">${pane(i, true)}</div>`).join('')}</div></div>`
+    : pane(lv && !done ? idx : 0, false);
   return `<div class="mq-row${done ? ' done' : ''}${t ? ' live' : ''}" data-mq="row" data-hid="${h.id}"${p.why ? ` title="${escapeHtml(p.why.text)}"` : ''}>
       <span class="mq-e" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
-      <span class="mq-n"><b>${label}</b>${!t && mins && !detectMinutes(name) ? `<small>${metaMins(mins)}</small>` : ''}${!t && tiered && p.tier > 1 ? `<small class="mq-tier">Tier ${p.tier}+</small>` : ''}</span>
+      ${body}
       ${chip}${right}</div>`;
 }
 // A small scene behind the title: sun, ridges, a pagoda. Decoration only.
@@ -12662,10 +12799,12 @@ function renderHomeMeta() {
   }
 }
 // A pick only counts at the tier its quota asks for, so a habit sitting below it is moved
-// up before it is ticked or timed. Not once it has been done today: that tier is spent.
+// up before it is ticked or timed: ▶ and ✓ do the rung the row shows (metaTierIdx). Not
+// once it has been done today, since that tier is spent, and not when the user swiped the
+// row to a rung of their own.
 function metaLiftTier(h) {
-  const p = metaEntry(metaToday(), h.id), lv = habitLevels(h);
-  if (p && lv && doneCount(h) === 0) { const want = clamp(p.tier - 1, 0, lv.length - 1); if (curLevelIndex(h) < want) setHabitTier(h, want); }
+  const i = metaTierIdx(metaEntry(metaToday(), h.id), h);
+  if (i !== null && i !== curLevelIndex(h)) setHabitTier(h, i);
 }
 // ✓ on the card is the same as ticking the habit anywhere else — completeHabit, with its
 // tokens and undo.
@@ -12683,6 +12822,7 @@ function metaStart(hid) {
 }
 // Home also runs the Habits tab's click handler, so everything with a data-mq stops here.
 $('#homeMeta').addEventListener('click', e => {
+  if (Date.now() - lastSwipeAt < 400 && e.target.closest('.mq-swipe')) { e.stopPropagation(); return; }   // a tier swipe just ended
   const b = e.target.closest('[data-mq]');
   if (b) {
     e.stopPropagation();
@@ -13649,6 +13789,9 @@ window.HCNative = {
     // Only an app built with the Live Activity reports this at all; an older build would
     // just log every 'live' message as unknown, so nothing is sent to one.
     liveSupported = s.liveEnabled !== undefined;
+    // Likewise Canvas: only a build that can fetch it says so.
+    canvasSupported = s.canvas === true;
+    renderCanvasInbox(); renderCanvasSettings(); canvasMaybeSync();
     liveSystemOn = s.liveEnabled !== false;
     lastLivePush = '';                             // a fresh launch or return re-sends the list
     if ($('#view-settings') && $('#view-settings').classList.contains('active')) {
@@ -13919,6 +14062,406 @@ window.HCNative.onOpen = key => {
   if (b) openSchedSheet('block', { key: schedKey(b) });
   return true;
 };
+
+/* =================================================================
+   CANVAS INBOX — assignments from the user's Canvas, waiting to be let in.
+
+   Canvas's API answers apps but not web pages: it sends no CORS headers (checked against
+   three schools' servers on 2026-11-09), so this page cannot fetch it. The iPhone app can,
+   so every GET goes over the bridge as op 'canvasGet' and comes back through
+   HCNative.onCanvas. Anywhere else the inbox shows what the phone last fetched (the inbox
+   rides in the save), and Import and Dismiss still work there.
+
+   Two things are kept apart on purpose:
+     · habitCasinoCanvas.settings (localStorage): the school's address and the access token.
+       Device-local like the AI keys: never in `state`, so never in the cloud save.
+     · state.canvasInbox: what's waiting and what's been decided —
+         { items: [{ id, title, course, cid, due, url }], dismissed: { id: due },
+           imported: { id: due }, lastSync, error, folded }
+       Every sync rebuilds `items` from Canvas minus anything dismissed or imported, so a
+       dismissed assignment never comes back and an imported one is never offered twice
+       (an imported quest also carries `canvasId`). A decision is forgotten 180 days after
+       its due date (an undated one never); by then no sync can bring it back, because a
+       sync only takes work due in the last two weeks or later.
+   ================================================================= */
+const CANVAS_SETTINGS_KEY = 'habitCasinoCanvas.settings';
+const CANVAS_STALE_MS = 15 * 60 * 1000;     // syncs on its own once the last one is older than this
+const CANVAS_BACK_DAYS = 14;                 // overdue work older than this isn't offered
+const CANVAS_KEEP_DAYS = 180;                // a decision is kept this long past its due date
+const CANVAS_MAX_ITEMS = 150;
+function loadCanvasSettings() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CANVAS_SETTINGS_KEY)) || {};
+    return { host: typeof v.host === 'string' ? v.host : '', token: typeof v.token === 'string' ? v.token : '' };
+  } catch (e) { return { host: '', token: '' }; }
+}
+let canvasCfg = loadCanvasSettings();
+function saveCanvasSettings() { try { localStorage.setItem(CANVAS_SETTINGS_KEY, JSON.stringify(canvasCfg)); } catch (e) {} }
+let canvasSupported = false;   // the iPhone app reported a build that can fetch Canvas
+let canvasBusy = false, canvasLastTry = 0, canvasSeq = 0;
+const canvasWaiting = new Map();
+let canvasCourse = '';          // the course filter: '' = all courses
+const canvasSel = new Set();    // assignment ids ticked for a bulk Import / Dismiss
+
+// "https://School.instructure.com/courses/12" → "school.instructure.com". '' if it isn't one.
+function canvasHostOf(v) {
+  const s = String(v || '').trim().toLowerCase().replace(/^[a-z]+:\/\//, '').split(/[/?#]/)[0];
+  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(s) ? s : '';
+}
+// load()'s pass. Hoisted and self-contained (see the boot dead-zone note).
+function sanitizeCanvasInbox(src) {
+  const s = src && typeof src === 'object' && !Array.isArray(src) ? src : {};
+  const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+  const day = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+  const okId = k => typeof k === 'string' && /^[\w~.-]{1,40}$/.test(k);
+  const marks = m => {
+    const o = {};
+    if (m && typeof m === 'object' && !Array.isArray(m)) Object.keys(m).filter(okId).forEach(k => { o[k] = day(m[k]) || ''; });
+    return o;
+  };
+  const dismissed = marks(s.dismissed), imported = marks(s.imported), seen = new Set();
+  const decided = k => Object.prototype.hasOwnProperty.call(dismissed, k) || Object.prototype.hasOwnProperty.call(imported, k);
+  const items = (Array.isArray(s.items) ? s.items : [])
+    .filter(it => it && okId(it.id) && typeof it.title === 'string' && it.title && !decided(it.id) && !seen.has(it.id) && seen.add(it.id))
+    .slice(0, 150)
+    .map(it => ({ id: it.id, title: it.title.slice(0, 140), course: str(it.course, 60) || 'Canvas', cid: str(it.cid, 40), due: day(it.due),
+                  url: /^https:[/][/]/.test(String(it.url || '')) ? str(it.url, 300) : '' }));
+  return { items, dismissed, imported, lastSync: Number.isFinite(s.lastSync) ? s.lastSync : 0, error: str(s.error, 200), folded: s.folded === true };
+}
+function canvasInbox() {
+  const c = state.canvasInbox;
+  if (!c || typeof c !== 'object' || !Array.isArray(c.items) || !c.dismissed || !c.imported) state.canvasInbox = sanitizeCanvasInbox(c);
+  return state.canvasInbox;
+}
+function canvasDecided(box, id) {
+  return Object.prototype.hasOwnProperty.call(box.dismissed, id) || Object.prototype.hasOwnProperty.call(box.imported, id);
+}
+
+/* ---- what a sync takes from Canvas ---- */
+// One assignment → an inbox row, or null when there's nothing to decide: handed in, graded,
+// excused, unpublished, closed, or more than two weeks overdue.
+function canvasItem(a, course, today, now) {
+  if (!a || typeof a !== 'object' || a.id == null || !a.name) return null;
+  if (a.published === false) return null;
+  const sub = a.submission && typeof a.submission === 'object' ? a.submission : {};
+  if (sub.excused || sub.submitted_at || ['submitted', 'graded', 'pending_review'].includes(sub.workflow_state)) return null;
+  const lock = a.lock_at ? Date.parse(a.lock_at) : NaN;
+  if (Number.isFinite(lock) && lock < now) return null;            // closed: it can't be handed in any more
+  const at = a.due_at ? Date.parse(a.due_at) : NaN;
+  const due = Number.isFinite(at) ? dateStrFromTs(at) : null;      // the phone's own calendar day
+  if (due && daysBetween(due, today) > CANVAS_BACK_DAYS) return null;
+  const c = course && typeof course === 'object' ? course : {};
+  const id = String(a.id);
+  if (!/^[\w~.-]{1,40}$/.test(id)) return null;
+  return {
+    id, title: String(a.name).replace(/\s+/g, ' ').trim().slice(0, 140),
+    course: String(c.name || c.course_code || 'Canvas').replace(/\s+/g, ' ').trim().slice(0, 60),
+    cid: c.id == null ? '' : String(c.id).slice(0, 40), due,
+    url: typeof a.html_url === 'string' && /^https:[/][/]/.test(a.html_url) ? a.html_url.slice(0, 300) : '',
+  };
+}
+// A sync's result becomes the inbox: what Canvas still has waiting, minus what the user has
+// already decided. Soonest due first, undated last.
+function canvasMerge(box, list, today) {
+  const inQuests = new Set((state.oneoffs || []).map(t => t && t.canvasId).filter(Boolean));
+  const seen = new Set();
+  box.items = list.filter(it => {
+    if (!it || seen.has(it.id)) return false;
+    seen.add(it.id);
+    if (inQuests.has(it.id) && !canvasDecided(box, it.id)) box.imported[it.id] = it.due || '';   // made by an older build
+    return !canvasDecided(box, it.id);
+  }).sort((a, b) => (a.due ? 0 : 1) - (b.due ? 0 : 1) || String(a.due || '').localeCompare(String(b.due || ''))
+      || a.course.localeCompare(b.course) || a.title.localeCompare(b.title))
+    .slice(0, CANVAS_MAX_ITEMS);
+  ['dismissed', 'imported'].forEach(k => Object.keys(box[k]).forEach(id => {
+    const d = box[k][id];
+    if (d && daysBetween(d, today) > CANVAS_KEEP_DAYS) delete box[k][id];
+  }));
+  return box;
+}
+// <https://x/api/v1/…&page=2>; rel="next" → that address, if it's on the same school's Canvas.
+function canvasNextLink(link, host) {
+  for (const part of String(link || '').split(',')) {
+    const m = part.match(/<([^>]+)>\s*;\s*rel="?next"?/);
+    if (!m) continue;
+    try { const u = new URL(m[1]); return u.protocol === 'https:' && u.host === host ? u.href : null; } catch (e) { return null; }
+  }
+  return null;
+}
+function canvasErr(kind, status, detail) { const e = new Error(kind); e.kind = kind; e.status = status || 0; e.detail = detail || ''; return e; }
+// Every page of one list. `get` is canvasGet (the bridge) in the app, a stand-in in tests.
+async function canvasGetAll(path, get, host) {
+  let url = `https://${host}${path}`, out = [], pages = 0;
+  while (url && ++pages <= 25) {
+    const r = (await get(url)) || {}, st = r.status | 0;
+    if (st === 401) throw canvasErr('token', st);
+    if (st !== 200) throw canvasErr(st ? 'http' : 'net', st, r.error);
+    let data;
+    try { data = JSON.parse(r.body); } catch (e) { throw canvasErr('notCanvas', st); }
+    if (!Array.isArray(data)) throw canvasErr('notCanvas', st);
+    out = out.concat(data);
+    url = canvasNextLink(r.link, host);
+  }
+  return out;
+}
+// Courses, then each course's assignments with the user's own submission on each.
+async function canvasFetchItems(get, host, today, now) {
+  const courses = await canvasGetAll('/api/v1/courses?enrollment_state=active&per_page=100', get, host);
+  const out = [];
+  for (const c of courses) {
+    if (!c || c.id == null || c.access_restricted_by_date) continue;
+    let list;
+    try {
+      list = await canvasGetAll(`/api/v1/courses/${encodeURIComponent(c.id)}/assignments?per_page=100&order_by=due_at&include%5B%5D=submission`, get, host);
+    } catch (e) {
+      if (e.kind === 'token' || e.kind === 'net' || e.kind === 'timeout') throw e;
+      continue;                     // one course hiding its assignments doesn't stop the rest
+    }
+    list.forEach(a => { const it = canvasItem(a, c, today, now); if (it) out.push(it); });
+  }
+  return out;
+}
+
+/* ---- the bridge ---- */
+function canvasGet(url) {
+  return new Promise((resolve, reject) => {
+    const id = 'cv' + (++canvasSeq);
+    const timer = setTimeout(() => { canvasWaiting.delete(id); reject(canvasErr('timeout')); }, 30000);
+    canvasWaiting.set(id, r => { clearTimeout(timer); resolve(r || {}); });
+    HCBridge.send({ op: 'canvasGet', id, url, token: canvasCfg.token });
+  });
+}
+window.HCNative.onCanvas = (id, reply) => {
+  const f = canvasWaiting.get(id);
+  if (f) { canvasWaiting.delete(id); f(reply); }
+};
+// Why this device can't sync right now, or '' when it can.
+function canvasBlocker() {
+  if (!HCBridge.present) return 'Canvas syncs in the Habit Casino iPhone app.';
+  if (!canvasSupported) return 'Rebuild the iPhone app from Xcode to turn on Canvas sync.';
+  if (!canvasCfg.host || !canvasCfg.token) return 'Add your school\'s Canvas address and a token in Settings → Canvas.';
+  return '';
+}
+function canvasErrText(e) {
+  const k = e && e.kind, st = e && e.status;
+  if (k === 'token') return 'Canvas didn\'t accept the token. Make a new one and paste it in Settings → Canvas.';
+  if (k === 'notCanvas' || st === 404) return 'That address didn\'t answer like Canvas. Check it in Settings → Canvas.';
+  if (st === 403) return 'Canvas refused the request (403). Your school may not allow access tokens.';
+  if (k === 'net' || k === 'timeout') return 'Couldn\'t reach Canvas. Check the connection and try again.';
+  return `Canvas answered ${st || 'with an error'}. Try again in a bit.`;
+}
+async function canvasSync(manual) {
+  if (canvasBusy) return;
+  const why = canvasBlocker();
+  if (why) { if (manual) toast('🎓 ' + why, 'var(--pink)'); return; }
+  canvasBusy = true; canvasLastTry = Date.now();
+  renderCanvasInbox(); renderCanvasSettings();
+  try {
+    const list = await canvasFetchItems(canvasGet, canvasCfg.host, todayStr(), Date.now());
+    const box = canvasInbox();      // read after the wait: an undo or a cloud load may have swapped `state`
+    canvasMerge(box, list, todayStr());
+    box.lastSync = Date.now(); box.error = '';
+    if (manual) toast(`🎓 Canvas synced — ${box.items.length ? box.items.length + ' waiting' : 'nothing new'}`, 'var(--cyan)');
+  } catch (e) {
+    canvasInbox().error = canvasErrText(e);
+    if (manual) toast('🎓 ' + canvasInbox().error, 'var(--pink)');
+  } finally {
+    canvasBusy = false;
+    save(); renderCanvasInbox(); renderCanvasSettings();
+  }
+}
+// The automatic sync: opening the app, the Tasks tab, or coming back to the app. At most
+// once per CANVAS_STALE_MS, and a failure waits two minutes before trying again.
+function canvasMaybeSync() {
+  if (canvasBusy || canvasBlocker()) return;
+  if (Date.now() - (canvasInbox().lastSync || 0) < CANVAS_STALE_MS || Date.now() - canvasLastTry < 120000) return;
+  canvasSync(false);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) canvasMaybeSync(); });
+
+/* ---- deciding ---- */
+function canvasQuest(it) {
+  const tier = 'medium';
+  return { id: uid(), emoji: guessEmoji(it.title) || '📚', emojiAuto: true, name: it.title, tier, category: 'Unsorted',
+           reward: tierReward(tier), iterations: 1, progress: 0, timedMinutes: inferMinutes(it.title), timedAuto: true,
+           desc: `From Canvas · ${it.course}${it.url ? '\n' + it.url : ''}`, quadrant: null, due: it.due,
+           createdAt: Date.now(), canvasId: it.id };
+}
+// ✓: each assignment becomes a quest in Unsorted with its due date, once. Returns the quests made.
+function canvasImport(ids) {
+  const box = canvasInbox(), want = new Set(ids), made = [];
+  const have = new Set(state.oneoffs.map(t => t && t.canvasId).filter(Boolean));
+  box.items.filter(it => want.has(it.id)).forEach(it => {
+    if (!have.has(it.id)) {
+      const t = canvasQuest(it);
+      state.oneoffs.push(t); have.add(it.id); made.push(t);
+      logEvent('task_created', { entityType: 'task', entityId: t.id, name: t.name, category: t.category, level: t.tier, iterations: 1, source: 'canvas' });
+    }
+    box.imported[it.id] = it.due || '';
+  });
+  box.items = box.items.filter(it => !want.has(it.id));
+  return made;
+}
+// ✕: gone from the inbox for good. Returns how many.
+function canvasDismiss(ids) {
+  const box = canvasInbox(), want = new Set(ids);
+  const hit = box.items.filter(it => want.has(it.id));
+  hit.forEach(it => { box.dismissed[it.id] = it.due || ''; });
+  box.items = box.items.filter(it => !want.has(it.id));
+  return hit.length;
+}
+function canvasDoImport(ids) {
+  ids = ids.filter(Boolean); if (!ids.length) return;
+  const snap = undoSnapshot();
+  canvasImport(ids);
+  ids.forEach(id => canvasSel.delete(id));
+  unsortedOpen = true;                       // that's where they went, so show it
+  SFX.coin(); save(); renderOneoffs(); buildHabitWheel();
+  const n = ids.length;
+  toast(`📥 ${n === 1 ? 'Assignment' : n + ' assignments'} added to Unsorted`, 'var(--cyan)');
+  offerUndo(snap, `Imported ${n} assignment${n === 1 ? '' : 's'}`);
+}
+function canvasDoDismiss(ids) {
+  ids = ids.filter(Boolean); if (!ids.length) return;
+  const snap = undoSnapshot();
+  const n = canvasDismiss(ids);
+  ids.forEach(id => canvasSel.delete(id));
+  SFX.click(); save(); renderCanvasInbox();
+  offerUndo(snap, `Dismissed ${n} assignment${n === 1 ? '' : 's'}`);
+}
+
+/* ---- drawing ---- */
+const CANVAS_COLORS = ['#ff9e2c', '#b26bff', '#3b82f6', '#3ddc68', '#ff5d5d', '#14c9a4', '#ffc247', '#ff5fb0'];
+function canvasCourseColor(it) {
+  const k = String(it.cid || it.course); let h = 0;
+  for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  return CANVAS_COLORS[h % CANVAS_COLORS.length];
+}
+function canvasAgo(ms) {
+  const m = Math.round((Date.now() - ms) / 60000);
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
+}
+function canvasDue(it) {
+  const d = it.due ? dueInfo({ due: it.due }) : null;
+  if (!d) return { text: 'No due date', cls: '' };
+  return { text: d.days < 0 ? d.label : `Due ${d.label}`, cls: d.cls };
+}
+const canvasKey = it => it.cid || it.course;
+function canvasShown() { return canvasInbox().items.filter(it => !canvasCourse || canvasKey(it) === canvasCourse); }
+function renderCanvasInbox() {
+  const host = $('#canvasInbox'); if (!host) return;
+  const box = canvasInbox(), items = box.items, why = canvasBlocker();
+  if (canvasCourse && !items.some(it => canvasKey(it) === canvasCourse)) canvasCourse = '';
+  const shown = canvasShown(), ids = new Set(shown.map(it => it.id));
+  [...canvasSel].forEach(id => { if (!ids.has(id)) canvasSel.delete(id); });
+  const n = items.length, k = canvasSel.size, folded = box.folded;
+  const when = canvasBusy ? 'Syncing…' : box.lastSync ? `Last sync: ${canvasAgo(box.lastSync)}` : '';
+  const sub = box.error && !canvasBusy ? `<span class="cv-err">${escapeHtml(box.error)}</span>`
+    : `<span class="cv-when-in">${when ? escapeHtml(when) : 'Review and import assignments from Canvas'}</span><span class="cv-when-out">Review and import assignments from Canvas</span>`;
+  let body;
+  if (!n) {
+    const setup = !box.lastSync && why;
+    body = `<div class="cv-empty">${setup ? escapeHtml(why) : 'Nothing waiting. New assignments show up here after each sync.'}
+      ${setup && HCBridge.present && canvasSupported ? '<br><button class="btn ghost sm" data-cv="settings">Set up Canvas</button>' : ''}</div>`;
+  } else {
+    const courses = [...new Map(items.map(it => [canvasKey(it), it.course])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+    const row = it => {
+      const d = canvasDue(it), t = escapeHtml(it.title);
+      return `<label class="cv-row" data-aid="${escapeHtml(it.id)}">
+        <input type="checkbox" class="cv-check" data-cv="pick" ${canvasSel.has(it.id) ? 'checked' : ''} aria-label="Select ${t}">
+        <span class="cv-bar" style="--cc:${canvasCourseColor(it)}"></span>
+        <span class="cv-main"><b>${t}</b><small>${escapeHtml(it.course)}<span class="cv-due-in ${d.cls}"> · ${d.text}</span></small></span>
+        <span class="cv-due ${d.cls}">${d.text}</span>
+        <button class="cv-ok" data-cv="import" aria-label="Import ${t}" title="Import to Unsorted">✓</button>
+        <button class="cv-no" data-cv="dismiss" aria-label="Dismiss ${t}" title="Dismiss for good">✕</button>
+      </label>`;
+    };
+    const all = shown.length && shown.every(it => canvasSel.has(it.id));
+    body = `<div class="cv-rows">${shown.map(row).join('')}</div>
+      <div class="cv-foot">
+        <select class="cv-course" data-cv="course" aria-label="Filter by course"><option value="">All Courses</option>${
+          courses.map(([key, name]) => `<option value="${escapeHtml(key)}"${key === canvasCourse ? ' selected' : ''}>${escapeHtml(name)}</option>`).join('')}</select>
+        <label class="cv-all"><input type="checkbox" class="cv-check" data-cv="all"${all ? ' checked' : ''}${shown.length ? '' : ' disabled'}> Select All</label>
+        <button class="cv-bulk dismiss" data-cv="dismissSel"${k ? '' : ' disabled'}>✕ Dismiss (${k})</button>
+        <button class="cv-bulk import" data-cv="importSel"${k ? '' : ' disabled'}>✓ Import (${k})</button>
+      </div>`;
+  }
+  host.innerHTML = `<div class="cv-inbox${folded ? ' folded' : ''}">
+    <div class="cv-head" data-cv="fold" role="button" aria-expanded="${!folded}">
+      <span class="cv-logo" aria-hidden="true">🎓</span>
+      <div class="cv-titles"><div class="cv-title">Canvas Inbox${n ? `<span class="cv-badge">${n} new</span>` : ''}</div><div class="cv-sub">${sub}</div></div>
+      ${when ? `<span class="cv-when">${escapeHtml(when)}</span>` : ''}
+      ${HCBridge.present ? `<button class="cv-refresh${canvasBusy ? ' spin' : ''}" data-cv="sync" aria-label="Sync with Canvas now"${canvasBusy ? ' disabled' : ''}><span>⟳</span></button>` : ''}
+      <span class="cv-caret" aria-hidden="true">⌃</span>
+    </div>
+    <div class="cv-body">${body}</div></div>`;
+}
+function onCanvasClick(e) {
+  const b = e.target.closest('[data-cv]');
+  if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
+  e.preventDefault();                         // a button inside a row's <label> mustn't tick its box
+  const aid = b.closest('[data-aid]')?.dataset.aid;
+  switch (b.dataset.cv) {
+    case 'fold': { const box = canvasInbox(); box.folded = !box.folded; SFX.click(); save(); renderCanvasInbox(); break; }
+    case 'sync': SFX.click(); canvasSync(true); break;
+    case 'import': canvasDoImport([aid]); break;
+    case 'dismiss': canvasDoDismiss([aid]); break;
+    case 'importSel': canvasDoImport([...canvasSel]); break;
+    case 'dismissSel': canvasDoDismiss([...canvasSel]); break;
+    case 'settings': openCanvasSettings(); break;
+  }
+}
+function onCanvasChange(e) {
+  const t = e.target, act = t.dataset && t.dataset.cv;
+  if (act === 'pick') { const id = t.closest('[data-aid]').dataset.aid; if (t.checked) canvasSel.add(id); else canvasSel.delete(id); }
+  else if (act === 'all') { canvasShown().forEach(it => { if (t.checked) canvasSel.add(it.id); else canvasSel.delete(it.id); }); }
+  else if (act === 'course') { canvasCourse = t.value; canvasSel.clear(); }
+  else return;
+  renderCanvasInbox();
+}
+$('#canvasInbox').addEventListener('click', onCanvasClick);
+$('#canvasInbox').addEventListener('change', onCanvasChange);
+
+/* ---- Settings → Canvas ---- */
+function openCanvasSettings() {
+  switchView('settings');
+  const p = $('#canvasSettings'); if (!p) return;
+  p.classList.remove('collapsed');
+  requestAnimationFrame(() => p.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
+function renderCanvasSettings() {
+  const h = $('#canvasHost'), t = $('#canvasToken'), st = $('#canvasStatus'); if (!h || !t || !st) return;
+  if (document.activeElement !== h) h.value = canvasCfg.host;
+  if (document.activeElement !== t) t.value = canvasCfg.token;
+  const box = canvasInbox(), why = canvasBlocker();
+  $('#canvasSyncBtn').disabled = !!why || canvasBusy;
+  $('#canvasForgetBtn').disabled = !canvasCfg.token;
+  st.textContent = !HCBridge.present ? 'This device can\'t reach Canvas. Sync from the Habit Casino iPhone app; the inbox follows you to every device signed in to Cloud Save.'
+    : !canvasSupported ? 'This copy of the iPhone app is older than Canvas sync. Rebuild it from Xcode, then come back here.'
+    : !canvasCfg.host || !canvasCfg.token ? 'Add both to connect.'
+    : canvasBusy ? 'Syncing…'
+    : box.error ? box.error
+    : box.lastSync ? `Connected. Last sync ${canvasAgo(box.lastSync)}; ${box.items.length} waiting in the inbox.`
+    : 'Ready. Tap Sync now.';
+}
+$('#canvasHost').addEventListener('change', e => {
+  const raw = e.target.value.trim(), v = canvasHostOf(raw);
+  if (raw && !v) { toast('🎓 That doesn\'t look like a Canvas address, e.g. yourschool.instructure.com', 'var(--pink)'); return; }
+  canvasCfg.host = v; saveCanvasSettings(); e.target.value = v;
+  canvasInbox().error = ''; save();
+  if (!canvasBlocker()) canvasSync(true); else renderCanvasSettings();
+});
+$('#canvasToken').addEventListener('change', e => {
+  canvasCfg.token = e.target.value.trim(); saveCanvasSettings();
+  canvasInbox().error = ''; save();
+  if (!canvasBlocker()) canvasSync(true); else renderCanvasSettings();
+});
+$('#canvasSyncBtn').addEventListener('click', () => { SFX.click(); canvasSync(true); });
+$('#canvasForgetBtn').addEventListener('click', () => {
+  canvasCfg.token = ''; saveCanvasSettings(); SFX.click();
+  renderCanvasSettings(); renderCanvasInbox();
+  toast('🎓 Canvas token removed from this device', 'var(--cyan)');
+});
 
 /* ---- WEB PUSH ------------------------------------------------------------
    The same two reminders, delivered by Apple to a Home Screen web app — so the phone
@@ -15695,6 +16238,7 @@ function renderSettings() {
   $('#motionToggle').checked = state.settings.reducedMotion;
   syncTimingSettings();
   renderAISettings();
+  renderCanvasSettings();
 }
 function syncTimingSettings() {
   const r = state.settings.redeem || {};
@@ -18490,7 +19034,7 @@ function switchView(name) {
   if (name === 'home') renderHome();
   if (name === 'habits') renderHabits();
   if (name === 'goals') renderGoals();
-  if (name === 'tasks') renderTasks();
+  if (name === 'tasks') { renderTasks(); canvasMaybeSync(); }
   if (name === 'casino') { updateGameButtons(); buildWheelSegments(); buildRouletteWheel(); renderRoulette(); renderUltra(); }
   if (name === 'chat') renderChat();
   if (name === 'prizes') renderPrizes();
@@ -19762,16 +20306,18 @@ function onHabitPointerDown(e) {
   // start on one — the click it would fire is swallowed via lastSwipeAt.
   const inSheet = !!e.target.closest('#editSheet');
   if (e.target.closest(inSheet ? 'input, select, textarea, .day-picker' : 'input, select, textarea, button, .day-picker')) return;
-  const row = e.target.closest('.hrow[data-id], .hedit[data-id]');
+  // Today's Goal rows on Home swipe too; they carry the habit's id as data-hid.
+  const row = e.target.closest('.hrow[data-id], .hedit[data-id], .mq-row[data-hid]');
   if (!row) return;
-  const isEdit = row.classList.contains('hedit');
+  const isEdit = row.classList.contains('hedit'), isMeta = row.classList.contains('mq-row');
   const track = isEdit ? row.closest('.hedit-swipe')?.querySelector('.hedit-track')
-                       : row.querySelector('.hrow-track');
+                       : row.querySelector(isMeta ? '.mq-track' : '.hrow-track');
   if (!track) return;                                    // habit has no tiers — nothing to page
-  const h = state.habits.find(x => x.id === row.dataset.id);
+  const id = isMeta ? row.dataset.hid : row.dataset.id;
+  const h = state.habits.find(x => x.id === id);
   const lvls = h && habitLevels(h); if (!lvls || lvls.length < 2) return;
   swipeStart = {
-    x: e.clientX, y: e.clientY, id: row.dataset.id, isEdit, track, n: lvls.length,
+    x: e.clientX, y: e.clientY, id, isEdit, isMeta, track, n: lvls.length,
     idx: clamp(parseInt(track.dataset.idx) || 0, 0, lvls.length - 1),
     w: track.getBoundingClientRect().width || 1,
     active: false,
@@ -19807,10 +20353,11 @@ function onHabitPointerUp(e) {
   SFX.click();
   const h = state.habits.find(x => x.id === s.id); if (!h) return;
   if (s.isEdit) { editTierPage = to; syncEditSheetHeight(); }
+  else if (s.isMeta) metaSetTier(s.id, to);
   else { setHabitTier(h, to); save(); }
   // Re-render only once the slide has finished, so the DOM swap is invisible. The row is
   // already sitting at the destination offset, so nothing jumps when it's replaced.
-  const settle = () => { if (s.isEdit) renderEditSheet(); else renderHabits(); };
+  const settle = () => { if (s.isEdit) renderEditSheet(); else if (s.isMeta) { renderHomeMeta(); renderHabits(); } else renderHabits(); };
   let done = false;
   const once = () => { if (done) return; done = true; s.track.removeEventListener('transitionend', once); settle(); };
   s.track.addEventListener('transitionend', once);
@@ -20426,6 +20973,7 @@ $('#revealOverlay').addEventListener('click', e => { if (e.target.id === 'reveal
    localStorage holds the game save plus two things that stay device-local by design:
      · habitCasinoAI.settings — the AI provider key. Deliberately NEVER synced; a real
        credential should not sit in a database in plaintext.
+     · habitCasinoCanvas.settings — the Canvas address and access token, for the same reason.
      · habitVersion — the alpha/beta channel flag, read by index.html before Firebase
        has loaded, so it can't come from the cloud.
 
