@@ -1522,6 +1522,32 @@
     .st-tog.on { filter: none; color: var(--h1); border-color: var(--h1); box-shadow: 0 0 8px rgba(255,158,44,.35); }
     .st-tog:disabled { cursor: default; opacity: .45; }
     .st-status { margin-top: 10px; font-weight: 700; font-size: 13px; }
+    .st-status b { font-variant-numeric: tabular-nums; }
+    /* The break wheel: a scroll-snapped column of minutes under a fixed band, each row
+       tilted by its distance from the middle (JS), like the iOS timer picker. */
+    /* Ids, not classes: .stk-sheet comes later in the file and would win a tie, which put
+       the scrim over the sheet. */
+    #stbSheet { z-index: 79; }
+    #stbScrim { z-index: 78; }
+    .stb-head-pad { width: 36px; }
+    .stb-wheel { position: relative; height: 220px; max-width: 300px; margin: 6px auto 16px; }
+    .stb-band { position: absolute; left: 0; right: 0; top: 50%; height: 44px; margin-top: -22px; border-radius: 12px;
+      background: rgba(255,255,255,.09); pointer-events: none; }
+    .stb-scroll { position: absolute; inset: 0; overflow-y: scroll; scroll-snap-type: y mandatory; overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; perspective: 700px; outline: none; touch-action: pan-y;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%); }
+    .stb-scroll::-webkit-scrollbar { display: none; }
+    .stb-pad { height: 88px; }
+    .stb-item { height: 44px; line-height: 44px; scroll-snap-align: center; box-sizing: border-box; padding-right: calc(50% - 6px);
+      text-align: right; font-size: 25px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums;
+      cursor: pointer; transform-origin: 50% 50%; backface-visibility: hidden; }
+    .stb-item.on { font-weight: 800; }
+    .stb-unit { position: absolute; top: 50%; left: calc(50% + 14px); transform: translateY(-50%); pointer-events: none;
+      font-size: 19px; font-weight: 700; color: var(--ink); }
+    .stb-go { display: block; width: 100%; }
+    .stb-keep { display: block; width: 100%; height: 44px; margin-top: 8px; border: 0; border-radius: 14px; cursor: pointer;
+      background: transparent; color: var(--ink-dim); font: inherit; font-weight: 700; font-size: 15px; }
     .st-status.locked { color: var(--h1); }
     .st-status.open { color: var(--ink-dim); }
     .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -4312,6 +4338,9 @@
   <div class="stk-sheet" id="stkSheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
   <div class="stk-scrim" id="gmScrim"></div>
   <div class="stk-sheet" id="gmSheet" role="dialog" aria-modal="true" aria-hidden="true"></div>
+  <!-- Settings → Screen Time: how long to unblock for, on a wheel like iOS's timer. -->
+  <div class="stk-scrim" id="stbScrim"></div>
+  <div class="stk-sheet stb-sheet" id="stbSheet" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="stbTitle"></div>
 
   <div id="toast"></div>
   <!-- Undo bar: appears after completing a habit/quest or claiming a reward, offering a
@@ -4571,6 +4600,8 @@ function defaultState() {
     // are mirrored FROM native for display only and are never trusted as the truth —
     // native re-reports them on launch and after every change it makes.
     screenTime: { on: false, authorized: false, pickedCount: 0, shielded: false },
+    // A break from the block, taken in Settings: until when, and the length last picked.
+    screenTimeBreak: { until: 0, last: 5 },
     // Reminders. `authorized` is mirrored from the iOS wrapper; the two switches are the
     // user's own and are the only part that survives a reload.
     notify: { rewardEnd: true, habitOverrun: true, authorized: false,
@@ -5353,6 +5384,7 @@ function load(raw) {
     // every boot: a save restored onto a phone with no wrapper — or one where Screen Time
     // permission has since been revoked — must not claim it still holds a shield.
     merged.screenTime = { ...base.screenTime, on: !!(parsed.screenTime && parsed.screenTime.on) };
+    merged.screenTimeBreak = sanitizeScreenBreak(merged.screenTimeBreak);
     const pn = parsed.notify || {};
     merged.notify = { ...base.notify,
                       rewardEnd: pn.rewardEnd !== false, habitOverrun: pn.habitOverrun !== false,
@@ -8013,6 +8045,9 @@ setInterval(() => {
   // Safety net for the paths that don't repaint Winnings: expiry, day rollover, and a
   // reload that lands mid-reward. syncShield dedupes, so this costs nothing per tick.
   syncShield();
+  // A break from the block counting down in Settings; when it runs out, the switch flips back.
+  const stLeft = document.getElementById('stBreakLeft');
+  if (stLeft) { const u = screenBreakUntil(); if (u) stLeft.textContent = fmtTimerSec(Math.ceil((u - Date.now()) / 1000)); else renderScreenTime(); }
   // Reminders are always derived here and nowhere else. A second of lag is irrelevant
   // when what's being scheduled is minutes away, and one call site can't miss a path.
   syncReminders();
@@ -14657,7 +14692,19 @@ function shieldTarget() {
   // A paused reward banks its remaining time and must not spend it — so pausing re-shields.
   const until = (w && !w.pausedAt && Number.isFinite(w.activeUntil) && w.activeUntil > Date.now())
     ? w.activeUntil : 0;
-  return String(until);
+  // A break taken in Settings opens the apps too; with both running, the later end wins.
+  return String(Math.max(until, screenBreakUntil()));
+}
+// load()'s pass. Hoisted and self-contained (see the boot dead-zone note).
+function sanitizeScreenBreak(src) {
+  const s = src && typeof src === 'object' && !Array.isArray(src) ? src : {};
+  return { until: Number.isFinite(s.until) && s.until > 0 ? s.until : 0,
+           last: Number.isInteger(s.last) && s.last >= 1 && s.last <= 15 ? s.last : 5 };
+}
+// When a break taken in Settings ends, or 0 when there isn't one running.
+function screenBreakUntil() {
+  const b = state.screenTimeBreak;
+  return b && Number.isFinite(b.until) && b.until > Date.now() ? b.until : 0;
 }
 function syncShield() {
   if (!HCBridge.present || !state.screenTime || !state.screenTime.on) return;
@@ -16505,13 +16552,19 @@ function renderScreenTime() {
     return;
   }
   const marked = state.rewards.filter(r => r.screenTime === true).length;
+  // During a break the switch shows off, and flips back on by itself when the break ends.
+  const brk = st.on ? screenBreakUntil() : 0;
+  const status = brk
+    ? `<div class="st-status open">🔓 Unblocked for <b id="stBreakLeft">${fmtTimerSec(Math.ceil((brk - Date.now()) / 1000))}</b> more, then blocked again by itself</div>`
+    : `<div class="st-status ${st.shielded ? 'locked' : 'open'}">${st.shielded ? '🔒 Apps are blocked right now' : '🔓 Apps are unlocked right now'}</div>`;
   box.innerHTML = `
-    <div class="row between" style="margin-top:10px"><span>Block my apps by default</span><label class="toggle"><input type="checkbox" id="stOn" ${st.on ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
+    <div class="row between" style="margin-top:10px"><span>Block my apps by default</span><label class="toggle"><input type="checkbox" id="stOn" ${st.on && !brk ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>
+    ${st.on ? `<div class="hint" style="margin-top:4px">${brk ? 'Switch it back on to end the break now.' : 'Switching it off asks how long, from 1 to 15 minutes, and then the block comes back by itself.'}</div>` : ''}
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
       <button class="btn ghost sm" id="stAuth">${st.authorized ? '✓ Permission granted' : 'Grant Screen Time permission'}</button>
       <button class="btn ghost sm" id="stPick">${st.pickedCount ? `Blocking ${st.pickedCount} app${st.pickedCount === 1 ? '' : 's'} — change` : 'Choose apps to block'}</button>
     </div>
-    <div class="st-status ${st.shielded ? 'locked' : 'open'}">${st.shielded ? '🔒 Apps are blocked right now' : '🔓 Apps are unlocked right now'}</div>
+    ${status}
     <div class="hint">${marked ? `${marked} reward${marked === 1 ? '' : 's'} connected.` : 'No rewards connected yet — open 🎁 Rewards above and tap “Connect to Screen Time” on a timed reward to make claiming it unlock your apps.'} Apple never tells this app which apps you picked, only how many. Deleting the app removes every block instantly.</div>`;
 }
 const OUTCOME_ORDER = ['blank', 'tokens', 'common', 'rare', 'epic', 'legendary'];
@@ -20834,16 +20887,22 @@ $('#remindersBody').addEventListener('click', e => {
 
 // ---- Settings: 📱 Screen Time ----
 // Delegated, because renderScreenTime replaces the whole body on every status update.
+// Off is no longer "off": it is a break of 1 to 15 minutes, picked on a wheel, after which
+// the block comes back by itself (the user's call, 2026-11-18). The phone schedules the
+// re-block at the deadline, so it lands even with Habit Casino closed. On blocks now, and
+// ends a break early.
 $('#screenTimeBody').addEventListener('change', e => {
   if (e.target.id !== 'stOn') return;
-  state.screenTime.on = e.target.checked;
+  if (!e.target.checked) {
+    e.target.checked = true;             // stays on until a length is picked
+    SFX.click(); openScreenBreak();
+    return;
+  }
+  state.screenTime.on = true;
+  state.screenTimeBreak = { ...sanitizeScreenBreak(state.screenTimeBreak), until: 0 };
   lastShieldPush = null;                 // whatever was last sent, the next push must land
   clearTimeout(shieldTimer); shieldTimer = null; shieldPending = null;
-  save();
-  // Turning the feature OFF has to stand the shield down. Leaving apps blocked with the
-  // switch off would be a lockout with no control left in the app that caused it.
-  if (state.screenTime.on) syncShield(); else HCBridge.send({ op: 'off' });
-  renderScreenTime();
+  save(); syncShield(); renderScreenTime();
 });
 $('#screenTimeBody').addEventListener('click', e => {
   if (e.target.id === 'stAuth') { SFX.click(); HCBridge.send({ op: 'authorize' }); }
@@ -20851,6 +20910,82 @@ $('#screenTimeBody').addEventListener('click', e => {
 });
 // Ask the phone where things stand. No-op in a browser; native answers via HCNative.onStatus.
 HCBridge.send({ op: 'status' });
+
+/* ---- the break: how long, on a wheel ----
+   A scroll-snapped column of 1 to 15 under a fixed band, like the iOS timer picker: flick
+   or drag it, tap a number to jump there, or use the arrow keys. Each row tilts and fades
+   by its distance from the middle, and a soft tick plays as each minute passes the band. */
+const STB_ROW = 44;               // px per minute; .stb-item's height, .stb-pad is twice it
+let stbOpen = false, stbValue = 5, stbRaf = 0;
+function openScreenBreak() {
+  stbValue = clamp(sanitizeScreenBreak(state.screenTimeBreak).last, 1, 15);
+  stbOpen = true; renderScreenBreak();
+}
+function closeScreenBreak() { stbOpen = false; renderScreenBreak(); }
+function renderScreenBreak() {
+  const sh = $('#stbSheet'), scrim = $('#stbScrim'); if (!sh || !scrim) return;
+  if (!stbOpen) { sh.classList.remove('show'); scrim.classList.remove('show'); sh.setAttribute('aria-hidden', 'true'); return; }
+  const items = Array.from({ length: 15 }, (_, i) => `<div class="stb-item" data-v="${i + 1}">${i + 1}</div>`).join('');
+  sh.innerHTML = `<div class="sch-grab"></div>
+    <div class="sch-sh-head"><button class="sch-sh-x" data-stb="close" aria-label="Keep apps blocked">✕</button>
+      <div class="sch-sh-title" id="stbTitle">Unblock apps for…</div><span class="stb-head-pad"></span></div>
+    <p class="sch-note">Pick how long. Your apps block again by themselves when it runs out, even with Habit Casino closed.</p>
+    <div class="stb-wheel">
+      <div class="stb-band" aria-hidden="true"></div>
+      <div class="stb-scroll" id="stbScroll" tabindex="0" role="spinbutton" aria-label="Minutes unblocked"
+        aria-valuemin="1" aria-valuemax="15" aria-valuenow="${stbValue}"><div class="stb-pad"></div>${items}<div class="stb-pad"></div></div>
+      <div class="stb-unit" aria-hidden="true">min</div>
+    </div>
+    <button class="mq-cta stb-go" data-stb="go"></button>
+    <button class="stb-keep" data-stb="close">Keep blocked</button>`;
+  sh.classList.add('show'); scrim.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
+  const sc = $('#stbScroll');
+  sc.scrollTop = (stbValue - 1) * STB_ROW;
+  sc.addEventListener('scroll', () => { if (!stbRaf) stbRaf = requestAnimationFrame(() => { stbRaf = 0; stbPaint(); }); }, { passive: true });
+  stbPaint();
+  try { sc.focus({ preventScroll: true }); } catch (e) {}
+}
+// Where the wheel sits: tilt each row, name the minute in the band, label the button.
+function stbPaint() {
+  const sc = $('#stbScroll'); if (!sc) return;
+  const pos = sc.scrollTop / STB_ROW;              // 0 = "1" in the band
+  sc.querySelectorAll('.stb-item').forEach((el, i) => {
+    const d = clamp(i - pos, -4, 4);
+    el.style.transform = `rotateX(${(-d * 19).toFixed(1)}deg)`;
+    el.style.opacity = String(Math.max(0.15, 1 - Math.abs(d) * 0.28).toFixed(2));
+    el.classList.toggle('on', Math.abs(i - pos) < 0.5);
+  });
+  const v = clamp(Math.round(pos) + 1, 1, 15);
+  if (v !== stbValue) { stbValue = v; tone(1700, 0.012, 'square', 0.03); }   // the tick as a minute passes
+  sc.setAttribute('aria-valuenow', String(v));
+  sc.setAttribute('aria-valuetext', `${v} minute${v === 1 ? '' : 's'}`);
+  const go = $('#stbSheet .stb-go'); if (go) go.textContent = `🔓 Unblock for ${v} minute${v === 1 ? '' : 's'}`;
+}
+function stbGoTo(v) {
+  const sc = $('#stbScroll'); if (!sc) return;
+  sc.scrollTo({ top: (clamp(v, 1, 15) - 1) * STB_ROW, behavior: document.body.classList.contains('reduced') ? 'auto' : 'smooth' });
+}
+// Start a break of `min` minutes: apps open now, and the phone re-blocks at the end.
+function startScreenBreak(min) {
+  min = clamp(Math.round(min) || 1, 1, 15);
+  state.screenTimeBreak = { until: Date.now() + min * 60000, last: min };
+  logEvent('screen_time_break', { minutes: min });
+  save(); syncShield(); renderScreenTime();
+  toast(`🔓 Apps unblocked for ${min} minute${min === 1 ? '' : 's'}`, 'var(--cyan)');
+}
+$('#stbSheet').addEventListener('click', e => {
+  const it = e.target.closest('.stb-item');
+  if (it) { stbGoTo(+it.dataset.v); return; }
+  const b = e.target.closest('[data-stb]'); if (!b) return;
+  if (b.dataset.stb === 'close') { SFX.click(); closeScreenBreak(); }
+  else if (b.dataset.stb === 'go') { SFX.click(); const v = stbValue; closeScreenBreak(); startScreenBreak(v); }
+});
+$('#stbSheet').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeScreenBreak(); return; }
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  e.preventDefault(); stbGoTo(stbValue + (e.key === 'ArrowDown' ? 1 : -1));
+});
+$('#stbScrim').addEventListener('click', () => { SFX.click(); closeScreenBreak(); });
 
 // ---- Settings: one-off tier payouts (quests themselves are edited on the Tasks tab) ----
 $('#tierRewards').addEventListener('input', e => {
