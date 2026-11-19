@@ -3368,7 +3368,7 @@
       background: var(--cyan); color: #1a0f02; font: inherit; font-weight: 800; font-size: 15.5px; }
     /* Full width: with ▶ and ✓ on every row, 80% left too little room for a name. */
     .mq-rows { position: relative; display: flex; flex-direction: column; gap: 7px; }
-    .mq-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 46px; padding: 5px 8px; border-radius: 14px;
+    .mq-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 60px; padding: 8px 10px 8px 8px; border-radius: 14px;
       cursor: pointer; text-align: left; font: inherit; color: var(--ink);
       border: 1px solid rgba(255,255,255,.11); background: rgba(10,5,2,.74); }
     .mq-row.done { border-color: rgba(255,158,44,.28); }
@@ -3377,10 +3377,21 @@
     .mq-row .hrow-check { width: 32px; height: 32px; font-size: 15px; border-radius: 9px; }
     .mq-row .row-chip { flex: 0 0 auto; font-size: 12.5px; padding: 2px 7px; }
     .mq-e { flex: 0 0 30px; text-align: center; font-size: 21px; line-height: 1; }
-    .mq-n { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 7px; overflow: hidden; white-space: nowrap; }
-    .mq-n b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 700; }
-    .mq-n small { flex: 0 0 auto; font-size: 13px; color: #d9c2a6; }
+    .mq-n { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 5px; overflow: hidden; white-space: nowrap; }
+    .mq-n b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 700; line-height: 1.2; }
+    .mq-meta { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; line-height: 1.15; }
+    .mq-meta .hrow-reward { font-size: 10.5px; padding: 2px 7px; }
+    /* A 320px phone: a running row's three buttons left its clock a digit short. */
+    @media (max-width: 350px) {
+      .mq-row { gap: 6px; }
+      .mq-row .hrow-check { width: 29px; height: 29px; }
+      .mq-e { flex-basis: 24px; font-size: 19px; }
+      .mq-meta { gap: 6px; }
+    }
+    .mq-n small { flex: 0 0 auto; font-size: 12.5px; color: #d9c2a6; }
     .mq-n small.mq-tier { color: var(--cyan); }
+    .mq-n small.mq-live { color: var(--cyan); font-variant-numeric: tabular-nums; }
+    .mq-n small.mq-live b { font-weight: 700; }
     .mq-n small.mq-tier.low { color: #ff8a7a; }
     /* A tiered pick's rungs, swiped like a habit row on the Habits tab (.hrow-track). */
     .mq-row { touch-action: pan-y; }
@@ -3408,6 +3419,7 @@
     }
     .mq-bar.met::before { left: -20px; }
     .mq-bar.met::after { right: -20px; transform: scaleX(-1); }
+    .mq-lock b.mq-pay { color: var(--gold); white-space: nowrap; }
     .mq-lock { position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; padding-top: 10px;
       border-top: 1px solid rgba(255,255,255,.08); font-size: 14.5px; color: #e8d2b8; text-align: center; }
     .mq-extra { position: relative; margin-top: 12px; border-top: 1px solid rgba(255,255,255,.1); animation: fadeUp .3s ease; }
@@ -3433,6 +3445,7 @@
     .mq-ctl { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
     .mq-ctl small { font-size: 11px; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-dim); }
     .mq-ctl .gm-stepper { justify-content: space-between; }
+    .gm-stepper input.gm-step-in { width: 64px; min-width: 0; height: 30px; padding: 0 6px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
     .mq-why { list-style: none; margin: 0; padding: 0; }
     .mq-why li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--gs-edge); }
     .mq-why b { display: block; font-size: 14.5px; }
@@ -4060,7 +4073,7 @@
 
       <div class="panel set-section">
         <div class="section-title t2">🔔 Reminders</div>
-        <div class="subtle">A nudge when a reward's time runs out, and when a habit runs past how long it usually takes you. Both fire from the phone, so they reach you with Habit Casino closed.</div>
+        <div class="subtle">A nudge when a reward's time runs out, and when a habit or quest reaches the time you set on it. Both fire from the phone, so they reach you with Habit Casino closed.</div>
         <div id="remindersBody"></div>
       </div>
 
@@ -4606,7 +4619,8 @@ function defaultState() {
     // user's own and are the only part that survives a reload.
     notify: { rewardEnd: true, habitOverrun: true, authorized: false,
               web: false,     // push through the browser, for the Home Screen web app
-              live: true },   // the iPhone app's Live Activity while something is running
+              live: true,     // the iPhone app's Live Activity while something is running
+              alarm: false }, // the iPhone app rings a habit's set time as an alarm until stopped
     // What the Similar Day Engine expected, and what actually happened. One row per
     // day, graded when the day closes — the feedback loop that lets a prediction be
     // corrected instead of merely repeated.
@@ -5105,6 +5119,10 @@ function normalizeHabit(h) {
     modes: (h.modes && typeof h.modes === 'object' && !Array.isArray(h.modes)) ? normalizeModes(h.modes) : {},
     // timed habits: optional per-level duration (base level) + a persisted running timer
     timedMinutes: Number.isFinite(h.timedMinutes) ? h.timedMinutes : 0,
+    // Left out of the alarm (2026-11-19). With the Reminders alarm switch on, a habit's set
+    // time rings until stopped unless this is set; it then gets the ordinary notification.
+    // Stored only when true, so an old save (no field) rings like everything else.
+    noAlarm: h.noAlarm === true ? true : undefined,
     // Open stopwatch — no durationSec anymore (see startHabitTimer); still restores an
     // in-progress session across a reload as long as it has a start time.
     timer: (h.timer && Number.isFinite(h.timer.startedAt))
@@ -5388,7 +5406,7 @@ function load(raw) {
     const pn = parsed.notify || {};
     merged.notify = { ...base.notify,
                       rewardEnd: pn.rewardEnd !== false, habitOverrun: pn.habitOverrun !== false,
-                      live: pn.live !== false,
+                      live: pn.live !== false, alarm: pn.alarm === true,
                       // Whether the user asked for web push. The live subscription is the
                       // real authority — this only records the intent, so a reload doesn't
                       // have to ask again.
@@ -5449,6 +5467,7 @@ function load(raw) {
         // Schedule gave every one of them a flat 30 minutes.
         timedMinutes: clamp(parseInt(t.timedMinutes) || 0, 0, 999),
         timedAuto: !!t.timedAuto,   // see normalizeHabit — guessed until the user types a number
+        noAlarm: t.noAlarm === true ? true : undefined,   // see normalizeHabit — left out of the alarm
         // When this should be done, as a local 'YYYY-MM-DD' string (null = no date), and
         // which Eisenhower box it's been triaged into (null = not sorted yet). Both are
         // validated here rather than trusted at every read site.
@@ -6556,12 +6575,13 @@ function habitEditHTML(h, pageIdx) {
       ${ttTray('reward', 'Reward', lvls ? 'What this tier pays — each tier has its own.' : '', `
         <div class="tt-tray-row"><span class="pill"><i class="tok"></i> <input class="num-in" data-f="reward" type="number" min="0" max="999" inputmode="numeric" value="${h.reward}"> ${h.repeatable ? 'each' : 'tokens'}</span></div>`)}
       ${ttTray('dur', 'Expected length', 'Roughly how long this takes — its length on the Schedule. Filled in from the name; type over it and it stays put.', `
-        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" inputmode="numeric" value="${h.timedMinutes || 0}"> min</span></div>`)}
+        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-f="timedMinutes" type="number" min="0" max="999" inputmode="numeric" value="${h.timedMinutes || 0}"> min</span></div>
+        ${itemAlarmRowHTML(h, 'data-f')}`)}
       <div class="tt-toolbar">
         ${ttToolHTML('cat', '🏷', escapeHtml(h.category || 'Unsorted'))}
         <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
         ${ttToolHTML('reward', '<i class="tok"></i>', String(h.reward))}
-        ${ttToolHTML('dur', '⏱', h.timedMinutes ? fmtMins(h.timedMinutes) : '', 'durShort')}
+        ${ttToolHTML('dur', durToolIcon(h), h.timedMinutes ? fmtMins(h.timedMinutes) : '', 'durShort')}
       </div>
       ${lvls ? tierDotsHTML(lvls, page) : ''}
     </div>`;
@@ -6586,16 +6606,31 @@ function tierEditHTML(h, page) {
       ${ttTray('reward', 'Reward', 'What this tier pays.', `
         <div class="tt-tray-row"><span class="pill"><i class="tok"></i> <input class="num-in" data-tf="reward" type="number" min="0" max="999" inputmode="numeric" value="${t.reward}"> tokens</span></div>`)}
       ${ttTray('dur', 'Expected length', 'How long this version takes.', `
-        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-tf="minutes" type="number" min="0" max="999" inputmode="numeric" value="${t.minutes || 0}"> min</span></div>`)}
+        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-tf="minutes" type="number" min="0" max="999" inputmode="numeric" value="${t.minutes || 0}"> min</span></div>
+        ${itemAlarmRowHTML(h, 'data-f')}`)}
       <div class="tt-toolbar">
         <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
         ${ttToolHTML('reward', '<i class="tok"></i>', String(t.reward))}
-        ${ttToolHTML('dur', '⏱', t.minutes ? fmtMins(t.minutes) : '')}
+        ${ttToolHTML('dur', durToolIcon(h), t.minutes ? fmtMins(t.minutes) : '')}
         <button class="tt-tool end" data-act="removeTier" title="Remove this tier">🗑<span>tier</span></button>
       </div>
       ${tierDotsHTML(lvls, page)}
     </div>`;
 }
+// Whether the set time can ring as an alarm at all: inside the iPhone app, on a build with
+// AlarmKit, with both Reminders switches on. Only then does a habit's own alarm switch show.
+function alarmsOn() {
+  const n = state.notify || {};
+  return !!(HCBridge.present && alarmSupported && n.alarm === true && n.habitOverrun !== false);
+}
+// The per-habit (or per-quest) alarm switch, in the ⏱ tray beside the time it rings at.
+// On by default; off stores `noAlarm`, and that one gets the ordinary notification.
+function itemAlarmRowHTML(src, attr) {
+  if (!alarmsOn()) return '';
+  return `<div class="tt-tray-row"><label class="pill rep-toggle"><input type="checkbox" ${attr}="alarm" ${src.noAlarm ? '' : 'checked'}> ⏰ Ring as an alarm when the time is up</label></div>`;
+}
+// The ⏱ tool shows 🔕 on something left out of the alarm, so it can be seen without opening.
+function durToolIcon(src) { return src.noAlarm && alarmsOn() ? '🔕' : '⏱'; }
 // Position dots only — the tier's colour lives on its "tier N" word, nowhere else.
 function tierDotsHTML(lvls, cur) {
   return `<div class="tier-dots">${lvls.map((l, i) =>
@@ -7080,11 +7115,12 @@ function oneoffEditHTML(t) {
       ${ttTray('cat', 'Identity', 'Drives Pass goals and happy hours.', `
         <select class="sect-in" data-of="category" title="Identity">${categoryOptionsHTML(t.category || 'Unsorted')}</select>`)}
       ${ttTray('dur', 'Expected length', 'Roughly how long this takes — its length on the Schedule. Guessed from the name until you type your own.', `
-        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-of="timedMinutes" type="number" min="0" max="999" inputmode="numeric" value="${t.timedMinutes || 0}"> min</span></div>`)}
+        <div class="tt-tray-row"><span class="pill">⏱ <input class="num-in" data-of="timedMinutes" type="number" min="0" max="999" inputmode="numeric" value="${t.timedMinutes || 0}"> min</span></div>
+        ${itemAlarmRowHTML(t, 'data-of')}`)}
       <div class="tt-toolbar">
         ${ttToolHTML('cat', '🏷', escapeHtml(t.category || 'Unsorted'))}
         <button class="tt-tool" data-act="kidFocus" aria-label="Add a subtask" title="Add a subtask">☑</button>
-        ${ttToolHTML('dur', '⏱', t.timedMinutes ? fmtMins(t.timedMinutes) : '', 'durShort')}
+        ${ttToolHTML('dur', durToolIcon(t), t.timedMinutes ? fmtMins(t.timedMinutes) : '', 'durShort')}
       </div>
     </div>`;
 }
@@ -7936,7 +7972,7 @@ function childEditHTML(f) {
       <div class="kid-runs">
         <div class="tt-tray-t">Timed runs</div>
         ${recent.map(r => `<span class="kid-run">${escapeHtml(fmtPlanDate(r.date))} · ${escapeHtml(fmtMins(Math.max(1, Math.round(r.sec / 60))))}</span>`).join('')}
-        ${secs.length >= 2 ? `<div class="tt-tray-note">Usually about ${escapeHtml(fmtMins(childExpectedMin(c)))} — its reminder counts against that.</div>` : ''}
+        ${secs.length >= 2 ? `<div class="tt-tray-note">Usually about ${escapeHtml(fmtMins(childExpectedMin(c)))}.</div>` : ''}
       </div>` : ''}
     </div>`;
 }
@@ -12103,6 +12139,7 @@ let gmInputSave = null;
 function openGm(view, id) { gmSheet = { view, id: id || null }; renderGmSheet(); }
 function flushGmInput() { if (gmInputSave) { clearTimeout(gmInputSave); gmInputSave = null; save(); } }
 function closeGm() {
+  blurSheetInput($('#gmSheet'));      // a number still being typed (the bonus) commits on the way out
   flushGmInput();
   gmSheet = null; renderGmSheet();
   if (gmDirty) { gmDirty = false; fullRender(); } else { renderGoals(); renderHomeMeta(); renderHomeGoals(); }
@@ -12226,6 +12263,7 @@ function onGmClick(e) {
     case 'meta': gmSheet = { view: 'meta' }; break;
     case 'metaLevel': if (!setMetaLevel(parseInt(b.dataset.v, 10))) return; metaSync(); gmDirty = true; break;
     case 'metaSet': if (!editMeta(b.dataset.f, parseInt(b.dataset.v, 10))) return; metaSync(); gmDirty = true; break;
+    case 'metaStep': if (!editMeta(b.dataset.f, (metaCfg()[b.dataset.f] | 0) + parseInt(b.dataset.d, 10))) return; metaSync(); gmDirty = true; break;
     case 'metaSub': {
       const snap = undoSnapshot(), out = state.habits.find(x => x.id === b.dataset.hid), inH = metaSubstitute(b.dataset.hid);
       if (!inH) return;
@@ -12318,7 +12356,15 @@ $('#modeSwitch').addEventListener('click', () => { SFX.click(); openGm('modes');
 $('#goalsMount').addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.gl-card[data-gm]')) { e.preventDefault(); e.target.click(); }
 });
+// A typed number in a stepper (the bonus): digits only as it's typed, saved when the box
+// is left or Done is pressed — clamped to its range, or put back if it was left empty.
+function commitMetaTyped(inp) {
+  const f = inp.dataset.metaIn, v = parseInt(String(inp.value).replace(/\D/g, ''), 10);
+  if (Number.isFinite(v) && editMeta(f, v)) { metaSync(); gmDirty = true; renderGoals(); renderHomeMeta(); renderHomeGoals(); renderStacks(); }
+  inp.value = metaCfg()[f] | 0;
+}
 $('#gmSheet').addEventListener('input', e => {
+  if (e.target.dataset.metaIn) { const c = e.target.value.replace(/\D/g, ''); if (c !== e.target.value) e.target.value = c; return; }
   const k = e.target.dataset.gmIn; if (!k || !gmSheet) return;
   const obj = k.startsWith('goal') ? goalById(gmSheet.id) : modeById(gmSheet.id); if (!obj) return;
   const v = e.target.value;
@@ -12327,13 +12373,14 @@ $('#gmSheet').addEventListener('input', e => {
   clearTimeout(gmInputSave); gmInputSave = setTimeout(() => { gmInputSave = null; save(); }, 500);
 });
 $('#gmSheet').addEventListener('change', e => {
+  if (e.target.dataset.metaIn) { if (gmSheet) commitMetaTyped(e.target); return; }
   const k = e.target.dataset.gmSel, g = gmSheet && goalById(gmSheet.id); if (!k || !g) return;
   g[k] = parseInt(e.target.value, 10) || g[k];
   save(); gmDirty = true; renderGmSheet();
 });
-$('#gmSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.gmIn) e.target.blur(); });
+$('#gmSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.dataset.gmIn || e.target.dataset.metaIn)) e.target.blur(); });
 // Leaving a name or emoji field is when the rest of the sheet catches up with it.
-$('#gmSheet').addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.gmIn) setTimeout(renderGmSheet, 0); });
+$('#gmSheet').addEventListener('focusout', e => { if (e.target.dataset && (e.target.dataset.gmIn || e.target.dataset.metaIn)) setTimeout(renderGmSheet, 0); });
 $('#gmScrim').addEventListener('click', () => { SFX.click(); closeGm(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) closeGm(); });
 
@@ -12382,7 +12429,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && gmSheet) c
    stackById finds it. It is never saved into state.stacks, so nothing can edit it.
    ================================================================= */
 function defaultMetaQuota() {
-  return { level: 2, min: 1, max: 4, up: { n: 5, of: 7 }, down: { n: 2, of: 3 }, since: '', curve: null };
+  // bonus: tokens paid for each task the day asks for, when today's goal is finished.
+  return { level: 2, min: 1, max: 4, up: { n: 5, of: 7 }, down: { n: 2, of: 3 }, since: '', curve: null, bonus: 10 };
 }
 // Level L → [how many it shows, how many it asks for]. The same: no spare on the card,
 // so the day never looks bigger than it is (the user's call, 2026-11-08).
@@ -12399,7 +12447,8 @@ function sanitizeMetaQuota(src) {
   const rule = (r, dr) => { const of = int(r && r.of, 1, 14, dr.of); return { n: int(r && r.n, 1, of, Math.min(dr.n, of)), of }; };
   return { level: int(s.level, min, max, Math.max(min, Math.min(d.level, max))), min, max,
            up: rule(s.up, d.up), down: rule(s.down, d.down),
-           since: /^\d{4}-\d{2}-\d{2}$/.test(String(s.since || '')) ? s.since : '', curve };
+           since: /^\d{4}-\d{2}-\d{2}$/.test(String(s.since || '')) ? s.since : '', curve,
+           bonus: int(s.bonus, 0, 999, d.bonus) };
 }
 function sanitizeMetaDays(src, st) {
   const known = new Set((st.habits || []).map(h => h.id)), out = {};
@@ -12421,6 +12470,7 @@ function sanitizeMetaDays(src, st) {
     if (['met', 'missed', 'rest'].includes(r.result)) rec.result = r.result;
     if (Number.isInteger(r.done)) rec.done = r.done;
     if (Number.isInteger(r.newLevel)) rec.newLevel = r.newLevel;
+    if (Number.isInteger(r.bonus) && r.bonus > 0) rec.bonus = r.bonus;    // what finishing it paid
     out[d] = rec;
   });
   return out;
@@ -12431,6 +12481,11 @@ function metaCfg() {
   return state.metaQuota;
 }
 function metaCurve() { const c = metaCfg().curve; return Array.isArray(c) && c.length ? c : metaDefaultCurve(); }
+// What finishing today's goal pays: ONE amount, set in the goal's sheet (0 turns it off),
+// paid once when every task the card asks for is done — never task by task. Until later on
+// 2026-11-19 it was so many tokens per task asked, which read as a payment per task; the
+// user asked for a single amount for finishing them all.
+function metaBonusFor(need) { return (need | 0) > 0 ? Math.max(0, metaCfg().bonus | 0) : 0; }
 function metaSize(level) { const c = metaCurve(), r = c[clamp(level, 1, c.length) - 1]; return { show: r[0], need: r[1] }; }
 function metaDays() {
   if (!state.metaDays || typeof state.metaDays !== 'object' || Array.isArray(state.metaDays)) state.metaDays = {};
@@ -12565,7 +12620,12 @@ function metaSync() {
   const done = rec.picks.filter(p => metaPickDone(p, today)).length;
   if (!rec.metAt && rec.need > 0 && done >= rec.need) {
     rec.metAt = Date.now(); metaJustMet = Date.now(); changed = true;
-    logEvent('meta_quota_met', { date: today, level: rec.level, need: rec.need, shown: rec.picks.length });
+    // The bonus, paid here and only here. metAt is set once a day and never cleared (undoing
+    // a pick leaves the day met), so it can't be paid twice. The card shows it and moves the
+    // balance (renderHomeMeta); `rec.bonus` remembers what this day paid.
+    const bonus = metaBonusFor(rec.need);
+    if (bonus > 0) { rec.bonus = bonus; state.tokens = (state.tokens || 0) + bonus; }
+    logEvent('meta_quota_met', { date: today, level: rec.level, need: rec.need, shown: rec.picks.length, bonus });
   }
   // Extra: unlocked once the day is met. The same kind of list — kept, and only topped
   // up when something on it stops being possible today.
@@ -12681,6 +12741,7 @@ function editMeta(field, v) {
   else if (field === 'upOf') { cfg.up.of = clamp(v, 1, 14); cfg.up.n = Math.min(cfg.up.n, cfg.up.of); }
   else if (field === 'downN') cfg.down.n = clamp(v, 1, cfg.down.of);
   else if (field === 'downOf') { cfg.down.of = clamp(v, 1, 14); cfg.down.n = Math.min(cfg.down.n, cfg.down.of); }
+  else if (field === 'bonus') cfg.bonus = clamp(v, 0, 999);
   else return false;
   cfg.level = clamp(cfg.level, cfg.min, cfg.max);
   if (cfg.level !== was) cfg.since = addDays(todayStr(), -1);
@@ -12752,9 +12813,11 @@ function metaRowHTML(p) {
   // The same buttons the habit has on the Habits tab: ▶ starts its stopwatch and ✓ completes
   // it untimed; while it runs, ⏸/▶ holds, ↺ un-starts and ⏹ finishes. The clock replaces the
   // length and tier notes, which is what makes room for the extra buttons.
-  let chip = '', right;
+  // The running clock sits on the line under the name (see pane), not in a chip beside it:
+  // with the reward pill and three buttons on the row, a chip left the name a few letters.
+  let right;
+  const clock = t ? `<small class="mq-live">⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? ' ⏸' : ''}</small>` : '';
   if (t) {
-    chip = `<span class="row-chip live">⏱<b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? ' ⏸' : ''}</span>`;
     right = `<button class="hrow-check timer-btn" data-mq="pause" aria-label="${t.pausedAt ? 'Resume' : 'Pause'} ${label}" style="color:var(--cyan)">${t.pausedAt ? '▶' : '⏸'}</button>
       <button class="hrow-check timer-btn" data-mq="cancel" aria-label="Undo start" title="Undo start — no tokens, nothing logged" style="color:var(--ink-dim)">↺</button>
       <button class="hrow-check timer-btn" data-mq="finish" aria-label="Finish ${label}" style="color:var(--green)">⏹</button>`;
@@ -12767,12 +12830,23 @@ function metaRowHTML(p) {
   // open the habit); anything else opens the habit, as a row on the Habits tab does.
   // One pane per rung, laid out like the Habits tab's carousel: swipe left for harder,
   // right for easier. A rung below the one asked says so, since doing it won't count.
+  // Each pane carries what that rung pays — the same pill as on the Habits tab, Focus
+  // multiplier included — so a pick's tokens can be seen without leaving the card (asked for
+  // 2026-11-19). Done or running, it's the rung the habit is on.
+  const role = habitRole(h), pillCls = role === 'other' ? '' : ` r-${role}`;
+  const payAt = i => { const l = lv ? lv[clamp(done || t ? (idx ?? want) : i, 0, lv.length - 1)] : null;
+    return `<span class="hrow-reward${pillCls}">+${habitFocusReward(h, l ? l.reward : h.reward)} <i class="tok"></i></span>`; };
   const pane = (i, chevs) => {
     const { name: nm, mins } = nameAt(i), low = !!lv && !done && i < want;
     const tag = t ? '' : lv && !done ? `<small class="mq-tier${low ? ' low' : ''}"${low ? '' : ` style="color:${lv[i].color}"`}>${low ? 'won’t count' : `Tier ${i + 1}`}</small>`
       : lv && p.tier > 1 ? `<small class="mq-tier">Tier ${p.tier}+</small>` : '';
     const ch = chevs ? `<span class="lvl-chevs" aria-hidden="true">${i > 0 ? '<span class="lvl-chev">‹</span>' : ''}${i < lv.length - 1 ? '<span class="lvl-chev">›</span>' : ''}</span>` : '';
-    return `<span class="mq-n"><b>${escapeHtml(nm)}</b>${!t && mins && !detectMinutes(nm) ? `<small>${metaMins(mins)}</small>` : ''}${tag}</span>${ch}`;
+    // Two lines, Today's Goal only: the name alone on top, and under it what the row pays,
+    // its tier and its length (or the running clock). The pill leads, so the token amounts
+    // line up down the card whether a habit has tiers or not. The user asked for it this
+    // way on 2026-11-19 — one line held too much once the reward was on it.
+    const meta = payAt(i) + tag + (clock || (mins && !detectMinutes(nm) ? `<small>${metaMins(mins)}</small>` : ''));
+    return `<span class="mq-n"><b>${escapeHtml(nm)}</b><span class="mq-meta">${meta}</span></span>${ch}`;
   };
   // Swipeable while it's still to do. Done or running, the row shows the one rung that matters.
   const body = lv && lv.length > 1 && !done && !t && !isComplete(h)
@@ -12782,7 +12856,7 @@ function metaRowHTML(p) {
   return `<div class="mq-row${done ? ' done' : ''}${t ? ' live' : ''}" data-mq="row" data-hid="${h.id}"${p.why ? ` title="${escapeHtml(p.why.text)}"` : ''}>
       <span class="mq-e" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
       ${body}
-      ${chip}${right}</div>`;
+      ${right}</div>`;
 }
 // A small scene behind the title: sun, ridges, a pagoda. Decoration only.
 function metaScene() { return `<svg class="mq-scene" viewBox="0 0 220 130" aria-hidden="true" preserveAspectRatio="xMaxYMin slice">
@@ -12814,9 +12888,12 @@ function renderHomeMeta() {
   const done = rec.picks.filter(p => metaPickDone(p, today)).length, shown = Math.min(done, need);
   const title = need === n ? `Complete ${n} task${n === 1 ? '' : 's'}` : `Complete ${need} of ${n} tasks`;
   const bar = `<div class="mq-bar${met ? ' met' : ''}" role="progressbar" aria-label="Today's goal" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${shown}">
-      <i style="width:${need ? Math.round(shown / need * 100) : 0}%"></i><b>${shown} / ${need}${met ? ' ✓' : ''}</b></div>`;
+      <i style="width:${need ? Math.round(shown / need * 100) : 0}%"></i><b>${shown} / ${need}${met ? ' ✓' : ''}${met && rec.bonus ? ` · +${rec.bonus} ${TOK_ICON}` : ''}</b></div>`;
   let after;
-  if (!met) after = `<div class="mq-lock"><span aria-hidden="true">🔒</span> Complete today's goal to unlock extra progress <span aria-hidden="true">↓</span></div>`;
+  const pay = metaBonusFor(need);
+  // "Finish both for +10": the bonus comes for the whole card, so the line says so.
+  const all = need === 1 ? 'Finish it' : need === 2 ? 'Finish both' : `Finish all ${need}`;
+  if (!met) after = `<div class="mq-lock"><span aria-hidden="true">🔒</span> <span>${pay ? `${all} for <b class="mq-pay">+${pay} ${TOK_ICON}</b> and` : 'Complete today\'s goal to unlock'} extra progress</span> <span aria-hidden="true">↓</span></div>`;
   else {
     const rows = (rec.extras || []).map(metaRowHTML).join('');
     after = `<div class="mq-extra"><button class="mq-extra-h" data-mq="extras" aria-expanded="${metaExtrasOpen}">
@@ -12825,12 +12902,19 @@ function renderHomeMeta() {
   }
   box.innerHTML = `<div class="mq-card${met ? ' met' : ''}">${metaScene()}${head}<div class="mq-title">${title}</div>
     <div class="mq-rows">${rec.picks.map(metaRowHTML).join('')}</div>${bar}${after}</div>`;
-  if (met && metaJustMet && Date.now() - metaJustMet < 4000 && metaCheered !== today) {
+  const fresh = met && metaJustMet && Date.now() - metaJustMet < 4000;
+  // metaSync already added the bonus; the balance shows it here. Outside the once-a-day
+  // cheer below, because a goal met again after an Undo is paid again (the Undo took the
+  // first payment back) and its balance has to move too.
+  if (fresh && rec.bonus) renderTopbar();
+  if (fresh && metaCheered !== today) {
     metaCheered = today;
     SFX.win();
     const r = box.querySelector('.mq-bar'), at = r && r.getBoundingClientRect();
     burst(at ? { x: at.left + at.width / 2, y: at.top + at.height / 2, count: 70 } : { count: 70 });
-    toast('🎯 Today\'s goal complete — extra progress unlocked', 'var(--cyan)');
+    if (rec.bonus && !state.settings.reducedMotion) floatToken(`+${rec.bonus}`, r || null);
+    toast(rec.bonus ? `🎯 Today's goal complete — +${rec.bonus} 🪙 bonus, extra progress unlocked`
+                    : '🎯 Today\'s goal complete — extra progress unlocked', 'var(--cyan)');
   }
 }
 // A pick only counts at the tier its quota asks for, so a habit sitting below it is moved
@@ -12895,9 +12979,15 @@ function metaPickSheetHTML(hid) {
 /* ---- the sheet: rules and limits ---- */
 function metaSheetHTML() {
   const cfg = metaCfg(), size = metaSize(cfg.level), pr = metaProgress(), rec = metaToday(), top = metaCurve().length;
-  const ctl = (f, v, lo, hi, label) => `<label class="mq-ctl"><small>${label}</small><span class="gm-stepper">
-      <button data-gm="metaSet" data-f="${f}" data-v="${v - 1}" ${v > lo ? '' : 'disabled'} aria-label="${label}: fewer">−</button><b>${v}</b>
-      <button data-gm="metaSet" data-f="${f}" data-v="${v + 1}" ${v < hi ? '' : 'disabled'} aria-label="${label}: more">+</button></span></label>`;
+  // A − n + stepper. `typed` makes the middle a box the number can be typed into (the
+  // bonus); its buttons then step from the saved value, so a number typed and not yet
+  // committed can't be overwritten by the one the buttons were drawn with. A <div>, not a
+  // <label>: a label forwards a tap on its caption to its first button, the −.
+  const ctl = (f, v, lo, hi, label, typed) => `<div class="mq-ctl"><small>${label}</small><span class="gm-stepper">
+      <button data-gm="${typed ? 'metaStep' : 'metaSet'}" data-f="${f}" ${typed ? 'data-d="-1"' : `data-v="${v - 1}"`} ${v > lo ? '' : 'disabled'} aria-label="${label}: fewer">−</button>${typed
+        ? `<input class="gm-step-in" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="${String(hi).length}" autocomplete="off" enterkeyhint="done" data-meta-in="${f}" value="${v}" aria-label="${label}">`
+        : `<b>${v}</b>`}
+      <button data-gm="${typed ? 'metaStep' : 'metaSet'}" data-f="${f}" ${typed ? 'data-d="1"' : `data-v="${v + 1}"`} ${v < hi ? '' : 'disabled'} aria-label="${label}: more">+</button></span></div>`;
   const days = n => `${n} day${n === 1 ? '' : 's'}`;
   const why = rec ? rec.picks.map(p => {
     const h = state.habits.find(x => x.id === p.hid); if (!h) return '';
@@ -12915,6 +13005,9 @@ function metaSheetHTML() {
       <div class="mq-rule">Down a level after <b>${days(cfg.down.n)}</b> you miss it, in any <b>${days(cfg.down.of)}</b>.</div>
       <div class="mq-ctls">${ctl('downN', cfg.down.n, 1, cfg.down.of, 'Missed days')}${ctl('downOf', cfg.down.of, cfg.down.n, 14, 'Out of')}</div>
       <div class="gm-next">${cfg.level <= cfg.min ? `At your lowest level — it won't go below Level ${cfg.min}.` : `${pr.down} of ${cfg.down.n} so far.`}</div>
+      <div class="stk-ed-h">Bonus</div>
+      <div class="mq-rule">${cfg.bonus | 0 ? `Finishing today's goal pays <b>+${cfg.bonus | 0} ${TOK_ICON}</b>, once, when every task on the card is done. Nothing extra is paid for each task along the way.` : 'Finishing today\'s goal pays no bonus. Set an amount to turn it on.'}</div>
+      <div class="mq-ctls">${ctl('bonus', cfg.bonus | 0, 0, 999, 'Tokens for finishing', true)}</div>
       <div class="stk-ed-h">Limits</div>
       <div class="mq-ctls">${ctl('min', cfg.min, 1, cfg.max, 'Lowest level')}${ctl('max', cfg.max, cfg.min, top, 'Highest level')}</div>
       ${why ? `<div class="stk-ed-h">Why today's picks</div><ul class="mq-why">${why}</ul>` : ''}
@@ -13826,6 +13919,10 @@ window.HCNative = {
     liveSupported = s.liveEnabled !== undefined;
     // Likewise Canvas: only a build that can fetch it says so.
     canvasSupported = s.canvas === true;
+    // And alarms (AlarmKit): a build that can ring says so, with iOS's answer about them.
+    alarmSupported = s.alarm === true;
+    const aAuth = alarmSupported ? String(s.alarmAuth || 'notDetermined') : '';
+    if (aAuth !== alarmAuth) { alarmAuth = aAuth; reminderResend = true; syncReminders(); }
     renderCanvasInbox(); renderCanvasSettings(); canvasMaybeSync();
     liveSystemOn = s.liveEnabled !== false;
     lastLivePush = '';                             // a fresh launch or return re-sends the list
@@ -13852,7 +13949,7 @@ function isScreenTimeWin(w) {
 }
 /* ---- REMINDERS ---------------------------------------------------------
    Two moments worth interrupting you for: a reward's time running out, and a habit
-   running past how long it usually takes.
+   reaching the minutes set on it (since 2026-11-19; it used to be the usual time).
 
    Same shape as the shield: derive the whole plan from `state` every tick and reconcile,
    rather than trying to schedule and cancel at each of the places a timer can move. And
@@ -13874,6 +13971,11 @@ function predictedMinutesFor(src, kind) {
   if (_predCache.size > 60) _predCache.clear();
   return v;
 }
+// The minutes the user SET: the tier being played for a habit with tiers, the habit's own
+// otherwise, the quest's. The finish reminder (and its alarm) goes off at this. Until
+// 2026-11-19 it went off at the median of past runs, which rang before the time the user
+// had actually set. predictedMinutesFor is still what the Live Activity calls "usually".
+function setMinutesFor(src, kind) { return kind === 'task' ? (src.timedMinutes || 0) : habitCurrentMinutes(src); }
 // The instant a running stopwatch crosses `mins`, as a FIXED number. It used to be worked
 // out as now + (what's left), re-derived from a fresh Date.now() every second — and float
 // noise nudged the result by a fraction of a millisecond each time, so the plan could
@@ -13891,6 +13993,9 @@ function reminderPlan() {
     });
   }
   if (n.habitOverrun !== false) {
+    // With the alarm on, the iPhone app rings these until stopped instead of notifying.
+    // The text is the alarm's whole screen, so it carries the name and the time.
+    const ring = n.alarm === true;
     const running = [
       ...state.habits.filter(h => h.timer).map(h => ({ src: h, kind: 'habit' })),
       ...state.oneoffs.filter(t => t.timer).map(t => ({ src: t, kind: 'task' })),
@@ -13901,28 +14006,33 @@ function reminderPlan() {
       // it), a finish line that moves later — another tier, a re-worked median — would
       // only be a second notification for the same sitting.
       if (overrunToasted.has(src.id + ':' + src.timer.startedAt)) return;
-      const mins = predictedMinutesFor(src, kind);
-      if (!(mins > 0)) return;                              // nothing predicted, nothing to beat
+      const mins = setMinutesFor(src, kind);
+      if (!(mins > 0)) return;                              // no time set, nothing to remind
       const at = timerCrossesAt(src.timer, mins);
       if (at <= now) return;                                // already over — handled below
-      out['ov-' + src.id] = { at, title: `⏱ ${src.name}`,
-                              body: `Past the usual ${fmtMins(mins)}.` };
+      // A habit or quest switched out of the alarm gets the plain notification instead.
+      out['ov-' + src.id] = { at, title: `⏱ ${src.name}`, body: `Your ${fmtMins(mins)} is up.`,
+                              ...(ring && !src.noAlarm ? { alarm: `${src.name} · ${fmtMins(mins)} is up` } : {}) };
     });
-    // Each part of a habit or quest has its own stopwatch and its own "usual": its median
-    // timed run once there are two, the minutes typed in until then.
+    // Each part of a habit or quest has its own stopwatch, and goes off at the minutes
+    // typed on it.
     runningChildTimers().forEach(({ item, c }) => {
       if (c.timer.pausedAt) return;
-      const mins = childExpectedMin(c);
+      const mins = c.minutes || 0;
       if (!(mins > 0)) return;
       const at = timerCrossesAt(c.timer, mins);
       if (at <= now) return;
       out['ovc-' + c.id] = { at, title: `⏱ ${item.name} · ${c.name}`,
-                             body: `Past the usual ${fmtMins(mins)} for this part.` };
+                             body: `Your ${fmtMins(mins)} for this part is up.`,
+                             ...(ring && !item.noAlarm ? { alarm: `${item.name} · ${c.name} · ${fmtMins(mins)} is up` } : {}) };
     });
   }
   return out;
 }
 let lastReminderPlan = '';
+// Set when the phone's answer about alarms changes. Every reminder is then re-sent, so the
+// app can move each one between a notification and an alarm.
+let reminderResend = false;
 const overrunToasted = new Set();
 function syncReminders() {
   const plan = reminderPlan();
@@ -13931,23 +14041,23 @@ function syncReminders() {
   if ((state.notify || {}).habitOverrun !== false) {
     [...state.habits.filter(h => h.timer).map(h => ({ src: h, kind: 'habit' })),
      ...state.oneoffs.filter(t => t.timer).map(t => ({ src: t, kind: 'task' }))].forEach(({ src, kind }) => {
-      const mins = predictedMinutesFor(src, kind);
+      const mins = setMinutesFor(src, kind);
       const key = src.id + ':' + src.timer.startedAt;
       if (!(mins > 0) || src.timer.pausedAt || overrunToasted.has(key)) return;
       if (timerElapsedSec(src.timer) >= mins * 60) {
         overrunToasted.add(key);
         if (overrunToasted.size > 40) overrunToasted.clear();
-        toast(`⏱ ${src.name} — past the usual ${fmtMins(mins)}`, 'var(--h1)');
+        toast(`⏱ ${src.name} — your ${fmtMins(mins)} is up`, 'var(--h1)');
       }
     });
     runningChildTimers().forEach(({ item, c }) => {
-      const mins = childExpectedMin(c);
+      const mins = c.minutes || 0;
       const key = c.id + ':' + c.timer.startedAt;
       if (!(mins > 0) || c.timer.pausedAt || overrunToasted.has(key)) return;
       if (timerElapsedSec(c.timer) >= mins * 60) {
         overrunToasted.add(key);
         if (overrunToasted.size > 40) overrunToasted.clear();
-        toast(`⏱ ${item.name} · ${c.name} — past the usual ${fmtMins(mins)}`, 'var(--h1)');
+        toast(`⏱ ${item.name} · ${c.name} — your ${fmtMins(mins)} is up`, 'var(--h1)');
       }
     });
   }
@@ -13958,13 +14068,15 @@ function syncReminders() {
 
   if (!HCBridge.present) return;                            // nothing native to schedule against
   const key = JSON.stringify(plan);
-  if (key === lastReminderPlan) return;
+  if (key === lastReminderPlan && !reminderResend) return;
+  const resend = reminderResend;
+  reminderResend = false;
   const prev = lastReminderPlan ? JSON.parse(lastReminderPlan) : {};
   lastReminderPlan = key;
   Object.keys(prev).forEach(id => { if (!plan[id]) HCBridge.send({ op: 'cancelNotify', id }); });
   Object.entries(plan).forEach(([id, r]) => {
     const p = prev[id];
-    if (!p || p.at !== r.at || p.body !== r.body) HCBridge.send({ op: 'notify', id, ...r });
+    if (resend || !p || p.at !== r.at || p.body !== r.body || p.alarm !== r.alarm) HCBridge.send({ op: 'notify', id, ...r });
   });
 }
 
@@ -13980,6 +14092,8 @@ function syncReminders() {
    if the page is running, otherwise on the next load — with the moment of each tap, so
    a pause tapped an hour ago still costs exactly what it should. ---- */
 let liveSupported = false;     // the app reported a build with Live Activities
+let alarmSupported = false;    // the app reported a build that can ring alarms (AlarmKit)
+let alarmAuth = '';            // …and iOS's answer: 'authorized', 'denied' or 'notDetermined'
 let liveSystemOn = true;       // …and iOS hasn't had them switched off for it
 let lastLivePush = '';
 const LIVE_APPLIED_KEY = 'habitCasino.liveApplied';
@@ -16501,7 +16615,10 @@ function renderReminders() {
   const row = (id, label, on) => `<div class="row between" style="margin-top:10px"><span>${label}</span><label class="toggle"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label></div>`;
   box.innerHTML =
     row('ntRewardEnd', "A reward's timer runs out", n.rewardEnd !== false) +
-    row('ntOverrun', 'A habit passes its usual length', n.habitOverrun !== false) +
+    row('ntOverrun', 'A habit or quest reaches its set time', n.habitOverrun !== false) +
+    (HCBridge.present && alarmSupported && n.habitOverrun !== false
+      ? row('ntAlarm', '⏰ Ring like an alarm until I stop it', n.alarm === true) + alarmHintHTML(n)
+      : '') +
     (HCBridge.present && liveSupported
       ? row('ntLive', 'Live Activity while something is running', n.live !== false) +
         `<div class="hint">On the Lock Screen and in the Dynamic Island: the timer, Pause / Resume and Finish for a habit or quest, and the time or uses left on a reward.${n.live !== false && !liveSystemOn ? ' <b>Live Activities are switched off for Habit Casino in iOS Settings.</b>' : ''}</div>`
@@ -16510,15 +16627,23 @@ function renderReminders() {
       ? `<div class="row" style="margin-top:10px">${n.authorized
             ? '<span class="pill">✓ Notifications allowed</span>'
             : '<button class="btn ghost sm" id="ntAuth">Allow notifications</button>'}</div>
-         <div class="hint">A habit's usual length comes from your own finished runs — after two, it's the median of those; before that, the duration set on the habit.</div>`
+         <div class="hint">It goes off at the minutes set on the habit (the tier you're on, for a habit with tiers), on the quest, or on the part. With no minutes set, nothing goes off.</div>`
       : webPushRowHTML());
+}
+// The alarm's line under its switch. iOS answers the permission once; after a "no" only the
+// Settings app can change it, so that case says where rather than offering a dead button.
+function alarmHintHTML(n) {
+  const hint = `<div class="hint">The set time rings like the Clock app's alarms, through silent mode and Focus, until you stop it. Without this it's a normal notification.${n.alarm === true ? ' To leave out one habit or quest, open it and turn its alarm off under ⏱.' : ''}</div>`;
+  if (n.alarm !== true || alarmAuth === 'authorized') return hint;
+  if (alarmAuth === 'denied') return hint + `<div class="hint" style="color:var(--pink)">Alarms are turned off for Habit Casino. Turn them back on in the iPhone's Settings app, under Habit Casino. Until then you get a normal notification.</div>`;
+  return hint + `<div class="row" style="margin-top:6px"><button class="btn ghost sm" id="ntAlarmAuth">Allow alarms</button></div>`;
 }
 /* The Home Screen web app's side of Reminders. Every state here is a different thing the
    user has to do next, so each one says which — a bare "unavailable" would leave the
    commonest case (opened from a Safari tab) looking like a broken feature. */
 function webPushRowHTML() {
   const err = pushErr ? `<div class="hint" style="color:var(--pink)">${escapeHtml(pushErr)}</div>` : '';
-  const how = `<div class="hint">A habit's usual length comes from your own finished runs — after two, it's the median of those; before that, the duration set on the habit.</div>`;
+  const how = `<div class="hint">It goes off at the minutes set on the habit (the tier you're on, for a habit with tiers), on the quest, or on the part. With no minutes set, nothing goes off.</div>`;
   if (!pushCapable()) {
     // On an iPhone this is almost always the Home Screen step, not a missing feature.
     // No raw error text in the Home Screen case: the instruction IS the answer, and a
@@ -19506,6 +19631,10 @@ function onInlineHabitField(e) {
     save(); renderBlockSchedule(); renderEditSheet(); return;
   }
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
+  else if (f === 'alarm') {                    // ⏰ in the ⏱ tray: this habit rings, or just notifies
+    if (e.target.checked) delete h.noAlarm; else h.noAlarm = true;
+    save(); syncReminders(); renderEditSheet(); return;     // repaints the ⏱ / 🔕 tool
+  }
   else if (f === 'emoji') { h.emoji = e.target.value; h.emojiAuto = false; }   // a deliberate icon — stop guessing
   else {
     h[f] = e.target.value;
@@ -20530,12 +20659,16 @@ function onInlineOneoffField(e) {
   const f = e.target.dataset.of; if (!f) return;
   // A <input type="date"> is not a SELECT but must still be read on `change` — pickers
   // fire input inconsistently across browsers, and change is the one that always lands.
-  const onChange = e.target.tagName === 'SELECT' || e.target.type === 'date';
+  const onChange = e.target.tagName === 'SELECT' || e.target.type === 'date' || e.target.type === 'checkbox';
   if (e.type === 'input' && onChange) return;   // avoid double-handling
   if (e.type === 'change' && !onChange) return;
   const box = e.target.closest('.qedit'); if (!box) return;
   const t = state.oneoffs.find(x => x.id === box.dataset.id); if (!t) return;
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
+  else if (f === 'alarm') {                     // see the habit's — rings, or just notifies
+    if (e.target.checked) delete t.noAlarm; else t.noAlarm = true;
+    save(); syncReminders(); syncEditorSheet(); return;
+  }
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); save(); renderOneoffs(); return; }   // repaints the crumb's payout
   else if (f === 'category') { if (!pickCategoryInto(t, e.target)) return; }
   else if (f === 'timedMinutes') { t.timedMinutes = clamp(parseInt(e.target.value) || 0, 0, 999); t.timedAuto = false; }   // a real number — stop guessing
@@ -20872,6 +21005,12 @@ $('#addReward').addEventListener('click', () => {
 $('#remindersBody').addEventListener('change', e => {
   const id = e.target.id;
   if (id === 'ntLive') { state.notify.live = e.target.checked; save(); syncLive(); renderReminders(); return; }
+  if (id === 'ntAlarm') {
+    state.notify.alarm = e.target.checked;
+    // Asked from this tap: iOS only shows its permission prompt in answer to one.
+    if (state.notify.alarm && alarmAuth === 'notDetermined') HCBridge.send({ op: 'alarmAuth' });
+    save(); syncReminders(); renderReminders(); return;
+  }
   if (id !== 'ntRewardEnd' && id !== 'ntOverrun') return;
   state.notify[id === 'ntRewardEnd' ? 'rewardEnd' : 'habitOverrun'] = e.target.checked;
   // Deliberately does NOT reset lastReminderPlan. The diff against the previous plan is
@@ -20881,6 +21020,7 @@ $('#remindersBody').addEventListener('change', e => {
 });
 $('#remindersBody').addEventListener('click', e => {
   if (e.target.id === 'ntAuth') { SFX.click(); HCBridge.send({ op: 'notifyAuth' }); }
+  else if (e.target.id === 'ntAlarmAuth') { SFX.click(); HCBridge.send({ op: 'alarmAuth' }); }
   else if (e.target.id === 'ntWebOn') { SFX.click(); pushEnable(); }
   else if (e.target.id === 'ntWebOff') { SFX.click(); pushDisable(); }
 });
