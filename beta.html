@@ -5119,10 +5119,12 @@ function normalizeHabit(h) {
     modes: (h.modes && typeof h.modes === 'object' && !Array.isArray(h.modes)) ? normalizeModes(h.modes) : {},
     // timed habits: optional per-level duration (base level) + a persisted running timer
     timedMinutes: Number.isFinite(h.timedMinutes) ? h.timedMinutes : 0,
-    // Left out of the alarm (2026-11-19). With the Reminders alarm switch on, a habit's set
-    // time rings until stopped unless this is set; it then gets the ordinary notification.
-    // Stored only when true, so an old save (no field) rings like everything else.
-    noAlarm: h.noAlarm === true ? true : undefined,
+    // Rings as an alarm (2026-11-19). OPT-IN: with the Reminders alarm switch on, only a
+    // habit with this set rings until stopped; every other one gets the ordinary
+    // notification, so nothing rings that the user didn't ask to. Stored only when true.
+    // (For a few hours the same day it was opt-out, as `noAlarm`; no save could have set
+    // that — the switch needs an app build nobody had installed — so it is simply dropped.)
+    alarm: h.alarm === true ? true : undefined,
     // Open stopwatch — no durationSec anymore (see startHabitTimer); still restores an
     // in-progress session across a reload as long as it has a start time.
     timer: (h.timer && Number.isFinite(h.timer.startedAt))
@@ -5467,7 +5469,7 @@ function load(raw) {
         // Schedule gave every one of them a flat 30 minutes.
         timedMinutes: clamp(parseInt(t.timedMinutes) || 0, 0, 999),
         timedAuto: !!t.timedAuto,   // see normalizeHabit — guessed until the user types a number
-        noAlarm: t.noAlarm === true ? true : undefined,   // see normalizeHabit — left out of the alarm
+        alarm: t.alarm === true ? true : undefined,   // see normalizeHabit — rings only if turned on
         // When this should be done, as a local 'YYYY-MM-DD' string (null = no date), and
         // which Eisenhower box it's been triaged into (null = not sorted yet). Both are
         // validated here rather than trusted at every read site.
@@ -6624,13 +6626,13 @@ function alarmsOn() {
   return !!(HCBridge.present && alarmSupported && n.alarm === true && n.habitOverrun !== false);
 }
 // The per-habit (or per-quest) alarm switch, in the ⏱ tray beside the time it rings at.
-// On by default; off stores `noAlarm`, and that one gets the ordinary notification.
+// Off by default; on stores `alarm: true`, and only then does this one ring.
 function itemAlarmRowHTML(src, attr) {
   if (!alarmsOn()) return '';
-  return `<div class="tt-tray-row"><label class="pill rep-toggle"><input type="checkbox" ${attr}="alarm" ${src.noAlarm ? '' : 'checked'}> ⏰ Ring as an alarm when the time is up</label></div>`;
+  return `<div class="tt-tray-row"><label class="pill rep-toggle"><input type="checkbox" ${attr}="alarm" ${src.alarm === true ? 'checked' : ''}> ⏰ Ring as an alarm when the time is up</label></div>`;
 }
-// The ⏱ tool shows 🔕 on something left out of the alarm, so it can be seen without opening.
-function durToolIcon(src) { return src.noAlarm && alarmsOn() ? '🔕' : '⏱'; }
+// The ⏱ tool shows ⏰ on something that will ring, so it can be seen without opening.
+function durToolIcon(src) { return src.alarm === true && alarmsOn() ? '⏰' : '⏱'; }
 // Position dots only — the tier's colour lives on its "tier N" word, nowhere else.
 function tierDotsHTML(lvls, cur) {
   return `<div class="tier-dots">${lvls.map((l, i) =>
@@ -14010,9 +14012,9 @@ function reminderPlan() {
       if (!(mins > 0)) return;                              // no time set, nothing to remind
       const at = timerCrossesAt(src.timer, mins);
       if (at <= now) return;                                // already over — handled below
-      // A habit or quest switched out of the alarm gets the plain notification instead.
+      // Only a habit or quest with its own alarm turned on rings; the rest just notify.
       out['ov-' + src.id] = { at, title: `⏱ ${src.name}`, body: `Your ${fmtMins(mins)} is up.`,
-                              ...(ring && !src.noAlarm ? { alarm: `${src.name} · ${fmtMins(mins)} is up` } : {}) };
+                              ...(ring && src.alarm === true ? { alarm: `${src.name} · ${fmtMins(mins)} is up` } : {}) };
     });
     // Each part of a habit or quest has its own stopwatch, and goes off at the minutes
     // typed on it.
@@ -14024,7 +14026,7 @@ function reminderPlan() {
       if (at <= now) return;
       out['ovc-' + c.id] = { at, title: `⏱ ${item.name} · ${c.name}`,
                              body: `Your ${fmtMins(mins)} for this part is up.`,
-                             ...(ring && !item.noAlarm ? { alarm: `${item.name} · ${c.name} · ${fmtMins(mins)} is up` } : {}) };
+                             ...(ring && item.alarm === true ? { alarm: `${item.name} · ${c.name} · ${fmtMins(mins)} is up` } : {}) };
     });
   }
   return out;
@@ -16633,7 +16635,7 @@ function renderReminders() {
 // The alarm's line under its switch. iOS answers the permission once; after a "no" only the
 // Settings app can change it, so that case says where rather than offering a dead button.
 function alarmHintHTML(n) {
-  const hint = `<div class="hint">The set time rings like the Clock app's alarms, through silent mode and Focus, until you stop it. Without this it's a normal notification.${n.alarm === true ? ' To leave out one habit or quest, open it and turn its alarm off under ⏱.' : ''}</div>`;
+  const hint = `<div class="hint">The set time rings like the Clock app's alarms, through silent mode and Focus, until you stop it. Without this it's a normal notification.${n.alarm === true ? ' <b>Nothing rings until you pick what should:</b> open a habit or quest and turn on ⏰ under ⏱. Everything else stays a normal notification.' : ''}</div>`;
   if (n.alarm !== true || alarmAuth === 'authorized') return hint;
   if (alarmAuth === 'denied') return hint + `<div class="hint" style="color:var(--pink)">Alarms are turned off for Habit Casino. Turn them back on in the iPhone's Settings app, under Habit Casino. Until then you get a normal notification.</div>`;
   return hint + `<div class="row" style="margin-top:6px"><button class="btn ghost sm" id="ntAlarmAuth">Allow alarms</button></div>`;
@@ -19632,8 +19634,8 @@ function onInlineHabitField(e) {
   }
   else if (f === 'repeatable') { h.repeatable = e.target.checked; renderHabits(); } // toggles cap field
   else if (f === 'alarm') {                    // ⏰ in the ⏱ tray: this habit rings, or just notifies
-    if (e.target.checked) delete h.noAlarm; else h.noAlarm = true;
-    save(); syncReminders(); renderEditSheet(); return;     // repaints the ⏱ / 🔕 tool
+    if (e.target.checked) h.alarm = true; else delete h.alarm;
+    save(); syncReminders(); renderEditSheet(); return;     // repaints the ⏱ / ⏰ tool
   }
   else if (f === 'emoji') { h.emoji = e.target.value; h.emojiAuto = false; }   // a deliberate icon — stop guessing
   else {
@@ -20666,7 +20668,7 @@ function onInlineOneoffField(e) {
   const t = state.oneoffs.find(x => x.id === box.dataset.id); if (!t) return;
   if (f === 'iterations') t.iterations = clamp(parseInt(e.target.value) || 1, 1, 99);
   else if (f === 'alarm') {                     // see the habit's — rings, or just notifies
-    if (e.target.checked) delete t.noAlarm; else t.noAlarm = true;
+    if (e.target.checked) t.alarm = true; else delete t.alarm;
     save(); syncReminders(); syncEditorSheet(); return;
   }
   else if (f === 'tier') { t.tier = TASK_TIERS[e.target.value] ? e.target.value : 'medium'; t.reward = tierReward(t.tier); save(); renderOneoffs(); return; }   // repaints the crumb's payout
