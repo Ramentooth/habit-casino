@@ -11110,6 +11110,10 @@ function switchStackStepTier(hid, i) {
   const h = state.habits.find(x => x.id === hid), lv = h && habitLevels(h);
   if (!lv || !Number.isInteger(i) || i < 0 || i >= lv.length || i === curLevelIndex(h)) return;
   setHabitTier(h, i);
+  // In Goal Speedrun this is the user picking the rung, so Today's Goal keeps it rather than
+  // putting the row back on the tier asked.
+  const r = stackRun();
+  if (r && isSpeedrun(r.stackId)) { const p = metaEntry(metaToday(), hid); if (p) p.own = true; }
   SFX.click(); save(); renderHabits();
 }
 // The editor's swipe: rung i for this stack, or null for "As is".
@@ -12117,7 +12121,10 @@ function renderHomeGoals() {
   const goals = goalList();
   if (!goals.length) { box.innerHTML = note; return; }      // Today's Goal carries the "set one up" prompt
   const m = currentMode();
-  const cards = goals.map(g => {
+  // Goals the mode pauses go to the end of the strip, so the ones that count right now are
+  // on screen first, not behind a scroll past greyed-out cards (asked for 2026-11-20). The
+  // order within each group stays the user's.
+  const cards = goals.filter(g => !goalHiddenNow(g)).concat(goals.filter(goalHiddenNow)).map(g => {
     const off = goalHiddenNow(g), asked = goalQuotas(g).map(({ q, h }) => quotaNow(g, q, h)).filter(n => !n.excused);
     const done = asked.reduce((t, n) => t + n.done, 0), need = asked.reduce((t, n) => t + n.freq, 0);
     const met = asked.length > 0 && asked.every(n => n.met);
@@ -12760,11 +12767,12 @@ function speedrunStack() {
   if (rec.metAt) (rec.extras || []).forEach(p => { if (!ids.includes(p.hid)) ids.push(p.hid); });
   return { id: 'speedrun', name: 'Goal Speedrun', habitIds: ids, on: true, auto: true };
 }
-// The rung a speedrun step is done at: the one its quota asks for, when the habit sits below it.
+// The rung a speedrun step is done at: the one its quota asks for, as on the card — down
+// to it as well as up to it. A row the user swiped keeps their rung.
 function speedrunTierPick(h) {
   const p = metaEntry(metaToday(), h.id), lv = habitLevels(h); if (!p || !lv || p.own) return null;
   const want = clamp(p.tier - 1, 0, lv.length - 1);
-  return curLevelIndex(h) < want ? want : null;
+  return curLevelIndex(h) !== want ? want : null;
 }
 function speedrunSub(v) {
   const rec = metaToday(); if (!rec) return '';
@@ -12787,14 +12795,16 @@ function metaName(p, h) {
   const lv = habitLevels(h), l = lv ? lv[clamp(p.tier - 1, 0, lv.length - 1)] : null;
   return { name: l ? (l.name || h.name) : h.name, mins: l ? l.minutes || 0 : h.timedMinutes || 0, tiered: !!lv };
 }
-// The rung a row shows, and the one its ▶ / ✓ do: the tier the quota asks for while the
-// habit sits below it, unless the user swiped this row; then whatever they picked, even a
-// rung that won't count. Once done or running, it's simply where the habit is.
+// The rung a row shows, and the one its ▶ / ✓ do: the tier the quota asks for, the least
+// that counts — wherever the habit was left. Last done at Tier 5 with Tier 3 asked, the row
+// says Tier 3 (the user asked for this on 2026-11-20; it used to keep the higher rung). The
+// exceptions: a row the user swiped shows whatever they picked, even a rung that won't
+// count, and once done or running it's simply where the habit is.
 function metaTierIdx(p, h) {
   const lv = habitLevels(h); if (!lv) return null;
   const cur = curLevelIndex(h);
   if (!p || p.own || doneCount(h) > 0 || h.timer) return cur;
-  return Math.max(cur, clamp(p.tier - 1, 0, lv.length - 1));
+  return clamp(p.tier - 1, 0, lv.length - 1);
 }
 // A swipe on a Today's Goal row moves the habit's tier, exactly as a swipe on the Habits tab
 // does, and marks the pick so the card stops moving it back up to the tier asked.
@@ -12919,10 +12929,10 @@ function renderHomeMeta() {
                     : '🎯 Today\'s goal complete — extra progress unlocked', 'var(--cyan)');
   }
 }
-// A pick only counts at the tier its quota asks for, so a habit sitting below it is moved
-// up before it is ticked or timed: ▶ and ✓ do the rung the row shows (metaTierIdx). Not
-// once it has been done today, since that tier is spent, and not when the user swiped the
-// row to a rung of their own.
+// ▶ and ✓ do the rung the row shows (metaTierIdx): the tier its quota asks for, so a habit
+// left above it comes down and one below it goes up before it is ticked or timed. Not once
+// it has been done today, since that tier is spent, and not when the user swiped the row to
+// a rung of their own.
 function metaLiftTier(h) {
   const i = metaTierIdx(metaEntry(metaToday(), h.id), h);
   if (i !== null && i !== curLevelIndex(h)) setHabitTier(h, i);
