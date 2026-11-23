@@ -632,6 +632,9 @@
     }
     .row-chip b { font-weight: 800; }
     .row-chip.live { color: var(--cyan); background: rgba(255,158,44,.12); }
+    /* A running clock past the length set on it: counting the overtime up, with a "+". Pink,
+       not gold: this theme's gold and cyan are both orange, and the two read the same. */
+    [data-timer-elapsed].tm-over, [data-timer-elapsed-task].tm-over, [data-timer-elapsed-child].tm-over { color: var(--pink); }
     .row-chip.spin { color: var(--h1); background: rgba(255,158,44,.12); }
     .row-chip.due.today { color: var(--h1); background: rgba(255,158,44,.12); }
     .row-chip.due.late { color: var(--pink); background: rgba(255,59,92,.16); }
@@ -6334,7 +6337,7 @@ function habitCardHTML(h, usualMin) {
   if (h.timer) {
     const paused = !!h.timer.pausedAt;
     // One readout per pane; the 1s ticker updates every match, so duplicates are fine.
-    timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(h.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
+    timerChip = `<span class="row-chip live">⏱${timerClockB('data-timer-elapsed', h.id, h.timer, setMinutesFor(h, 'habit'))}${paused ? ' ⏸' : ''}</span>`;
     // ↺ un-starts: the exit that used to be missing. ⏹ pays out, ⏸ holds — before this
     // there was no way to say "I never meant to start that" without one or the other.
     rightBits = `
@@ -6361,7 +6364,7 @@ function habitCardHTML(h, usualMin) {
   const liveKid = h.timer ? null
     : [h.children, ...(h.tiers || []).map(t => t && t.children)].flatMap(l => l || []).find(c => c && c.timer);
   const kidChip = liveKid
-    ? `<span class="row-chip live">⏱ ${escapeHtml(clip(liveKid.name, 14))} <b data-timer-elapsed-child="${liveKid.id}">${fmtTimerSec(timerElapsedSec(liveKid.timer))}</b>${liveKid.timer.pausedAt ? ' ⏸' : ''}</span>` : '';
+    ? `<span class="row-chip live">⏱ ${escapeHtml(clip(liveKid.name, 14))} ${timerClockB('data-timer-elapsed-child', liveKid.id, liveKid.timer, liveKid.minutes || 0)}${liveKid.timer.pausedAt ? ' ⏸' : ''}</span>` : '';
   // The pill is the only place a Focus shows on a row: orange for Focus, gold for Maintain.
   const role = habitRole(h), pillCls = role === 'other' ? '' : ` r-${role}`;
   const paneHTML = (name, reward, minutes, word) => {
@@ -6952,7 +6955,7 @@ function oneoffCardHTML(t) {
   let leftBits, timerChip = null;
   if (t.timer) {
     const paused = !!t.timer.pausedAt;
-    timerChip = `<span class="row-chip live">⏱<b data-timer-elapsed-task="${t.id}">${fmtTimerSec(timerElapsedSec(t.timer))}</b>${paused ? ' ⏸' : ''}</span>`;
+    timerChip = `<span class="row-chip live">⏱${timerClockB('data-timer-elapsed-task', t.id, t.timer, setMinutesFor(t, 'task'))}${paused ? ' ⏸' : ''}</span>`;
     leftBits = `
         <button class="hrow-check timer-btn" data-act="pauseOneoffTimer" aria-label="${paused ? 'Resume' : 'Pause'}" style="color:var(--cyan)">${paused ? '▶' : '⏸'}</button>
         <button class="hrow-check timer-btn" data-act="cancelOneoffTimer" aria-label="Undo start" title="Undo start — no tokens, nothing logged" style="color:var(--ink-dim)">↺</button>
@@ -6967,7 +6970,7 @@ function oneoffCardHTML(t) {
   const liveKid = t.timer ? null : (t.children || []).find(c => c && c.timer);
   const kp = childProgress('task', t);
   const chips = (timerChip || (liveKid
-      ? `<span class="row-chip live">⏱ ${escapeHtml(clip(liveKid.name, 14))} <b data-timer-elapsed-child="${liveKid.id}">${fmtTimerSec(timerElapsedSec(liveKid.timer))}</b>${liveKid.timer.pausedAt ? ' ⏸' : ''}</span>` : ''))
+      ? `<span class="row-chip live">⏱ ${escapeHtml(clip(liveKid.name, 14))} ${timerClockB('data-timer-elapsed-child', liveKid.id, liveKid.timer, liveKid.minutes || 0)}${liveKid.timer.pausedAt ? ' ⏸' : ''}</span>` : ''))
     + (kp.total && !liveKid ? `<span class="row-chip">☑${kp.done}/${kp.total}</span>` : '')
     + dueChipHTML(t)
     + (iter > 1 ? `<span class="row-chip">${prog}/${iter}</span>` : '')
@@ -7559,6 +7562,29 @@ function timerSuggestHTML(habitId, page, name, currentMins, isAuto) {
 // tap, not to whenever the page got to hear about it.
 function timerElapsedSec(t, at) { return Math.max(0, ((t.pausedAt || (Number.isFinite(at) ? at : Date.now())) - t.startedAt) / 1000 - (t.pausedTotalSec || 0)); }
 function fmtTimerSec(sec) { sec = Math.max(0, Math.round(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
+// A running clock as it's read (the user's call, 2026-11-23): with a length set it counts
+// DOWN from that length — a 30-minute habit starts at 30:00 — and once past it, counts the
+// overtime UP with a "+", so you can see how far over you've gone. With no length set it's
+// a plain stopwatch. `mins` is the length SET (setMinutesFor, or a part's own minutes) —
+// the same moment the reminder and the Lock Screen card go off. Time left rounds up, so a
+// fresh 30 minutes reads 30:00, not 29:59.
+function timerClock(t, mins) {
+  const sec = timerElapsedSec(t);
+  if (!(mins > 0)) return { text: fmtTimerSec(sec), over: false };
+  const left = mins * 60 - sec;
+  return left > 0 ? { text: fmtTimerSec(Math.ceil(left)), over: false }
+                  : { text: '+' + fmtTimerSec(Math.floor(-left)), over: true };
+}
+// The readout every running clock is drawn as. `attr` is what the 1s tick finds it by.
+function timerClockB(attr, id, t, mins, cls) {
+  const c = timerClock(t, mins), k = [cls, c.over ? 'tm-over' : ''].filter(Boolean).join(' ');
+  return `<b${k ? ` class="${k}"` : ''} ${attr}="${id}">${c.text}</b>`;
+}
+function paintTimerClock(el, t, mins) {
+  const c = timerClock(t, mins);
+  if (el.textContent !== c.text) el.textContent = c.text;
+  el.classList.toggle('tm-over', c.over);
+}
 
 /* ---- Working segments: WHEN the pauses happened, not just how long they were ----------
    pausedTotalSec is enough to price a session but says nothing about its shape, so a
@@ -7904,7 +7930,7 @@ function childRowHTML(kind, c) {
   let right = '';
   if (c.timer) {
     const paused = !!c.timer.pausedAt;
-    right = `<b class="kid-live" data-timer-elapsed-child="${c.id}">${fmtTimerSec(timerElapsedSec(c.timer))}</b>
+    right = `${timerClockB('data-timer-elapsed-child', c.id, c.timer, c.minutes || 0, 'kid-live')}
       <button class="kid-btn" data-act="kidPause" aria-label="${paused ? 'Resume' : 'Pause'}">${paused ? '▶' : '⏸'}</button>
       <button class="kid-btn dim" data-act="kidCancel" aria-label="Undo start" title="Undo start — nothing logged">↺</button>
       <button class="kid-btn go" data-act="kidFinish" aria-label="Finish">⏹</button>`;
@@ -7944,7 +7970,7 @@ function childEditHTML(f) {
   let timer = '';
   if (c.timer) {
     const paused = !!c.timer.pausedAt;
-    timer = `<b class="kid-live big" data-timer-elapsed-child="${c.id}">${fmtTimerSec(timerElapsedSec(c.timer))}</b>
+    timer = `${timerClockB('data-timer-elapsed-child', c.id, c.timer, c.minutes || 0, 'kid-live big')}
       <button class="kid-btn" data-act="kidPause" data-kid="${c.id}">${paused ? '▶ Resume' : '⏸ Pause'}</button>
       <button class="kid-btn dim" data-act="kidCancel" data-kid="${c.id}">↺ Undo start</button>
       <button class="kid-btn go" data-act="kidFinish" data-kid="${c.id}">⏹ Finish</button>`;
@@ -8016,14 +8042,14 @@ function onKidClick(el) {
   else if (act === 'kidDelete') deleteChild(id);
 }
 
-// 1s tick: just refreshes visible elapsed-time readouts in place — no auto-finish,
-// since an open stopwatch has no target to hit. The user always taps Finish themselves.
+// 1s tick: just refreshes visible running clocks in place (counting down to the set length,
+// then the overtime up — see timerClock) — no auto-finish: the user always taps Finish.
 setInterval(() => {
   // Subtask stopwatches can be on screen anywhere — the editor sheet floats over every
   // view — so their readouts refresh whichever tab is active.
   $$('[data-timer-elapsed-child]').forEach(el => {
     const f = findChild(el.dataset.timerElapsedChild);
-    if (f && f.child.timer) el.textContent = fmtTimerSec(timerElapsedSec(f.child.timer));
+    if (f && f.child.timer) paintTimerClock(el, f.child.timer, f.child.minutes || 0);
   });
   // Not gated on the Habits tab any more: a running stopwatch now rides the Due Now board,
   // which Home paints as well, so a readout can be on screen wherever you are.
@@ -8031,11 +8057,11 @@ setInterval(() => {
   if (running) {
     $$('[data-timer-elapsed]').forEach(el => {
       const h = state.habits.find(x => x.id === el.dataset.timerElapsed);
-      if (h && h.timer) el.textContent = fmtTimerSec(timerElapsedSec(h.timer));
+      if (h && h.timer) paintTimerClock(el, h.timer, setMinutesFor(h, 'habit'));
     });
     $$('[data-timer-elapsed-task]').forEach(el => {
       const t = state.oneoffs.find(x => x.id === el.dataset.timerElapsedTask);
-      if (t && t.timer) el.textContent = fmtTimerSec(timerElapsedSec(t.timer));
+      if (t && t.timer) paintTimerClock(el, t.timer, setMinutesFor(t, 'task'));
     });
   }
   // Active Winnings countdowns. Expiry has to be checked even when the Winnings tab
@@ -11253,7 +11279,7 @@ function stackRunnerHTML(v) {
     : `<div class="stk-k"><span class="stk-k-now">${word}</span></div>`;
   const entering = Date.now() - stkEnterAt < 400;
   const t = h.timer;
-  const timer = t ? `<div class="stk-timer">⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? '<small>on hold</small>' : ''}</div>` : '';
+  const timer = t ? `<div class="stk-timer">⏱ ${timerClockB('data-timer-elapsed', h.id, t, setMinutesFor(h, 'habit'))}${t.pausedAt ? '<small>on hold</small>' : ''}</div>` : '';
   // One page per tier — swipe to do a different one right now — or the one page it has.
   const pane = (name, l, minutes, reward) => `<div class="stk-pane"><b class="stk-now-name">${escapeHtml(name)}</b>
       <div class="stk-now-meta">${[stackRoleTag(h), l ? `<span style="color:${l.color}">${l.label}</span>` : '',
@@ -11313,7 +11339,7 @@ function renderStackDock() {
   dock.classList.toggle('show', show);
   if (!show) { dock.innerHTML = ''; return; }
   const h = v.cur.h, t = h.timer, name = escapeHtml(stackStepName(h, v));
-  const clock = t ? `<span class="stk-dock-clock${t.pausedAt ? ' held' : ''}"><b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? '<small>on hold</small>' : ''}</span>` : '';
+  const clock = t ? `<span class="stk-dock-clock${t.pausedAt ? ' held' : ''}">${timerClockB('data-timer-elapsed', h.id, t, setMinutesFor(h, 'habit'))}${t.pausedAt ? '<small>on hold</small>' : ''}</span>` : '';
   dock.innerHTML = `<button class="stk-dock-main" data-stk="start" data-id="${stack.id}" aria-label="Open ${escapeHtml(stackName(stack))} — now: ${name}">
       <span class="stk-dock-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
       <span class="stk-dock-text"><small>${stack.auto ? '⚡' : '🔗'} ${escapeHtml(stackName(stack))} · ${v.done} of ${v.total}</small><b>${name}</b></span>
@@ -12828,7 +12854,7 @@ function metaRowHTML(p) {
   // The running clock sits on the line under the name (see pane), not in a chip beside it:
   // with the reward pill and three buttons on the row, a chip left the name a few letters.
   let right;
-  const clock = t ? `<small class="mq-live">⏱ <b data-timer-elapsed="${h.id}">${fmtTimerSec(timerElapsedSec(t))}</b>${t.pausedAt ? ' ⏸' : ''}</small>` : '';
+  const clock = t ? `<small class="mq-live">⏱ ${timerClockB('data-timer-elapsed', h.id, t, setMinutesFor(h, 'habit'))}${t.pausedAt ? ' ⏸' : ''}</small>` : '';
   if (t) {
     right = `<button class="hrow-check timer-btn" data-mq="pause" aria-label="${t.pausedAt ? 'Resume' : 'Pause'} ${label}" style="color:var(--cyan)">${t.pausedAt ? '▶' : '⏸'}</button>
       <button class="hrow-check timer-btn" data-mq="cancel" aria-label="Undo start" title="Undo start — no tokens, nothing logged" style="color:var(--ink-dim)">↺</button>
@@ -14088,8 +14114,24 @@ function syncReminders() {
   Object.keys(prev).forEach(id => { if (!plan[id]) HCBridge.send({ op: 'cancelNotify', id }); });
   Object.entries(plan).forEach(([id, r]) => {
     const p = prev[id];
-    if (resend || !p || p.at !== r.at || p.body !== r.body || p.alarm !== r.alarm) HCBridge.send({ op: 'notify', id, ...r });
+    if (resend || !p || p.at !== r.at || p.body !== r.body || p.alarm !== r.alarm) HCBridge.send({ op: 'notify', id, ...r, run: reminderRun(id) });
   });
+}
+// Which run of its habit, quest or reward a reminder belongs to, in the Live Activity's
+// words (its `run`). A pause tapped on the Lock Screen takes the reminder off in the app
+// itself, and a resume puts it back at the card's new end — but only for the same run, so
+// an old record can never ring for a newer sitting. Not part of the plan (the web push
+// queue doesn't need it); it rides along on the message to the phone.
+function reminderRun(id) {
+  if (id.startsWith('ov-')) {
+    const x = id.slice(3), it = state.habits.find(h => h.id === x) || state.oneoffs.find(q => q.id === x);
+    return it && it.timer ? String(it.timer.startedAt) : '';
+  }
+  if (id.startsWith('rw-')) {
+    const w = state.inventory.find(v => v.id === id.slice(3));
+    return w ? String(w.redeemedAt || w.actualStartedAt || w.id) : '';
+  }
+  return '';
 }
 
 /* ---- LIVE ACTIVITY -------------------------------------------------------
@@ -14115,17 +14157,25 @@ function liveItems() {
     const t = src.timer;
     // The start with every pause cut out, so the card's elapsed is simply now − start.
     const start = Math.round(t.startedAt + (t.pausedTotalSec || 0) * 1000);
-    const mins = predictedMinutesFor(src, kind);
+    // `end` is where the card's clock counts down to: the length SET, the same moment the
+    // reminder (and alarm) goes off. It used to be the usual time, counted up to (changed
+    // 2026-11-23). With no length set there's no end, and the card is a plain stopwatch.
+    const set = setMinutesFor(src, kind), usual = predictedMinutesFor(src, kind);
     const parts = childProgress(kind, src);
-    const detail = [mins > 0 ? `Usually ${fmtMins(mins)}` : '',
+    const detail = [set > 0 ? `Set for ${fmtMins(set)}` : '',
+                    usual > 0 && Math.round(usual) !== Math.round(set) ? `${set > 0 ? 'usually' : 'Usually'} ${fmtMins(usual)}` : '',
                     parts.total ? `${parts.done}/${parts.total} parts` : ''].filter(Boolean).join(' · ')
                    || (kind === 'task' ? 'Quest' : 'Habit');
     // A habit's card is titled with the tier being done. The title is part of the card's
     // fixed attributes, so a tier swiped mid-run ends this card and starts a fresh one.
     out.push({ key: `${kind}:${src.id}`, run: String(t.startedAt), kind, name: kind === 'habit' ? habitToday(src).name : src.name,
                emoji: src.emoji || (kind === 'task' ? '🎯' : '⚡'), screenTime: false,
-               mode: 'stopwatch', start, end: mins > 0 ? start + Math.round(mins * 60000) : 0,
-               pausedAt: t.pausedAt || 0, detail });
+               mode: 'stopwatch', start, end: set > 0 ? start + Math.round(set * 60000) : 0,
+               pausedAt: t.pausedAt || 0, detail,
+               // Past the length set: a change of its own, so the card is redrawn with its "+"
+               // and "Overtime" then and there. iOS didn't redraw it on the stale date in the
+               // Simulator (2026-11-23); the number kept counting, the "+" never came.
+               ...(set > 0 && timerElapsedSec(t) >= set * 60 ? { over: true } : {}) });
   };
   state.habits.filter(h => h.timer).forEach(h => stopwatch(h, 'habit'));
   state.oneoffs.filter(q => q.timer).forEach(q => stopwatch(q, 'task'));
@@ -14155,6 +14205,10 @@ function liveItems() {
   });
   return out;
 }
+// Pause a habit and lock the phone straight away, and the 1s tick might never get to tell
+// the app: the alarm set for the old finish would still ring. So going to the background
+// sends the reminders and the card as they stand, at once.
+document.addEventListener('visibilitychange', () => { if (document.hidden) { syncReminders(); syncLive(); } });
 function syncLive() {
   if (!HCBridge.present || !liveSupported) return;
   const items = (state.notify || {}).live === false ? [] : liveItems();
