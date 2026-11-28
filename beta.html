@@ -913,9 +913,13 @@
        chrome, and a tall category list scrolls rather than growing off-screen. */
     .task-dock .quest-add { margin: 0 0 6px; max-height: 46vh; overflow-y: auto; }
     .task-actionbar { display: flex; gap: 6px; }
-    /* Vanishes from layout so its two buttons become thirds of .task-actionbar itself. */
+    /* Vanishes from layout so its two buttons sit in .task-actionbar itself, one fifth each. */
     .task-viewbar { display: contents; }
     .task-actionbar > button, .task-viewbar > button { flex: 1 1 0; min-width: 0; white-space: nowrap; padding-left: 4px; padding-right: 4px; }
+    /* Five across since 📂 Habits joined (2026-11-27): .btn.sm's 12px sides and Orbitron's
+       1px tracking clipped "Matrix" to "Matri" on a 375px phone, so this bar trims both. */
+    .task-actionbar .btn.sm { padding-left: 3px; padding-right: 3px; letter-spacing: 0; }
+    @media (max-width: 350px) { .task-actionbar .btn.sm { font-size: 11px; } }
     .view-seg { flex: 1 1 0; }
     .view-seg.sel { background: var(--gs-lite) !important; color: var(--gs-on-lite) !important; border-color: transparent !important; }
 
@@ -3311,6 +3315,97 @@
     .stk-ed-list.sorting .stk-ed-row { transition: transform .18s cubic-bezier(.22,.9,.3,1); }
     .stk-ed-list.sorting .stk-ed-row.lift { position: relative; z-index: 2; transition: none; border-radius: 12px; border-bottom-color: transparent;
       background: var(--gs-card); box-shadow: 0 10px 28px rgba(0,0,0,.55), 0 0 0 1px rgba(255,158,44,.5); }
+    /* ---------- habit folders: the list ▶ opens over a habit's row, and the filing sheet ---------- */
+    #htScrim, #htSheet { z-index: 79; }          /* above the editor (78), which can open it */
+    .ht-drop-scrim { position: fixed; inset: 0; z-index: 79; display: none; background: rgba(0,0,0,.5); }
+    .ht-drop-scrim.show { display: block; }
+    .ht-drop { position: fixed; z-index: 79; display: none; box-sizing: border-box; max-height: calc(100vh - 24px);
+      overflow-y: auto; overscroll-behavior: contain; padding: 4px 6px 6px; border-radius: 16px;
+      background: var(--gs-card); border: 1px solid rgba(255,158,44,.6);
+      box-shadow: 0 16px 44px rgba(0,0,0,.7), 0 0 18px rgba(255,158,44,.16); }
+    .ht-drop.show { display: block; animation: htDropIn .16s ease-out both; }
+    @keyframes htDropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    body.reduced .ht-drop.show { animation: none; }
+    .ht-head { display: flex; align-items: center; gap: 10px; padding: 6px 0 8px 6px; border-bottom: 1px solid var(--gs-edge); }
+    .ht-emoji { flex: 0 0 auto; font-size: 22px; line-height: 1; }
+    .ht-title { flex: 1; min-width: 0; }
+    .ht-title b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 800; }
+    .ht-title small { display: block; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-dim); }
+    .ht-x { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 10px; cursor: pointer;
+      background: transparent; color: var(--cyan); font: inherit; font-size: 20px; font-weight: 800; }
+    .ht-row { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--gs-edge); }
+    .ht-row:last-child { border-bottom: 0; }
+    .ht-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 6px;
+      border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .ht-pick:active { background: rgba(255,255,255,.05); }
+    .ht-radio { flex: 0 0 auto; width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--ink-dim); }
+    .ht-row.on .ht-radio { border-color: var(--cyan); background: radial-gradient(circle, var(--cyan) 0 42%, transparent 47%); }
+    .ht-row.on .ht-name { color: var(--cyan); }
+    .ht-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14.5px; font-weight: 600; }
+    .ht-min { flex: 0 0 auto; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+    .ht-clock { flex: 0 0 auto; font-size: 13px; color: var(--h-live); font-variant-numeric: tabular-nums; }
+    .ht-clock.held { color: var(--ink-dim); }
+    .ht-done { flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border-radius: 9px; cursor: pointer;
+      border: 1px solid var(--gs-edge-hi); background: transparent; color: var(--ink-dim); font: inherit; font-size: 14px; font-weight: 900; }
+    .ht-done:active { transform: scale(.92); }
+    .ht-plain { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; margin-top: 6px;
+      border-radius: 12px; border: 1px solid var(--gs-edge-hi); background: var(--gs-ctl); color: var(--ink);
+      font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+    /* ▶ on a habit with tasks in it opens a list, so it carries a small ▾ */
+    .hrow-check.ht-caret { position: relative; }
+    .hrow-check.ht-caret::after { content: '▾'; position: absolute; right: -2px; bottom: -4px; font-size: 9px; line-height: 1; color: var(--ink-dim); }
+    /* On a one-line row it's the first thing to give way: the name and the clock keep their
+       room, and the chip shrinks to "📄 Se…" (its list says the rest). */
+    button.row-chip.ht-chip { flex: 0 100 auto; min-width: 30px; text-overflow: ellipsis; border: 0; font-family: inherit; line-height: inherit; cursor: pointer; }
+    .hrow-main .row-chip.live { flex-shrink: 0; }
+    button.row-chip.ht-chip.on { color: var(--cyan); background: rgba(255,158,44,.12); }
+    .mq-meta .ht-chip { margin-left: 2px; }
+    /* the filing sheet */
+    .ht-head-ic { flex: 0 0 auto; font-size: 19px; line-height: 1; }
+    .ht-sub { margin: -4px 2px 6px; font-size: 13px; color: var(--ink-dim); }
+    .ht-hab-emoji { font-size: 20px; }
+    .ht-chev { flex: 0 0 auto; padding: 0 6px; color: var(--ink-dim); font-size: 20px; }
+    .ht-search { margin: 0 0 6px; font-weight: 600; }
+    .ht-have { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 40px; margin: 2px 0 4px;
+      padding: 0 12px; border-radius: 10px; border: 1px solid var(--gs-edge-hi); background: var(--gs-card); color: var(--ink-dim);
+      font: inherit; font-size: 13px; cursor: pointer; }
+    .ht-have span { color: var(--cyan); font-weight: 700; }
+    .ht-cand { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 6px 2px; cursor: pointer;
+      border: 0; border-bottom: 1px solid var(--gs-edge); background: transparent; color: var(--ink); font: inherit; text-align: left; }
+    .ht-cand[hidden] { display: none; }
+    .ht-box { flex: 0 0 auto; width: 22px; height: 22px; box-sizing: border-box; display: grid; place-items: center;
+      border-radius: 6px; border: 2px solid var(--ink-dim); }
+    .ht-cand.on .ht-box { background: var(--cyan); border-color: var(--cyan); }
+    .ht-cand.on .ht-box::after { content: '✓'; color: #1a0f02; font-size: 13px; font-weight: 900; }
+    .ht-doc { flex: 0 0 auto; font-size: 15px; opacity: .8; }
+    .ht-foot { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom)); z-index: 2; display: flex; align-items: center; gap: 12px;
+      margin: 10px -16px 0; padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+      background: var(--gs-panel); border-top: 1px solid var(--gs-edge); }
+    .ht-foot span { flex: 1; font-weight: 700; }
+    .ht-foot .ht-go { min-width: 130px; height: 46px; font-size: 16px; }
+    .ht-li .stk-grip { width: 34px; font-size: 18px; }
+    .ht-li-name { flex: 1; min-width: 0; padding: 6px 0; border: 0; background: transparent; color: var(--ink);
+      font: inherit; text-align: left; cursor: pointer; }
+    .ht-li-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14.5px; font-weight: 700; }
+    .ht-li-name small { display: block; margin-top: 1px; font-size: 11.5px; color: var(--ink-dim); }
+    .ht-out { font-size: 18px; }
+    .ht-add { display: block; width: 100%; min-height: 50px; margin-top: 14px; border-radius: 12px; cursor: pointer;
+      border: 1px solid rgba(255,158,44,.6); background: transparent; color: var(--cyan); font: inherit; font-size: 15.5px; font-weight: 800; }
+    .ht-add.open { background: rgba(255,158,44,.08); }
+    .ht-add-opts { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .ht-opt { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 14px; border-radius: 12px; cursor: pointer;
+      border: 1px solid var(--gs-edge-hi); background: var(--gs-card); color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; text-align: left; }
+    .ht-new { display: flex; gap: 8px; }
+    .ht-new .stk-ed-in { flex: 1; min-width: 0; }
+    .ht-new .sch-add { height: 48px; }
+    /* the editor's row: Tasks in this habit */
+    .ht-edit-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin: 10px 0 4px; padding: 0 14px;
+      box-sizing: border-box; border-radius: 12px; border: 1px solid rgba(255,158,44,.55); background: rgba(255,158,44,.06);
+      color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .ht-edit-ic { flex: 0 0 auto; font-size: 17px; }
+    .ht-edit-lbl { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; }
+    .ht-edit-n { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--cyan); }
+    .ht-edit-chev { flex: 0 0 auto; font-size: 18px; color: var(--cyan); }
     /* ---------- the stack editor as one page: the stack, then every habit, then Start ---------- */
     .stk-slot { display: block; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--cyan); }
@@ -3832,6 +3927,8 @@
             <button class="btn ghost sm" id="scanAssignBtn" title="Photograph assignments and let AI draft tasks for them">📷 Scan</button>
             <input type="file" id="scanAssignFile" accept="image/*" capture="environment" multiple style="display:none">
             <span class="task-viewbar" id="taskViewBar"></span>
+            <!-- File quests inside a habit (HABIT FOLDERS): ▶ on the habit then picks one. -->
+            <button class="btn ghost sm" id="taskHabitsBtn" title="Add tasks to a habit">📂 Habits</button>
           </div>
         </div>
       </div>
@@ -4377,6 +4474,11 @@
   <!-- Settings → Screen Time: how long to unblock for, on a wheel like iOS's timer. -->
   <div class="stk-scrim" id="stbScrim"></div>
   <div class="stk-sheet stb-sheet" id="stbSheet" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="stbTitle"></div>
+  <!-- Habit folders: the sheet that files quests into a habit, and the list ▶ opens. -->
+  <div class="stk-scrim" id="htScrim"></div>
+  <div class="stk-sheet" id="htSheet" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Tasks in a habit"></div>
+  <div class="ht-drop-scrim" id="htDropScrim"></div>
+  <div class="ht-drop" id="htDrop" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Choose a task"></div>
 
   <div id="toast"></div>
   <!-- Undo bar: appears after completing a habit/quest or claiming a reward, offering a
@@ -4579,6 +4681,7 @@ function defaultState() {
     metaQuota: defaultMetaQuota(), // { level, min, max, up: { n, of }, down: { n, of }, since, curve }
     metaDays: {},         // 'YYYY-MM-DD' → { level, show, need, picks, extras, metAt, result, … } — 60 kept
     goalRest: {},         // { [habitId]: 1–6 } — days Today's Goal leaves a goal's habit alone after it's done
+    habitTasks: {},       // { [habitId]: [questId…] } — quests filed inside a habit, in the list's order (HABIT FOLDERS)
     // Canvas Inbox: assignments waiting to be imported or dismissed, and what was decided.
     // The token is NOT here — see CANVAS INBOX.
     canvasInbox: { items: [], dismissed: {}, imported: {}, lastSync: 0, error: '', folded: false },
@@ -5164,7 +5267,11 @@ function normalizeHabit(h) {
           // The pause SHAPE, not just its total — this is what redraws an interrupted
           // session as separate blocks after a reload. Must be listed explicitly: this
           // merge is a whitelist, so anything unnamed is silently dropped.
-          segments: normalizeSegments(h.timer.segments, h.timer.startedAt, h.timer.pausedAt) }
+          segments: normalizeSegments(h.timer.segments, h.timer.startedAt, h.timer.pausedAt),
+          // The quest this session is on (HABIT FOLDERS). On the timer, not top-level, because
+          // it belongs to the one session and has to end with it. Named here for the same
+          // whitelist reason; a build from before drops it, and the quest just runs on its own.
+          ...(typeof h.timer.task === 'string' && h.timer.task ? { task: h.timer.task } : {}) }
       : null,
     baseIdx: Number.isFinite(h.baseIdx) ? h.baseIdx : null,
     curTier: Number.isFinite(h.curTier) ? h.curTier : null,
@@ -5359,6 +5466,15 @@ function remapHabitIds(st, remap) {
   rekey(st.stackSlots);
   // A goal habit's rest days are keyed by habit id too (a flat map, so it rides in a wrapper).
   if (st.goalRest && typeof st.goalRest === 'object') { const w = { r: st.goalRest }; rekey(w); st.goalRest = w.r; }
+  // Quests filed in a habit: the kept habit's list first, then a folded copy's, no repeats.
+  if (st.habitTasks && typeof st.habitTasks === 'object' && !Array.isArray(st.habitTasks)) {
+    const out = {}, keys = Object.keys(st.habitTasks);
+    keys.filter(id => !remap.has(id)).concat(keys.filter(id => remap.has(id))).forEach(id => {
+      const l = st.habitTasks[id]; if (!Array.isArray(l)) return;
+      out[fix(id)] = [...new Set((out[fix(id)] || []).concat(l))];
+    });
+    st.habitTasks = out;
+  }
   (st.stackSwaps || []).forEach(w => { if (w) { w.removed = fix(w.removed); w.added = fix(w.added); } });
   (st.modes || []).forEach(m => { if (m && Array.isArray(m.hideHabits)) m.hideHabits = [...new Set(m.hideHabits.map(fix))]; });
   // A quota is keyed by habit too: the kept habit's own quota wins, a folded copy's moves over.
@@ -5656,6 +5772,7 @@ function load(raw) {
     // Goals before modes: a mode's hidden goals are checked against them.
     merged.goals = sanitizeGoals(merged.goals, merged);
     merged.goalRest = sanitizeGoalRest(merged.goalRest, merged);
+    merged.habitTasks = sanitizeHabitTasks(merged.habitTasks, merged);
     merged.modes = sanitizeModes(merged.modes, merged);
     if (!merged.modes.some(m => m.id === merged.activeMode)) merged.activeMode = 'normal';
     merged.modeDays = sanitizeModeDays(merged.modeDays);
@@ -6362,6 +6479,9 @@ function habitCardHTML(h, usualMin) {
   // section. Categories still drive Pass goals & happy hours, just invisibly.
   // No tier rim either — the tier only shows up as the coloured word in the pill.
   const td = habitToday(h);
+  // Quests filed in it (HABIT FOLDERS): ▶ opens their list, and a chip says how many — or,
+  // while it runs, which one it's on. The chip opens the list too.
+  const filedN = habitTasksOf(h.id).length, folderChip = habitTaskChipHTML(h, 'data-act="htDrop"');
   // In-progress tracking: ▶ starts an open stopwatch (no pre-set duration needed) so the
   // AI learns actual time-on-task for every habit, not just ones explicitly marked "timed".
   // ✓ Quick Complete stays available alongside it for anything not worth timing.
@@ -6378,7 +6498,7 @@ function habitCardHTML(h, usualMin) {
       <button class="hrow-check timer-btn" data-act="skipTimer" aria-label="Finish" style="color:var(--green)">⏹</button>`;
   } else if (!complete) {
     rightBits = `
-      <button class="hrow-check timer-btn" data-act="startTimer" aria-label="Start" style="color:var(--purple)">▶</button>
+      <button class="hrow-check timer-btn${filedN ? ' ht-caret' : ''}" data-act="startTimer" aria-label="${filedN ? 'Start — choose a task' : 'Start'}" style="color:var(--purple)">▶</button>
       <button class="hrow-check" data-act="done" aria-label="Quick complete">✓</button>`;
   } else {
     rightBits = `<button class="hrow-check" data-act="done" aria-label="Complete">✓</button>`;
@@ -6402,7 +6522,7 @@ function habitCardHTML(h, usualMin) {
   const paneHTML = (name, reward, minutes, word) => {
     // Chips ride alongside the name, inside .hrow-main, so the row never wraps.
     const kp = childProgress('habit', h, word ? word.idx : undefined);   // this tier's parts
-    const chips = (timerChip || kidChip)
+    const chips = (timerChip || kidChip) + folderChip
       + (h.repeatable && !timerChip ? `<span class="row-chip">${dc}/${cap}</span>` : '')
       + (kp.total && !kidChip ? `<span class="row-chip">☑${kp.done}/${kp.total}</span>` : '');
     const chevs = word
@@ -6607,6 +6727,7 @@ function habitEditHTML(h, pageIdx) {
       <span class="timer-suggest tt-suggest">${timerSuggestHTML(h.id, 'base', h.name, h.timedMinutes || 0, h.timedAuto)}</span>
       <textarea class="desc-in tt-desc" data-f="desc" rows="2" placeholder="Description">${escapeHtml(h.desc || '')}</textarea>
       ${childrenSectionHTML('habit', h, lvls ? page : undefined)}
+      ${habitTasksRowHTML(h)}
       ${ttTray('cat', 'Identity', 'Drives Pass goals and happy hours.', `
         <select class="sect-in" data-f="category" title="Identity">${categoryOptionsHTML(h.category)}</select>`)}
       ${ttTray('reward', 'Reward', lvls ? 'What this tier pays — each tier has its own.' : '', `
@@ -6640,6 +6761,7 @@ function tierEditHTML(h, page) {
       </div>
       <span class="timer-suggest tt-suggest">${timerSuggestHTML(h.id, String(page), t.name, t.minutes || 0)}</span>
       ${childrenSectionHTML('habit', h, page)}
+      ${habitTasksRowHTML(h)}
       ${ttTray('reward', 'Reward', 'What this tier pays.', `
         <div class="tt-tray-row"><span class="pill"><i class="tok"></i> <input class="num-in" data-tf="reward" type="number" min="0" max="999" inputmode="numeric" value="${t.reward}"> tokens</span></div>`)}
       ${ttTray('dur', 'Expected length', 'How long this version takes.', `
@@ -7060,7 +7182,10 @@ function renderOneoffs() {
   else if (!state.oneoffs.length) {
     grid.innerHTML = `<div class="empty"><div class="big">🎯</div>No quests yet — add one above.</div>`;
   } else {
-    grid.innerHTML = sortedOneoffs(state.oneoffs).map(t => oneoffCardHTML(t)).join('');
+    // Quests filed in a habit live there now (HABIT FOLDERS), not in this list.
+    const shown = shownOneoffs();
+    grid.innerHTML = shown.length ? sortedOneoffs(shown).map(t => oneoffCardHTML(t)).join('')
+      : `<div class="empty"><div class="big">📂</div>Every quest is filed inside a habit — ▶ on the habit, or its editor’s “Tasks in this habit”, gets to them.</div>`;
   }
   const spinBtn = $('#spinHabitWheel'); if (spinBtn) spinBtn.disabled = state.oneoffs.length === 0 || habitSpinning;
   renderCanvasInbox();
@@ -7080,15 +7205,16 @@ function renderTaskViewBar() {
 let unsortedOpen = false;
 function renderTaskMatrix() {
   const host = $('#taskMatrix'); if (!host) return;
+  const shown = shownOneoffs();               // quests filed in a habit live there (HABIT FOLDERS)
   const box = q => {
-    const list = sortedOneoffs(state.oneoffs.filter(t => t.quadrant === q.key));
+    const list = sortedOneoffs(shown.filter(t => t.quadrant === q.key));
     return `
       <div class="quad" data-quad="${q.key}" style="--qc:${q.color}">
         <div class="quad-head"><span>${q.icon} ${escapeHtml(q.label)}</span><span class="quad-n">${list.length}</span></div>
         <div class="quad-body">${list.map(oneoffCardHTML).join('') || `<div class="quad-empty">Drop a quest here</div>`}</div>
       </div>`;
   };
-  const un = sortedOneoffs(state.oneoffs.filter(t => !t.quadrant));
+  const un = sortedOneoffs(shown.filter(t => !t.quadrant));
   host.innerHTML = `
     <div class="quad-axis"><span>urgent →</span><span>← not urgent</span></div>
     <div class="quad-grid">${EISENHOWER.map(box).join('')}</div>
@@ -7168,6 +7294,7 @@ function completeOneoff(id, viaSpin, timing) {
   const t = state.oneoffs.find(x => x.id === id); if (!t) return;
   const undoSnap = undoSnapshot(), undoName = t.name;
   t.timer = null;                                    // a completion always ends any running timer
+  unlinkTaskRun(id);                                 // and any habit session it was part of
   t.progress = (t.progress || 0) + 1;
   SFX.coin();
   const hh = happyMult(t.category || 'Unsorted');
@@ -7273,6 +7400,9 @@ function completeHabit(id, timing) {
   const finishedAt = (timing && Number.isFinite(timing.finishedAt)) ? timing.finishedAt : Date.now();
   const timerSnapshot = h.timer ? { ...h.timer } : null;
   h.timer = null;                                    // a completion always ends any running timer
+  // A quest it was on from its list (HABIT FOLDERS) pauses, keeping its time: the habit
+  // being done for today doesn't mean the quest is.
+  if (timerSnapshot && timerSnapshot.task) holdTaskTimer(state.oneoffs.find(q => q.id === timerSnapshot.task), finishedAt);
   const cap = capOf(h);
   const today = todayStr();
   if (h.dayDate !== today) { h.dayDate = today; h.dayCount = 0; } // new day resets the counter
@@ -7661,6 +7791,9 @@ function toggleHabitTimerPause(id, at) {
   // whole point, and it's what draws the second block as "… (continued)".
   if (t.pausedAt) { t.pausedTotalSec = (t.pausedTotalSec || 0) + (now - t.pausedAt) / 1000; t.pausedAt = null; timerSegments(t).push({ s: now, e: null }); logEvent('habit_resumed', { entityType: 'habit', entityId: h.id, name: h.name }); }
   else { t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now); logEvent('habit_paused', { entityType: 'habit', entityId: h.id, name: h.name, pauseCount: t.pauseCount }); }
+  // The quest the habit is on (HABIT FOLDERS) pauses and resumes with it, at the same moment.
+  const lt = habitTaskNow(h);
+  if (lt && lt.timer && !lt.timer.pausedAt !== !t.pausedAt) toggleOneoffTimerPause(lt.id, at);
   SFX.click(); save(); renderHabits(); renderBlockSchedule();
 }
 /* ---- Undo Start: back out of a session you never meant to begin. ----------------------
@@ -7672,7 +7805,16 @@ function cancelHabitTimer(id) {
   const h = state.habits.find(x => x.id === id); if (!h || !h.timer) return;
   const snap = undoSnapshot();
   logEvent('habit_start_cancelled', { entityType: 'habit', entityId: h.id, name: h.name, startedAt: h.timer.startedAt, elapsedSecAtCancel: Math.round(timerElapsedSec(h.timer)) });
+  // The quest it was on (HABIT FOLDERS): started with it, it's un-started with it; one that
+  // was already under way before just pauses. The undo bar puts both back.
+  const lt = habitTaskNow(h), began = h.timer.startedAt;
   h.timer = null;
+  if (lt && lt.timer) {
+    if (lt.timer.startedAt >= began) {
+      logEvent('task_start_cancelled', { entityType: 'task', entityId: lt.id, name: lt.name, startedAt: lt.timer.startedAt, elapsedSecAtCancel: Math.round(timerElapsedSec(lt.timer)) });
+      lt.timer = null;
+    } else holdTaskTimer(lt, Date.now());
+  }
   SFX.click(); save(); renderHabits(); renderBlockSchedule();
   toast(`↺ Un-started ${h.name}`, 'var(--cyan)');
   offerUndo(snap, `↺ ${h.emoji || '⚡'} ${h.name}`);
@@ -7714,6 +7856,7 @@ function cancelOneoffTimer(id) {
   const snap = undoSnapshot();
   logEvent('task_start_cancelled', { entityType: 'task', entityId: q.id, name: q.name, startedAt: q.timer.startedAt, elapsedSecAtCancel: Math.round(timerElapsedSec(q.timer)) });
   q.timer = null;
+  unlinkTaskRun(q.id);
   SFX.click(); save(); renderOneoffs(); renderHabits(); renderBlockSchedule();
   toast(`↺ Un-started ${q.name}`, 'var(--cyan)');
   offerUndo(snap, `↺ ${q.name}`);
@@ -7728,6 +7871,451 @@ function finishTimedOneoff(id, at) {
                               pauseCount: t.pauseCount || 0, totalPausedSec: Math.round(t.pausedTotalSec || 0),
                               segments: timerSegments(t).map(s => ({ s: s.s, e: s.e })) });
 }
+/* =================================================================
+   HABIT FOLDERS — quests filed inside a habit (asked for 2026-11-27).
+
+   Homework comes in from Canvas as quests, and it's also the work the Homework habit is
+   for — so timing it meant two ▶ taps, one on each. Now a habit can hold quests like a
+   folder. ▶ on the habit opens its list, and nothing starts until a quest is picked (or
+   "Start without a task"); then the habit and that quest start together. Pausing,
+   resuming or un-starting the habit carries the quest with it. Finishing the habit only
+   PAUSES the quest, keeping its time — the habit being done for today doesn't mean the
+   chapter is — so it carries on from there next time it's picked.
+
+   A filed quest leaves the Tasks tab's list and Matrix: the habit is where it lives now.
+   It comes back if it's taken out, or if its habit is graduated. Which quests a habit
+   holds is state.habitTasks (top-level, in the list's order). Which one a running habit
+   is on rides on the habit's own timer, h.timer.task, so it ends with the session.
+   ================================================================= */
+function sanitizeHabitTasks(src, st) {
+  const out = {}, seen = new Set();
+  const habits = new Set((Array.isArray(st.habits) ? st.habits : []).map(h => h && h.id));
+  const quests = new Set((Array.isArray(st.oneoffs) ? st.oneoffs : []).map(t => t && t.id));
+  if (src && typeof src === 'object' && !Array.isArray(src)) Object.keys(src).forEach(hid => {
+    if (!habits.has(hid) || !Array.isArray(src[hid])) return;
+    // A quest lives in one habit at a time: the first list to hold it keeps it.
+    const list = src[hid].filter(id => typeof id === 'string' && quests.has(id) && !seen.has(id) && !!seen.add(id));
+    if (list.length) out[hid] = list;
+  });
+  return out;
+}
+function habitTaskMap() {
+  if (!state.habitTasks || typeof state.habitTasks !== 'object' || Array.isArray(state.habitTasks)) state.habitTasks = {};
+  return state.habitTasks;
+}
+// The open quests filed in a habit, in the list's order. Finished or deleted ones drop out.
+function habitTasksOf(hid) {
+  const ids = (state.habitTasks || {})[hid];
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const byId = new Map((state.oneoffs || []).map(t => [t.id, t]));
+  return ids.map(id => byId.get(id)).filter(Boolean);
+}
+// Every quest filed in a live habit. A graduated habit lets its quests go back to the Tasks tab.
+function filedTaskIds() {
+  const out = new Set(), m = state.habitTasks || {};
+  (state.habits || []).forEach(h => { if (h && !h.archived && Array.isArray(m[h.id])) m[h.id].forEach(id => out.add(id)); });
+  return out;
+}
+// The live habit a quest is filed in, or null.
+function taskHabit(tid) {
+  const m = state.habitTasks || {};
+  return (state.habits || []).find(h => h && !h.archived && Array.isArray(m[h.id]) && m[h.id].includes(tid)) || null;
+}
+// The Tasks tab's quests: everything not filed inside a habit.
+function shownOneoffs() { const filed = filedTaskIds(); return state.oneoffs.filter(t => !filed.has(t.id)); }
+// File quests into a habit, at the end of its list. One already in another habit moves.
+function fileTasks(hid, ids) {
+  const m = habitTaskMap();
+  if (!state.habits.some(h => h.id === hid)) return 0;
+  const add = [...new Set(ids)].filter(id => state.oneoffs.some(t => t.id === id) && !(m[hid] || []).includes(id));
+  if (!add.length) return 0;
+  Object.keys(m).forEach(k => {
+    if (k === hid || !Array.isArray(m[k])) return;
+    m[k] = m[k].filter(id => !add.includes(id));
+    if (!m[k].length) delete m[k];
+  });
+  m[hid] = (Array.isArray(m[hid]) ? m[hid] : []).concat(add);
+  return add.length;
+}
+// Take a quest out of whatever habit holds it — it's back on the Tasks tab.
+function unfileTask(tid) {
+  const m = habitTaskMap(); let hit = false;
+  Object.keys(m).forEach(k => {
+    if (!Array.isArray(m[k]) || !m[k].includes(tid)) return;
+    hit = true; m[k] = m[k].filter(id => id !== tid);
+    if (!m[k].length) delete m[k];
+  });
+  return hit;
+}
+// Move one quest to position `to` in its habit's list, counting only the open ones, as drawn.
+function moveHabitTask(hid, tid, to) {
+  const m = habitTaskMap();
+  const open = new Set((state.oneoffs || []).map(t => t.id));
+  const list = (Array.isArray(m[hid]) ? m[hid] : []).filter(id => open.has(id));
+  const at = list.indexOf(tid);
+  to = clamp(to, 0, list.length - 1);
+  if (at < 0 || to === at) return false;
+  list.splice(at, 1); list.splice(to, 0, tid);
+  m[hid] = list;
+  return true;
+}
+// A new quest made from inside the habit, filed there at once. Same shape as the Tasks tab's
+// quick add; it takes the habit's identity, since it's the habit's work.
+function createFiledTask(hid, name) {
+  const h = state.habits.find(x => x.id === hid);
+  name = String(name || '').trim().slice(0, 120);
+  if (!h || !name) return null;
+  const tier = 'medium';
+  const task = { id: uid(), emoji: guessEmoji(name) || '🎯', emojiAuto: true, name, tier, category: h.category || 'Unsorted', reward: tierReward(tier), iterations: 1, progress: 0, timedMinutes: inferMinutes(name), timedAuto: true, desc: '', quadrant: null, createdAt: Date.now() };
+  state.oneoffs.push(task);
+  logEvent('task_created', { entityType: 'task', entityId: task.id, name: task.name, category: task.category, level: task.tier, iterations: task.iterations });
+  fileTasks(hid, [task.id]);
+  return task;
+}
+// The quest a running habit is on — picked from its list when it started, or since.
+function habitTaskNow(h) {
+  const tid = h && h.timer && h.timer.task;
+  return tid ? (state.oneoffs || []).find(t => t.id === tid) || null : null;
+}
+// The running habit whose session this quest is part of, if any.
+function habitRunningTask(tid) { return (state.habits || []).find(h => h && h.timer && h.timer.task === tid) || null; }
+// Whether a quest's clock is folded into a habit's: while the habit's session has it, or
+// while it sits filed and paused. Its own Lock Screen card and Due Now row stay away then —
+// the habit's are the ones on show. Running by itself, it shows like any other quest.
+function taskRidesHabit(q) {
+  if (!q) return false;
+  if (habitRunningTask(q.id)) return true;
+  return !!(q.timer && q.timer.pausedAt) && !!taskHabit(q.id);
+}
+// A quest's session stops being a habit's the moment it's finished or un-started.
+function unlinkTaskRun(tid) {
+  (state.habits || []).forEach(h => { if (h.timer && h.timer.task === tid) h.timer.task = null; });
+}
+// Pause a quest's clock with no sound or repaint — for when the habit's own action repaints.
+function holdTaskTimer(q, now) {
+  const t = q && q.timer; if (!t || t.pausedAt) return false;
+  t.pausedAt = now; t.pauseCount = (t.pauseCount || 0) + 1; closeSegment(t, now);
+  logEvent('task_paused', { entityType: 'task', entityId: q.id, name: q.name, pauseCount: t.pauseCount });
+  return true;
+}
+// Start a quest's clock, or carry on with it if it was paused.
+function runTask(q) {
+  if (!q) return;
+  if (!q.timer) startOneoffTimer(q.id);
+  else if (q.timer.pausedAt) toggleOneoffTimerPause(q.id);
+}
+// ▶ on a habit, from anywhere it has one. With quests filed in it, the list opens first and
+// nothing starts until one is picked. `how` is where it was tapped: 'meta' (Today's Goal)
+// also moves the habit to the tier its quota asks for, as that ▶ always has.
+function habitPlay(hid, anchor, how) {
+  const h = state.habits.find(x => x.id === hid); if (!h || h.timer || isComplete(h)) return;
+  if (habitTasksOf(hid).length) { openHtDrop(hid, anchor, how); return; }
+  startHabitFrom(h, how);
+}
+function startHabitFrom(h, how) {
+  if (how === 'meta') metaLiftTier(h);
+  startHabitTimer(h.id);
+}
+// A quest picked from the habit's list: the habit starts (or carries on) and so does the
+// quest. Switching mid-session pauses the one it was on; its time is kept for next time.
+function habitPickTask(hid, tid, how) {
+  const h = state.habits.find(x => x.id === hid), q = state.oneoffs.find(t => t.id === tid);
+  if (!h || !q) return false;
+  if (!h.timer) {
+    if (isComplete(h)) return false;
+    startHabitFrom(h, how);
+    if (!h.timer) return false;
+  }
+  const was = habitTaskNow(h);
+  if (was && was.id !== q.id && was.timer && !was.timer.pausedAt) toggleOneoffTimerPause(was.id);
+  h.timer.task = q.id;
+  // Picking something to work on is getting back to work: a paused habit resumes, and its
+  // resume brings the quest back too if that was paused.
+  if (h.timer.pausedAt) toggleHabitTimerPause(h.id);
+  runTask(q);
+  save(); renderHabits();
+  return true;
+}
+// Carry on with the habit, but on no quest: the one it was on pauses and keeps its time.
+function habitDropTask(hid) {
+  const h = state.habits.find(x => x.id === hid); if (!h || !h.timer) return false;
+  const q = habitTaskNow(h);
+  if (q && q.timer && !q.timer.pausedAt) toggleOneoffTimerPause(q.id);
+  h.timer.task = null;
+  save(); renderHabits();
+  return true;
+}
+// The chip a habit's row carries for its quests: how many before it starts, and which one
+// it's on while it runs. Tapping it opens the list, as ▶ does.
+function habitTaskChipHTML(h, attr) {
+  const n = habitTasksOf(h.id).length, on = h.timer ? habitTaskNow(h) : null;
+  if (!n && !on) return '';
+  if (!h.timer && isComplete(h)) return '';     // done for today: its list has nothing to start
+  if (h.timer) return `<button class="row-chip ht-chip${on ? ' on' : ''}" ${attr} aria-label="${on ? `On ${escapeHtml(on.name)} — switch task` : `Pick a task in ${escapeHtml(h.name)}`}">📄 ${on ? escapeHtml(clip(on.name, 16)) : 'Pick a task'}</button>`;
+  return `<button class="row-chip ht-chip" ${attr} aria-label="${n} task${n === 1 ? '' : 's'} in ${escapeHtml(h.name)}">📂 ${n}</button>`;
+}
+
+/* ---- the list under ▶ ----
+   It opens over the habit's own row, the same width, so it reads as the row unfolding —
+   then the scrim takes any other tap, and a scroll closes it rather than leave it hanging
+   over the wrong row. */
+let htDrop = null;            // null, or { hid, how, rect } — rect is the row it opened from
+function openHtDrop(hid, anchor, how) {
+  htDrop = { hid, how: how || 'plain', rect: anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null };
+  SFX.click(); renderHtDrop();
+}
+function closeHtDrop() { if (!htDrop) return; htDrop = null; renderHtDrop(); }
+function htDropRowHTML(t, cur) {
+  const on = !!cur && cur.id === t.id, set = setMinutesFor(t, 'task');
+  // The one it's on shows its own clock; a paused one its time so far; the rest their length.
+  const right = t.timer
+    ? `<span class="ht-clock${t.timer.pausedAt ? ' held' : ''}">${t.timer.pausedAt ? '⏸ ' : ''}${timerClockB('data-timer-elapsed-task', t.id, t.timer, set)}</span>`
+    : set ? `<span class="ht-min">~${fmtMins(set)}</span>` : '';
+  return `<div class="ht-row${on ? ' on' : ''}">
+      <button class="ht-pick" data-ht="pick" data-tid="${t.id}" aria-pressed="${on}"><span class="ht-radio" aria-hidden="true"></span><span class="ht-name">${escapeHtml(t.name)}</span>${dueChipHTML(t)}${right}</button>
+      <button class="ht-done" data-ht="done" data-tid="${t.id}" aria-label="Complete ${escapeHtml(t.name)}">✓</button>
+    </div>`;
+}
+function renderHtDrop() {
+  const box = $('#htDrop'), scrim = $('#htDropScrim'); if (!box || !scrim) return;
+  const h = htDrop && state.habits.find(x => x.id === htDrop.hid);
+  const list = h ? habitTasksOf(h.id) : [];
+  if (!h || (!h.timer && (isComplete(h) || !list.length))) {
+    htDrop = null;
+    box.classList.remove('show'); scrim.classList.remove('show'); box.setAttribute('aria-hidden', 'true'); box.innerHTML = '';
+    return;
+  }
+  const cur = habitTaskNow(h), run = !!h.timer;
+  const sub = !run ? 'Choose a task to start' : cur ? `Working on ${cur.name}` : 'Pick a task to work on';
+  const plain = !run ? 'Start without a task' : cur ? 'Keep going without a task' : '';
+  box.innerHTML = `
+    <div class="ht-head">
+      <span class="ht-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <span class="ht-title"><b>${escapeHtml(habitToday(h).name || h.name)}</b><small>${escapeHtml(sub)}</small></span>
+      <button class="ht-x" data-ht="close" aria-label="Close">⌃</button>
+    </div>
+    <div class="ht-list">${list.map(t => htDropRowHTML(t, cur)).join('') || '<div class="sch-empty">Every task in here is done.</div>'}</div>
+    ${plain ? `<button class="ht-plain" data-ht="plain">${plain}</button>` : ''}`;
+  box.setAttribute('aria-hidden', 'false');
+  scrim.classList.add('show'); box.classList.add('show');
+  // Over the row it came from, as wide; nudged up if it would run off the bottom.
+  const vw = window.innerWidth, vh = window.innerHeight, r = htDrop.rect;
+  const w = Math.min(vw - 16, Math.max(r ? r.width : 0, 300));
+  box.style.width = w + 'px';
+  box.style.left = clamp(r ? r.left : (vw - w) / 2, 8, Math.max(8, vw - w - 8)) + 'px';
+  const hgt = box.offsetHeight;
+  box.style.top = clamp(r ? r.top : (vh - hgt) / 2, 12, Math.max(12, vh - hgt - 12)) + 'px';
+}
+function onHtDropClick(e) {
+  const b = e.target.closest('[data-ht]'); if (!b || !htDrop) return;
+  const { hid, how } = htDrop, tid = b.dataset.tid;
+  switch (b.dataset.ht) {
+    case 'close': SFX.click(); closeHtDrop(); return;
+    case 'pick': closeHtDrop(); habitPickTask(hid, tid, how); return;
+    // Done stays open: there may be a next one to pick.
+    case 'done': completeOneoff(tid, false); renderHabits(); renderHtDrop(); return;
+    case 'plain': {
+      const h = state.habits.find(x => x.id === hid);
+      closeHtDrop();
+      if (h && h.timer) habitDropTask(hid); else if (h) startHabitFrom(h, how);
+      return;
+    }
+  }
+}
+
+/* ---- the sheet that files them: the Tasks tab's 📂 Habits, and the editor's row ----
+   'habits' picks a habit (Tasks tab), 'pick' ticks quests to file in it, 'list' is the
+   habit's own list: drag ⠿ to order it, ⊖ to take one out, ＋ Add Tasks for more. */
+let htSheet = null;           // null, or { view: 'habits' | 'pick' | 'list', hid, from: 'tasks' | 'editor', sel, q, adding, naming, focus }
+function habitTasksRowHTML(h) {
+  const n = habitTasksOf(h.id).length;
+  return `<button class="ht-edit-row" data-act="habitTasks" aria-label="Tasks in this habit: ${n}">
+      <span class="ht-edit-ic" aria-hidden="true">📂</span><span class="ht-edit-lbl">Tasks in this habit</span>
+      <span class="ht-edit-n">${n ? `${n} task${n === 1 ? '' : 's'}` : 'None yet'}</span><span class="ht-edit-chev" aria-hidden="true">›</span></button>`;
+}
+function openHtSheet(o) {
+  htSheet = { sel: new Set(), q: '', adding: false, naming: false, ...o };
+  SFX.click(); renderHtSheet();
+}
+function closeHtSheet() {
+  htSheet = null; renderHtSheet();
+  renderOneoffs(); renderHabits();
+  if (editorIsOpen()) renderEditSheet();      // its "Tasks in this habit" count
+}
+function htHabitsHTML() {
+  const live = state.habits.filter(h => !h.archived);
+  const n = h => habitTasksOf(h.id).length;
+  const rows = live.filter(n).concat(live.filter(h => !n(h))).map(h => {
+    const k = n(h), mins = habitToday(h).minutes;
+    const meta = [`${k} linked`, mins ? fmtMins(mins) : ''].filter(Boolean).join(' · ');
+    return `<button class="stk-pick" data-hts="toPick" data-hid="${h.id}">
+        <span class="stk-emoji ht-hab-emoji" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+        <span class="stk-ed-name"><b>${escapeHtml(h.name)}</b><small>${meta}</small></span>
+        <span class="ht-chev" aria-hidden="true">›</span></button>`;
+  }).join('');
+  return `<div class="sch-sh-head"><span class="ht-head-ic" aria-hidden="true">📂</span><div class="sch-sh-title">Add Tasks to Habit</div>
+      <button class="sch-sh-x" data-hts="close" aria-label="Close">✕</button></div>
+    <p class="ht-sub">Choose a habit, then select tasks to add.</p>
+    ${rows || '<div class="sch-empty">No habits yet — make one on the Habits tab first.</div>'}`;
+}
+function htPickHTML(h) {
+  const inIt = new Set((state.habitTasks || {})[h.id] || []), q = (htSheet.q || '').trim().toLowerCase();
+  const rows = sortedOneoffs(state.oneoffs.filter(t => !inIt.has(t.id))).map(t => {
+    const other = taskHabit(t.id), set = setMinutesFor(t, 'task'), on = htSheet.sel.has(t.id);
+    const key = t.name.toLowerCase();
+    return `<button class="ht-cand${on ? ' on' : ''}" data-hts="toggle" data-tid="${t.id}" data-key="${escapeHtml(key)}" aria-pressed="${on}"${q && !key.includes(q) ? ' hidden' : ''}>
+        <span class="ht-box" aria-hidden="true"></span><span class="ht-doc" aria-hidden="true">📄</span>
+        <span class="stk-ed-name"><b>${escapeHtml(t.name)}</b>${other ? `<small>In ${escapeHtml(other.name)} — moves here</small>` : ''}</span>
+        ${set ? `<span class="ht-min">~${fmtMins(set)}</span>` : ''}</button>`;
+  }).join('');
+  const have = habitTasksOf(h.id).length;
+  return `<div class="sch-sh-head"><button class="sch-sh-x" data-hts="back" aria-label="Back">‹</button>
+      <span class="ht-head-ic" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <div class="sch-sh-title">Add Tasks to “${escapeHtml(h.name)}”</div></div>
+    <input class="stk-ed-in ht-search" data-hts-in="search" type="search" value="${escapeHtml(htSheet.q || '')}" placeholder="🔍 Search tasks…" autocomplete="off" enterkeyhint="search" aria-label="Search tasks">
+    ${have && htSheet.from === 'tasks' ? `<button class="ht-have" data-hts="toList">${have} already in ${escapeHtml(h.name)}<span>Manage ›</span></button>` : ''}
+    <div class="ht-cands">${rows || '<div class="sch-empty">No other quests to add — make one on the Tasks tab, or with Create New Task in the habit’s list.</div>'}</div>
+    <div class="ht-foot"><span data-ht-count>${htSheet.sel.size} selected</span><button class="sch-add ht-go" data-hts="addSel">Done</button></div>`;
+}
+function htListHTML(h) {
+  const list = habitTasksOf(h.id);
+  const rows = list.map(t => {
+    const set = setMinutesFor(t, 'task'), due = dueInfo(t);
+    return `<div class="stk-ed-row ht-li">
+        <button class="stk-grip" data-tid="${t.id}" aria-label="Reorder ${escapeHtml(t.name)}: drag, or use the arrow keys">⠿</button>
+        <span class="ht-doc" aria-hidden="true">📄</span>
+        <button class="ht-li-name" data-hts="open" data-tid="${t.id}" aria-label="Open ${escapeHtml(t.name)}"><b>${escapeHtml(t.name)}</b>${due ? `<small>📅 ${escapeHtml(due.label)}</small>` : ''}</button>
+        ${set ? `<span class="ht-min">~${fmtMins(set)}</span>` : ''}
+        <button class="stk-ed-btn x ht-out" data-hts="unfile" data-tid="${t.id}" aria-label="Take ${escapeHtml(t.name)} out of ${escapeHtml(h.name)}">⊖</button>
+      </div>`;
+  }).join('');
+  const opts = !htSheet.adding ? '' : `<div class="ht-add-opts">
+      <button class="ht-opt" data-hts="toPick" data-hid="${h.id}"><span aria-hidden="true">☑</span> From Existing Tasks</button>
+      <button class="ht-opt" data-hts="naming" aria-expanded="${!!htSheet.naming}"><span aria-hidden="true">✎</span> Create New Task</button>
+      ${htSheet.naming ? `<div class="ht-new"><input class="stk-ed-in" data-hts-in="newName" placeholder="New task name" maxlength="120" autocomplete="off" enterkeyhint="done" aria-label="New task name"><button class="sch-add" data-hts="create">Add</button></div>` : ''}
+    </div>`;
+  return `<div class="sch-sh-head"><button class="sch-sh-x" data-hts="${htSheet.from === 'tasks' ? 'toHabits' : 'close'}" aria-label="Back">‹</button>
+      <span class="ht-head-ic" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
+      <div class="sch-sh-title">Tasks in ${escapeHtml(h.name)}</div><button class="sch-add" data-hts="close">Done</button></div>
+    ${rows ? `<div class="stk-ed-list ht-list-ed">${rows}</div>` : '<div class="sch-empty">Nothing in it yet. Add some, and ▶ on the habit lets you pick one to work on.</div>'}
+    <button class="ht-add${htSheet.adding ? ' open' : ''}" data-hts="adding" aria-expanded="${!!htSheet.adding}">＋ Add Tasks</button>
+    ${opts}
+    <p class="sch-note">▶ on ${escapeHtml(h.name)} opens this list: pick one, and the habit and that task start together. Tasks in here leave the Tasks tab; ⊖ puts one back.</p>`;
+}
+function renderHtSheet() {
+  const sh = $('#htSheet'), scrim = $('#htScrim'); if (!sh || !scrim) return;
+  if (!htSheet) {
+    sh.classList.remove('show'); scrim.classList.remove('show'); sh.setAttribute('aria-hidden', 'true');
+    sh.dataset.view = ''; return;
+  }
+  if (htDrag) return;                        // the drop repaints
+  const h = htSheet.hid ? state.habits.find(x => x.id === htSheet.hid) : null;
+  if (htSheet.view !== 'habits' && !h) {
+    if (htSheet.from !== 'tasks') { htSheet = null; renderHtSheet(); return; }
+    htSheet = { ...htSheet, view: 'habits', hid: null };
+  }
+  const key = htSheet.view + ':' + (htSheet.hid || ''), keep = sh.dataset.view === key ? sh.scrollTop : 0;
+  sh.innerHTML = '<div class="sch-grab"></div>' + (htSheet.view === 'habits' ? htHabitsHTML() : htSheet.view === 'pick' ? htPickHTML(h) : htListHTML(h));
+  sh.dataset.view = key;
+  sh.classList.add('show'); scrim.classList.add('show'); sh.setAttribute('aria-hidden', 'false');
+  sh.scrollTop = keep;
+  if (htSheet.focus) { const f = sh.querySelector(htSheet.focus); delete htSheet.focus; if (f) f.focus(); }
+}
+function onHtSheetClick(e) {
+  const b = e.target.closest('[data-hts]'); if (!b || !htSheet) return;
+  const sh = $('#htSheet'), a = b.dataset.hts;
+  const h = htSheet.hid ? state.habits.find(x => x.id === htSheet.hid) : null;
+  // Ticking a box keeps the search box (and its keyboard) as it is: no repaint, see below.
+  if (a !== 'toggle' && a !== 'create') blurSheetInput(sh);
+  switch (a) {
+    case 'close': SFX.click(); closeHtSheet(); return;
+    case 'toHabits': htSheet = { ...htSheet, view: 'habits', hid: null, adding: false, naming: false }; break;
+    case 'back': htSheet = htSheet.from === 'editor' ? { ...htSheet, view: 'list', sel: new Set(), q: '' }
+                                                     : { ...htSheet, view: 'habits', hid: null, sel: new Set(), q: '' }; break;
+    case 'toPick': htSheet = { ...htSheet, view: 'pick', hid: b.dataset.hid || htSheet.hid, sel: new Set(), q: '', adding: false, naming: false }; break;
+    case 'toList': htSheet = { ...htSheet, view: 'list', sel: new Set(), q: '' }; break;
+    case 'toggle': {
+      const id = b.dataset.tid;
+      if (htSheet.sel.has(id)) htSheet.sel.delete(id); else htSheet.sel.add(id);
+      const on = htSheet.sel.has(id);
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+      const c = sh.querySelector('[data-ht-count]'); if (c) c.textContent = `${htSheet.sel.size} selected`;
+      SFX.click(); return;
+    }
+    case 'addSel': {
+      if (!h) return;
+      // In the order they were listed, which is the order they're filed in.
+      const ids = sortedOneoffs(state.oneoffs).map(t => t.id).filter(id => htSheet.sel.has(id));
+      const n = fileTasks(h.id, ids);
+      if (n) { save(); toast(`✅ Added ${n} task${n === 1 ? '' : 's'} to “${h.name}”`, 'var(--green)'); }
+      if (htSheet.from === 'tasks' && n) { SFX.coin(); closeHtSheet(); return; }
+      htSheet = { ...htSheet, view: htSheet.from === 'tasks' ? 'habits' : 'list', hid: htSheet.from === 'tasks' ? null : htSheet.hid, sel: new Set(), q: '' };
+      break;
+    }
+    case 'unfile': {
+      const t = state.oneoffs.find(x => x.id === b.dataset.tid);
+      if (!t || !unfileTask(t.id)) return;
+      save(); toast(`↩ ${t.name} is back on the Tasks tab`, 'var(--cyan)');
+      break;
+    }
+    // A filed quest isn't on the Tasks tab any more, so this is where it's opened to edit
+    // (its name, its due date) or finish.
+    case 'open': { const tid = b.dataset.tid; htSheet = null; renderHtSheet(); SFX.click(); openEditor('oneoff', tid); return; }
+    case 'adding': htSheet.adding = !htSheet.adding; if (!htSheet.adding) htSheet.naming = false; break;
+    case 'naming': htSheet.naming = !htSheet.naming; if (htSheet.naming) htSheet.focus = '[data-hts-in="newName"]'; break;
+    case 'create': {
+      const inp = sh.querySelector('[data-hts-in="newName"]');
+      const t = h && createFiledTask(h.id, inp && inp.value);
+      if (!t) { if (inp) inp.focus(); return; }
+      save(); toast(`📄 ${t.name} — added to ${h.name}`, 'var(--green)');
+      htSheet.focus = '[data-hts-in="newName"]';             // straight back in for the next one
+      if (inp) inp.blur();
+      break;
+    }
+    default: return;
+  }
+  SFX.click(); renderHtSheet(); renderOneoffs(); renderHabits();
+}
+/* The habit's list in order: drag a row by its ⠿, the same way a stack's steps move. */
+let htDrag = null;
+function htDragPlace() {
+  const d = htDrag, dy = d.lastY + d.sheet.scrollTop - d.startY;
+  const mid = d.rows[d.at].top + d.h / 2 + dy;
+  d.to = d.rows.filter((r, j) => j !== d.at && r.top + r.h / 2 < mid).length;
+  d.rows.forEach((r, j) => {
+    if (j === d.at) { r.el.style.transform = `translateY(${dy}px)`; return; }
+    const shift = d.at < d.to && j > d.at && j <= d.to ? -d.h : d.to < d.at && j >= d.to && j < d.at ? d.h : 0;
+    r.el.style.transform = shift ? `translateY(${shift}px)` : '';
+  });
+}
+function htDragScroll() {
+  const d = htDrag; if (!d) return;
+  const box = d.sheet.getBoundingClientRect(), edge = 56;
+  const v = d.lastY < box.top + edge ? -(box.top + edge - d.lastY) / 4 : d.lastY > box.bottom - edge ? (d.lastY - box.bottom + edge) / 4 : 0;
+  if (v) { const before = d.sheet.scrollTop; d.sheet.scrollTop += v; if (d.sheet.scrollTop !== before) htDragPlace(); }
+  d.raf = requestAnimationFrame(htDragScroll);
+}
+function onHtDragDown(e) {
+  const grip = e.target.closest('.stk-grip'); if (!grip || !htSheet || htSheet.view !== 'list') return;
+  const list = grip.closest('.stk-ed-list'); if (!list) return;
+  const els = [...list.querySelectorAll('.stk-ed-row')], el = grip.closest('.stk-ed-row'), sheet = $('#htSheet');
+  e.preventDefault();
+  try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+  htDrag = { tid: grip.dataset.tid, sheet, list, at: els.indexOf(el), to: els.indexOf(el), h: el.offsetHeight,
+    rows: els.map(r => ({ el: r, top: r.offsetTop, h: r.offsetHeight })), startY: e.clientY + sheet.scrollTop, lastY: e.clientY, raf: 0 };
+  list.classList.add('sorting'); el.classList.add('lift');
+  htDrag.raf = requestAnimationFrame(htDragScroll);
+  SFX.click();
+}
+function onHtDragMove(e) { if (!htDrag) return; e.preventDefault(); htDrag.lastY = e.clientY; htDragPlace(); }
+function onHtDragUp() {
+  const d = htDrag; if (!d) return;
+  htDrag = null; cancelAnimationFrame(d.raf);
+  if (htSheet && moveHabitTask(htSheet.hid, d.tid, d.to)) { save(); SFX.click(); }
+  d.list.classList.remove('sorting');
+  renderHtSheet();
+}
+
 /* =================================================================
    SUBTASKS — a habit or quest made of parts.
 
@@ -10702,7 +11290,7 @@ function renderDueSoon() {
     inProgress.push(kind === 'habit' ? { h: item } : { t: item });
   };
   state.habits.forEach(h => { if (h.timer) addRunning('habit', h); });
-  (state.oneoffs || []).forEach(t => { if (t.timer) addRunning('task', t); });
+  (state.oneoffs || []).forEach(t => { if (t.timer && !taskRidesHabit(t)) addRunning('task', t); });   // HABIT FOLDERS
   runningChildTimers().forEach(r => addRunning(r.kind, r.item));
   const notRunning = x => !runningKeys.has(x.h ? `habit:${x.h.id}` : `task:${x.t.id}`);
   // Still three rows in total, so a long stopwatch can't bury everything else.
@@ -11411,7 +11999,7 @@ function onStackClick(e) {
     }
     // The habit's own verbs, exactly as its row on the Habits tab calls them.
     case 'done': if (curId) completeHabit(curId); return;
-    case 'begin': if (curId) startHabitTimer(curId); return;
+    case 'begin': if (curId) habitPlay(curId, b.closest('.stk-now') || b, 'plain'); return;
     case 'finish': if (curId) finishTimedHabit(curId); return;
     case 'hold': if (curId) toggleHabitTimerPause(curId); return;
   }
@@ -11739,6 +12327,42 @@ $('#stkSheet').addEventListener('input', e => {
 });
 $('#stkSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.stkIn) e.target.blur(); });
 $('#stkScrim').addEventListener('click', () => { SFX.click(); closeStackSheet(); });
+// Habit folders: the ▶ list and the sheet that files quests (see HABIT FOLDERS).
+$('#htDrop').addEventListener('click', onHtDropClick);
+$('#htDropScrim').addEventListener('click', () => { SFX.click(); closeHtDrop(); });
+// Left open, it would hang over whatever scrolled under it.
+document.addEventListener('scroll', e => { if (htDrop && !(e.target instanceof Node && $('#htDrop').contains(e.target))) closeHtDrop(); }, true);
+window.addEventListener('resize', () => closeHtDrop());
+$('#htSheet').addEventListener('click', onHtSheetClick);
+$('#htScrim').addEventListener('click', () => { SFX.click(); closeHtSheet(); });
+$('#htSheet').addEventListener('pointerdown', onHtDragDown);
+$('#htSheet').addEventListener('pointermove', onHtDragMove);
+$('#htSheet').addEventListener('pointerup', onHtDragUp);
+$('#htSheet').addEventListener('pointercancel', onHtDragUp);
+$('#htSheet').addEventListener('input', e => {
+  if (!htSheet || e.target.dataset.htsIn !== 'search') return;
+  // Filtered in place: a repaint would close the keyboard mid-word.
+  htSheet.q = e.target.value;
+  const q = htSheet.q.trim().toLowerCase();
+  $$('#htSheet .ht-cand').forEach(r => { r.hidden = !!q && !(r.dataset.key || '').includes(q); });
+});
+$('#htSheet').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.dataset && e.target.dataset.htsIn === 'newName') { e.preventDefault(); $('#htSheet [data-hts="create"]')?.click(); return; }
+  if (e.key === 'Enter' && e.target.dataset && e.target.dataset.htsIn === 'search') { e.target.blur(); return; }
+  // The ⠿ moves its row with the arrow keys, for anyone not using a pointer.
+  const grip = e.target.closest && e.target.closest('.stk-grip');
+  if (!grip || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || !htSheet) return;
+  e.preventDefault();
+  const tid = grip.dataset.tid, at = habitTasksOf(htSheet.hid).findIndex(t => t.id === tid);
+  if (!moveHabitTask(htSheet.hid, tid, at + (e.key === 'ArrowUp' ? -1 : 1))) return;
+  save(); SFX.click(); renderHtSheet();
+  $(`#htSheet .stk-grip[data-tid="${tid}"]`)?.focus();
+});
+$('#taskHabitsBtn').addEventListener('click', () => openHtSheet({ view: 'habits', from: 'tasks' }));
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (htDrop) closeHtDrop(); else if (htSheet) closeHtSheet();
+});
 $('#stackSwitch').addEventListener('click', () => { SFX.click(); openStackEditor(); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
@@ -12956,6 +13580,8 @@ function metaRowHTML(p) {
   // with the reward pill and three buttons on the row, a chip left the name a few letters.
   let right;
   const clock = t ? `<small class="mq-live">⏱ ${timerClockB('data-timer-elapsed', h.id, t, setMinutesFor(h, 'habit'))}${t.pausedAt ? ' ⏸' : ''}</small>` : '';
+  // Quests filed in it (HABIT FOLDERS): how many, or the one it's on — a tap opens the list.
+  const filedN = habitTasksOf(h.id).length, folder = done ? '' : habitTaskChipHTML(h, 'data-mq="tasks"');
   if (t) {
     right = `<button class="hrow-check timer-btn" data-mq="pause" aria-label="${t.pausedAt ? 'Resume' : 'Pause'} ${label}" style="color:var(--cyan)">${t.pausedAt ? '▶' : '⏸'}</button>
       <button class="hrow-check timer-btn" data-mq="cancel" aria-label="Undo start" title="Undo start — no tokens, nothing logged" style="color:var(--ink-dim)">↺</button>
@@ -12963,7 +13589,7 @@ function metaRowHTML(p) {
   } else if (done) right = '<span class="mq-mark on" aria-label="Done">✓</span>';
   // Done today, but below the tier the quota asks for — nothing left to tap here.
   else if (isComplete(h)) right = '<span class="mq-mark" aria-label="Done below the tier asked"></span>';
-  else right = `<button class="hrow-check timer-btn" data-mq="start" aria-label="Start ${label}" style="color:var(--purple)">▶</button>
+  else right = `<button class="hrow-check timer-btn${filedN ? ' ht-caret' : ''}" data-mq="start" aria-label="Start ${label}${filedN ? ' — choose a task' : ''}" style="color:var(--purple)">▶</button>
       <button class="hrow-check" data-mq="do" aria-label="Quick complete ${label}">✓</button>`;
   // A tap anywhere else on the row: a pick still to do opens its menu (substitute it, or
   // open the habit); anything else opens the habit, as a row on the Habits tab does.
@@ -12984,7 +13610,7 @@ function metaRowHTML(p) {
     // its tier and its length (or the running clock). The pill leads, so the token amounts
     // line up down the card whether a habit has tiers or not. The user asked for it this
     // way on 2026-11-19 — one line held too much once the reward was on it.
-    const meta = payAt(i) + (due || tag + (clock || (mins && !detectMinutes(nm) ? `<small>${metaMins(mins)}</small>` : '')));
+    const meta = payAt(i) + (due || tag + (clock || (mins && !detectMinutes(nm) ? `<small>${metaMins(mins)}</small>` : ''))) + folder;
     return `<span class="mq-n"><b>${escapeHtml(nm)}</b><span class="mq-meta">${meta}</span></span>${ch}`;
   };
   // Swipeable while it's still to do. Done or running, the row shows the one rung that matters.
@@ -13072,11 +13698,11 @@ function metaDo(hid) {
   metaLiftTier(h);
   completeHabit(hid);
 }
-// ▶ on the card is the Habits tab's ▶: the same open stopwatch, ended by ⏹.
-function metaStart(hid) {
+// ▶ on the card is the Habits tab's ▶: the same open stopwatch, ended by ⏹ — and for a
+// habit with quests filed in it, the same list to pick one from first (HABIT FOLDERS).
+function metaStart(hid, anchor) {
   const h = state.habits.find(x => x.id === hid); if (!h || h.timer || isComplete(h)) return;
-  metaLiftTier(h);
-  startHabitTimer(hid);
+  habitPlay(hid, anchor, 'meta');
 }
 // Home also runs the Habits tab's click handler, so everything with a data-mq stops here.
 $('#homeMeta').addEventListener('click', e => {
@@ -13087,7 +13713,8 @@ $('#homeMeta').addEventListener('click', e => {
     const hid = b.closest('[data-hid]')?.dataset.hid;
     switch (b.dataset.mq) {
       case 'do': metaDo(hid); break;
-      case 'start': metaStart(hid); break;
+      case 'start': metaStart(hid, b.closest('.mq-row')); break;
+      case 'tasks': openHtDrop(hid, b.closest('.mq-row'), 'meta'); break;
       case 'pause': toggleHabitTimerPause(hid); break;
       case 'cancel': cancelHabitTimer(hid); break;
       case 'finish': finishTimedHabit(hid); break;
@@ -14263,7 +14890,9 @@ function liveItems() {
     // 2026-11-23). With no length set there's no end, and the card is a plain stopwatch.
     const set = setMinutesFor(src, kind), usual = predictedMinutesFor(src, kind);
     const parts = childProgress(kind, src);
-    const detail = [set > 0 ? `Set for ${fmtMins(set)}` : '',
+    // A habit working through one of its quests (HABIT FOLDERS) names it first.
+    const onTask = kind === 'habit' ? habitTaskNow(src) : null;
+    const detail = [onTask ? onTask.name : '', set > 0 ? `Set for ${fmtMins(set)}` : '',
                     usual > 0 && Math.round(usual) !== Math.round(set) ? `${set > 0 ? 'usually' : 'Usually'} ${fmtMins(usual)}` : '',
                     parts.total ? `${parts.done}/${parts.total} parts` : ''].filter(Boolean).join(' · ')
                    || (kind === 'task' ? 'Quest' : 'Habit');
@@ -14279,7 +14908,8 @@ function liveItems() {
                ...(set > 0 && timerElapsedSec(t) >= set * 60 ? { over: true } : {}) });
   };
   state.habits.filter(h => h.timer).forEach(h => stopwatch(h, 'habit'));
-  state.oneoffs.filter(q => q.timer).forEach(q => stopwatch(q, 'task'));
+  // A quest inside a habit's session (or filed and paused) rides on the habit's card.
+  state.oneoffs.filter(q => q.timer && !taskRidesHabit(q)).forEach(q => stopwatch(q, 'task'));
 
   // Rewards: the card counts the time or the uses down, and says how many prizes are
   // still sitting in the pool behind this one.
@@ -19649,7 +20279,8 @@ function onHabitsClick(e) {
     SFX.click(); return;
   }
   if (act === 'done') { completeHabit(e.target.closest('.hrow').dataset.id); return; }
-  if (act === 'startTimer') { startHabitTimer(e.target.closest('.hrow').dataset.id); return; }
+  if (act === 'startTimer') { const row = e.target.closest('.hrow'); habitPlay(row.dataset.id, row, 'plain'); return; }
+  if (act === 'htDrop') { const row = e.target.closest('.hrow'); openHtDrop(row.dataset.id, row, 'plain'); return; }
   if (act === 'pauseTimer') { toggleHabitTimerPause(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'cancelTimer') { cancelHabitTimer(e.target.closest('.hrow').dataset.id); return; }
   if (act === 'skipTimer') { finishTimedHabit(e.target.closest('.hrow').dataset.id); return; }
@@ -19946,6 +20577,7 @@ $('#editOverlay').addEventListener('click', e => {
     completeHabit(h.id); return;
   }
   if (act === 'editDoneQuest') { if (editingOneoffId) completeOneoff(editingOneoffId, false); return; }
+  if (act === 'habitTasks') { if (editingHabitId) { flushNameSettle(); openHtSheet({ view: 'list', hid: editingHabitId, from: 'editor' }); } return; }
   if (act === 'clearPin') {
     const h = state.habits.find(x => x.id === editingHabitId);
     if (h) { h.scheduledMin = null; SFX.click(); save(); renderBlockSchedule(); renderEditSheet(); }
