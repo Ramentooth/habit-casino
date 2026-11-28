@@ -3613,6 +3613,11 @@
     .gm-seg button { height: 38px; padding: 0 12px; border: 0; background: transparent; color: var(--ink-dim); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
     .gm-seg button.on { background: var(--cyan); color: #1a0f02; }
     .gm-next { margin-top: 6px; font-size: 12.5px; color: var(--ink-dim); }
+    .gm-rest-note { flex: 1 1 100%; font-size: 12.5px; line-height: 1.35; color: var(--ink-dim); }
+    .gm-rest-note b { color: var(--ink); font-weight: 600; }
+    /* A goal habit resting after it was done: darkened and grey, but every button still works. */
+    .mq-row.rest { background: rgba(0,0,0,.32); filter: grayscale(1) brightness(.72); }
+    .mq-row.rest .mq-due { color: var(--ink); font-weight: 600; }
     .gm-add { margin-top: 4px; }
   </style>
 </head>
@@ -4573,6 +4578,7 @@ function defaultState() {
     // Today's Goal, the Daily Meta Quota (see TODAY'S GOAL). Top-level like the goals.
     metaQuota: defaultMetaQuota(), // { level, min, max, up: { n, of }, down: { n, of }, since, curve }
     metaDays: {},         // 'YYYY-MM-DD' → { level, show, need, picks, extras, metAt, result, … } — 60 kept
+    goalRest: {},         // { [habitId]: 1–6 } — days Today's Goal leaves a goal's habit alone after it's done
     // Canvas Inbox: assignments waiting to be imported or dismissed, and what was decided.
     // The token is NOT here — see CANVAS INBOX.
     canvasInbox: { items: [], dismissed: {}, imported: {}, lastSync: 0, error: '', folded: false },
@@ -5351,6 +5357,8 @@ function remapHabitIds(st, remap) {
   }); };
   rekey(st.stackTiers);
   rekey(st.stackSlots);
+  // A goal habit's rest days are keyed by habit id too (a flat map, so it rides in a wrapper).
+  if (st.goalRest && typeof st.goalRest === 'object') { const w = { r: st.goalRest }; rekey(w); st.goalRest = w.r; }
   (st.stackSwaps || []).forEach(w => { if (w) { w.removed = fix(w.removed); w.added = fix(w.added); } });
   (st.modes || []).forEach(m => { if (m && Array.isArray(m.hideHabits)) m.hideHabits = [...new Set(m.hideHabits.map(fix))]; });
   // A quota is keyed by habit too: the kept habit's own quota wins, a folded copy's moves over.
@@ -5647,6 +5655,7 @@ function load(raw) {
     merged.stackSwaps = sanitizeStackSwaps(merged.stackSwaps);
     // Goals before modes: a mode's hidden goals are checked against them.
     merged.goals = sanitizeGoals(merged.goals, merged);
+    merged.goalRest = sanitizeGoalRest(merged.goalRest, merged);
     merged.modes = sanitizeModes(merged.modes, merged);
     if (!merged.modes.some(m => m.id === merged.activeMode)) merged.activeMode = 'normal';
     merged.modeDays = sanitizeModeDays(merged.modeDays);
@@ -6116,7 +6125,9 @@ try {
 } catch (e) { /* no asset — burst() falls back to the glyph below */ }
 
 function toast(msg, color = 'var(--pink)') {
-  const t = $('#toast'); t.innerHTML = tokify(escapeHtml(msg)); t.style.borderColor = color; t.style.boxShadow = `0 0 24px ${color}`;
+  // Everything is escaped except the coin tag itself, which eleven callers pass as
+  // TOK_ICON markup — escaped, it showed as raw `<i class="tok">` text (found 2026-11-25).
+  const t = $('#toast'); t.innerHTML = tokify(String(msg).split(TOK_ICON).map(escapeHtml).join(TOK_ICON)); t.style.borderColor = color; t.style.boxShadow = `0 0 24px ${color}`;
   t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
@@ -11825,6 +11836,22 @@ function sanitizeGoals(src, st) {
   return out;
 }
 
+// A goal habit's rest (state.goalRest, asked for 2026-11-25): how many days Today's Goal
+// leaves it alone after it's done — the lawn, once mowed, isn't asked for again tomorrow.
+// Its own top-level key, like stackTiers, so a trip through an older build that doesn't know
+// it can't strip it from the goal. Kept only for habits still in a goal, 1–6 days (no rest
+// is simply not stored). Hoisted and self-contained: load() calls it (see the boot dead-zone note).
+function sanitizeGoalRest(src, st) {
+  const out = {}, inGoal = new Set();
+  (Array.isArray(st.goals) ? st.goals : []).forEach(g => (g && Array.isArray(g.quotas) ? g.quotas : []).forEach(q => q && inGoal.add(q.hid)));
+  if (src && typeof src === 'object' && !Array.isArray(src)) Object.keys(src).forEach(hid => {
+    const v = src[hid];
+    if (inGoal.has(hid) && Number.isInteger(v) && v >= 1 && v <= 6) out[hid] = v;
+  });
+  return out;
+}
+function goalRestOf(hid) { const m = state.goalRest; return m && Number.isInteger(m[hid]) ? clamp(m[hid], 0, 6) : 0; }
+
 /* ---- modes: what's possible right now ---- */
 function modeList() { return Array.isArray(state.modes) && state.modes.length ? state.modes : defaultModes(); }
 function modeById(id) { return modeList().find(m => m.id === id) || null; }
@@ -12051,6 +12078,14 @@ function addGoalHabit(g, hid) {
 function editQuota(g, hid, field, value) {
   const q = g && g.quotas.find(x => x.hid === hid), h = q && state.habits.find(x => x.id === hid);
   if (!q || !h) return false;
+  // Rest days aren't part of the ladder, so changing them doesn't re-anchor the quota.
+  if (field === 'rest') {
+    if (!state.goalRest || typeof state.goalRest !== 'object' || Array.isArray(state.goalRest)) state.goalRest = {};
+    const v = clamp(Math.round(value) || 0, 0, 6);
+    if (v) state.goalRest[hid] = v; else delete state.goalRest[hid];
+    save();
+    return true;
+  }
   Object.assign(q, quotaAt(q, g.level, h), { at: g.level });
   if (field === 'freq') { q.freq = clamp(value, 1, quotaCap({ cap: 7 }, h)); q.cap = Math.max(q.cap, q.freq); }
   else if (field === 'tier') q.tier = clamp(value, 1, habitTierCount(h));
@@ -12244,7 +12279,14 @@ function modeEditHTML(m) {
 function quotaEditHTML(g, q, h) {
   const now = quotaAt(q, g.level, h), cap = quotaCap(q, h), top = habitTierCount(h), runs = quotaCap({ cap: 7 }, h);
   const lv = habitLevels(h), next = quotaUp(now, q.order, cap, top);
-  const step = (f, v, ok, label) => `<button data-gm="q" data-hid="${h.id}" data-f="${f}" data-v="${v}" ${ok ? '' : 'disabled'} aria-label="${label}">${v > (f === 'tier' ? now.tier : f === 'cap' ? cap : now.freq) ? '+' : '−'}</button>`;
+  const rest = goalRestOf(h.id), resting = rest ? metaRestLeft(h, todayStr()) : 0;
+  const step = (f, v, ok, label) => `<button data-gm="q" data-hid="${h.id}" data-f="${f}" data-v="${v}" ${ok ? '' : 'disabled'} aria-label="${label}">${v > (f === 'tier' ? now.tier : f === 'cap' ? cap : f === 'rest' ? rest : now.freq) ? '+' : '−'}</button>`;
+  // Rest days: with n of them, at most 1 + ⌊6 / (n + 1)⌋ fit in a Mon–Sun week.
+  const fits = 1 + Math.floor(6 / (rest + 1));
+  const restNote = !rest ? 'Off — Today\'s Goal can ask for it any day.'
+    : `Today's Goal won't ask for it for ${rest} day${rest === 1 ? '' : 's'} after you do it — you can still do it any time.`
+      + (resting ? ` <b>Resting now: ${resting === 1 ? 'due again tomorrow' : `due again in ${resting} days`}.</b>` : '')
+      + (now.freq > fits ? ` <b>With ${rest} rest day${rest === 1 ? '' : 's'} only ${fits} fit in a week — fewer than the ${now.freq} asked.</b>` : '');
   const tiers = lv ? lv.map((l, i) => `<span class="gm-tier${i + 1 >= now.tier ? ' in' : ''}">T${i + 1}${l.minutes ? ` · ${fmtMins(l.minutes)}` : ''}</span>`).join('')
     : '<span class="gm-tier in">One tier — add tiers to the habit to scale by tier</span>';
   return `<div class="gm-q">
@@ -12260,6 +12302,9 @@ function quotaEditHTML(g, q, h) {
       <div class="gm-row"><span class="gm-lbl">Frequency cap</span>
         <span class="gm-stepper">${step('cap', cap - 1, cap > now.freq, 'Lower the cap')}<b>${cap}×</b>${step('cap', cap + 1, cap < runs, 'Raise the cap')}</span>
         <span class="gm-at">a week${runs < 7 ? ` · runs ${runs} days` : ''}</span></div>
+      <div class="gm-row"><span class="gm-lbl">Rest after doing it</span>
+        <span class="gm-stepper">${step('rest', rest - 1, rest > 0, 'One rest day fewer')}<b>${rest ? `${rest} day${rest === 1 ? '' : 's'}` : 'Off'}</b>${step('rest', rest + 1, rest < 6, 'One rest day more')}</span>
+        <span class="gm-rest-note">${restNote}</span></div>
       <div class="gm-next">${next === now ? 'At both caps — this quota stops climbing.' : `Next level: ${next.freq}× at Tier ${next.tier}+`}</div>
     </div>`;
 }
@@ -12377,6 +12422,7 @@ function onGmClick(e) {
       if (!g) return;
       const snap = undoSnapshot(), h = state.habits.find(x => x.id === b.dataset.hid);
       g.quotas = g.quotas.filter(q => q.hid !== b.dataset.hid);
+      if (state.goalRest) delete state.goalRest[b.dataset.hid];
       save(); gmDirty = true;
       offerUndo(snap, `${h ? h.name : 'Habit'} out of ${goalName(g)}`);
       break;
@@ -12385,6 +12431,7 @@ function onGmClick(e) {
       if (!g) return;
       const snap = undoSnapshot();
       state.goals = goalList().filter(x => x.id !== g.id);
+      if (state.goalRest) g.quotas.forEach(q => { delete state.goalRest[q.hid]; });
       modeList().forEach(x => { x.hideGoals = (x.hideGoals || []).filter(id => id !== g.id); });
       save(); gmSheet = null; gmDirty = true;
       offerUndo(snap, `🗑 ${goalName(g)}`);
@@ -12552,15 +12599,31 @@ function metaEntry(rec, hid) { return rec ? (rec.picks || []).concat(rec.extras 
 function isSpeedrun(id) { return id === 'speedrun'; }
 
 /* ---- choosing ---- */
-// Whole days since the habit was last done at all, before `dateStr`. 7 = a week or more.
-function metaGap(h, dateStr) {
+// The last day before `dateStr` the habit was done at all (any tier), or ''.
+function metaLastDone(h, dateStr) {
   let last = '';
   (state.history || []).forEach(e => {
     if (!e || e.kind !== 'habit' || e.id !== h.id || !Number.isFinite(e.ts)) return;
     const d = dateStrFromTs(e.ts);
     if (d < dateStr && d > last) last = d;
   });
-  return last ? Math.min(7, daysBetween(last, dateStr)) : 7;
+  return last;
+}
+// Whole days since the habit was last done at all, before `dateStr`. 7 = a week or more.
+function metaGap(h, dateStr) { const last = metaLastDone(h, dateStr); return last ? Math.min(7, daysBetween(last, dateStr)) : 7; }
+// Days from `dateStr` until a goal habit with rest days is due again — 0 when it isn't
+// resting. Done on the 10th with 2 rest days: the 11th says 2, the 12th says 1, the 13th
+// it's due. Any completion counts, at any tier: a lawn mowed is mowed.
+function metaRestLeft(h, dateStr, last) {
+  const rest = goalRestOf(h.id); if (!rest) return 0;
+  if (last === undefined) last = metaLastDone(h, dateStr);
+  return last ? Math.max(0, rest + 1 - daysBetween(last, dateStr)) : 0;
+}
+// An extra on today's card that's resting: shown greyed, never asked for, left out of the
+// Speedrun. Running, it's being done, so it isn't.
+function metaResting(hid) {
+  const h = state.habits.find(x => x.id === hid);
+  return !!h && !h.timer && metaRestLeft(h, todayStr()) > 0;
 }
 // Every habit in a goal that's on for `dateStr`, with where its quota stands that day.
 function metaCandidates(dateStr) {
@@ -12570,17 +12633,22 @@ function metaCandidates(dateStr) {
     const need = quotaAt(q, g.level, h);
     const before = dateStr > mon ? quotaDoneDays(h, need.tier, mon, addDays(dateStr, -1)) : 0;
     const doneToday = quotaDoneDays(h, need.tier, dateStr, dateStr) > 0;
-    out.push({ g, q, h, freq: need.freq, tier: need.tier, before, doneToday,
-               left: need.freq - before - (doneToday ? 1 : 0),
-               ahead: quotaOpenDays(g, q, h, dateStr, sun),     // days still open, today included
+    const left = need.freq - before - (doneToday ? 1 : 0), ahead = quotaOpenDays(g, q, h, dateStr, sun);
+    const last = metaLastDone(h, dateStr), rest = goalRestOf(h.id);
+    out.push({ g, q, h, freq: need.freq, tier: need.tier, before, doneToday, left,
+               ahead,                                           // days still open, today included
                all: quotaOpenDays(g, q, h, mon, sun),
-               gap: metaGap(h, dateStr) });
+               gap: last ? Math.min(7, daysBetween(last, dateStr)) : 7,
+               rest, restLeft: metaRestLeft(h, dateStr, last),
+               // The days that can really take one: with rest days, each one done shuts the
+               // next few, so 2 left with 1 rest day in 3 days has no slack at all.
+               room: Math.max(1, ahead - Math.max(0, left - 1) * rest) });
   }));
   return out;
 }
 // The rules as numbers. `recent` = [yesterday's picks, the day before's], as id sets.
 function metaScore(c, recent) {
-  const urgency = Math.min(1, c.left / Math.max(1, c.ahead));
+  const urgency = Math.min(1, c.left / Math.max(1, Number.isFinite(c.room) ? c.room : c.ahead));
   const expected = c.freq * (c.all - c.ahead) / Math.max(1, c.all);
   const pace = clamp((expected - c.before) / c.freq, -1, 1);
   const dormancy = clamp((c.gap - 1) / 5, 0, 1);
@@ -12603,7 +12671,7 @@ function metaRanked(dateStr) {
     const r = metaDays()[addDays(dateStr, -n)];
     return new Set(r && Array.isArray(r.picks) ? r.picks.map(p => p.hid) : []);
   });
-  return metaCandidates(dateStr).filter(c => c.left > 0 && !c.doneToday)
+  return metaCandidates(dateStr).filter(c => c.left > 0 && !c.doneToday && !(c.restLeft > 0))
     .map((c, i) => { const s = metaScore(c, recent); return { ...c, ...s, i, why: metaWhy(c, s) }; })
     .sort((a, b) => b.score - a.score || a.i - b.i);
 }
@@ -12656,9 +12724,10 @@ function metaSync() {
   // The level was changed by hand today, or a list made by an older build carries a spare:
   // the list takes its new size, unless it's met.
   if (!rec.metAt) { const size = metaSize(cfg.level); if (rec.level !== cfg.level || rec.show !== size.show) Object.assign(rec, { level: cfg.level, show: size.show }); }
-  // A pick stays if it's done, or if it's still on today, its quota still wants it, and it
-  // wasn't substituted.
-  rec.picks = rec.picks.filter(p => metaPickDone(p, today) || (cands.has(p.hid) && cands.get(p.hid).left > 0 && !subbed.has(p.hid)));
+  // A pick stays if it's done, or if it's still on today, its quota still wants it, it isn't
+  // resting (rest days set on it since the list was made), and it wasn't substituted.
+  rec.picks = rec.picks.filter(p => metaPickDone(p, today)
+    || (cands.has(p.hid) && cands.get(p.hid).left > 0 && !(cands.get(p.hid).restLeft > 0) && !subbed.has(p.hid)));
   rec.picks.forEach(p => { const c = cands.get(p.hid); if (c && !metaPickDone(p, today)) { p.tier = c.tier; if (!p.why) p.why = metaWhy(c, metaScore(c, [new Set(), new Set()])); } });
   // Too many: the undone ones at the end — the list is in ranked order — leave first.
   while (rec.picks.length > rec.show) {
@@ -12685,17 +12754,24 @@ function metaSync() {
   }
   // Extra: unlocked once the day is met. The same kind of list — kept, and only topped
   // up when something on it stops being possible today.
+  // Resting habits (rest days set in their goal) go on too, after the rest: never asked for,
+  // shown greyed with when they're due again, and still there to do if the user wants to.
   if (rec.metAt) {
     const have = new Set(rec.picks.map(p => p.hid));
     rec.extras = rec.extras.filter(p => !have.has(p.hid) && (metaPickDone(p, today) || (cands.has(p.hid) && !subbed.has(p.hid))));
-    if (rec.extras.length < 5) {                  // five is plenty to keep going with
-      rec.extras.forEach(p => have.add(p.hid));
-      subbed.forEach(id => have.add(id));         // can't be done today: not as an extra either
+    const resting = p => !metaPickDone(p, today) && (cands.get(p.hid) || {}).restLeft > 0;
+    const open = rec.extras.filter(p => !resting(p)).length;
+    rec.extras.forEach(p => have.add(p.hid));
+    subbed.forEach(id => have.add(id));           // can't be done today: not as an extra either
+    if (open < 5) {                               // five is plenty to keep going with
       const wanted = metaRanked(today).filter(c => !have.has(c.h.id));
-      const dormant = [...cands.values()].filter(c => c.left <= 0 && !c.doneToday && c.gap >= 3 && !have.has(c.h.id))
+      const dormant = [...cands.values()].filter(c => c.left <= 0 && !c.doneToday && c.gap >= 3 && !(c.restLeft > 0) && !have.has(c.h.id))
         .sort((a, b) => b.gap - a.gap).map(c => ({ ...c, why: metaWhy(c, null) }));
-      wanted.concat(dormant).slice(0, 5 - rec.extras.length).forEach(c => rec.extras.push(metaPick(c)));
+      wanted.concat(dormant).slice(0, 5 - open).forEach(c => { rec.extras.push(metaPick(c)); have.add(c.h.id); });
     }
+    [...cands.values()].filter(c => c.restLeft > 0 && !c.doneToday && !have.has(c.h.id))
+      .sort((a, b) => a.restLeft - b.restLeft)
+      .forEach(c => rec.extras.push({ ...metaPick(c), why: { k: 'rest', text: 'Resting after the last time it was done' } }));
   }
   if (JSON.stringify([rec.picks, rec.extras, rec.need, rec.level]) !== before) changed = true;
   if (changed) save();
@@ -12811,7 +12887,7 @@ function editMeta(field, v) {
 function speedrunStack() {
   const rec = metaToday(); if (!rec || !Array.isArray(rec.picks) || !rec.picks.length) return null;
   const ids = rec.picks.map(p => p.hid);
-  if (rec.metAt) (rec.extras || []).forEach(p => { if (!ids.includes(p.hid)) ids.push(p.hid); });
+  if (rec.metAt) (rec.extras || []).forEach(p => { if (!ids.includes(p.hid) && !metaResting(p.hid)) ids.push(p.hid); });
   return { id: 'speedrun', name: 'Goal Speedrun', habitIds: ids, on: true, auto: true };
 }
 // The rung a speedrun step is done at: the one its quota asks for, as on the card — down
@@ -12866,6 +12942,10 @@ function metaRowHTML(p) {
   const h = state.habits.find(x => x.id === p.hid); if (!h) return '';
   const done = metaPickDone(p, todayStr()), t = h.timer, lv = habitLevels(h);
   const idx = metaTierIdx(p, h), want = lv ? clamp(p.tier - 1, 0, lv.length - 1) : 0;
+  // Resting (rest days set in its goal): the whole row greys and says when it's due again,
+  // in place of its tier and length. Every button still works — it can be done anyway.
+  const restLeft = done || t || isComplete(h) ? 0 : metaRestLeft(h, todayStr());
+  const due = restLeft ? `<small class="mq-due">${restLeft === 1 ? 'Not due until tomorrow' : `Not due for ${restLeft} days`}</small>` : '';
   // Done, a row is named for the tier that counted; otherwise for the rung ▶ / ✓ will do.
   const nameAt = i => { const l = lv && !done ? lv[i] : null; return l ? { name: l.name || h.name, mins: l.minutes || 0 } : metaName(p, h); };
   const { name } = nameAt(idx), label = escapeHtml(name);
@@ -12904,7 +12984,7 @@ function metaRowHTML(p) {
     // its tier and its length (or the running clock). The pill leads, so the token amounts
     // line up down the card whether a habit has tiers or not. The user asked for it this
     // way on 2026-11-19 — one line held too much once the reward was on it.
-    const meta = payAt(i) + tag + (clock || (mins && !detectMinutes(nm) ? `<small>${metaMins(mins)}</small>` : ''));
+    const meta = payAt(i) + (due || tag + (clock || (mins && !detectMinutes(nm) ? `<small>${metaMins(mins)}</small>` : '')));
     return `<span class="mq-n"><b>${escapeHtml(nm)}</b><span class="mq-meta">${meta}</span></span>${ch}`;
   };
   // Swipeable while it's still to do. Done or running, the row shows the one rung that matters.
@@ -12912,7 +12992,7 @@ function metaRowHTML(p) {
     ? `<div class="mq-swipe"><div class="mq-track" data-idx="${idx}" style="transform:translateX(${-idx * 100}%)">${
         lv.map((l, i) => `<div class="mq-pane">${pane(i, true)}</div>`).join('')}</div></div>`
     : pane(lv && !done ? idx : 0, false);
-  return `<div class="mq-row${done ? ' done' : ''}${t ? ' live' : ''}" data-mq="row" data-hid="${h.id}"${p.why ? ` title="${escapeHtml(p.why.text)}"` : ''}>
+  return `<div class="mq-row${done ? ' done' : ''}${t ? ' live' : ''}${restLeft ? ' rest' : ''}" data-mq="row" data-hid="${h.id}"${restLeft ? ` title="Resting — ${restLeft === 1 ? 'due again tomorrow' : `due again in ${restLeft} days`}"` : p.why ? ` title="${escapeHtml(p.why.text)}"` : ''}>
       <span class="mq-e" aria-hidden="true">${escapeHtml(h.emoji || '⭐')}</span>
       ${body}
       ${right}</div>`;
@@ -12954,7 +13034,7 @@ function renderHomeMeta() {
   const all = need === 1 ? 'Finish it' : need === 2 ? 'Finish both' : `Finish all ${need}`;
   if (!met) after = `<div class="mq-lock"><span aria-hidden="true">🔒</span> <span>${pay ? `${all} for <b class="mq-pay">+${pay} ${TOK_ICON}</b> and` : 'Complete today\'s goal to unlock'} extra progress</span> <span aria-hidden="true">↓</span></div>`;
   else {
-    const rows = (rec.extras || []).map(metaRowHTML).join('');
+    const rows = (rec.extras || []).slice().sort((a, b) => metaResting(a.hid) - metaResting(b.hid)).map(metaRowHTML).join('');
     after = `<div class="mq-extra"><button class="mq-extra-h" data-mq="extras" aria-expanded="${metaExtrasOpen}">
         <span>Extra progress (optional)</span><span class="mq-caret${metaExtrasOpen ? ' up' : ''}" aria-hidden="true">⌃</span></button>
       ${metaExtrasOpen ? rows || '<div class="mq-none">Nothing else is left for today. The rest of the day is yours.</div>' : ''}</div>`;
